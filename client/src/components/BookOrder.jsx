@@ -1,14 +1,316 @@
 import { useState, useEffect } from 'react'
 
+// 3D Book Mockup Component
+function BookMockup({ config, options, title }) {
+  const size = options?.trimSizes.find(s => s.id === config.trimSize)
+  const binding = options?.bindingTypes.find(b => b.id === config.binding)
+  const isHardcover = ['CW', 'DJ', 'LW'].includes(config.binding)
+  const isCoil = config.binding === 'CO'
+
+  // Calculate visual proportions (scaled for display)
+  const baseHeight = 200
+  const aspectRatio = size ? size.width / size.height : 0.67
+  const bookWidth = baseHeight * aspectRatio
+  const spineWidth = isHardcover ? 25 : 15
+
+  // Color mappings
+  const linenColorMap = {
+    N: '#1e3a5f', G: '#6b7280', R: '#991b1b', B: '#1f2937',
+    T: '#a8896c', F: '#166534', W: '#f5f5f4', Y: '#7c2d12', P: '#581c87'
+  }
+
+  const foilColorMap = {
+    G: '#d4af37', S: '#c0c0c0', B: '#1f2937', W: '#ffffff',
+    C: '#b87333', R: '#e8b4b8'
+  }
+
+  const coverColor = config.binding === 'LW' && config.linen !== 'X'
+    ? linenColorMap[config.linen] || '#2d3748'
+    : '#2d3748'
+
+  const foilColor = config.foil !== 'X' ? foilColorMap[config.foil] : null
+
+  return (
+    <div className="relative" style={{ perspective: '1000px' }}>
+      <div
+        className="relative transition-all duration-500"
+        style={{
+          transformStyle: 'preserve-3d',
+          transform: 'rotateY(-25deg) rotateX(5deg)',
+          width: bookWidth + spineWidth + 20,
+          height: baseHeight + 20
+        }}
+      >
+        {/* Shadow */}
+        <div
+          className="absolute bottom-0 left-4 bg-black/20 rounded-full blur-xl"
+          style={{ width: bookWidth + spineWidth, height: 20 }}
+        />
+
+        {/* Back Cover */}
+        <div
+          className="absolute rounded-r"
+          style={{
+            width: bookWidth,
+            height: baseHeight,
+            backgroundColor: coverColor,
+            transform: `translateZ(-${spineWidth}px)`,
+            boxShadow: 'inset 0 0 30px rgba(0,0,0,0.3)'
+          }}
+        />
+
+        {/* Spine */}
+        <div
+          className="absolute left-0 flex items-center justify-center"
+          style={{
+            width: spineWidth,
+            height: baseHeight,
+            backgroundColor: coverColor,
+            transform: `rotateY(90deg) translateZ(${bookWidth/2 - spineWidth/2}px) translateX(-${spineWidth/2}px)`,
+            boxShadow: 'inset -5px 0 15px rgba(0,0,0,0.3)',
+            transformOrigin: 'left center'
+          }}
+        >
+          {foilColor && (
+            <span
+              className="text-xs font-serif writing-vertical-lr transform rotate-180"
+              style={{ color: foilColor, textShadow: '0 0 2px rgba(0,0,0,0.5)' }}
+            >
+              {title?.substring(0, 20)}
+            </span>
+          )}
+        </div>
+
+        {/* Pages */}
+        <div
+          className="absolute"
+          style={{
+            width: bookWidth - 4,
+            height: baseHeight - 4,
+            top: 2,
+            left: spineWidth + 2,
+            background: config.paper?.includes('C') ? '#f5f5f0' : '#faf8f2',
+            transform: `translateZ(-${spineWidth - 2}px)`,
+            boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.1)'
+          }}
+        >
+          {/* Page lines */}
+          {[...Array(8)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute left-0 right-0 border-b border-sepia/10"
+              style={{ top: `${(i + 1) * 11}%` }}
+            />
+          ))}
+        </div>
+
+        {/* Front Cover */}
+        <div
+          className="absolute rounded-r overflow-hidden"
+          style={{
+            width: bookWidth,
+            height: baseHeight,
+            left: spineWidth,
+            backgroundColor: coverColor,
+            boxShadow: `
+              inset 0 0 30px rgba(0,0,0,0.2),
+              5px 5px 20px rgba(0,0,0,0.3)
+            `,
+            transform: 'translateZ(0)'
+          }}
+        >
+          {/* Cover texture/finish */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background: config.finish === 'G'
+                ? 'linear-gradient(135deg, rgba(255,255,255,0.3) 0%, transparent 50%, rgba(255,255,255,0.1) 100%)'
+                : config.finish === 'M'
+                ? 'linear-gradient(180deg, rgba(255,255,255,0.1) 0%, transparent 100%)'
+                : 'none'
+            }}
+          />
+
+          {/* Title area */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
+            <div
+              className="text-white/90 font-serif text-sm leading-tight"
+              style={{
+                textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+                color: foilColor || 'rgba(255,255,255,0.9)'
+              }}
+            >
+              {title || "My Life Story"}
+            </div>
+            <div className="w-12 h-0.5 bg-white/30 my-2" />
+            <div className="text-white/60 text-xs">An Autobiography</div>
+          </div>
+
+          {/* Coil binding visual */}
+          {isCoil && (
+            <div className="absolute left-0 top-0 bottom-0 w-4 flex flex-col justify-around py-2">
+              {[...Array(12)].map((_, i) => (
+                <div key={i} className="w-3 h-3 rounded-full border-2 border-gray-400 bg-white" />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Visual option card with icon/preview
+function OptionCard({ selected, onClick, title, subtitle, icon, preview, popular }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`relative p-3 text-left border rounded-xl transition-all duration-200 ${
+        selected
+          ? 'border-sepia bg-sepia/10 shadow-md scale-[1.02]'
+          : 'border-sepia/20 hover:border-sepia/40 hover:shadow-sm'
+      } ${popular ? 'ring-2 ring-amber-400/50' : ''}`}
+    >
+      {popular && (
+        <span className="absolute -top-2 -right-2 bg-amber-400 text-amber-900 text-[10px] px-2 py-0.5 rounded-full font-medium">
+          Popular
+        </span>
+      )}
+      <div className="flex items-start gap-3">
+        {preview && <div className="flex-shrink-0">{preview}</div>}
+        {icon && <div className="text-2xl flex-shrink-0">{icon}</div>}
+        <div className="min-w-0">
+          <div className="font-medium text-ink text-sm truncate">{title}</div>
+          {subtitle && <div className="text-xs text-sepia/60 mt-0.5">{subtitle}</div>}
+        </div>
+      </div>
+    </button>
+  )
+}
+
+// Color swatch component
+function ColorSwatch({ color, selected, onClick, name }) {
+  const colorMap = {
+    N: '#1e3a5f', G: '#6b7280', R: '#991b1b', B: '#1f2937',
+    T: '#a8896c', F: '#166534', W: '#f5f5f4', Y: '#7c2d12', P: '#581c87'
+  }
+  const foilMap = {
+    X: 'transparent', G: 'linear-gradient(135deg, #d4af37, #f4e4a3, #d4af37)',
+    S: 'linear-gradient(135deg, #c0c0c0, #f0f0f0, #c0c0c0)',
+    B: '#1f2937', W: '#ffffff', C: 'linear-gradient(135deg, #b87333, #daa06d, #b87333)',
+    R: 'linear-gradient(135deg, #e8b4b8, #f5d4d7, #e8b4b8)'
+  }
+  const bg = foilMap[color] || colorMap[color] || '#gray'
+
+  return (
+    <button
+      onClick={onClick}
+      className={`relative group ${selected ? 'scale-110 z-10' : 'hover:scale-105'} transition-transform`}
+    >
+      <div
+        className={`w-10 h-10 rounded-full border-2 ${
+          selected ? 'border-sepia shadow-lg' : 'border-sepia/20'
+        } ${color === 'X' ? 'bg-gray-100' : ''}`}
+        style={{ background: color === 'X' ? undefined : bg }}
+      >
+        {color === 'X' && (
+          <div className="absolute inset-0 flex items-center justify-center text-sepia/40 text-lg">/</div>
+        )}
+      </div>
+      <div className={`absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] whitespace-nowrap ${
+        selected ? 'text-sepia font-medium' : 'text-sepia/60'
+      }`}>
+        {name}
+      </div>
+    </button>
+  )
+}
+
+// Paper preview
+function PaperPreview({ paper }) {
+  const isCoated = paper.coated
+  const isCream = paper.color === 'cream'
+
+  return (
+    <div
+      className={`w-12 h-16 rounded border shadow-sm ${
+        isCoated ? 'bg-gradient-to-br from-white to-gray-50' : ''
+      }`}
+      style={{
+        backgroundColor: isCream ? '#faf5e8' : '#ffffff',
+        boxShadow: isCoated ? 'inset 0 0 10px rgba(255,255,255,0.8)' : 'none'
+      }}
+    >
+      <div className="h-full flex flex-col justify-center px-1">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="h-0.5 bg-sepia/10 mb-1 last:mb-0" />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// Binding icon
+function BindingIcon({ type }) {
+  const icons = {
+    PB: (
+      <div className="w-8 h-12 relative">
+        <div className="absolute inset-0 bg-sepia/80 rounded-r" />
+        <div className="absolute inset-y-0 left-0 w-1.5 bg-sepia/60" />
+      </div>
+    ),
+    CW: (
+      <div className="w-8 h-12 relative">
+        <div className="absolute inset-0 bg-sepia rounded-r border-2 border-sepia" />
+        <div className="absolute inset-y-0 left-0 w-2 bg-sepia/80" />
+      </div>
+    ),
+    DJ: (
+      <div className="w-8 h-12 relative">
+        <div className="absolute inset-0 bg-sepia rounded-r" />
+        <div className="absolute inset-1 bg-white/90 rounded-r" />
+        <div className="absolute inset-y-0 left-0 w-2 bg-sepia/80" />
+      </div>
+    ),
+    LW: (
+      <div className="w-8 h-12 relative">
+        <div className="absolute inset-0 bg-gradient-to-r from-amber-700 to-amber-600 rounded-r" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'4\' height=\'4\' viewBox=\'0 0 4 4\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M1 3h1v1H1V3zm2-2h1v1H3V1z\' fill=\'%23000\' fill-opacity=\'0.1\' fill-rule=\'evenodd\'/%3E%3C/svg%3E")' }} />
+        <div className="absolute inset-y-0 left-0 w-2 bg-amber-800/80" />
+      </div>
+    ),
+    CO: (
+      <div className="w-8 h-12 relative flex">
+        <div className="w-2 flex flex-col justify-around py-1">
+          {[...Array(5)].map((_, i) => <div key={i} className="w-1.5 h-1.5 rounded-full border border-gray-400" />)}
+        </div>
+        <div className="flex-1 bg-sepia/80 rounded-r" />
+      </div>
+    ),
+    SS: (
+      <div className="w-8 h-12 relative">
+        <div className="absolute inset-0 bg-sepia/80 rounded-r" />
+        <div className="absolute left-1 top-1/3 w-1 h-1 bg-gray-400 rounded-full" />
+        <div className="absolute left-1 top-2/3 w-1 h-1 bg-gray-400 rounded-full" />
+      </div>
+    ),
+    WI: (
+      <div className="w-8 h-12 relative flex">
+        <div className="w-2 border-l-2 border-gray-400" style={{ borderStyle: 'double' }} />
+        <div className="flex-1 bg-sepia/80 rounded-r" />
+      </div>
+    )
+  }
+  return icons[type] || icons.PB
+}
+
 export default function BookOrder({ userName, pageCount, onClose }) {
-  const [step, setStep] = useState(1) // 1: customize, 2: shipping, 3: review, 4: complete
+  const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(true)
   const [calculating, setCalculating] = useState(false)
   const [options, setOptions] = useState(null)
   const [error, setError] = useState(null)
   const [cost, setCost] = useState(null)
 
-  // Book configuration
   const [config, setConfig] = useState({
     trimSize: '0600X0900',
     color: 'FC',
@@ -22,7 +324,6 @@ export default function BookOrder({ userName, pageCount, onClose }) {
     quantity: 1
   })
 
-  // Shipping details
   const [shipping, setShipping] = useState({
     name: '',
     email: '',
@@ -37,23 +338,13 @@ export default function BookOrder({ userName, pageCount, onClose }) {
     bookTitle: `${userName}'s Life Story`
   })
 
-  // Fetch options on mount
-  useEffect(() => {
-    fetchOptions()
-  }, [])
-
-  // Calculate cost when config changes
-  useEffect(() => {
-    if (options) {
-      calculateCost()
-    }
-  }, [config, shipping.countryCode])
+  useEffect(() => { fetchOptions() }, [])
+  useEffect(() => { if (options) calculateCost() }, [config, shipping.countryCode])
 
   const fetchOptions = async () => {
     try {
       const res = await fetch('/api/lulu/options')
-      const data = await res.json()
-      setOptions(data)
+      setOptions(await res.json())
     } catch (err) {
       setError('Failed to load book options')
     } finally {
@@ -75,11 +366,7 @@ export default function BookOrder({ userName, pageCount, onClose }) {
         })
       })
       const data = await res.json()
-      if (data.error) {
-        setCost(null)
-      } else {
-        setCost(data)
-      }
+      setCost(data.error ? null : data)
     } catch (err) {
       setCost(null)
     } finally {
@@ -87,388 +374,421 @@ export default function BookOrder({ userName, pageCount, onClose }) {
     }
   }
 
-  const applyPreset = (preset) => {
-    setConfig(prev => ({
-      ...prev,
-      ...preset
-    }))
-  }
-
-  const handleOrder = async () => {
-    // For now, just show success - in production, this would call /api/lulu/create-order
-    // with actual PDF URLs generated from the story content
-    setStep(4)
-  }
+  const handleOrder = () => setStep(4)
 
   if (loading) {
     return (
       <div className="fixed inset-0 bg-ink/40 backdrop-blur-sm flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-8 text-center">
-          <div className="animate-spin w-8 h-8 border-2 border-sepia border-t-transparent rounded-full mx-auto mb-4" />
-          <p className="text-sepia">Loading book options...</p>
+        <div className="bg-white rounded-2xl p-8 text-center shadow-2xl">
+          <div className="animate-spin w-10 h-10 border-3 border-sepia border-t-transparent rounded-full mx-auto mb-4" />
+          <p className="text-sepia">Preparing your book studio...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="fixed inset-0 bg-ink/40 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 sm:p-4 overflow-y-auto">
-      <div className="bg-[#faf8f3] rounded-t-xl sm:rounded-lg w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] flex flex-col shadow-2xl border border-sepia/20">
+    <div className="fixed inset-0 bg-ink/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 sm:p-4">
+      <div className="bg-gradient-to-b from-[#fdfcf9] to-[#f8f5ef] rounded-t-2xl sm:rounded-2xl w-full max-w-5xl max-h-[95vh] sm:max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+
         {/* Header */}
-        <div className="p-4 border-b border-sepia/20 flex justify-between items-center flex-shrink-0 bg-sepia/5">
+        <div className="px-6 py-4 border-b border-sepia/10 flex justify-between items-center bg-white/50">
           <div>
-            <h2 className="text-xl font-medium text-ink">Order Printed Book</h2>
-            <p className="text-sm text-sepia/70">
-              {step === 1 && 'Customize your book'}
-              {step === 2 && 'Shipping details'}
-              {step === 3 && 'Review your order'}
-              {step === 4 && 'Order confirmed'}
-            </p>
+            <h2 className="text-2xl font-serif text-ink">Create Your Book</h2>
+            <div className="flex items-center gap-2 mt-1">
+              {['Design', 'Shipping', 'Review', 'Done'].map((label, i) => (
+                <div key={i} className="flex items-center">
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
+                    step > i + 1 ? 'bg-green-500 text-white' :
+                    step === i + 1 ? 'bg-sepia text-white' : 'bg-sepia/20 text-sepia/60'
+                  }`}>
+                    {step > i + 1 ? '✓' : i + 1}
+                  </div>
+                  <span className={`ml-1 text-xs ${step === i + 1 ? 'text-ink font-medium' : 'text-sepia/60'}`}>
+                    {label}
+                  </span>
+                  {i < 3 && <div className="w-8 h-0.5 mx-2 bg-sepia/20" />}
+                </div>
+              ))}
+            </div>
           </div>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-sepia/10 text-sepia/60 hover:text-sepia">
-            <span className="text-xl">x</span>
+          <button
+            onClick={onClose}
+            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-sepia/10 text-sepia/60 hover:text-sepia transition"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
 
-        {/* Progress Steps */}
-        <div className="px-4 py-3 border-b border-sepia/10 flex-shrink-0">
-          <div className="flex gap-2">
-            {[1, 2, 3, 4].map(s => (
-              <div key={s} className={`flex-1 h-1.5 rounded-full ${step >= s ? 'bg-sepia' : 'bg-sepia/20'}`} />
-            ))}
-          </div>
-        </div>
-
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4">
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
-              {error}
-            </div>
-          )}
-
-          {/* Step 1: Customize */}
+        <div className="flex-1 overflow-hidden flex">
+          {/* Step 1: Design */}
           {step === 1 && options && (
-            <div className="space-y-6">
-              {/* Quick Presets */}
-              <div>
-                <h3 className="font-medium text-ink mb-3">Quick Start Presets</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  {Object.entries(options.recommended).map(([key, preset]) => (
-                    <button
-                      key={key}
-                      onClick={() => applyPreset(preset)}
-                      className="p-3 text-left border border-sepia/20 rounded-lg hover:border-sepia/40 hover:bg-white/50 transition"
-                    >
-                      <div className="font-medium text-ink capitalize">{key}</div>
-                      <div className="text-xs text-sepia/70 mt-1">{preset.description}</div>
-                    </button>
-                  ))}
+            <>
+              {/* Book Preview Sidebar */}
+              <div className="hidden lg:flex w-80 bg-gradient-to-br from-sepia/5 to-sepia/10 flex-col items-center justify-center p-8 border-r border-sepia/10">
+                <BookMockup config={config} options={options} title={shipping.bookTitle} />
+                <div className="mt-8 text-center">
+                  <div className="text-2xl font-serif text-ink">{shipping.bookTitle}</div>
+                  <div className="text-sm text-sepia/60 mt-1">
+                    {options.trimSizes.find(s => s.id === config.trimSize)?.width}" x {options.trimSizes.find(s => s.id === config.trimSize)?.height}"
+                  </div>
+                  <div className="text-sm text-sepia/60">
+                    {options.bindingTypes.find(b => b.id === config.binding)?.name}
+                  </div>
+                  {cost && (
+                    <div className="mt-4 text-3xl font-medium text-ink">
+                      ${cost.breakdown.total.toFixed(2)}
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Trim Size */}
-              <div>
-                <h3 className="font-medium text-ink mb-3">Book Size</h3>
-                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-                  {options.trimSizes.map(size => (
-                    <button
-                      key={size.id}
-                      onClick={() => setConfig(prev => ({ ...prev, trimSize: size.id }))}
-                      className={`p-2 text-center border rounded-lg transition text-sm ${
-                        config.trimSize === size.id
-                          ? 'border-sepia bg-sepia/10'
-                          : 'border-sepia/20 hover:border-sepia/40'
-                      } ${size.popular ? 'ring-1 ring-sepia/30' : ''}`}
-                    >
-                      <div className="font-medium text-ink">{size.width}" x {size.height}"</div>
-                      <div className="text-xs text-sepia/60">{size.name.split('(')[0]}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Print Color */}
-              <div>
-                <h3 className="font-medium text-ink mb-3">Print Color</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  {options.printColors.map(color => (
-                    <button
-                      key={color.id}
-                      onClick={() => setConfig(prev => ({ ...prev, color: color.id }))}
-                      className={`p-3 border rounded-lg transition ${
-                        config.color === color.id
-                          ? 'border-sepia bg-sepia/10'
-                          : 'border-sepia/20 hover:border-sepia/40'
-                      }`}
-                    >
-                      <div className="font-medium text-ink">{color.name}</div>
-                      <div className="text-xs text-sepia/60">{color.description}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Binding Type */}
-              <div>
-                <h3 className="font-medium text-ink mb-3">Binding</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {options.bindingTypes.map(binding => (
-                    <button
-                      key={binding.id}
-                      onClick={() => setConfig(prev => ({ ...prev, binding: binding.id }))}
-                      className={`p-3 border rounded-lg transition ${
-                        config.binding === binding.id
-                          ? 'border-sepia bg-sepia/10'
-                          : 'border-sepia/20 hover:border-sepia/40'
-                      }`}
-                    >
-                      <div className="font-medium text-ink text-sm">{binding.name}</div>
-                      <div className="text-xs text-sepia/60">{binding.description}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Paper Type */}
-              <div>
-                <h3 className="font-medium text-ink mb-3">Paper</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {options.paperTypes.map(paper => (
-                    <button
-                      key={paper.id}
-                      onClick={() => setConfig(prev => ({ ...prev, paper: paper.id }))}
-                      className={`p-3 border rounded-lg transition ${
-                        config.paper === paper.id
-                          ? 'border-sepia bg-sepia/10'
-                          : 'border-sepia/20 hover:border-sepia/40'
-                      }`}
-                    >
-                      <div className="font-medium text-ink text-sm">{paper.name}</div>
-                      <div className="text-xs text-sepia/60">{paper.description}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Cover Finish */}
-              <div>
-                <h3 className="font-medium text-ink mb-3">Cover Finish</h3>
-                <div className="grid grid-cols-3 gap-3">
-                  {options.coverFinishes.map(finish => (
-                    <button
-                      key={finish.id}
-                      onClick={() => setConfig(prev => ({ ...prev, finish: finish.id }))}
-                      className={`p-3 border rounded-lg transition ${
-                        config.finish === finish.id
-                          ? 'border-sepia bg-sepia/10'
-                          : 'border-sepia/20 hover:border-sepia/40'
-                      }`}
-                    >
-                      <div className="font-medium text-ink">{finish.name}</div>
-                      <div className="text-xs text-sepia/60">{finish.description}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Linen Colors (if linen wrap binding) */}
-              {config.binding === 'LW' && (
+              {/* Options */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-8">
+                {/* Quick Presets */}
                 <div>
-                  <h3 className="font-medium text-ink mb-3">Linen Color</h3>
-                  <div className="grid grid-cols-5 gap-2">
-                    {options.linenColors.filter(l => l.id !== 'X').map(linen => (
+                  <h3 className="text-lg font-medium text-ink mb-4 flex items-center gap-2">
+                    <span className="w-8 h-8 bg-sepia/10 rounded-full flex items-center justify-center text-sepia">1</span>
+                    Quick Start
+                  </h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {Object.entries(options.recommended).map(([key, preset]) => (
                       <button
-                        key={linen.id}
-                        onClick={() => setConfig(prev => ({ ...prev, linen: linen.id }))}
-                        className={`p-2 border rounded-lg transition ${
-                          config.linen === linen.id
-                            ? 'border-sepia bg-sepia/10'
-                            : 'border-sepia/20 hover:border-sepia/40'
-                        }`}
+                        key={key}
+                        onClick={() => setConfig(prev => ({ ...prev, ...preset }))}
+                        className="p-4 text-center border border-sepia/20 rounded-xl hover:border-sepia/40 hover:bg-white/50 transition group"
                       >
-                        <div className="font-medium text-ink text-sm">{linen.name}</div>
+                        <div className="text-3xl mb-2 group-hover:scale-110 transition">
+                          {key === 'memoir' ? '📖' : key === 'premium' ? '✨' : key === 'photoBook' ? '📸' : '🎁'}
+                        </div>
+                        <div className="font-medium text-ink capitalize">{key.replace(/([A-Z])/g, ' $1')}</div>
+                        <div className="text-[10px] text-sepia/60 mt-1 line-clamp-2">{preset.description}</div>
                       </button>
                     ))}
                   </div>
                 </div>
-              )}
 
-              {/* Foil Stamping (for hardcovers) */}
-              {['CW', 'DJ', 'LW'].includes(config.binding) && (
+                {/* Book Size */}
                 <div>
-                  <h3 className="font-medium text-ink mb-3">Foil Stamping</h3>
-                  <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
-                    {options.foilOptions.map(foil => (
+                  <h3 className="text-lg font-medium text-ink mb-4 flex items-center gap-2">
+                    <span className="w-8 h-8 bg-sepia/10 rounded-full flex items-center justify-center text-sepia">2</span>
+                    Book Size
+                  </h3>
+                  <div className="flex flex-wrap gap-3">
+                    {options.trimSizes.map(size => (
                       <button
-                        key={foil.id}
-                        onClick={() => setConfig(prev => ({ ...prev, foil: foil.id }))}
-                        className={`p-2 border rounded-lg transition ${
-                          config.foil === foil.id
-                            ? 'border-sepia bg-sepia/10'
+                        key={size.id}
+                        onClick={() => setConfig(prev => ({ ...prev, trimSize: size.id }))}
+                        className={`relative p-3 border rounded-xl transition group ${
+                          config.trimSize === size.id
+                            ? 'border-sepia bg-sepia/10 shadow-md'
                             : 'border-sepia/20 hover:border-sepia/40'
-                        }`}
+                        } ${size.popular ? 'ring-2 ring-amber-400/50' : ''}`}
                       >
-                        <div className="font-medium text-ink text-sm">{foil.name}</div>
+                        {size.popular && (
+                          <span className="absolute -top-2 -right-2 bg-amber-400 text-amber-900 text-[9px] px-1.5 py-0.5 rounded-full">
+                            Popular
+                          </span>
+                        )}
+                        <div
+                          className="mx-auto mb-2 bg-sepia/20 rounded-sm"
+                          style={{
+                            width: size.width * 6,
+                            height: size.height * 6,
+                            maxWidth: 50,
+                            maxHeight: 70
+                          }}
+                        />
+                        <div className="text-xs font-medium text-ink">{size.width}" x {size.height}"</div>
                       </button>
                     ))}
                   </div>
                 </div>
-              )}
 
-              {/* Quantity */}
-              <div>
-                <h3 className="font-medium text-ink mb-3">Quantity</h3>
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={() => setConfig(prev => ({ ...prev, quantity: Math.max(1, prev.quantity - 1) }))}
-                    className="w-10 h-10 border border-sepia/30 rounded-lg hover:bg-sepia/10"
-                  >
-                    -
-                  </button>
-                  <span className="text-xl font-medium text-ink w-12 text-center">{config.quantity}</span>
-                  <button
-                    onClick={() => setConfig(prev => ({ ...prev, quantity: prev.quantity + 1 }))}
-                    className="w-10 h-10 border border-sepia/30 rounded-lg hover:bg-sepia/10"
-                  >
-                    +
-                  </button>
+                {/* Binding */}
+                <div>
+                  <h3 className="text-lg font-medium text-ink mb-4 flex items-center gap-2">
+                    <span className="w-8 h-8 bg-sepia/10 rounded-full flex items-center justify-center text-sepia">3</span>
+                    Binding Type
+                  </h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {options.bindingTypes.map(binding => (
+                      <OptionCard
+                        key={binding.id}
+                        selected={config.binding === binding.id}
+                        onClick={() => setConfig(prev => ({ ...prev, binding: binding.id, linen: 'X', foil: 'X' }))}
+                        title={binding.name}
+                        subtitle={binding.description}
+                        preview={<BindingIcon type={binding.id} />}
+                        popular={binding.popular}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Linen Color (for linen wrap) */}
+                {config.binding === 'LW' && (
+                  <div>
+                    <h3 className="text-lg font-medium text-ink mb-4">Linen Color</h3>
+                    <div className="flex flex-wrap gap-4 pb-6">
+                      {options.linenColors.filter(l => l.id !== 'X').map(linen => (
+                        <ColorSwatch
+                          key={linen.id}
+                          color={linen.id}
+                          name={linen.name}
+                          selected={config.linen === linen.id}
+                          onClick={() => setConfig(prev => ({ ...prev, linen: linen.id }))}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Foil Stamping (for hardcovers) */}
+                {['CW', 'DJ', 'LW'].includes(config.binding) && (
+                  <div>
+                    <h3 className="text-lg font-medium text-ink mb-4">Foil Stamping</h3>
+                    <div className="flex flex-wrap gap-4 pb-6">
+                      {options.foilOptions.map(foil => (
+                        <ColorSwatch
+                          key={foil.id}
+                          color={foil.id}
+                          name={foil.name}
+                          selected={config.foil === foil.id}
+                          onClick={() => setConfig(prev => ({ ...prev, foil: foil.id }))}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Paper */}
+                <div>
+                  <h3 className="text-lg font-medium text-ink mb-4 flex items-center gap-2">
+                    <span className="w-8 h-8 bg-sepia/10 rounded-full flex items-center justify-center text-sepia">4</span>
+                    Paper Type
+                  </h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {options.paperTypes.map(paper => (
+                      <OptionCard
+                        key={paper.id}
+                        selected={config.paper === paper.id}
+                        onClick={() => setConfig(prev => ({ ...prev, paper: paper.id }))}
+                        title={paper.name}
+                        subtitle={paper.description}
+                        preview={<PaperPreview paper={paper} />}
+                        popular={paper.popular}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Print Color */}
+                <div>
+                  <h3 className="text-lg font-medium text-ink mb-4 flex items-center gap-2">
+                    <span className="w-8 h-8 bg-sepia/10 rounded-full flex items-center justify-center text-sepia">5</span>
+                    Print Color
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    {options.printColors.map(color => (
+                      <button
+                        key={color.id}
+                        onClick={() => setConfig(prev => ({ ...prev, color: color.id }))}
+                        className={`relative p-6 border rounded-xl transition ${
+                          config.color === color.id
+                            ? 'border-sepia bg-sepia/10 shadow-md'
+                            : 'border-sepia/20 hover:border-sepia/40'
+                        }`}
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className={`w-16 h-20 rounded border ${
+                            color.id === 'FC'
+                              ? 'bg-gradient-to-br from-red-200 via-yellow-200 to-blue-200'
+                              : 'bg-gradient-to-b from-gray-100 to-gray-300'
+                          }`} />
+                          <div className="text-left">
+                            <div className="font-medium text-ink text-lg">{color.name}</div>
+                            <div className="text-sm text-sepia/60">{color.description}</div>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Cover Finish */}
+                <div>
+                  <h3 className="text-lg font-medium text-ink mb-4 flex items-center gap-2">
+                    <span className="w-8 h-8 bg-sepia/10 rounded-full flex items-center justify-center text-sepia">6</span>
+                    Cover Finish
+                  </h3>
+                  <div className="grid grid-cols-3 gap-4">
+                    {options.coverFinishes.map(finish => (
+                      <button
+                        key={finish.id}
+                        onClick={() => setConfig(prev => ({ ...prev, finish: finish.id }))}
+                        className={`p-4 border rounded-xl transition ${
+                          config.finish === finish.id
+                            ? 'border-sepia bg-sepia/10 shadow-md'
+                            : 'border-sepia/20 hover:border-sepia/40'
+                        }`}
+                      >
+                        <div
+                          className="w-full h-16 rounded-lg mb-3"
+                          style={{
+                            background: finish.id === 'G'
+                              ? 'linear-gradient(135deg, #fff 0%, #e0e0e0 50%, #fff 100%)'
+                              : finish.id === 'M'
+                              ? '#f5f5f5'
+                              : '#faf8f5',
+                            boxShadow: finish.id === 'G' ? 'inset 0 0 20px rgba(255,255,255,0.8)' : 'none'
+                          }}
+                        />
+                        <div className="font-medium text-ink">{finish.name}</div>
+                        <div className="text-xs text-sepia/60">{finish.description}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Quantity */}
+                <div>
+                  <h3 className="text-lg font-medium text-ink mb-4 flex items-center gap-2">
+                    <span className="w-8 h-8 bg-sepia/10 rounded-full flex items-center justify-center text-sepia">7</span>
+                    Quantity
+                  </h3>
+                  <div className="flex items-center gap-4">
+                    <button
+                      onClick={() => setConfig(prev => ({ ...prev, quantity: Math.max(1, prev.quantity - 1) }))}
+                      className="w-12 h-12 border-2 border-sepia/30 rounded-xl hover:bg-sepia/10 text-xl font-medium text-sepia"
+                    >
+                      -
+                    </button>
+                    <span className="text-3xl font-medium text-ink w-16 text-center">{config.quantity}</span>
+                    <button
+                      onClick={() => setConfig(prev => ({ ...prev, quantity: prev.quantity + 1 }))}
+                      className="w-12 h-12 border-2 border-sepia/30 rounded-xl hover:bg-sepia/10 text-xl font-medium text-sepia"
+                    >
+                      +
+                    </button>
+                    <div className="text-sm text-sepia/60 ml-4">
+                      {config.quantity > 1 && `Save on bulk orders!`}
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
+            </>
           )}
 
           {/* Step 2: Shipping */}
           {step === 2 && options && (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-ink mb-1">Book Title</label>
-                <input
-                  type="text"
-                  value={shipping.bookTitle}
-                  onChange={e => setShipping(prev => ({ ...prev, bookTitle: e.target.value }))}
-                  className="w-full px-4 py-2 border border-sepia/20 rounded-lg focus:outline-none focus:ring-1 focus:ring-sepia/30"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="max-w-2xl mx-auto space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-1">Full Name *</label>
+                  <label className="block text-sm font-medium text-ink mb-2">Book Title</label>
                   <input
                     type="text"
-                    value={shipping.name}
-                    onChange={e => setShipping(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full px-4 py-2 border border-sepia/20 rounded-lg focus:outline-none focus:ring-1 focus:ring-sepia/30"
-                    required
+                    value={shipping.bookTitle}
+                    onChange={e => setShipping(prev => ({ ...prev, bookTitle: e.target.value }))}
+                    className="w-full px-4 py-3 border border-sepia/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-sepia/30 text-lg"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-ink mb-1">Email *</label>
-                  <input
-                    type="email"
-                    value={shipping.email}
-                    onChange={e => setShipping(prev => ({ ...prev, email: e.target.value }))}
-                    className="w-full px-4 py-2 border border-sepia/20 rounded-lg focus:outline-none focus:ring-1 focus:ring-sepia/30"
-                    required
-                  />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-ink mb-2">Full Name *</label>
+                    <input
+                      type="text"
+                      value={shipping.name}
+                      onChange={e => setShipping(prev => ({ ...prev, name: e.target.value }))}
+                      className="w-full px-4 py-3 border border-sepia/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-sepia/30"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-ink mb-2">Email *</label>
+                    <input
+                      type="email"
+                      value={shipping.email}
+                      onChange={e => setShipping(prev => ({ ...prev, email: e.target.value }))}
+                      className="w-full px-4 py-3 border border-sepia/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-sepia/30"
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-sm font-medium text-ink mb-1">Phone</label>
-                <input
-                  type="tel"
-                  value={shipping.phone}
-                  onChange={e => setShipping(prev => ({ ...prev, phone: e.target.value }))}
-                  className="w-full px-4 py-2 border border-sepia/20 rounded-lg focus:outline-none focus:ring-1 focus:ring-sepia/30"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-ink mb-1">Street Address *</label>
-                <input
-                  type="text"
-                  value={shipping.street1}
-                  onChange={e => setShipping(prev => ({ ...prev, street1: e.target.value }))}
-                  className="w-full px-4 py-2 border border-sepia/20 rounded-lg focus:outline-none focus:ring-1 focus:ring-sepia/30"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-ink mb-1">Address Line 2</label>
-                <input
-                  type="text"
-                  value={shipping.street2}
-                  onChange={e => setShipping(prev => ({ ...prev, street2: e.target.value }))}
-                  className="w-full px-4 py-2 border border-sepia/20 rounded-lg focus:outline-none focus:ring-1 focus:ring-sepia/30"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-1">City *</label>
+                  <label className="block text-sm font-medium text-ink mb-2">Street Address *</label>
                   <input
                     type="text"
-                    value={shipping.city}
-                    onChange={e => setShipping(prev => ({ ...prev, city: e.target.value }))}
-                    className="w-full px-4 py-2 border border-sepia/20 rounded-lg focus:outline-none focus:ring-1 focus:ring-sepia/30"
-                    required
+                    value={shipping.street1}
+                    onChange={e => setShipping(prev => ({ ...prev, street1: e.target.value }))}
+                    className="w-full px-4 py-3 border border-sepia/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-sepia/30"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-ink mb-1">State/Province</label>
-                  <input
-                    type="text"
-                    value={shipping.stateCode}
-                    onChange={e => setShipping(prev => ({ ...prev, stateCode: e.target.value }))}
-                    className="w-full px-4 py-2 border border-sepia/20 rounded-lg focus:outline-none focus:ring-1 focus:ring-sepia/30"
-                  />
-                </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-ink mb-1">Postal Code *</label>
-                  <input
-                    type="text"
-                    value={shipping.postcode}
-                    onChange={e => setShipping(prev => ({ ...prev, postcode: e.target.value }))}
-                    className="w-full px-4 py-2 border border-sepia/20 rounded-lg focus:outline-none focus:ring-1 focus:ring-sepia/30"
-                    required
-                  />
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-ink mb-2">City *</label>
+                    <input
+                      type="text"
+                      value={shipping.city}
+                      onChange={e => setShipping(prev => ({ ...prev, city: e.target.value }))}
+                      className="w-full px-4 py-3 border border-sepia/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-sepia/30"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-ink mb-2">State</label>
+                    <input
+                      type="text"
+                      value={shipping.stateCode}
+                      onChange={e => setShipping(prev => ({ ...prev, stateCode: e.target.value }))}
+                      className="w-full px-4 py-3 border border-sepia/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-sepia/30"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-ink mb-2">Postal Code *</label>
+                    <input
+                      type="text"
+                      value={shipping.postcode}
+                      onChange={e => setShipping(prev => ({ ...prev, postcode: e.target.value }))}
+                      className="w-full px-4 py-3 border border-sepia/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-sepia/30"
+                    />
+                  </div>
                 </div>
+
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-1">Country *</label>
+                  <label className="block text-sm font-medium text-ink mb-2">Country *</label>
                   <select
                     value={shipping.countryCode}
                     onChange={e => setShipping(prev => ({ ...prev, countryCode: e.target.value }))}
-                    className="w-full px-4 py-2 border border-sepia/20 rounded-lg focus:outline-none focus:ring-1 focus:ring-sepia/30 bg-white"
+                    className="w-full px-4 py-3 border border-sepia/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-sepia/30 bg-white"
                   >
-                    {options.countries.map(country => (
-                      <option key={country.code} value={country.code}>{country.name}</option>
+                    {options.countries.map(c => (
+                      <option key={c.code} value={c.code}>{c.name}</option>
                     ))}
                   </select>
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-sm font-medium text-ink mb-2">Shipping Speed</label>
-                <div className="grid grid-cols-2 gap-3">
-                  {options.shippingLevels.map(level => (
-                    <button
-                      key={level.id}
-                      onClick={() => setShipping(prev => ({ ...prev, shippingLevel: level.id }))}
-                      className={`p-3 border rounded-lg transition text-left ${
-                        shipping.shippingLevel === level.id
-                          ? 'border-sepia bg-sepia/10'
-                          : 'border-sepia/20 hover:border-sepia/40'
-                      }`}
-                    >
-                      <div className="font-medium text-ink">{level.name}</div>
-                      <div className="text-xs text-sepia/60">{level.days}</div>
-                    </button>
-                  ))}
+                <div>
+                  <label className="block text-sm font-medium text-ink mb-3">Shipping Speed</label>
+                  <div className="grid grid-cols-2 gap-4">
+                    {options.shippingLevels.map(level => (
+                      <button
+                        key={level.id}
+                        onClick={() => setShipping(prev => ({ ...prev, shippingLevel: level.id }))}
+                        className={`p-4 border rounded-xl transition text-left ${
+                          shipping.shippingLevel === level.id
+                            ? 'border-sepia bg-sepia/10 shadow-md'
+                            : 'border-sepia/20 hover:border-sepia/40'
+                        }`}
+                      >
+                        <div className="font-medium text-ink">{level.name}</div>
+                        <div className="text-sm text-sepia/60">{level.days}</div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -476,124 +796,116 @@ export default function BookOrder({ userName, pageCount, onClose }) {
 
           {/* Step 3: Review */}
           {step === 3 && (
-            <div className="space-y-6">
-              <div className="bg-white/70 rounded-lg p-4 border border-sepia/10">
-                <h3 className="font-medium text-ink mb-3">Book Configuration</h3>
-                <dl className="grid grid-cols-2 gap-2 text-sm">
-                  <dt className="text-sepia/70">Size:</dt>
-                  <dd className="text-ink">{options?.trimSizes.find(s => s.id === config.trimSize)?.name}</dd>
-                  <dt className="text-sepia/70">Color:</dt>
-                  <dd className="text-ink">{options?.printColors.find(c => c.id === config.color)?.name}</dd>
-                  <dt className="text-sepia/70">Binding:</dt>
-                  <dd className="text-ink">{options?.bindingTypes.find(b => b.id === config.binding)?.name}</dd>
-                  <dt className="text-sepia/70">Paper:</dt>
-                  <dd className="text-ink">{options?.paperTypes.find(p => p.id === config.paper)?.name}</dd>
-                  <dt className="text-sepia/70">Cover:</dt>
-                  <dd className="text-ink">{options?.coverFinishes.find(f => f.id === config.finish)?.name}</dd>
-                  <dt className="text-sepia/70">Quantity:</dt>
-                  <dd className="text-ink">{config.quantity}</dd>
-                </dl>
-              </div>
-
-              <div className="bg-white/70 rounded-lg p-4 border border-sepia/10">
-                <h3 className="font-medium text-ink mb-3">Shipping To</h3>
-                <p className="text-sm text-ink">
-                  {shipping.name}<br />
-                  {shipping.street1}<br />
-                  {shipping.street2 && <>{shipping.street2}<br /></>}
-                  {shipping.city}, {shipping.stateCode} {shipping.postcode}<br />
-                  {options?.countries.find(c => c.code === shipping.countryCode)?.name}
-                </p>
-                <p className="text-sm text-sepia/70 mt-2">
-                  {options?.shippingLevels.find(l => l.id === shipping.shippingLevel)?.name} -
-                  {options?.shippingLevels.find(l => l.id === shipping.shippingLevel)?.days}
-                </p>
-              </div>
-
-              {cost && (
-                <div className="bg-sepia/5 rounded-lg p-4 border border-sepia/20">
-                  <h3 className="font-medium text-ink mb-3">Order Total</h3>
-                  <dl className="space-y-1 text-sm">
-                    <div className="flex justify-between">
-                      <dt className="text-sepia/70">Printing:</dt>
-                      <dd className="text-ink">${cost.breakdown.printing.toFixed(2)}</dd>
-                    </div>
-                    <div className="flex justify-between">
-                      <dt className="text-sepia/70">Shipping:</dt>
-                      <dd className="text-ink">${cost.breakdown.shipping.toFixed(2)}</dd>
-                    </div>
-                    <div className="flex justify-between">
-                      <dt className="text-sepia/70">Tax:</dt>
-                      <dd className="text-ink">${cost.breakdown.tax.toFixed(2)}</dd>
-                    </div>
-                    <div className="flex justify-between pt-2 border-t border-sepia/20 font-medium">
-                      <dt className="text-ink">Total:</dt>
-                      <dd className="text-ink">${cost.breakdown.total.toFixed(2)}</dd>
-                    </div>
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="max-w-3xl mx-auto grid md:grid-cols-2 gap-6">
+                <div className="bg-white rounded-2xl p-6 shadow-sm">
+                  <h3 className="font-medium text-ink mb-4 text-lg">Your Book</h3>
+                  <div className="flex justify-center mb-6">
+                    <BookMockup config={config} options={options} title={shipping.bookTitle} />
+                  </div>
+                  <dl className="space-y-2 text-sm">
+                    <div className="flex justify-between"><dt className="text-sepia/70">Size</dt><dd className="text-ink font-medium">{options?.trimSizes.find(s => s.id === config.trimSize)?.name}</dd></div>
+                    <div className="flex justify-between"><dt className="text-sepia/70">Binding</dt><dd className="text-ink font-medium">{options?.bindingTypes.find(b => b.id === config.binding)?.name}</dd></div>
+                    <div className="flex justify-between"><dt className="text-sepia/70">Paper</dt><dd className="text-ink font-medium">{options?.paperTypes.find(p => p.id === config.paper)?.name}</dd></div>
+                    <div className="flex justify-between"><dt className="text-sepia/70">Color</dt><dd className="text-ink font-medium">{options?.printColors.find(c => c.id === config.color)?.name}</dd></div>
+                    <div className="flex justify-between"><dt className="text-sepia/70">Cover</dt><dd className="text-ink font-medium">{options?.coverFinishes.find(f => f.id === config.finish)?.name}</dd></div>
+                    <div className="flex justify-between"><dt className="text-sepia/70">Quantity</dt><dd className="text-ink font-medium">{config.quantity}</dd></div>
                   </dl>
                 </div>
-              )}
 
-              <p className="text-xs text-sepia/60 text-center">
-                Note: This is a preview. PDF generation and payment integration coming soon.
-              </p>
+                <div className="space-y-6">
+                  <div className="bg-white rounded-2xl p-6 shadow-sm">
+                    <h3 className="font-medium text-ink mb-4 text-lg">Shipping To</h3>
+                    <p className="text-ink">
+                      {shipping.name}<br />
+                      {shipping.street1}<br />
+                      {shipping.city}, {shipping.stateCode} {shipping.postcode}<br />
+                      {options?.countries.find(c => c.code === shipping.countryCode)?.name}
+                    </p>
+                    <p className="text-sm text-sepia/70 mt-3">
+                      {options?.shippingLevels.find(l => l.id === shipping.shippingLevel)?.name} - {options?.shippingLevels.find(l => l.id === shipping.shippingLevel)?.days}
+                    </p>
+                  </div>
+
+                  {cost && (
+                    <div className="bg-gradient-to-br from-sepia/5 to-sepia/10 rounded-2xl p-6 border border-sepia/20">
+                      <h3 className="font-medium text-ink mb-4 text-lg">Order Total</h3>
+                      <dl className="space-y-2">
+                        <div className="flex justify-between text-sm"><dt className="text-sepia/70">Printing</dt><dd className="text-ink">${cost.breakdown.printing.toFixed(2)}</dd></div>
+                        <div className="flex justify-between text-sm"><dt className="text-sepia/70">Shipping</dt><dd className="text-ink">${cost.breakdown.shipping.toFixed(2)}</dd></div>
+                        <div className="flex justify-between text-sm"><dt className="text-sepia/70">Tax</dt><dd className="text-ink">${cost.breakdown.tax.toFixed(2)}</dd></div>
+                        <div className="flex justify-between pt-3 border-t border-sepia/20 text-xl font-medium">
+                          <dt className="text-ink">Total</dt>
+                          <dd className="text-ink">${cost.breakdown.total.toFixed(2)}</dd>
+                        </div>
+                      </dl>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 
           {/* Step 4: Complete */}
           {step === 4 && (
-            <div className="text-center py-8">
-              <div className="text-6xl mb-4">📚</div>
-              <h3 className="text-2xl font-medium text-ink mb-2">Order Preview Complete</h3>
-              <p className="text-sepia/70 mb-6">
-                Your book configuration has been saved. Full ordering will be available soon.
-              </p>
-              <button
-                onClick={onClose}
-                className="px-6 py-3 bg-ink text-white rounded-lg hover:bg-ink/90 transition"
-              >
-                Return to Export
-              </button>
+            <div className="flex-1 flex items-center justify-center p-6">
+              <div className="text-center max-w-md">
+                <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <svg className="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h3 className="text-3xl font-serif text-ink mb-4">Configuration Saved!</h3>
+                <p className="text-sepia/70 mb-8">
+                  Your book configuration has been saved. Full PDF generation and payment processing coming soon.
+                </p>
+                <button
+                  onClick={onClose}
+                  className="px-8 py-4 bg-ink text-white rounded-xl hover:bg-ink/90 transition text-lg font-medium"
+                >
+                  Return to Export
+                </button>
+              </div>
             </div>
           )}
         </div>
 
         {/* Footer */}
         {step < 4 && (
-          <div className="p-4 border-t border-sepia/20 flex justify-between items-center flex-shrink-0 bg-sepia/5">
+          <div className="px-6 py-4 border-t border-sepia/10 flex justify-between items-center bg-white/50">
             <div>
-              {calculating && <span className="text-sm text-sepia/60">Calculating...</span>}
-              {!calculating && cost && (
+              {calculating ? (
+                <span className="text-sm text-sepia/60 animate-pulse">Calculating price...</span>
+              ) : cost ? (
                 <div>
-                  <span className="text-lg font-medium text-ink">${cost.breakdown.total.toFixed(2)}</span>
-                  <span className="text-sm text-sepia/60 ml-2">estimated</span>
+                  <span className="text-2xl font-medium text-ink">${cost.breakdown.total.toFixed(2)}</span>
+                  <span className="text-sm text-sepia/60 ml-2">estimated total</span>
                 </div>
-              )}
+              ) : null}
             </div>
             <div className="flex gap-3">
               {step > 1 && (
                 <button
                   onClick={() => setStep(s => s - 1)}
-                  className="px-4 py-2 border border-sepia/30 text-sepia rounded-lg hover:bg-white/50"
+                  className="px-6 py-3 border border-sepia/30 text-sepia rounded-xl hover:bg-sepia/5 transition font-medium"
                 >
                   Back
                 </button>
               )}
-              {step < 3 && (
+              {step < 3 ? (
                 <button
                   onClick={() => setStep(s => s + 1)}
                   disabled={step === 2 && (!shipping.name || !shipping.email || !shipping.street1 || !shipping.city || !shipping.postcode)}
-                  className="px-6 py-2 bg-ink text-white rounded-lg hover:bg-ink/90 disabled:opacity-40"
+                  className="px-8 py-3 bg-sepia text-white rounded-xl hover:bg-sepia/90 disabled:opacity-40 transition font-medium"
                 >
                   Continue
                 </button>
-              )}
-              {step === 3 && (
+              ) : (
                 <button
                   onClick={handleOrder}
-                  className="px-6 py-2 bg-sepia text-white rounded-lg hover:bg-sepia/90"
+                  className="px-8 py-3 bg-ink text-white rounded-xl hover:bg-ink/90 transition font-medium"
                 >
-                  Place Order Preview
+                  Complete Order Preview
                 </button>
               )}
             </div>
