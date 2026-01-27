@@ -2,7 +2,7 @@ import { Router } from 'express'
 import multer from 'multer'
 import { fileURLToPath } from 'url'
 import { dirname, join, extname } from 'path'
-import { existsSync, unlinkSync, readFileSync } from 'fs'
+import { existsSync, unlinkSync } from 'fs'
 import crypto from 'crypto'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -33,7 +33,7 @@ const upload = multer({
 })
 
 // Upload a photo
-router.post('/', upload.single('photo'), (req, res) => {
+router.post('/', upload.single('photo'), async (req, res) => {
   const db = req.app.locals.db
   const { story_id, caption } = req.body
 
@@ -42,14 +42,15 @@ router.post('/', upload.single('photo'), (req, res) => {
   }
 
   try {
-    const result = db.prepare(`
+    const result = await db.query(`
       INSERT INTO photos (story_id, filename, original_name, caption)
-      VALUES (?, ?, ?, ?)
-    `).run(story_id, req.file.filename, req.file.originalname, caption || null)
+      VALUES ($1, $2, $3, $4)
+      RETURNING id
+    `, [story_id, req.file.filename, req.file.originalname, caption || null])
 
     res.json({
       success: true,
-      id: result.lastInsertRowid,
+      id: result.rows[0].id,
       filename: req.file.filename
     })
   } catch (err) {
@@ -73,19 +74,21 @@ router.get('/file/:filename', (req, res) => {
 })
 
 // Delete a photo
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   const db = req.app.locals.db
   const { id } = req.params
 
   try {
     // Get the photo info first
-    const photo = db.prepare('SELECT * FROM photos WHERE id = ?').get(id)
+    const result = await db.query('SELECT * FROM photos WHERE id = $1', [id])
+    const photo = result.rows[0]
+
     if (!photo) {
       return res.status(404).json({ error: 'Photo not found' })
     }
 
     // Delete from database
-    db.prepare('DELETE FROM photos WHERE id = ?').run(id)
+    await db.query('DELETE FROM photos WHERE id = $1', [id])
 
     // Delete file
     const filepath = join(__dirname, '..', '..', 'uploads', photo.filename)
@@ -101,16 +104,16 @@ router.delete('/:id', (req, res) => {
 })
 
 // Get all photos for a story
-router.get('/story/:storyId', (req, res) => {
+router.get('/story/:storyId', async (req, res) => {
   const db = req.app.locals.db
   const { storyId } = req.params
 
   try {
-    const photos = db.prepare(`
-      SELECT * FROM photos WHERE story_id = ? ORDER BY created_at
-    `).all(storyId)
+    const result = await db.query(`
+      SELECT * FROM photos WHERE story_id = $1 ORDER BY created_at
+    `, [storyId])
 
-    res.json(photos)
+    res.json(result.rows)
   } catch (err) {
     console.error('Error fetching photos:', err)
     res.status(500).json({ error: 'Failed to fetch photos' })

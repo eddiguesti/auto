@@ -2,10 +2,10 @@ import express from 'express'
 import cors from 'cors'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
-import Database from 'better-sqlite3'
-import { readFileSync } from 'fs'
+import { existsSync } from 'fs'
 import dotenv from 'dotenv'
 
+import pool, { initDatabase } from './db/index.js'
 import storiesRouter from './routes/stories.js'
 import photosRouter from './routes/photos.js'
 import aiRouter from './routes/ai.js'
@@ -18,16 +18,8 @@ const __dirname = dirname(__filename)
 const app = express()
 const PORT = process.env.PORT || 3001
 
-// Initialize database
-const dbPath = join(__dirname, 'db', 'life-story.db')
-const db = new Database(dbPath)
-
-// Run schema
-const schema = readFileSync(join(__dirname, 'db', 'schema.sql'), 'utf-8')
-db.exec(schema)
-
-// Make db available to routes
-app.locals.db = db
+// Make db pool available to routes
+app.locals.db = pool
 
 // Middleware
 app.use(cors())
@@ -47,7 +39,6 @@ app.get('/api/health', (req, res) => {
 })
 
 // Serve built frontend in production
-import { existsSync } from 'fs'
 const clientBuildPath = join(__dirname, '..', 'client', 'dist')
 
 if (existsSync(clientBuildPath)) {
@@ -61,6 +52,17 @@ if (existsSync(clientBuildPath)) {
   })
 }
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`)
-})
+// Initialize database and start server
+async function start() {
+  try {
+    await initDatabase()
+    app.listen(PORT, () => {
+      console.log(`Server running on http://localhost:${PORT}`)
+    })
+  } catch (err) {
+    console.error('Failed to start server:', err)
+    process.exit(1)
+  }
+}
+
+start()

@@ -88,34 +88,34 @@ export default function Chapter() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       {/* Header */}
-      <header className="mb-8">
-        <Link to="/" className="text-sepia hover:text-ink transition inline-flex items-center gap-1 mb-4">
+      <header className="mb-6 sm:mb-8">
+        <Link to="/" className="text-sepia hover:text-ink transition inline-flex items-center gap-1 mb-4 py-1">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
           Back to Chapters
         </Link>
-        <div className="flex items-center gap-4">
-          <span className="text-4xl">{chapter.icon}</span>
-          <div>
-            <h1 className="text-3xl font-bold text-ink">{chapter.title}</h1>
-            <p className="text-sepia">{chapter.subtitle}</p>
+        <div className="flex items-center gap-3 sm:gap-4">
+          <span className="text-3xl sm:text-4xl flex-shrink-0">{chapter.icon}</span>
+          <div className="min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-bold text-ink">{chapter.title}</h1>
+            <p className="text-sepia text-sm sm:text-base">{chapter.subtitle}</p>
           </div>
         </div>
       </header>
 
       {/* Progress Bar */}
-      <div className="bg-white rounded-lg p-4 shadow-sm mb-6">
-        <div className="flex justify-between text-sm text-sepia mb-2">
+      <div className="bg-white rounded-lg p-3 sm:p-4 shadow-sm mb-4 sm:mb-6">
+        <div className="flex justify-between text-xs sm:text-sm text-sepia mb-2">
           <span>Question {currentQuestion + 1} of {chapter.questions.length}</span>
           <span>{answeredCount} answered</span>
         </div>
-        <div className="flex gap-1">
+        <div className="flex gap-0.5 sm:gap-1">
           {chapter.questions.map((q, idx) => (
             <button
               key={q.id}
               onClick={() => setCurrentQuestion(idx)}
-              className={`flex-1 h-2 rounded-full transition ${
+              className={`flex-1 h-3 sm:h-2 rounded-full transition min-w-[8px] ${
                 idx === currentQuestion
                   ? 'bg-sepia'
                   : answers[q.id]?.answer?.trim()
@@ -141,21 +141,22 @@ export default function Chapter() {
       />
 
       {/* Navigation */}
-      <div className="flex justify-between mt-6">
+      <div className="flex justify-between mt-4 sm:mt-6 gap-4">
         <button
           onClick={() => setCurrentQuestion(prev => Math.max(0, prev - 1))}
           disabled={currentQuestion === 0}
-          className="px-4 py-2 text-sepia hover:text-ink disabled:opacity-30 disabled:cursor-not-allowed transition flex items-center gap-1"
+          className="flex-1 sm:flex-none px-4 py-3 sm:py-2 text-sepia hover:text-ink disabled:opacity-30 disabled:cursor-not-allowed transition flex items-center justify-center gap-1 rounded-lg hover:bg-sepia/5 active:bg-sepia/10"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-          Previous
+          <span className="hidden sm:inline">Previous</span>
+          <span className="sm:hidden">Prev</span>
         </button>
         <button
           onClick={() => setCurrentQuestion(prev => Math.min(chapter.questions.length - 1, prev + 1))}
           disabled={currentQuestion === chapter.questions.length - 1}
-          className="px-4 py-2 text-sepia hover:text-ink disabled:opacity-30 disabled:cursor-not-allowed transition flex items-center gap-1"
+          className="flex-1 sm:flex-none px-4 py-3 sm:py-2 text-sepia hover:text-ink disabled:opacity-30 disabled:cursor-not-allowed transition flex items-center justify-center gap-1 rounded-lg hover:bg-sepia/5 active:bg-sepia/10"
         >
           Next
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
