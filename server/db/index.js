@@ -8,10 +8,19 @@ const __dirname = dirname(__filename)
 
 const { Pool } = pg
 
+// Check for DATABASE_URL
+const databaseUrl = process.env.DATABASE_URL
+
+if (!databaseUrl && process.env.NODE_ENV === 'production') {
+  console.error('ERROR: DATABASE_URL environment variable is not set!')
+  console.error('Please add a PostgreSQL database to your Railway project and link it.')
+  process.exit(1)
+}
+
 // Use DATABASE_URL from Railway or fallback for local dev
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
+  connectionString: databaseUrl || 'postgresql://localhost:5432/lifestory',
+  ssl: databaseUrl ? { rejectUnauthorized: false } : false
 })
 
 // Initialize database schema
