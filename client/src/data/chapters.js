@@ -3,8 +3,8 @@ export const chapters = [
     id: 'earliest-memories',
     title: 'Earliest Memories',
     subtitle: 'Ages 0-5',
-    icon: '👶',
-    color: 'from-amber-100 to-amber-200',
+    icon: 'I',
+    color: 'from-amber-50 to-amber-100',
     questions: [
       {
         id: 'first-memory',
@@ -42,8 +42,8 @@ export const chapters = [
     id: 'childhood',
     title: 'Childhood',
     subtitle: 'Ages 6-12',
-    icon: '🧒',
-    color: 'from-green-100 to-green-200',
+    icon: 'II',
+    color: 'from-stone-50 to-stone-100',
     questions: [
       {
         id: 'childhood-games',
@@ -87,8 +87,8 @@ export const chapters = [
     id: 'school-days',
     title: 'School Days',
     subtitle: 'Education Years',
-    icon: '📚',
-    color: 'from-blue-100 to-blue-200',
+    icon: 'III',
+    color: 'from-amber-50 to-stone-100',
     questions: [
       {
         id: 'first-day-school',
@@ -132,8 +132,8 @@ export const chapters = [
     id: 'teenage-years',
     title: 'Teenage Years',
     subtitle: 'Coming of Age',
-    icon: '🎸',
-    color: 'from-purple-100 to-purple-200',
+    icon: 'IV',
+    color: 'from-stone-50 to-amber-50',
     questions: [
       {
         id: 'teen-music-culture',
@@ -177,8 +177,8 @@ export const chapters = [
     id: 'young-adulthood',
     title: 'Young Adulthood',
     subtitle: 'Starting Out',
-    icon: '🚀',
-    color: 'from-orange-100 to-orange-200',
+    icon: 'V',
+    color: 'from-amber-50 to-amber-100',
     questions: [
       {
         id: 'meeting-partner',
@@ -222,8 +222,8 @@ export const chapters = [
     id: 'family-career',
     title: 'Family & Career',
     subtitle: 'Building a Life',
-    icon: '🏡',
-    color: 'from-teal-100 to-teal-200',
+    icon: 'VI',
+    color: 'from-stone-50 to-stone-100',
     questions: [
       {
         id: 'becoming-parent',
@@ -267,8 +267,8 @@ export const chapters = [
     id: 'wisdom-reflections',
     title: 'Wisdom & Reflections',
     subtitle: 'Looking Back',
-    icon: '✨',
-    color: 'from-rose-100 to-rose-200',
+    icon: 'VII',
+    color: 'from-amber-50 to-stone-50',
     questions: [
       {
         id: 'wisdom-for-younger-self',

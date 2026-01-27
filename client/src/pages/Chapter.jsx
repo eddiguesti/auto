@@ -89,38 +89,39 @@ export default function Chapter() {
     <div className="max-w-4xl mx-auto px-4 py-8">
       {/* Header */}
       <header className="mb-6 sm:mb-8">
-        <Link to="/" className="text-sepia hover:text-ink transition inline-flex items-center gap-1 mb-4 py-1">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          Back to Chapters
+        <Link to="/" className="text-sepia/70 hover:text-sepia transition inline-flex items-center gap-2 mb-6 py-1 text-sm">
+          <span>←</span>
+          <span>Return to Contents</span>
         </Link>
-        <div className="flex items-center gap-3 sm:gap-4">
-          <span className="text-3xl sm:text-4xl flex-shrink-0">{chapter.icon}</span>
+        <div className="flex items-center gap-4 sm:gap-5">
+          {/* Chapter Number Circle */}
+          <div className="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center border-2 border-sepia/40 rounded-full flex-shrink-0">
+            <span className="text-sepia font-semibold">{chapter.icon}</span>
+          </div>
           <div className="min-w-0">
-            <h1 className="text-2xl sm:text-3xl font-bold text-ink">{chapter.title}</h1>
-            <p className="text-sepia text-sm sm:text-base">{chapter.subtitle}</p>
+            <h1 className="text-2xl sm:text-3xl text-ink font-medium">{chapter.title}</h1>
+            <p className="text-sepia/70 text-sm sm:text-base italic">{chapter.subtitle}</p>
           </div>
         </div>
       </header>
 
       {/* Progress Bar */}
-      <div className="bg-white rounded-lg p-3 sm:p-4 shadow-sm mb-4 sm:mb-6">
-        <div className="flex justify-between text-xs sm:text-sm text-sepia mb-2">
+      <div className="bg-white/50 backdrop-blur-sm rounded-lg p-3 sm:p-4 border border-sepia/10 mb-4 sm:mb-6">
+        <div className="flex justify-between text-xs sm:text-sm text-sepia/70 mb-2">
           <span>Question {currentQuestion + 1} of {chapter.questions.length}</span>
           <span>{answeredCount} answered</span>
         </div>
-        <div className="flex gap-0.5 sm:gap-1">
+        <div className="flex gap-1 sm:gap-1.5">
           {chapter.questions.map((q, idx) => (
             <button
               key={q.id}
               onClick={() => setCurrentQuestion(idx)}
-              className={`flex-1 h-3 sm:h-2 rounded-full transition min-w-[8px] ${
+              className={`flex-1 h-2 sm:h-1.5 rounded-full transition min-w-[8px] ${
                 idx === currentQuestion
                   ? 'bg-sepia'
                   : answers[q.id]?.answer?.trim()
-                    ? 'bg-green-400'
-                    : 'bg-gray-200 hover:bg-gray-300'
+                    ? 'bg-sepia/40'
+                    : 'bg-sepia/15 hover:bg-sepia/25'
               }`}
               title={q.question}
             />
@@ -145,23 +146,18 @@ export default function Chapter() {
         <button
           onClick={() => setCurrentQuestion(prev => Math.max(0, prev - 1))}
           disabled={currentQuestion === 0}
-          className="flex-1 sm:flex-none px-4 py-3 sm:py-2 text-sepia hover:text-ink disabled:opacity-30 disabled:cursor-not-allowed transition flex items-center justify-center gap-1 rounded-lg hover:bg-sepia/5 active:bg-sepia/10"
+          className="flex-1 sm:flex-none px-5 py-3 sm:py-2 text-sepia/70 hover:text-sepia disabled:opacity-30 disabled:cursor-not-allowed transition flex items-center justify-center gap-2 rounded border border-sepia/20 hover:border-sepia/40 hover:bg-white/50"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          <span className="hidden sm:inline">Previous</span>
-          <span className="sm:hidden">Prev</span>
+          <span>←</span>
+          <span>Previous</span>
         </button>
         <button
           onClick={() => setCurrentQuestion(prev => Math.min(chapter.questions.length - 1, prev + 1))}
           disabled={currentQuestion === chapter.questions.length - 1}
-          className="flex-1 sm:flex-none px-4 py-3 sm:py-2 text-sepia hover:text-ink disabled:opacity-30 disabled:cursor-not-allowed transition flex items-center justify-center gap-1 rounded-lg hover:bg-sepia/5 active:bg-sepia/10"
+          className="flex-1 sm:flex-none px-5 py-3 sm:py-2 text-sepia/70 hover:text-sepia disabled:opacity-30 disabled:cursor-not-allowed transition flex items-center justify-center gap-2 rounded border border-sepia/20 hover:border-sepia/40 hover:bg-white/50"
         >
-          Next
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
+          <span>Next</span>
+          <span>→</span>
         </button>
       </div>
 
