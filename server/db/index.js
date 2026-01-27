@@ -17,15 +17,40 @@ if (!databaseUrl && process.env.NODE_ENV === 'production') {
   process.exit(1)
 }
 
-// Use DATABASE_URL from Railway or fallback for local dev
-const pool = new Pool({
-  connectionString: databaseUrl || 'postgresql://localhost:5432/lifestory',
-  ssl: databaseUrl ? { rejectUnauthorized: false } : false
-})
+// Create pool only if we have a database URL or local postgres
+let pool = null
+if (databaseUrl) {
+  pool = new Pool({
+    connectionString: databaseUrl,
+    ssl: { rejectUnauthorized: false }
+  })
+} else {
+  // Try local connection, but don't fail if not available
+  try {
+    pool = new Pool({
+      connectionString: 'postgresql://localhost:5432/lifestory',
+      ssl: false
+    })
+  } catch (err) {
+    console.warn('No local database available - some features will be limited')
+  }
+}
 
 // Initialize database schema
 export async function initDatabase() {
-  const client = await pool.connect()
+  if (!pool) {
+    console.warn('Database not available - running in limited mode')
+    return
+  }
+
+  let client
+  try {
+    client = await pool.connect()
+  } catch (err) {
+    console.warn('Could not connect to database - running in limited mode')
+    pool = null
+    return
+  }
   try {
     // Create tables
     await client.query(`
@@ -70,6 +95,45 @@ export async function initDatabase() {
       )
     `)
 
+    // Memory Graph tables for tracking people, places, events, etc.
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS memory_entities (
+        id SERIAL PRIMARY KEY,
+        entity_type TEXT NOT NULL, -- 'person', 'place', 'event', 'time_period', 'emotion'
+        name TEXT NOT NULL,
+        description TEXT,
+        first_mentioned_chapter TEXT,
+        first_mentioned_question TEXT,
+        mention_count INTEGER DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(entity_type, name)
+      )
+    `)
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS memory_mentions (
+        id SERIAL PRIMARY KEY,
+        entity_id INTEGER REFERENCES memory_entities(id) ON DELETE CASCADE,
+        story_id INTEGER REFERENCES stories(id) ON DELETE CASCADE,
+        context TEXT, -- The sentence/paragraph where mentioned
+        sentiment TEXT, -- 'positive', 'negative', 'neutral', 'mixed'
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `)
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS memory_relationships (
+        id SERIAL PRIMARY KEY,
+        entity1_id INTEGER REFERENCES memory_entities(id) ON DELETE CASCADE,
+        entity2_id INTEGER REFERENCES memory_entities(id) ON DELETE CASCADE,
+        relationship_type TEXT, -- 'family', 'friend', 'colleague', 'located_at', 'occurred_at', etc.
+        description TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(entity1_id, entity2_id, relationship_type)
+      )
+    `)
+
     // Create indexes
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_stories_chapter ON stories(chapter_id)
@@ -77,13 +141,20 @@ export async function initDatabase() {
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_photos_story ON photos(story_id)
     `)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_memory_entities_type ON memory_entities(entity_type)
+    `)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_memory_mentions_entity ON memory_mentions(entity_id)
+    `)
 
     console.log('Database initialized successfully')
   } catch (err) {
     console.error('Database initialization error:', err)
-    throw err
+    pool = null
+    console.warn('Running in limited mode without database')
   } finally {
-    client.release()
+    if (client) client.release()
   }
 }
 

@@ -9,6 +9,9 @@ import pool, { initDatabase } from './db/index.js'
 import storiesRouter from './routes/stories.js'
 import photosRouter from './routes/photos.js'
 import aiRouter from './routes/ai.js'
+import voiceRouter from './routes/voice.js'
+import luluRouter from './routes/lulu.js'
+import memoryRouter from './routes/memory.js'
 
 dotenv.config()
 
@@ -32,6 +35,9 @@ app.use('/uploads', express.static(join(__dirname, '..', 'uploads')))
 app.use('/api/stories', storiesRouter)
 app.use('/api/photos', photosRouter)
 app.use('/api/ai', aiRouter)
+app.use('/api/voice', voiceRouter)
+app.use('/api/lulu', luluRouter)
+app.use('/api/memory', memoryRouter)
 
 // Health check
 app.get('/api/health', (req, res) => {

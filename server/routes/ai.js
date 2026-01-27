@@ -3,6 +3,58 @@ import OpenAI from 'openai'
 
 const router = Router()
 
+// Fetch memory context for AI prompts
+async function getMemoryContext(db) {
+  if (!db) return ''
+
+  try {
+    // Get top mentioned people
+    const people = await db.query(`
+      SELECT name, mention_count FROM memory_entities
+      WHERE entity_type = 'person'
+      ORDER BY mention_count DESC LIMIT 8
+    `)
+
+    // Get top mentioned places
+    const places = await db.query(`
+      SELECT name FROM memory_entities
+      WHERE entity_type = 'place'
+      ORDER BY mention_count DESC LIMIT 8
+    `)
+
+    // Get key relationships
+    const relationships = await db.query(`
+      SELECT e1.name as person1, e2.name as person2, r.relationship_type
+      FROM memory_relationships r
+      JOIN memory_entities e1 ON r.entity1_id = e1.id
+      JOIN memory_entities e2 ON r.entity2_id = e2.id
+      WHERE e1.entity_type = 'person' OR e2.entity_type = 'person'
+      LIMIT 10
+    `)
+
+    let context = ''
+
+    if (people.rows.length > 0) {
+      context += `\nPeople in their story: ${people.rows.map(p => p.name).join(', ')}`
+    }
+
+    if (places.rows.length > 0) {
+      context += `\nPlaces mentioned: ${places.rows.map(p => p.name).join(', ')}`
+    }
+
+    if (relationships.rows.length > 0) {
+      context += `\nRelationships: ${relationships.rows.map(r =>
+        `${r.person1} - ${r.relationship_type} - ${r.person2}`
+      ).join('; ')}`
+    }
+
+    return context
+  } catch (err) {
+    console.error('Error fetching memory context:', err.message)
+    return ''
+  }
+}
+
 // Initialize Grok client (OpenAI-compatible)
 const getClient = () => {
   const apiKey = process.env.GROK_API_KEY
@@ -18,9 +70,11 @@ const getClient = () => {
 // Interview endpoint - asks follow-up questions to gather content
 router.post('/interview', async (req, res) => {
   const { question, prompt, existingAnswer, gatheredContent = [], lastResponse, history = [], action } = req.body
+  const db = req.app.locals.db
 
   try {
     const client = getClient()
+    const memoryContext = await getMemoryContext(db)
 
     // Count how much content we have
     const totalContent = gatheredContent.map(g => g.content).join(' ')
@@ -37,6 +91,7 @@ router.post('/interview', async (req, res) => {
 
 The question they're answering: "${question}"
 Context: ${prompt}
+${memoryContext ? `\nWhat you know about their story so far:${memoryContext}` : ''}
 
 ${existingAnswer ? `They wrote: "${existingAnswer.substring(0, 500)}"
 
@@ -58,6 +113,7 @@ IMPORTANT TONE RULES:
 
 Question they're answering: "${question}"
 Context: ${prompt}
+${memoryContext ? `\nWhat you know about their story so far:${memoryContext}` : ''}
 
 ${existingAnswer ? `Their original notes: "${existingAnswer.substring(0, 300)}..."` : ''}
 
@@ -86,16 +142,27 @@ TONE RULES:
       { role: 'system', content: systemPrompt }
     ]
 
-    // Add conversation history
+    // Add conversation history (filter out any empty content)
     if (history.length > 0) {
       history.forEach(h => {
-        messages.push({ role: h.role, content: h.content })
+        if (h.content && h.content.trim()) {
+          messages.push({ role: h.role, content: h.content })
+        }
       })
     }
 
-    // For continue action, the user's response is already in history, just need AI to respond
+    // Always need a user message at the end for the API
     if (action === 'start') {
       messages.push({ role: 'user', content: 'Please start the interview.' })
+    } else if (lastResponse && lastResponse.trim()) {
+      // For continue action, add the user's latest response if not already in history
+      const lastMsg = messages[messages.length - 1]
+      if (!lastMsg || lastMsg.role !== 'user') {
+        messages.push({ role: 'user', content: lastResponse })
+      }
+    } else {
+      // Fallback - ensure we have a user message
+      messages.push({ role: 'user', content: 'Please continue.' })
     }
 
     const completion = await client.chat.completions.create({
@@ -120,9 +187,11 @@ TONE RULES:
 // Write the polished story from gathered content
 router.post('/write-story', async (req, res) => {
   const { question, prompt, existingAnswer, gatheredContent = [], conversationHistory = [] } = req.body
+  const db = req.app.locals.db
 
   try {
     const client = getClient()
+    const memoryContext = await getMemoryContext(db)
 
     // Compile all the raw material
     const rawMaterial = []
@@ -169,6 +238,7 @@ WHAT NOT TO DO:
 
 The autobiography question was: "${question}"
 Context: ${prompt}
+${memoryContext ? `\nKnown people/places in their story:${memoryContext}` : ''}
 
 THEIR ORIGINAL WRITING (study their style carefully):
 ${rawMaterial.join('\n\n')}

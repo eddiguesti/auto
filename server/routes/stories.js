@@ -1,6 +1,84 @@
 import { Router } from 'express'
+import OpenAI from 'openai'
 
 const router = Router()
+
+// Extract entities asynchronously after saving
+async function extractEntitiesAsync(db, text, chapterId, questionId, storyId) {
+  if (!text || text.length < 20) return // Skip very short answers
+
+  try {
+    const apiKey = process.env.GROK_API_KEY
+    if (!apiKey) return
+
+    const client = new OpenAI({ apiKey, baseURL: 'https://api.x.ai/v1' })
+
+    const completion = await client.chat.completions.create({
+      model: 'grok-3-mini-beta',
+      messages: [
+        {
+          role: 'system',
+          content: `Extract entities from autobiography text. Return JSON only:
+{
+  "people": [{"name": "...", "context": "...", "sentiment": "positive/negative/neutral"}],
+  "places": [{"name": "...", "context": "...", "sentiment": "..."}],
+  "events": [{"name": "...", "context": "...", "sentiment": "..."}],
+  "time_periods": [{"name": "...", "context": "...", "sentiment": "..."}],
+  "emotions": [{"name": "...", "context": "...", "sentiment": "..."}],
+  "relationships": [{"entity1": "...", "entity2": "...", "type": "...", "description": "..."}]
+}
+Normalize names (Dad/Father -> Father). Be concise.`
+        },
+        { role: 'user', content: `Extract from: "${text}"` }
+      ],
+      max_tokens: 800,
+      temperature: 0.3
+    })
+
+    const responseText = completion.choices[0]?.message?.content || '{}'
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/)
+    const entities = jsonMatch ? JSON.parse(jsonMatch[0]) : {}
+
+    // Store entities
+    for (const type of ['people', 'places', 'events', 'time_periods', 'emotions']) {
+      for (const item of (entities[type] || [])) {
+        if (!item.name) continue
+        const dbType = type.replace('_', ' ').replace(/s$/, '')
+
+        const entityResult = await db.query(`
+          INSERT INTO memory_entities (entity_type, name, description, first_mentioned_chapter, first_mentioned_question)
+          VALUES ($1, $2, $3, $4, $5)
+          ON CONFLICT (entity_type, name)
+          DO UPDATE SET mention_count = memory_entities.mention_count + 1, updated_at = CURRENT_TIMESTAMP
+          RETURNING id
+        `, [dbType, item.name, item.context, chapterId, questionId])
+
+        await db.query(`
+          INSERT INTO memory_mentions (entity_id, story_id, context, sentiment)
+          VALUES ($1, $2, $3, $4)
+        `, [entityResult.rows[0].id, storyId, item.context, item.sentiment || 'neutral'])
+      }
+    }
+
+    // Store relationships
+    for (const rel of (entities.relationships || [])) {
+      if (!rel.entity1 || !rel.entity2) continue
+      const e1 = await db.query('SELECT id FROM memory_entities WHERE name = $1', [rel.entity1])
+      const e2 = await db.query('SELECT id FROM memory_entities WHERE name = $1', [rel.entity2])
+      if (e1.rows[0] && e2.rows[0]) {
+        await db.query(`
+          INSERT INTO memory_relationships (entity1_id, entity2_id, relationship_type, description)
+          VALUES ($1, $2, $3, $4)
+          ON CONFLICT (entity1_id, entity2_id, relationship_type) DO NOTHING
+        `, [e1.rows[0].id, e2.rows[0].id, rel.type, rel.description])
+      }
+    }
+
+    console.log('Extracted entities for story', storyId)
+  } catch (err) {
+    console.error('Entity extraction error:', err.message)
+  }
+}
 
 // Get all stories (must be before /:chapterId to avoid conflicts)
 router.get('/all', async (req, res) => {
@@ -128,7 +206,12 @@ router.post('/', async (req, res) => {
       SELECT id FROM stories WHERE chapter_id = $1 AND question_id = $2
     `, [chapter_id, question_id])
 
-    res.json({ success: true, id: result.rows[0].id })
+    const storyId = result.rows[0].id
+
+    // Extract entities asynchronously (don't wait for it)
+    extractEntitiesAsync(db, answer, chapter_id, question_id, storyId)
+
+    res.json({ success: true, id: storyId })
   } catch (err) {
     console.error('Error saving story:', err)
     res.status(500).json({ error: 'Failed to save story' })
