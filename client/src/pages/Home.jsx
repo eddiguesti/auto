@@ -64,11 +64,11 @@ export default function Home() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12">
+    <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12 page-enter">
       {/* Header */}
       <header className="text-center mb-12 sm:mb-16">
         {/* Decorative flourish */}
-        <div className="text-sepia/40 text-2xl mb-4 tracking-[0.5em]">❧</div>
+        <div className="text-sepia/40 text-2xl mb-4 tracking-[0.5em] float">❧</div>
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-light text-ink mb-3 tracking-wide">
           Steven's Life
         </h1>
@@ -87,7 +87,7 @@ export default function Home() {
               />
               <button
                 onClick={saveName}
-                className="px-8 py-3 bg-sepia text-white rounded hover:bg-sepia/90 transition font-medium tracking-wide"
+                className="px-8 py-3 bg-sepia text-white rounded hover:bg-sepia/90 transition font-medium tracking-wide tap-bounce"
               >
                 Begin
               </button>
@@ -131,7 +131,7 @@ export default function Home() {
                   <Link
                     key={chapter.id}
                     to={`/chapter/${chapter.id}`}
-                    className="block bg-white/50 backdrop-blur-sm rounded-lg p-4 sm:p-5 border border-sepia/10 hover:border-sepia/30 hover:bg-white/70 transition group"
+                    className="block bg-white/50 backdrop-blur-sm rounded-lg p-4 sm:p-5 border border-sepia/10 hover:border-sepia/30 hover:bg-white/70 transition group stagger-item card-hover"
                   >
                     <div className="flex items-center gap-4 sm:gap-6">
                       {/* Chapter Number */}
@@ -168,10 +168,10 @@ export default function Home() {
           {/* Export Button */}
           <div className="text-center">
             <div className="inline-block">
-              <div className="text-sepia/30 text-lg mb-3">✦</div>
+              <div className="text-sepia/30 text-lg mb-3 float">✦</div>
               <Link
                 to="/export"
-                className="inline-flex items-center justify-center gap-3 px-8 py-4 bg-ink text-white/90 rounded hover:bg-ink/90 transition group"
+                className="inline-flex items-center justify-center gap-3 px-8 py-4 bg-ink text-white/90 rounded hover:bg-ink/90 transition group pulse-gentle tap-bounce"
               >
                 <span className="text-xl">📖</span>
                 <span className="tracking-wide">Preview Your Story</span>

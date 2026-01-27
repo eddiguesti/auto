@@ -64,7 +64,7 @@ export default function QuestionCard({
   }
 
   return (
-    <div className="bg-white/60 backdrop-blur-sm rounded-lg border border-sepia/10 overflow-hidden">
+    <div className="bg-white/60 backdrop-blur-sm rounded-lg border border-sepia/10 overflow-hidden page-enter">
       {/* Question Header */}
       <div className="p-4 sm:p-6 border-b border-sepia/10">
         <h2 className="text-lg sm:text-xl text-ink mb-2 font-medium leading-relaxed">
@@ -144,7 +144,7 @@ export default function QuestionCard({
           {/* AI Assistant */}
           <button
             onClick={onAskAI}
-            className="inline-flex items-center justify-center gap-2 px-5 py-3 sm:py-2.5 bg-ink text-white/90 rounded hover:bg-ink/90 transition"
+            className="inline-flex items-center justify-center gap-2 px-5 py-3 sm:py-2.5 bg-ink text-white/90 rounded hover:bg-ink/90 transition tap-bounce pulse-gentle"
           >
             <span className="text-base">✒️</span>
             <span className="text-sm">Writing Assistant</span>

@@ -86,7 +86,7 @@ export default function Chapter() {
   const answeredCount = Object.values(answers).filter(a => a?.answer?.trim()).length
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="max-w-4xl mx-auto px-4 py-8 page-enter">
       {/* Header */}
       <header className="mb-6 sm:mb-8">
         <Link to="/" className="text-sepia/70 hover:text-sepia transition inline-flex items-center gap-2 mb-6 py-1 text-sm">
@@ -146,7 +146,7 @@ export default function Chapter() {
         <button
           onClick={() => setCurrentQuestion(prev => Math.max(0, prev - 1))}
           disabled={currentQuestion === 0}
-          className="flex-1 sm:flex-none px-5 py-3 sm:py-2 text-sepia/70 hover:text-sepia disabled:opacity-30 disabled:cursor-not-allowed transition flex items-center justify-center gap-2 rounded border border-sepia/20 hover:border-sepia/40 hover:bg-white/50"
+          className="flex-1 sm:flex-none px-5 py-3 sm:py-2 text-sepia/70 hover:text-sepia disabled:opacity-30 disabled:cursor-not-allowed transition flex items-center justify-center gap-2 rounded border border-sepia/20 hover:border-sepia/40 hover:bg-white/50 tap-bounce"
         >
           <span>←</span>
           <span>Previous</span>
@@ -154,7 +154,7 @@ export default function Chapter() {
         <button
           onClick={() => setCurrentQuestion(prev => Math.min(chapter.questions.length - 1, prev + 1))}
           disabled={currentQuestion === chapter.questions.length - 1}
-          className="flex-1 sm:flex-none px-5 py-3 sm:py-2 text-sepia/70 hover:text-sepia disabled:opacity-30 disabled:cursor-not-allowed transition flex items-center justify-center gap-2 rounded border border-sepia/20 hover:border-sepia/40 hover:bg-white/50"
+          className="flex-1 sm:flex-none px-5 py-3 sm:py-2 text-sepia/70 hover:text-sepia disabled:opacity-30 disabled:cursor-not-allowed transition flex items-center justify-center gap-2 rounded border border-sepia/20 hover:border-sepia/40 hover:bg-white/50 tap-bounce"
         >
           <span>Next</span>
           <span>→</span>

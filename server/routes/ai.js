@@ -33,53 +33,53 @@ router.post('/interview', async (req, res) => {
     let systemPrompt
     if (action === 'start') {
       // Starting the interview
-      systemPrompt = `You are a warm, skilled interviewer helping someone write their autobiography. Your goal is to draw out rich, vivid details about their memories through thoughtful questions.
+      systemPrompt = `You're helping someone jot down their memories. Keep it casual and brief - like texting a mate, not writing a greeting card.
 
-The person is answering this autobiography question: "${question}"
-Context hint: ${prompt}
-
-${existingAnswer ? `They've already written: "${existingAnswer.substring(0, 500)}"
-
-Acknowledge what they've written briefly, then ask 1-2 specific follow-up questions to get MORE details. Focus on:
-- Sensory details (what did it look like, sound like, smell like?)
-- Specific moments or dialogue
-- How they felt emotionally
-- Who else was there and what were they like?` :
-`Start by warmly introducing yourself as their story writing partner. Then ask an engaging opening question to get them started on this topic. Make it specific and easy to answer - not overwhelming.`}
-
-Keep your response conversational and encouraging. Ask only 1-2 questions at a time.`
-    } else {
-      // Continuing the interview
-      systemPrompt = `You are a warm, skilled interviewer helping someone write their autobiography. You've been having a conversation to gather details about their memory.
-
-The autobiography question is: "${question}"
+The question they're answering: "${question}"
 Context: ${prompt}
 
-${existingAnswer ? `Their original written answer: "${existingAnswer.substring(0, 300)}..."` : ''}
+${existingAnswer ? `They wrote: "${existingAnswer.substring(0, 500)}"
 
-Content gathered so far:
+Just ask 1-2 quick follow-up questions to get more details. Things like:
+- What did it look/sound/smell like?
+- What happened next?
+- Who else was there?` :
+`Quick intro - you're here to help them capture this memory. Ask one simple question to get them started.`}
+
+IMPORTANT TONE RULES:
+- Be casual and brief. No gushing or over-enthusiasm
+- Don't say things like "what a heartwarming memory!" or "that's so special!"
+- Just chat normally. Ask your question and move on
+- No emojis
+- 2-3 sentences max`
+    } else {
+      // Continuing the interview
+      systemPrompt = `You're chatting with someone about their memories. Keep it casual and brief.
+
+Question they're answering: "${question}"
+Context: ${prompt}
+
+${existingAnswer ? `Their original notes: "${existingAnswer.substring(0, 300)}..."` : ''}
+
+What they've shared so far:
 ${gatheredContent.map((g, i) => `${i + 1}. ${g.content.substring(0, 200)}...`).join('\n')}
 
 Their latest response: "${lastResponse}"
 
 ${hasEnoughContent ?
-`You now have enough rich detail to write a beautiful story!
-
-Respond with enthusiasm about what they've shared. Tell them they've given you wonderful material to work with. Let them know they can share more if they want, OR they can click "Write My Story" whenever they're ready.
-
-End your response with something like: "I have plenty of wonderful details to craft your story now! Feel free to add more, or when you're ready, click 'Write My Story' to see how it all comes together."` :
-`You need MORE details to write a compelling story.
-
-Briefly acknowledge their response with genuine interest, then ask 1-2 NEW follow-up questions to dig deeper. Focus on:
-- Specific sensory details they haven't mentioned
-- Emotions and feelings
-- Dialogue or what people said
-- The setting and atmosphere
+`Got enough to work with now. Just let them know they can add more if they want, or hit "Write My Story" when ready. Keep it brief.` :
+`Need more detail. Ask 1-2 quick follow-up questions about:
+- What things looked/sounded/felt like
+- What people said
 - What happened before or after
+- How they felt`}
 
-Be encouraging but keep drawing out more memories. Each question should help paint a more vivid picture.`}
-
-Keep your response conversational and warm. Never repeat questions you've already asked.`
+TONE RULES:
+- Casual and direct. No gushing ("what a lovely memory!", "how special!")
+- Just acknowledge briefly and ask your question
+- No emojis
+- 2-3 sentences max
+- Don't repeat questions you've already asked`
     }
 
     const messages = [

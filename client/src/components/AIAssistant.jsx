@@ -6,7 +6,35 @@ export default function AIAssistant({ context, onClose, onInsertText }) {
   const [loading, setLoading] = useState(false)
   const [phase, setPhase] = useState('start') // 'start', 'interview', 'ready', 'writing'
   const [gatheredContent, setGatheredContent] = useState([])
+  const [closing, setClosing] = useState(false)
   const messagesEndRef = useRef(null)
+
+  // Storage key for this specific question
+  const storageKey = `ai-chat-${context.chapterId}-${context.question.id}`
+
+  // Load saved chat state on mount
+  useEffect(() => {
+    const saved = localStorage.getItem(storageKey)
+    if (saved) {
+      try {
+        const { messages: savedMessages, phase: savedPhase, gatheredContent: savedContent } = JSON.parse(saved)
+        if (savedMessages?.length > 0) {
+          setMessages(savedMessages)
+          setPhase(savedPhase || 'interview')
+          setGatheredContent(savedContent || [])
+        }
+      } catch (e) {
+        console.error('Failed to load saved chat:', e)
+      }
+    }
+  }, [storageKey])
+
+  // Save chat state whenever it changes
+  useEffect(() => {
+    if (messages.length > 0) {
+      localStorage.setItem(storageKey, JSON.stringify({ messages, phase, gatheredContent }))
+    }
+  }, [messages, phase, gatheredContent, storageKey])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -118,13 +146,43 @@ export default function AIAssistant({ context, onClose, onInsertText }) {
     if (lastAssistant) {
       // Replace the existing answer with the polished story
       onInsertText(lastAssistant.content, true) // true = replace instead of append
+      // Clear saved chat since they used the story
+      localStorage.removeItem(storageKey)
     }
   }
 
   // Signal we have enough content
   const markReady = () => {
     setPhase('ready')
-    addMessage('assistant', "Great! You've shared some wonderful details. When you're ready, click 'Write My Story' and I'll turn all of this into a beautifully written section of your autobiography.")
+    addMessage('assistant', "Got enough to work with. Click 'Compose My Story' when ready, or keep adding more.")
+  }
+
+  // Handle closing - auto-generate draft if there's content
+  const handleClose = async () => {
+    // If we have gathered content but haven't written a story yet, generate a draft
+    const userResponses = gatheredContent.filter(g => g.type === 'response')
+    if (userResponses.length > 0 && phase !== 'writing') {
+      setClosing(true)
+      try {
+        const data = await callAI('write-story', {
+          question: context.question.question,
+          prompt: context.question.prompt,
+          existingAnswer: context.answer || '',
+          gatheredContent,
+          conversationHistory: messages
+        })
+        // Insert draft and close
+        if (data.story) {
+          onInsertText(data.story, true)
+          localStorage.removeItem(storageKey)
+          return
+        }
+      } catch (err) {
+        console.error('Failed to generate draft:', err)
+      }
+      setClosing(false)
+    }
+    onClose()
   }
 
   return (
@@ -135,17 +193,23 @@ export default function AIAssistant({ context, onClose, onInsertText }) {
           <div className="min-w-0 flex-1 mr-2">
             <h3 className="font-medium text-base sm:text-lg text-ink">✒️ Writing Assistant</h3>
             <p className="text-sm text-sepia/70 truncate italic">
-              {phase === 'start' && 'Ready to help craft your story'}
-              {phase === 'interview' && 'Gathering your memories...'}
-              {phase === 'ready' && 'Ready to compose your narrative'}
-              {phase === 'writing' && 'Crafting your story...'}
+              {closing && 'Saving your draft...'}
+              {!closing && phase === 'start' && 'Ready to help craft your story'}
+              {!closing && phase === 'interview' && 'Gathering your memories...'}
+              {!closing && phase === 'ready' && 'Ready to compose your narrative'}
+              {!closing && phase === 'writing' && 'Crafting your story...'}
             </p>
           </div>
           <button
-            onClick={onClose}
-            className="w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center rounded-full hover:bg-sepia/10 active:bg-sepia/20 transition flex-shrink-0 text-sepia/60 hover:text-sepia"
+            onClick={handleClose}
+            disabled={closing}
+            className="w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center rounded-full hover:bg-sepia/10 active:bg-sepia/20 transition flex-shrink-0 text-sepia/60 hover:text-sepia disabled:opacity-50"
           >
-            <span className="text-xl">×</span>
+            {closing ? (
+              <span className="text-xs">...</span>
+            ) : (
+              <span className="text-xl">×</span>
+            )}
           </button>
         </div>
 
@@ -239,34 +303,62 @@ export default function AIAssistant({ context, onClose, onInsertText }) {
             )}
 
             {phase === 'writing' && messages.length > 0 && !loading && (
-              <button
-                onClick={insertStory}
-                className="w-full py-4 sm:py-3 bg-sepia text-white rounded hover:bg-sepia/90 transition flex items-center justify-center gap-2"
-              >
-                <span>✓</span>
-                <span>Use This Passage</span>
-              </button>
+              <div className="space-y-2">
+                <button
+                  onClick={insertStory}
+                  className="w-full py-4 sm:py-3 bg-sepia text-white rounded hover:bg-sepia/90 transition flex items-center justify-center gap-2"
+                >
+                  <span>✓</span>
+                  <span>Use This Passage</span>
+                </button>
+                <button
+                  onClick={() => {
+                    localStorage.removeItem(storageKey)
+                    setMessages([])
+                    setGatheredContent([])
+                    setPhase('start')
+                  }}
+                  className="w-full py-2 text-sm text-sepia/60 hover:text-sepia transition"
+                >
+                  Start over
+                </button>
+              </div>
             )}
 
             {/* Text Input */}
             {(phase === 'interview' || phase === 'ready') && (
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleUserResponse()}
-                  placeholder="Share more details..."
-                  className="flex-1 px-4 py-3 sm:py-2.5 border border-sepia/20 rounded bg-white/70 focus:outline-none focus:ring-1 focus:ring-sepia/30 focus:border-sepia/40 text-base"
-                  disabled={loading}
-                />
-                <button
-                  onClick={handleUserResponse}
-                  disabled={loading || !input.trim()}
-                  className="px-5 sm:px-4 py-3 sm:py-2.5 bg-ink text-white/90 rounded hover:bg-ink/90 transition disabled:opacity-40"
-                >
-                  Send
-                </button>
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleUserResponse()}
+                    placeholder="Share more details..."
+                    className="flex-1 px-4 py-3 sm:py-2.5 border border-sepia/20 rounded bg-white/70 focus:outline-none focus:ring-1 focus:ring-sepia/30 focus:border-sepia/40 text-base"
+                    disabled={loading || closing}
+                  />
+                  <button
+                    onClick={handleUserResponse}
+                    disabled={loading || closing || !input.trim()}
+                    className="px-5 sm:px-4 py-3 sm:py-2.5 bg-ink text-white/90 rounded hover:bg-ink/90 transition disabled:opacity-40"
+                  >
+                    Send
+                  </button>
+                </div>
+                {messages.length > 2 && (
+                  <button
+                    onClick={() => {
+                      localStorage.removeItem(storageKey)
+                      setMessages([])
+                      setGatheredContent([])
+                      setPhase('start')
+                    }}
+                    className="text-xs text-sepia/40 hover:text-sepia/60 transition"
+                  >
+                    Start over
+                  </button>
+                )}
               </div>
             )}
           </div>
