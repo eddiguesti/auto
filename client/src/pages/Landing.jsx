@@ -5,250 +5,444 @@ export default function Landing() {
   const { user } = useAuth()
   const navigate = useNavigate()
 
-  const handleTryIt = () => {
-    if (user) {
-      navigate('/voice')
-    } else {
-      navigate('/register')
-    }
+  const handleGetStarted = () => {
+    navigate(user ? '/voice' : '/register')
   }
 
   const handleModeSelect = (mode) => {
     if (user) {
-      if (mode === 'voice') {
-        navigate('/voice')
-      } else {
-        navigate('/home')
-      }
+      navigate(mode === 'voice' ? '/voice' : '/home')
     } else {
       navigate('/register')
     }
   }
 
   return (
-    <div className="min-h-screen page-enter">
+    <div className="min-h-screen bg-cream">
+      {/* Navigation */}
+      <nav className="fixed top-0 w-full bg-cream/80 backdrop-blur-md z-50 border-b border-sepia/10">
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="font-display text-2xl text-ink tracking-wide">
+            Easy<span className="text-sepia">Memoir</span>
+          </div>
+          <div className="flex items-center gap-6">
+            {user ? (
+              <>
+                <span className="text-warmgray text-sm font-sans">Welcome, {user.name}</span>
+                <button
+                  onClick={() => navigate('/home')}
+                  className="font-sans text-sm text-sepia hover:text-ink transition"
+                >
+                  My Stories
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => navigate('/login')}
+                  className="font-sans text-sm text-warmgray hover:text-ink transition"
+                >
+                  Sign In
+                </button>
+                <button
+                  onClick={() => navigate('/register')}
+                  className="font-sans text-sm bg-ink text-white px-5 py-2 rounded-full hover:bg-sepia transition"
+                >
+                  Get Started
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </nav>
+
       {/* Hero Section */}
-      <section className="min-h-[90vh] flex flex-col items-center justify-center px-4 py-16">
-        <div className="text-sepia/30 text-3xl mb-8 tracking-[0.5em] float">❧</div>
+      <section className="min-h-screen flex items-center pt-20">
+        <div className="max-w-6xl mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
+          <div className="page-enter">
+            <p className="font-sans text-sepia uppercase tracking-[0.3em] text-xs mb-6">
+              Preserve Your Legacy
+            </p>
+            <h1 className="font-display text-5xl sm:text-6xl lg:text-7xl text-ink leading-[1.1] mb-8">
+              Your life story,
+              <br />
+              <span className="italic text-sepia">beautifully told</span>
+            </h1>
+            <p className="font-serif text-xl text-warmgray leading-relaxed mb-10 max-w-lg">
+              Just talk about your memories. Our AI listens, asks thoughtful questions,
+              and transforms your stories into a beautifully written autobiography
+              your family will treasure forever.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <button
+                onClick={handleGetStarted}
+                className="group font-sans bg-ink text-white px-8 py-4 rounded-full text-base hover:bg-sepia transition-all"
+              >
+                {user ? 'Continue Your Story' : 'Start Your Memoir'}
+                <span className="inline-block ml-2 group-hover:translate-x-1 transition-transform">→</span>
+              </button>
+              <button
+                onClick={() => document.getElementById('how-it-works').scrollIntoView({ behavior: 'smooth' })}
+                className="font-sans text-warmgray px-8 py-4 hover:text-ink transition"
+              >
+                See how it works
+              </button>
+            </div>
+            <p className="font-sans text-warmgray/60 text-sm mt-6">
+              Free to start · No credit card required
+            </p>
+          </div>
 
-        {user && (
-          <p className="text-sepia/70 mb-4 text-lg">
-            Welcome back, <span className="font-medium text-ink">{user.name}</span>
-          </p>
-        )}
+          {/* Hero Visual */}
+          <div className="relative hidden lg:block">
+            <div className="absolute -top-10 -right-10 w-72 h-72 bg-sepia/5 rounded-full blur-3xl" />
+            <div className="relative bg-white rounded-3xl shadow-2xl shadow-ink/10 p-8 transform rotate-2 hover:rotate-0 transition-transform duration-500">
+              <div className="border-b border-sepia/20 pb-4 mb-6">
+                <p className="font-display text-3xl text-ink italic">Chapter One</p>
+                <p className="font-sans text-sepia text-sm mt-1">The Early Years</p>
+              </div>
+              <div className="space-y-4">
+                <p className="font-serif text-warmgray leading-relaxed">
+                  I still remember the summer of 1962, the way the sunlight
+                  filtered through grandmother's lace curtains, casting
+                  patterns on the wooden floor of her kitchen...
+                </p>
+                <p className="font-serif text-warmgray leading-relaxed">
+                  Those were the days when time moved slowly, when a single
+                  afternoon could stretch into an entire adventure.
+                </p>
+              </div>
+              <div className="mt-6 pt-4 border-t border-sepia/10">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                  <p className="font-sans text-xs text-sepia">AI is listening...</p>
+                </div>
+              </div>
+            </div>
+            <div className="absolute -bottom-4 -left-4 bg-sepia/10 rounded-2xl p-4 backdrop-blur">
+              <p className="font-display text-sm text-ink italic">"What was your grandmother like?"</p>
+            </div>
+          </div>
+        </div>
+      </section>
 
-        <h1 className="text-4xl sm:text-5xl md:text-6xl font-light text-ink mb-6 tracking-wide text-center leading-tight">
-          Your Life Story,<br />
-          <span className="text-sepia">Told Your Way</span>
-        </h1>
-
-        <p className="text-xl sm:text-2xl text-sepia/80 text-center max-w-2xl mb-4 leading-relaxed">
-          Just chat like you're talking to a friend.
-        </p>
-
-        <p className="text-lg text-sepia/60 text-center max-w-xl mb-10">
-          Spend a few minutes a day sharing your memories. We'll turn your stories into a beautiful autobiography using the latest AI.
-        </p>
-
-        {/* Primary CTA */}
-        <button
-          onClick={handleTryIt}
-          className="group bg-sepia text-white px-10 py-4 rounded-full text-xl font-medium hover:bg-ink transition-all pulse-gentle tap-bounce mb-4"
-        >
-          {user ? 'Continue Your Story' : "Try It Now — It's Free"}
-          <span className="inline-block ml-2 group-hover:translate-x-1 transition-transform">→</span>
-        </button>
-
-        <p className="text-sepia/50 text-sm mb-12">
-          {user ? 'Pick up where you left off.' : 'Free to sign up. Start talking in seconds.'}
-        </p>
-
-        {/* Social proof hint */}
-        <div className="flex items-center gap-2 text-sepia/60 text-sm">
-          <span className="flex -space-x-2">
-            <span className="w-8 h-8 rounded-full bg-sepia/20 flex items-center justify-center text-xs">👨</span>
-            <span className="w-8 h-8 rounded-full bg-sepia/20 flex items-center justify-center text-xs">👩</span>
-            <span className="w-8 h-8 rounded-full bg-sepia/20 flex items-center justify-center text-xs">👴</span>
-          </span>
-          <span>Helping families preserve their stories</span>
+      {/* Social Proof Strip */}
+      <section className="bg-white py-8 border-y border-sepia/10">
+        <div className="max-w-4xl mx-auto px-6 flex flex-wrap items-center justify-center gap-8 text-center">
+          <div>
+            <p className="font-display text-3xl text-ink">500+</p>
+            <p className="font-sans text-xs text-warmgray uppercase tracking-wider">Stories Written</p>
+          </div>
+          <div className="w-px h-10 bg-sepia/20 hidden sm:block" />
+          <div>
+            <p className="font-display text-3xl text-ink">50k+</p>
+            <p className="font-sans text-xs text-warmgray uppercase tracking-wider">Memories Preserved</p>
+          </div>
+          <div className="w-px h-10 bg-sepia/20 hidden sm:block" />
+          <div>
+            <p className="font-display text-3xl text-ink">4.9★</p>
+            <p className="font-sans text-xs text-warmgray uppercase tracking-wider">User Rating</p>
+          </div>
         </div>
       </section>
 
       {/* How It Works */}
-      <section className="py-20 px-4 bg-white/40">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl sm:text-4xl text-ink text-center mb-4">
-            As Easy as Having a Conversation
-          </h2>
-          <p className="text-sepia/70 text-center mb-16 text-lg">
-            No writing skills needed. Just talk, and we'll handle the rest.
-          </p>
+      <section id="how-it-works" className="py-24 px-6">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-20">
+            <p className="font-sans text-sepia uppercase tracking-[0.3em] text-xs mb-4">
+              How It Works
+            </p>
+            <h2 className="font-display text-4xl sm:text-5xl text-ink mb-6">
+              Three simple steps to your memoir
+            </h2>
+            <p className="font-serif text-lg text-warmgray max-w-2xl mx-auto">
+              No writing skills needed. Just share your memories naturally, and we'll
+              handle the rest.
+            </p>
+          </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center stagger-item">
-              <div className="w-20 h-20 rounded-full bg-sepia/10 flex items-center justify-center mx-auto mb-6">
-                <span className="text-4xl">🎙️</span>
+          <div className="grid md:grid-cols-3 gap-12">
+            <div className="text-center group">
+              <div className="w-20 h-20 rounded-full bg-sepia/10 flex items-center justify-center mx-auto mb-6 group-hover:bg-sepia/20 transition">
+                <svg className="w-8 h-8 text-sepia" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5z"/>
+                  <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+                </svg>
               </div>
-              <div className="text-sepia font-medium text-sm mb-2">Step 1</div>
-              <h3 className="text-xl text-ink mb-3">Just Talk</h3>
-              <p className="text-sepia/70 leading-relaxed">
-                Our friendly AI asks you questions about your life — childhood memories, adventures, lessons learned. Just answer naturally.
+              <p className="font-sans text-sepia text-sm uppercase tracking-wider mb-2">Step 1</p>
+              <h3 className="font-display text-2xl text-ink mb-3 italic">Just Talk</h3>
+              <p className="font-serif text-warmgray leading-relaxed">
+                Our AI interviewer asks thoughtful questions about your life.
+                Answer naturally, just like talking to a friend.
               </p>
             </div>
 
-            <div className="text-center stagger-item">
-              <div className="w-20 h-20 rounded-full bg-sepia/10 flex items-center justify-center mx-auto mb-6">
-                <span className="text-4xl">✨</span>
+            <div className="text-center group">
+              <div className="w-20 h-20 rounded-full bg-sepia/10 flex items-center justify-center mx-auto mb-6 group-hover:bg-sepia/20 transition">
+                <svg className="w-8 h-8 text-sepia" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
               </div>
-              <div className="text-sepia font-medium text-sm mb-2">Step 2</div>
-              <h3 className="text-xl text-ink mb-3">We Write It</h3>
-              <p className="text-sepia/70 leading-relaxed">
-                Our AI transforms your spoken words into beautifully written chapters. Your voice, your stories — polished prose.
+              <p className="font-sans text-sepia text-sm uppercase tracking-wider mb-2">Step 2</p>
+              <h3 className="font-display text-2xl text-ink mb-3 italic">We Write</h3>
+              <p className="font-serif text-warmgray leading-relaxed">
+                AI transforms your spoken words into beautifully written prose.
+                Your voice, your stories—polished and preserved.
               </p>
             </div>
 
-            <div className="text-center stagger-item">
-              <div className="w-20 h-20 rounded-full bg-sepia/10 flex items-center justify-center mx-auto mb-6">
-                <span className="text-4xl">📖</span>
+            <div className="text-center group">
+              <div className="w-20 h-20 rounded-full bg-sepia/10 flex items-center justify-center mx-auto mb-6 group-hover:bg-sepia/20 transition">
+                <svg className="w-8 h-8 text-sepia" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
               </div>
-              <div className="text-sepia font-medium text-sm mb-2">Step 3</div>
-              <h3 className="text-xl text-ink mb-3">Share Forever</h3>
-              <p className="text-sepia/70 leading-relaxed">
-                Download your finished autobiography as a beautiful PDF. Print it, share it with family, preserve your legacy.
+              <p className="font-sans text-sepia text-sm uppercase tracking-wider mb-2">Step 3</p>
+              <h3 className="font-display text-2xl text-ink mb-3 italic">Share Forever</h3>
+              <p className="font-serif text-warmgray leading-relaxed">
+                Download your memoir as a beautiful PDF or order a printed book.
+                A gift your family will treasure for generations.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Key Benefits */}
-      <section className="py-20 px-4">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl sm:text-4xl text-ink text-center mb-16">
-            Why People Love It
-          </h2>
-
-          <div className="grid sm:grid-cols-2 gap-6">
-            <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-sepia/20 card-hover stagger-item">
-              <div className="text-2xl mb-3">💬</div>
-              <h3 className="text-lg text-ink font-medium mb-2">Like Talking to a Friend</h3>
-              <p className="text-sepia/70 text-sm leading-relaxed">
-                No awkward interviews or blank pages. Our AI feels like chatting with someone who genuinely wants to hear your stories.
+      {/* Features Section */}
+      <section className="py-24 px-6 bg-white">
+        <div className="max-w-5xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <div>
+              <p className="font-sans text-sepia uppercase tracking-[0.3em] text-xs mb-4">
+                Why Choose Easy Memoir
               </p>
+              <h2 className="font-display text-4xl sm:text-5xl text-ink mb-8 leading-tight">
+                More than software—<br />
+                <span className="italic text-sepia">a legacy tool</span>
+              </h2>
+
+              <div className="space-y-8">
+                <div className="flex gap-4">
+                  <div className="w-10 h-10 rounded-full bg-sepia/10 flex items-center justify-center flex-shrink-0">
+                    <span className="text-lg">💬</span>
+                  </div>
+                  <div>
+                    <h3 className="font-display text-xl text-ink mb-1">Conversational & Natural</h3>
+                    <p className="font-serif text-warmgray">
+                      No awkward interviews or blank pages. Our AI feels like talking to
+                      someone who genuinely wants to hear your stories.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  <div className="w-10 h-10 rounded-full bg-sepia/10 flex items-center justify-center flex-shrink-0">
+                    <span className="text-lg">🧠</span>
+                  </div>
+                  <div>
+                    <h3 className="font-display text-xl text-ink mb-1">Memories Unlocked</h3>
+                    <p className="font-serif text-warmgray">
+                      Thoughtful follow-up questions help you remember details you
+                      haven't thought about in years.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  <div className="w-10 h-10 rounded-full bg-sepia/10 flex items-center justify-center flex-shrink-0">
+                    <span className="text-lg">✨</span>
+                  </div>
+                  <div>
+                    <h3 className="font-display text-xl text-ink mb-1">Beautiful Writing</h3>
+                    <p className="font-serif text-warmgray">
+                      Your stories, transformed into eloquent prose that captures
+                      your authentic voice and personality.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  <div className="w-10 h-10 rounded-full bg-sepia/10 flex items-center justify-center flex-shrink-0">
+                    <span className="text-lg">📚</span>
+                  </div>
+                  <div>
+                    <h3 className="font-display text-xl text-ink mb-1">Print-Ready Books</h3>
+                    <p className="font-serif text-warmgray">
+                      Order professionally printed hardcover books—the perfect gift
+                      for children, grandchildren, and future generations.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-sepia/20 card-hover stagger-item">
-              <div className="text-2xl mb-3">⏱️</div>
-              <h3 className="text-lg text-ink font-medium mb-2">Just Minutes a Day</h3>
-              <p className="text-sepia/70 text-sm leading-relaxed">
-                No pressure. Share one memory today, another tomorrow. Build your story bit by bit, at your own pace.
-              </p>
-            </div>
-
-            <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-sepia/20 card-hover stagger-item">
-              <div className="text-2xl mb-3">🧠</div>
-              <h3 className="text-lg text-ink font-medium mb-2">Memories Unlocked</h3>
-              <p className="text-sepia/70 text-sm leading-relaxed">
-                Our thoughtful questions help you remember things you haven't thought about in years. It's like guided reminiscing.
-              </p>
-            </div>
-
-            <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-sepia/20 card-hover stagger-item">
-              <div className="text-2xl mb-3">🎁</div>
-              <h3 className="text-lg text-ink font-medium mb-2">A Gift for Generations</h3>
-              <p className="text-sepia/70 text-sm leading-relaxed">
-                Create something your children and grandchildren will treasure. Your experiences and wisdom, preserved forever.
-              </p>
+            {/* Feature Visual */}
+            <div className="relative">
+              <div className="bg-parchment rounded-3xl p-8 shadow-lg">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-3 h-3 rounded-full bg-red-400" />
+                  <div className="w-3 h-3 rounded-full bg-yellow-400" />
+                  <div className="w-3 h-3 rounded-full bg-green-400" />
+                </div>
+                <div className="space-y-4">
+                  <div className="flex gap-3">
+                    <div className="w-8 h-8 rounded-full bg-sepia/20 flex items-center justify-center text-xs">AI</div>
+                    <div className="bg-white rounded-2xl rounded-tl-none p-4 max-w-[80%]">
+                      <p className="font-serif text-sm text-warmgray">
+                        Tell me about your childhood home. What do you remember most vividly?
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3 justify-end">
+                    <div className="bg-sepia/10 rounded-2xl rounded-tr-none p-4 max-w-[80%]">
+                      <p className="font-serif text-sm text-ink">
+                        Oh, the old farmhouse on Maple Street! I remember the creaky
+                        stairs and how the kitchen always smelled like fresh bread...
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="w-8 h-8 rounded-full bg-sepia/20 flex items-center justify-center text-xs">AI</div>
+                    <div className="bg-white rounded-2xl rounded-tl-none p-4 max-w-[80%]">
+                      <p className="font-serif text-sm text-warmgray">
+                        That sounds wonderful. Who baked the bread? Tell me more about them.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Choose Your Style */}
-      <section className="py-20 px-4 bg-white/40">
-        <div className="max-w-3xl mx-auto">
-          <h2 className="text-3xl sm:text-4xl text-ink text-center mb-4">
-            Choose Your Style
-          </h2>
-          <p className="text-sepia/70 text-center mb-12 text-lg">
-            Talk or type — whatever feels natural to you.
-          </p>
+      <section className="py-24 px-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-16">
+            <p className="font-sans text-sepia uppercase tracking-[0.3em] text-xs mb-4">
+              Your Choice
+            </p>
+            <h2 className="font-display text-4xl sm:text-5xl text-ink mb-4">
+              Talk or type—<span className="italic">you decide</span>
+            </h2>
+            <p className="font-serif text-lg text-warmgray">
+              Choose the way that feels most natural to you.
+            </p>
+          </div>
 
-          <div className="grid sm:grid-cols-2 gap-6">
+          <div className="grid sm:grid-cols-2 gap-8">
             {/* Voice Mode */}
             <button
               onClick={() => handleModeSelect('voice')}
-              className="group bg-white/80 backdrop-blur-sm rounded-2xl p-8 border-2 border-sepia/30 hover:border-sepia transition text-left card-hover"
+              className="group bg-white rounded-3xl p-8 border-2 border-sepia/20 hover:border-sepia hover:shadow-xl transition-all text-left"
             >
-              <div className="w-16 h-16 rounded-full bg-sepia/10 flex items-center justify-center mb-6 group-hover:bg-sepia/20 transition">
-                <svg className="w-8 h-8 text-sepia" fill="currentColor" viewBox="0 0 24 24">
+              <div className="flex items-center gap-2 mb-6">
+                <span className="font-sans text-xs bg-sepia text-white px-3 py-1 rounded-full">Recommended</span>
+              </div>
+              <div className="w-16 h-16 rounded-full bg-sepia/10 flex items-center justify-center mb-6 group-hover:bg-sepia group-hover:text-white transition">
+                <svg className="w-8 h-8 text-sepia group-hover:text-white transition" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5z"/>
                   <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
                 </svg>
               </div>
-              <div className="text-sepia text-sm font-medium mb-1">Recommended</div>
-              <h3 className="text-xl text-ink font-medium mb-2 group-hover:text-sepia transition">
+              <h3 className="font-display text-2xl text-ink mb-3 group-hover:text-sepia transition">
                 Voice Interview
               </h3>
-              <p className="text-sepia/70 text-sm leading-relaxed">
-                Just talk naturally. Our AI listens, asks follow-up questions, and captures every detail of your stories.
+              <p className="font-serif text-warmgray mb-6">
+                Just talk naturally. Our AI listens, asks follow-up questions, and
+                captures every detail of your stories.
               </p>
-              <div className="mt-4 flex items-center text-sepia text-sm font-medium">
-                <span>Start talking</span>
-                <svg className="w-4 h-4 ml-2 group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <span className="font-sans text-sepia text-sm flex items-center gap-2">
+                Start talking
+                <svg className="w-4 h-4 group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
-              </div>
+              </span>
             </button>
 
             {/* Type Mode */}
             <button
               onClick={() => handleModeSelect('type')}
-              className="group bg-white/60 backdrop-blur-sm rounded-2xl p-8 border border-sepia/20 hover:border-sepia/40 hover:bg-white/80 transition text-left card-hover"
+              className="group bg-white rounded-3xl p-8 border border-sepia/10 hover:border-sepia/40 hover:shadow-xl transition-all text-left"
             >
+              <div className="h-7 mb-6" /> {/* Spacer to align with other card */}
               <div className="w-16 h-16 rounded-full bg-sepia/10 flex items-center justify-center mb-6 group-hover:bg-sepia/20 transition">
                 <svg className="w-8 h-8 text-sepia" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
               </div>
-              <h3 className="text-xl text-ink font-medium mb-2 group-hover:text-sepia transition">
-                Write Your Story
+              <h3 className="font-display text-2xl text-ink mb-3 group-hover:text-sepia transition">
+                Written Memoir
               </h3>
-              <p className="text-sepia/70 text-sm leading-relaxed">
-                Prefer typing? Answer guided questions at your own pace. Our AI helps expand your notes into beautiful prose.
+              <p className="font-serif text-warmgray mb-6">
+                Prefer typing? Answer guided questions at your own pace. Our AI helps
+                expand your notes into beautiful prose.
               </p>
-              <div className="mt-4 flex items-center text-sepia text-sm font-medium">
-                <span>Start writing</span>
-                <svg className="w-4 h-4 ml-2 group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <span className="font-sans text-warmgray text-sm flex items-center gap-2 group-hover:text-sepia transition">
+                Start writing
+                <svg className="w-4 h-4 group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
-              </div>
+              </span>
             </button>
           </div>
         </div>
       </section>
 
+      {/* Testimonial */}
+      <section className="py-24 px-6 bg-ink text-white">
+        <div className="max-w-3xl mx-auto text-center">
+          <svg className="w-12 h-12 mx-auto mb-8 text-sepia opacity-50" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/>
+          </svg>
+          <p className="font-display text-2xl sm:text-3xl italic mb-8 leading-relaxed text-white/90">
+            I never thought I'd write my life story. But talking to the AI felt so natural—
+            like chatting with an old friend. Now my grandchildren will know who I really was.
+          </p>
+          <div>
+            <p className="font-sans text-white font-medium">Margaret T.</p>
+            <p className="font-sans text-white/60 text-sm">Age 78, Birmingham</p>
+          </div>
+        </div>
+      </section>
+
       {/* Final CTA */}
-      <section className="py-24 px-4 text-center">
-        <div className="max-w-2xl mx-auto">
-          <h2 className="text-3xl sm:text-4xl text-ink mb-4">
-            Your Stories Matter
+      <section className="py-24 px-6">
+        <div className="max-w-2xl mx-auto text-center">
+          <h2 className="font-display text-4xl sm:text-5xl text-ink mb-6 leading-tight">
+            Your stories matter.<br />
+            <span className="italic text-sepia">Start preserving them today.</span>
           </h2>
-          <p className="text-lg text-sepia/70 mb-8 leading-relaxed">
-            Every life is full of moments worth remembering. Don't let them fade away. Start capturing your story today.
+          <p className="font-serif text-lg text-warmgray mb-10 max-w-lg mx-auto">
+            Every life is full of moments worth remembering. Don't let them fade away.
+            Create a memoir your family will treasure forever.
           </p>
           <button
-            onClick={handleTryIt}
-            className="group bg-sepia text-white px-10 py-4 rounded-full text-xl font-medium hover:bg-ink transition-all pulse-gentle tap-bounce"
+            onClick={handleGetStarted}
+            className="group font-sans bg-ink text-white px-10 py-5 rounded-full text-lg hover:bg-sepia transition-all"
           >
-            Start Your Story
+            {user ? 'Continue Your Story' : 'Start Your Free Memoir'}
             <span className="inline-block ml-2 group-hover:translate-x-1 transition-transform">→</span>
           </button>
-          <p className="text-sepia/50 text-sm mt-4">Free to try. No credit card needed.</p>
+          <p className="font-sans text-warmgray/60 text-sm mt-6">
+            No credit card required · Start in seconds
+          </p>
         </div>
-
-        <div className="mt-16 text-sepia/20 text-xl float">✦</div>
       </section>
+
+      {/* Footer */}
+      <footer className="py-12 px-6 border-t border-sepia/10">
+        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="font-display text-xl text-ink">
+            Easy<span className="text-sepia">Memoir</span>
+          </div>
+          <p className="font-sans text-sm text-warmgray">
+            © 2025 Easy Memoir. Helping families preserve their stories.
+          </p>
+        </div>
+      </footer>
     </div>
   )
 }
