@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { useAuth } from '../context/AuthContext'
 
 export default function QuestionCard({
   question,
@@ -10,6 +11,7 @@ export default function QuestionCard({
   photos,
   onPhotosChange
 }) {
+  const { authFetch } = useAuth()
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const fileInputRef = useRef(null)
@@ -38,7 +40,7 @@ export default function QuestionCard({
     formData.append('story_id', storyId)
 
     try {
-      await fetch('/api/photos', {
+      await authFetch('/api/photos', {
         method: 'POST',
         body: formData
       })
@@ -56,7 +58,7 @@ export default function QuestionCard({
   const deletePhoto = async (photoId) => {
     if (!confirm('Delete this photo?')) return
     try {
-      await fetch(`/api/photos/${photoId}`, { method: 'DELETE' })
+      await authFetch(`/api/photos/${photoId}`, { method: 'DELETE' })
       onPhotosChange()
     } catch (err) {
       console.error('Error deleting photo:', err)

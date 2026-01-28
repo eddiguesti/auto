@@ -1,0 +1,84 @@
+import { createContext, useContext, useState, useEffect } from 'react'
+
+const AuthContext = createContext(null)
+
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(null)
+  const [token, setToken] = useState(localStorage.getItem('token'))
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (token) {
+      fetchUser()
+    } else {
+      setLoading(false)
+    }
+  }, [])
+
+  const fetchUser = async () => {
+    try {
+      const res = await fetch('/api/auth/me', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setUser(data.user)
+      } else {
+        // Token invalid, clear it
+        logout()
+      }
+    } catch (err) {
+      logout()
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const login = (userData, authToken) => {
+    localStorage.setItem('token', authToken)
+    setToken(authToken)
+    setUser(userData)
+  }
+
+  const logout = () => {
+    localStorage.removeItem('token')
+    setToken(null)
+    setUser(null)
+  }
+
+  // Helper for authenticated fetch requests
+  const authFetch = async (url, options = {}) => {
+    const headers = {
+      ...options.headers,
+    }
+
+    // Only add Authorization header if we have a token
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+
+    // Add Content-Type for JSON if body is provided and not FormData
+    if (options.body && !(options.body instanceof FormData)) {
+      headers['Content-Type'] = 'application/json'
+    }
+
+    return fetch(url, {
+      ...options,
+      headers
+    })
+  }
+
+  return (
+    <AuthContext.Provider value={{ user, token, loading, login, logout, authFetch }}>
+      {children}
+    </AuthContext.Provider>
+  )
+}
+
+export const useAuth = () => {
+  const context = useContext(AuthContext)
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider')
+  }
+  return context
+}

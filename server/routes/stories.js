@@ -4,7 +4,7 @@ import OpenAI from 'openai'
 const router = Router()
 
 // Extract entities asynchronously after saving
-async function extractEntitiesAsync(db, text, chapterId, questionId, storyId) {
+async function extractEntitiesAsync(db, userId, text, chapterId, questionId, storyId) {
   if (!text || text.length < 20) return // Skip very short answers
 
   try {
@@ -46,12 +46,12 @@ Normalize names (Dad/Father -> Father). Be concise.`
         const dbType = type.replace('_', ' ').replace(/s$/, '')
 
         const entityResult = await db.query(`
-          INSERT INTO memory_entities (entity_type, name, description, first_mentioned_chapter, first_mentioned_question)
-          VALUES ($1, $2, $3, $4, $5)
-          ON CONFLICT (entity_type, name)
+          INSERT INTO memory_entities (user_id, entity_type, name, description, first_mentioned_chapter, first_mentioned_question)
+          VALUES ($1, $2, $3, $4, $5, $6)
+          ON CONFLICT (user_id, entity_type, name)
           DO UPDATE SET mention_count = memory_entities.mention_count + 1, updated_at = CURRENT_TIMESTAMP
           RETURNING id
-        `, [dbType, item.name, item.context, chapterId, questionId])
+        `, [userId, dbType, item.name, item.context, chapterId, questionId])
 
         await db.query(`
           INSERT INTO memory_mentions (entity_id, story_id, context, sentiment)
@@ -63,8 +63,8 @@ Normalize names (Dad/Father -> Father). Be concise.`
     // Store relationships
     for (const rel of (entities.relationships || [])) {
       if (!rel.entity1 || !rel.entity2) continue
-      const e1 = await db.query('SELECT id FROM memory_entities WHERE name = $1', [rel.entity1])
-      const e2 = await db.query('SELECT id FROM memory_entities WHERE name = $1', [rel.entity2])
+      const e1 = await db.query('SELECT id FROM memory_entities WHERE user_id = $1 AND name = $2', [userId, rel.entity1])
+      const e2 = await db.query('SELECT id FROM memory_entities WHERE user_id = $1 AND name = $2', [userId, rel.entity2])
       if (e1.rows[0] && e2.rows[0]) {
         await db.query(`
           INSERT INTO memory_relationships (entity1_id, entity2_id, relationship_type, description)
@@ -83,6 +83,7 @@ Normalize names (Dad/Father -> Father). Be concise.`
 // Get all stories (must be before /:chapterId to avoid conflicts)
 router.get('/all', async (req, res) => {
   const db = req.app.locals.db
+  const userId = req.user.id
 
   try {
     const result = await db.query(`
@@ -95,8 +96,9 @@ router.get('/all', async (req, res) => {
         ) as photos
       FROM stories s
       LEFT JOIN photos p ON p.story_id = s.id
+      WHERE s.user_id = $1
       GROUP BY s.id
-    `)
+    `, [userId])
 
     res.json(result.rows)
   } catch (err) {
@@ -108,14 +110,15 @@ router.get('/all', async (req, res) => {
 // Get progress (count of answered questions per chapter)
 router.get('/progress', async (req, res) => {
   const db = req.app.locals.db
+  const userId = req.user.id
 
   try {
     const result = await db.query(`
       SELECT chapter_id, COUNT(*) as count
       FROM stories
-      WHERE answer IS NOT NULL AND answer != ''
+      WHERE user_id = $1 AND answer IS NOT NULL AND answer != ''
       GROUP BY chapter_id
-    `)
+    `, [userId])
 
     const progress = {}
     result.rows.forEach(p => {
@@ -132,9 +135,10 @@ router.get('/progress', async (req, res) => {
 // Get settings
 router.get('/settings', async (req, res) => {
   const db = req.app.locals.db
+  const userId = req.user.id
 
   try {
-    const result = await db.query('SELECT * FROM settings WHERE id = 1')
+    const result = await db.query('SELECT * FROM settings WHERE user_id = $1', [userId])
     res.json(result.rows[0] || {})
   } catch (err) {
     console.error('Error fetching settings:', err)
@@ -145,14 +149,15 @@ router.get('/settings', async (req, res) => {
 // Save settings
 router.post('/settings', async (req, res) => {
   const db = req.app.locals.db
+  const userId = req.user.id
   const { name } = req.body
 
   try {
     await db.query(`
-      INSERT INTO settings (id, name, updated_at)
-      VALUES (1, $1, CURRENT_TIMESTAMP)
-      ON CONFLICT (id) DO UPDATE SET name = $1, updated_at = CURRENT_TIMESTAMP
-    `, [name])
+      INSERT INTO settings (user_id, name, updated_at)
+      VALUES ($1, $2, CURRENT_TIMESTAMP)
+      ON CONFLICT (user_id) DO UPDATE SET name = $2, updated_at = CURRENT_TIMESTAMP
+    `, [userId, name])
 
     res.json({ success: true })
   } catch (err) {
@@ -164,6 +169,7 @@ router.post('/settings', async (req, res) => {
 // Get all stories for a chapter
 router.get('/:chapterId', async (req, res) => {
   const db = req.app.locals.db
+  const userId = req.user.id
   const { chapterId } = req.params
 
   try {
@@ -177,9 +183,9 @@ router.get('/:chapterId', async (req, res) => {
         ) as photos
       FROM stories s
       LEFT JOIN photos p ON p.story_id = s.id
-      WHERE s.chapter_id = $1
+      WHERE s.user_id = $1 AND s.chapter_id = $2
       GROUP BY s.id
-    `, [chapterId])
+    `, [userId, chapterId])
 
     res.json(result.rows)
   } catch (err) {
@@ -191,25 +197,26 @@ router.get('/:chapterId', async (req, res) => {
 // Save/update a story
 router.post('/', async (req, res) => {
   const db = req.app.locals.db
+  const userId = req.user.id
   const { chapter_id, question_id, answer } = req.body
 
   try {
     await db.query(`
-      INSERT INTO stories (chapter_id, question_id, answer, updated_at)
-      VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
-      ON CONFLICT (chapter_id, question_id)
-      DO UPDATE SET answer = $3, updated_at = CURRENT_TIMESTAMP
-    `, [chapter_id, question_id, answer])
+      INSERT INTO stories (user_id, chapter_id, question_id, answer, updated_at)
+      VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
+      ON CONFLICT (user_id, chapter_id, question_id)
+      DO UPDATE SET answer = $4, updated_at = CURRENT_TIMESTAMP
+    `, [userId, chapter_id, question_id, answer])
 
     // Get the story ID
     const result = await db.query(`
-      SELECT id FROM stories WHERE chapter_id = $1 AND question_id = $2
-    `, [chapter_id, question_id])
+      SELECT id FROM stories WHERE user_id = $1 AND chapter_id = $2 AND question_id = $3
+    `, [userId, chapter_id, question_id])
 
     const storyId = result.rows[0].id
 
     // Extract entities asynchronously (don't wait for it)
-    extractEntitiesAsync(db, answer, chapter_id, question_id, storyId)
+    extractEntitiesAsync(db, userId, answer, chapter_id, question_id, storyId)
 
     res.json({ success: true, id: storyId })
   } catch (err) {

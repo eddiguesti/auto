@@ -3,9 +3,11 @@ import { useParams, Link } from 'react-router-dom'
 import { chapters } from '../data/chapters'
 import QuestionCard from '../components/QuestionCard'
 import AIAssistant from '../components/AIAssistant'
+import { useAuth } from '../context/AuthContext'
 
 export default function Chapter() {
   const { chapterId } = useParams()
+  const { authFetch } = useAuth()
   const [answers, setAnswers] = useState({})
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [showAI, setShowAI] = useState(false)
@@ -22,7 +24,7 @@ export default function Chapter() {
 
   const fetchAnswers = async () => {
     try {
-      const res = await fetch(`/api/stories/${chapterId}`)
+      const res = await authFetch(`/api/stories/${chapterId}`)
       const data = await res.json()
       const answersMap = {}
       data.forEach(story => {
@@ -53,7 +55,7 @@ export default function Chapter() {
     // Debounce the save
     saveTimeoutRef.current[questionId] = setTimeout(async () => {
       try {
-        await fetch('/api/stories', {
+        await authFetch('/api/stories', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

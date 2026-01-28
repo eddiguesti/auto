@@ -3,21 +3,21 @@ import { Router } from 'express'
 const router = Router()
 
 // Fetch memory context for voice prompts
-async function getMemoryContext(db) {
-  if (!db) return ''
+async function getMemoryContext(db, userId) {
+  if (!db || !userId) return ''
 
   try {
     const people = await db.query(`
       SELECT name FROM memory_entities
-      WHERE entity_type = 'person'
+      WHERE user_id = $1 AND entity_type = 'person'
       ORDER BY mention_count DESC LIMIT 8
-    `)
+    `, [userId])
 
     const places = await db.query(`
       SELECT name FROM memory_entities
-      WHERE entity_type = 'place'
+      WHERE user_id = $1 AND entity_type = 'place'
       ORDER BY mention_count DESC LIMIT 6
-    `)
+    `, [userId])
 
     let context = ''
     if (people.rows.length > 0) {
@@ -70,23 +70,28 @@ router.post('/session', async (req, res) => {
 // Get voice configuration with memory context
 router.get('/config', async (req, res) => {
   const db = req.app.locals.db
-  const memoryContext = await getMemoryContext(db)
+  const userId = req.user.id
+  const memoryContext = await getMemoryContext(db, userId)
 
-  const baseInstructions = `You're helping someone record their life story. Have a warm, natural conversation - like chatting with a friend who's genuinely interested in their memories.
+  const baseInstructions = `You're chatting with someone to help them record their life story. Be natural - like a friend catching up, not a formal interview.
 
-Your role:
-- Ask thoughtful follow-up questions about their memories
-- Draw out sensory details: what things looked, sounded, felt like
-- Ask about the people involved and their relationships
-- Explore emotions and how experiences shaped them
-- Keep questions conversational and one at a time
-- Give them time to think - don't rush
+HOW TO BEHAVE:
+- Talk like a normal person. No fake enthusiasm. Don't say "Oh how wonderful!" or "That's amazing!" - it sounds insincere.
+- Simple acknowledgments: "Right", "Yeah", "I see", "Okay" - then move on.
+- Give them plenty of time to think. Don't rush.
+- Keep responses SHORT. One or two sentences max.
 
-Style:
-- Be warm but not gushing
-- Use natural speech patterns
-- Keep responses brief - you're interviewing, not lecturing
-- Match their energy and pace`
+QUESTION STYLE:
+- Start simple: basic facts they don't have to think about
+- "Where did you grow up?" "What was your mum's name?" "What did your dad do?"
+- Then go deeper: "What was she like?" "Tell me about that"
+- Ask ONE question at a time. Wait for the answer.
+- Follow up naturally on what they actually say
+
+NEVER:
+- Be fake or gushing
+- Give long responses
+- Ask multiple questions at once`
 
   const instructions = memoryContext
     ? `${baseInstructions}\n\nContext from their story so far: ${memoryContext}\nYou can reference these people and places naturally in conversation.`

@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
+import { useAuth } from '../context/AuthContext'
 
 export default function AIAssistant({ context, onClose, onInsertText }) {
+  const { authFetch } = useAuth()
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -45,7 +47,7 @@ export default function AIAssistant({ context, onClose, onInsertText }) {
   }
 
   const callAI = async (endpoint, body) => {
-    const res = await fetch(`/api/ai/${endpoint}`, {
+    const res = await authFetch(`/api/ai/${endpoint}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)

@@ -4,23 +4,23 @@ import OpenAI from 'openai'
 const router = Router()
 
 // Fetch memory context for AI prompts
-async function getMemoryContext(db) {
-  if (!db) return ''
+async function getMemoryContext(db, userId) {
+  if (!db || !userId) return ''
 
   try {
     // Get top mentioned people
     const people = await db.query(`
       SELECT name, mention_count FROM memory_entities
-      WHERE entity_type = 'person'
+      WHERE user_id = $1 AND entity_type = 'person'
       ORDER BY mention_count DESC LIMIT 8
-    `)
+    `, [userId])
 
     // Get top mentioned places
     const places = await db.query(`
       SELECT name FROM memory_entities
-      WHERE entity_type = 'place'
+      WHERE user_id = $1 AND entity_type = 'place'
       ORDER BY mention_count DESC LIMIT 8
-    `)
+    `, [userId])
 
     // Get key relationships
     const relationships = await db.query(`
@@ -28,9 +28,9 @@ async function getMemoryContext(db) {
       FROM memory_relationships r
       JOIN memory_entities e1 ON r.entity1_id = e1.id
       JOIN memory_entities e2 ON r.entity2_id = e2.id
-      WHERE e1.entity_type = 'person' OR e2.entity_type = 'person'
+      WHERE e1.user_id = $1 AND (e1.entity_type = 'person' OR e2.entity_type = 'person')
       LIMIT 10
-    `)
+    `, [userId])
 
     let context = ''
 
@@ -71,10 +71,11 @@ const getClient = () => {
 router.post('/interview', async (req, res) => {
   const { question, prompt, existingAnswer, gatheredContent = [], lastResponse, history = [], action } = req.body
   const db = req.app.locals.db
+  const userId = req.user.id
 
   try {
     const client = getClient()
-    const memoryContext = await getMemoryContext(db)
+    const memoryContext = await getMemoryContext(db, userId)
 
     // Count how much content we have
     const totalContent = gatheredContent.map(g => g.content).join(' ')
@@ -188,10 +189,11 @@ TONE RULES:
 router.post('/write-story', async (req, res) => {
   const { question, prompt, existingAnswer, gatheredContent = [], conversationHistory = [] } = req.body
   const db = req.app.locals.db
+  const userId = req.user.id
 
   try {
     const client = getClient()
-    const memoryContext = await getMemoryContext(db)
+    const memoryContext = await getMemoryContext(db, userId)
 
     // Compile all the raw material
     const rawMaterial = []

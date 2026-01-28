@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { chapters } from '../data/chapters'
 import BookOrder from '../components/BookOrder'
+import { useAuth } from '../context/AuthContext'
 
 export default function Export() {
+  const { user, authFetch } = useAuth()
   const [stories, setStories] = useState({})
-  const [userName, setUserName] = useState('')
   const [loading, setLoading] = useState(true)
   const [showBookOrder, setShowBookOrder] = useState(false)
   const [pageCount, setPageCount] = useState(50)
@@ -16,12 +17,8 @@ export default function Export() {
 
   const fetchAllStories = async () => {
     try {
-      const [storiesRes, settingsRes] = await Promise.all([
-        fetch('/api/stories/all'),
-        fetch('/api/stories/settings')
-      ])
+      const storiesRes = await authFetch('/api/stories/all')
       const storiesData = await storiesRes.json()
-      const settingsData = await settingsRes.json()
 
       // Organize by chapter and question
       const organized = {}
@@ -32,7 +29,6 @@ export default function Export() {
         organized[story.chapter_id][story.question_id] = story
       })
       setStories(organized)
-      setUserName(settingsData.name || 'My')
     } catch (err) {
       console.error('Error fetching stories:', err)
     } finally {
@@ -107,7 +103,7 @@ export default function Export() {
           {/* Title Page */}
           <div className="text-center mb-16 pb-16 border-b print:border-none print:page-break-after-always">
             <h1 className="text-5xl font-bold text-ink mb-4">
-              {userName}'s Life Story
+              {user?.name || 'My'}'s Life Story
             </h1>
             <p className="text-xl text-sepia">An Autobiography</p>
             <p className="text-sepia/60 mt-8">
@@ -208,7 +204,7 @@ export default function Export() {
       {/* Book Order Modal */}
       {showBookOrder && (
         <BookOrder
-          userName={userName}
+          userName={user?.name || 'My'}
           pageCount={pageCount}
           onClose={() => setShowBookOrder(false)}
         />

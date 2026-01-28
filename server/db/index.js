@@ -52,25 +52,43 @@ export async function initDatabase() {
     return
   }
   try {
-    // Create tables
+    // Create users table first
     await client.query(`
-      CREATE TABLE IF NOT EXISTS settings (
-        id INTEGER PRIMARY KEY DEFAULT 1,
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        email TEXT UNIQUE NOT NULL,
+        password_hash TEXT,
+        google_id TEXT UNIQUE,
         name TEXT,
+        avatar_url TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `)
 
+    // Create settings table with user_id
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS settings (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        name TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id)
+      )
+    `)
+
+    // Create stories table with user_id
     await client.query(`
       CREATE TABLE IF NOT EXISTS stories (
         id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
         chapter_id TEXT NOT NULL,
         question_id TEXT NOT NULL,
         answer TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(chapter_id, question_id)
+        UNIQUE(user_id, chapter_id, question_id)
       )
     `)
 
@@ -99,6 +117,7 @@ export async function initDatabase() {
     await client.query(`
       CREATE TABLE IF NOT EXISTS memory_entities (
         id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
         entity_type TEXT NOT NULL, -- 'person', 'place', 'event', 'time_period', 'emotion'
         name TEXT NOT NULL,
         description TEXT,
@@ -107,7 +126,7 @@ export async function initDatabase() {
         mention_count INTEGER DEFAULT 1,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(entity_type, name)
+        UNIQUE(user_id, entity_type, name)
       )
     `)
 
@@ -136,13 +155,25 @@ export async function initDatabase() {
 
     // Create indexes
     await client.query(`
-      CREATE INDEX IF NOT EXISTS idx_stories_chapter ON stories(chapter_id)
+      CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)
+    `)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id)
+    `)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_stories_user ON stories(user_id)
+    `)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_stories_user_chapter ON stories(user_id, chapter_id)
     `)
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_photos_story ON photos(story_id)
     `)
     await client.query(`
-      CREATE INDEX IF NOT EXISTS idx_memory_entities_type ON memory_entities(entity_type)
+      CREATE INDEX IF NOT EXISTS idx_memory_entities_user ON memory_entities(user_id)
+    `)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_memory_entities_user_type ON memory_entities(user_id, entity_type)
     `)
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_memory_mentions_entity ON memory_mentions(entity_id)

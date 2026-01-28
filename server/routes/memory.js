@@ -19,6 +19,7 @@ const getClient = () => {
 router.post('/extract', async (req, res) => {
   const { text, chapterId, questionId, storyId } = req.body
   const pool = req.app.locals.db
+  const userId = req.user.id
 
   if (!text || !pool) {
     return res.json({ entities: [], message: 'No text or database' })
@@ -88,16 +89,16 @@ Return ONLY valid JSON in this format:
         if (!item.name) continue
 
         try {
-          // Upsert entity
+          // Upsert entity with user_id
           const entityResult = await pool.query(`
-            INSERT INTO memory_entities (entity_type, name, description, first_mentioned_chapter, first_mentioned_question)
-            VALUES ($1, $2, $3, $4, $5)
-            ON CONFLICT (entity_type, name)
+            INSERT INTO memory_entities (user_id, entity_type, name, description, first_mentioned_chapter, first_mentioned_question)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            ON CONFLICT (user_id, entity_type, name)
             DO UPDATE SET
               mention_count = memory_entities.mention_count + 1,
               updated_at = CURRENT_TIMESTAMP
             RETURNING id
-          `, [type.replace('_', ' ').replace(/s$/, ''), item.name, item.context, chapterId, questionId])
+          `, [userId, type.replace('_', ' ').replace(/s$/, ''), item.name, item.context, chapterId, questionId])
 
           const entityId = entityResult.rows[0].id
 
@@ -128,9 +129,9 @@ Return ONLY valid JSON in this format:
       if (!rel.entity1 || !rel.entity2) continue
 
       try {
-        // Find entity IDs
-        const e1 = await pool.query('SELECT id FROM memory_entities WHERE name = $1', [rel.entity1])
-        const e2 = await pool.query('SELECT id FROM memory_entities WHERE name = $1', [rel.entity2])
+        // Find entity IDs for this user
+        const e1 = await pool.query('SELECT id FROM memory_entities WHERE user_id = $1 AND name = $2', [userId, rel.entity1])
+        const e2 = await pool.query('SELECT id FROM memory_entities WHERE user_id = $1 AND name = $2', [userId, rel.entity2])
 
         if (e1.rows[0] && e2.rows[0]) {
           await pool.query(`
@@ -158,14 +159,16 @@ Return ONLY valid JSON in this format:
 // Get all entities (for the memory graph)
 router.get('/entities', async (req, res) => {
   const pool = req.app.locals.db
+  const userId = req.user.id
   if (!pool) return res.json({ entities: [] })
 
   try {
     const result = await pool.query(`
       SELECT id, entity_type, name, description, mention_count, first_mentioned_chapter
       FROM memory_entities
+      WHERE user_id = $1
       ORDER BY mention_count DESC, name ASC
-    `)
+    `, [userId])
     res.json({ entities: result.rows })
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -175,6 +178,7 @@ router.get('/entities', async (req, res) => {
 // Get entities by type
 router.get('/entities/:type', async (req, res) => {
   const pool = req.app.locals.db
+  const userId = req.user.id
   const { type } = req.params
   if (!pool) return res.json({ entities: [] })
 
@@ -182,9 +186,9 @@ router.get('/entities/:type', async (req, res) => {
     const result = await pool.query(`
       SELECT id, name, description, mention_count, first_mentioned_chapter
       FROM memory_entities
-      WHERE entity_type = $1
+      WHERE user_id = $1 AND entity_type = $2
       ORDER BY mention_count DESC, name ASC
-    `, [type])
+    `, [userId, type])
     res.json({ entities: result.rows })
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -194,36 +198,37 @@ router.get('/entities/:type', async (req, res) => {
 // Get context for AI prompts - returns a summary of known entities
 router.get('/context', async (req, res) => {
   const pool = req.app.locals.db
+  const userId = req.user.id
   if (!pool) return res.json({ context: '' })
 
   try {
     // Get top mentioned people
     const people = await pool.query(`
       SELECT name, mention_count FROM memory_entities
-      WHERE entity_type = 'person'
+      WHERE user_id = $1 AND entity_type = 'person'
       ORDER BY mention_count DESC LIMIT 10
-    `)
+    `, [userId])
 
     // Get top mentioned places
     const places = await pool.query(`
       SELECT name, mention_count FROM memory_entities
-      WHERE entity_type = 'place'
+      WHERE user_id = $1 AND entity_type = 'place'
       ORDER BY mention_count DESC LIMIT 10
-    `)
+    `, [userId])
 
     // Get events
     const events = await pool.query(`
       SELECT name FROM memory_entities
-      WHERE entity_type = 'event'
+      WHERE user_id = $1 AND entity_type = 'event'
       ORDER BY created_at DESC LIMIT 10
-    `)
+    `, [userId])
 
     // Get time periods
     const timePeriods = await pool.query(`
       SELECT name FROM memory_entities
-      WHERE entity_type = 'time period'
+      WHERE user_id = $1 AND entity_type = 'time period'
       ORDER BY created_at DESC LIMIT 10
-    `)
+    `, [userId])
 
     // Get relationships
     const relationships = await pool.query(`
@@ -231,8 +236,9 @@ router.get('/context', async (req, res) => {
       FROM memory_relationships r
       JOIN memory_entities e1 ON r.entity1_id = e1.id
       JOIN memory_entities e2 ON r.entity2_id = e2.id
+      WHERE e1.user_id = $1
       LIMIT 20
-    `)
+    `, [userId])
 
     // Build context string for AI
     let context = ''
@@ -283,14 +289,15 @@ router.get('/context', async (req, res) => {
 // Search for connections - find entities related to a given name/topic
 router.get('/connections/:name', async (req, res) => {
   const pool = req.app.locals.db
+  const userId = req.user.id
   const { name } = req.params
   if (!pool) return res.json({ connections: [] })
 
   try {
-    // Find the entity
+    // Find the entity for this user
     const entity = await pool.query(
-      'SELECT id, entity_type, name FROM memory_entities WHERE name ILIKE $1',
-      [`%${name}%`]
+      'SELECT id, entity_type, name FROM memory_entities WHERE user_id = $1 AND name ILIKE $2',
+      [userId, `%${name}%`]
     )
 
     if (entity.rows.length === 0) {

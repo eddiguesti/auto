@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useAuth } from '../context/AuthContext'
 
 // 3D Book Mockup Component
 function BookMockup({ config, options, title }) {
@@ -304,6 +305,7 @@ function BindingIcon({ type }) {
 }
 
 export default function BookOrder({ userName, pageCount, onClose }) {
+  const { authFetch } = useAuth()
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(true)
   const [calculating, setCalculating] = useState(false)
@@ -343,7 +345,7 @@ export default function BookOrder({ userName, pageCount, onClose }) {
 
   const fetchOptions = async () => {
     try {
-      const res = await fetch('/api/lulu/options')
+      const res = await authFetch('/api/lulu/options')
       setOptions(await res.json())
     } catch (err) {
       setError('Failed to load book options')
@@ -355,7 +357,7 @@ export default function BookOrder({ userName, pageCount, onClose }) {
   const calculateCost = async () => {
     setCalculating(true)
     try {
-      const res = await fetch('/api/lulu/calculate-cost', {
+      const res = await authFetch('/api/lulu/calculate-cost', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

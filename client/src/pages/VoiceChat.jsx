@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { chapters } from '../data/chapters'
+import { useAuth } from '../context/AuthContext'
 
 export default function VoiceChat() {
+  const { authFetch } = useAuth()
   const [searchParams] = useSearchParams()
   const chapterId = searchParams.get('chapter')
   const questionIndex = parseInt(searchParams.get('question') || '0')
@@ -106,9 +108,8 @@ export default function VoiceChat() {
       setError(null)
 
       // Get ephemeral token from server
-      const response = await fetch('/api/voice/session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+      const response = await authFetch('/api/voice/session', {
+        method: 'POST'
       })
 
       if (!response.ok) {
@@ -143,20 +144,33 @@ export default function VoiceChat() {
           type: 'session.update',
           session: {
             modalities: ['text', 'audio'],
-            instructions: `You are a warm, friendly interviewer helping someone write their autobiography. You're currently asking about: "${question?.text}"
+            instructions: `You're chatting with someone to help them record their life story. Be natural and conversational - like a friend catching up over coffee, not a formal interview.
 
-Context: ${question?.prompt}
+The topic to explore: "${question?.text}"
+${question?.prompt ? `Some context: ${question?.prompt}` : ''}
 
-Your job is to:
-1. Ask the question in a conversational, gentle way
-2. Listen to their response
-3. Ask thoughtful follow-up questions to draw out more details
-4. Be encouraging but not overly enthusiastic
-5. Focus on sensory details - what they saw, heard, felt
-6. Keep your responses brief (2-3 sentences max)
+HOW TO BEHAVE:
+- Talk like a normal person. No fake enthusiasm. Don't say things like "Oh how wonderful!" or "That's amazing!" - it sounds insincere.
+- Simple acknowledgments are fine: "Right", "Yeah", "I see", "Okay" - then move on.
+- Give them plenty of time to think. People need time to remember things. Don't rush.
+- If there's a pause, wait. They might be thinking. If it's been a while, just ask "Take your time - anything else come to mind?" or "You still there?"
+- Keep your responses SHORT. One or two sentences max. This is about them, not you.
 
-Start by warmly greeting them and asking the first question. Remember, this is their story - you're just helping them tell it.`,
-            voice: 'Ara', // xAI voice options: Ara, Eve, Leo
+QUESTION STYLE:
+- Start simple and easy: basic facts they don't have to think hard about
+- "Where did you grow up?" "What was your mum's name?" "How about your dad?"
+- Then gradually go deeper: "What was she like?" "Tell me about that house"
+- Ask ONE question at a time. Wait for the answer.
+- Follow up naturally on what they say - show you're actually listening
+
+NEVER DO:
+- Don't be fake or gushing
+- Don't give long responses
+- Don't ask multiple questions at once
+- Don't interrupt or cut them off
+
+Start by saying hi casually and asking something simple to get them talking.`,
+            voice: 'Alloy',
             input_audio_format: 'pcm16',
             output_audio_format: 'pcm16',
             input_audio_transcription: {
@@ -164,9 +178,9 @@ Start by warmly greeting them and asking the first question. Remember, this is t
             },
             turn_detection: {
               type: 'server_vad',
-              threshold: 0.6,           // Higher = needs louder speech to trigger
-              prefix_padding_ms: 500,   // More padding before speech
-              silence_duration_ms: 2500 // 2.5 seconds of silence before AI responds
+              threshold: 0.7,           // Higher = needs louder speech to trigger
+              prefix_padding_ms: 600,   // More padding before speech
+              silence_duration_ms: 4000 // 4 seconds of silence before AI responds - give them time!
             }
           }
         }))
@@ -203,7 +217,7 @@ Start by warmly greeting them and asking the first question. Remember, this is t
 
           case 'input_audio_buffer.speech_stopped':
             setIsSpeechDetected(false)
-            setStatus('Thinking... (pause 2.5s to finish)')
+            setStatus('Take your time... (4s pause before AI responds)')
             break
 
           case 'conversation.item.input_audio_transcription.completed':
@@ -415,9 +429,8 @@ Start by warmly greeting them and asking the first question. Remember, this is t
         .join('\n\n')
 
       // Save to database
-      await fetch('/api/stories', {
+      await authFetch('/api/stories', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           chapterId: chapter.id,
           questionId: question.id,

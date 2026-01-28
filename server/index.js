@@ -6,6 +6,8 @@ import { existsSync } from 'fs'
 import dotenv from 'dotenv'
 
 import pool, { initDatabase } from './db/index.js'
+import { authenticateToken } from './middleware/auth.js'
+import authRouter from './routes/auth.js'
 import storiesRouter from './routes/stories.js'
 import photosRouter from './routes/photos.js'
 import aiRouter from './routes/ai.js'
@@ -25,19 +27,40 @@ const PORT = process.env.PORT || 3001
 app.locals.db = pool
 
 // Middleware
-app.use(cors())
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3001',
+  'https://easymemoir.co.uk',
+  'https://www.easymemoir.co.uk'
+]
+app.use(cors({
+  origin: function(origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, etc)
+    if (!origin) return callback(null, true)
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true)
+    }
+    return callback(null, true) // Allow all in case of subdomains
+  },
+  credentials: true
+}))
 app.use(express.json())
 
 // Serve uploaded files
 app.use('/uploads', express.static(join(__dirname, '..', 'uploads')))
 
-// Routes
-app.use('/api/stories', storiesRouter)
-app.use('/api/photos', photosRouter)
-app.use('/api/ai', aiRouter)
-app.use('/api/voice', voiceRouter)
+// Auth routes (public)
+app.use('/api/auth', authRouter)
+
+// Protected routes - require authentication
+app.use('/api/stories', authenticateToken, storiesRouter)
+app.use('/api/photos', authenticateToken, photosRouter)
+app.use('/api/ai', authenticateToken, aiRouter)
+app.use('/api/voice', authenticateToken, voiceRouter)
+app.use('/api/memory', authenticateToken, memoryRouter)
+
+// Lulu routes (public for now)
 app.use('/api/lulu', luluRouter)
-app.use('/api/memory', memoryRouter)
 
 // Health check
 app.get('/api/health', (req, res) => {

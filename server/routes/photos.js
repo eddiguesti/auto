@@ -35,6 +35,7 @@ const upload = multer({
 // Upload a photo
 router.post('/', upload.single('photo'), async (req, res) => {
   const db = req.app.locals.db
+  const userId = req.user.id
   const { story_id, caption } = req.body
 
   if (!req.file) {
@@ -42,6 +43,13 @@ router.post('/', upload.single('photo'), async (req, res) => {
   }
 
   try {
+    // Verify user owns this story
+    const storyCheck = await db.query('SELECT id FROM stories WHERE id = $1 AND user_id = $2', [story_id, userId])
+    if (storyCheck.rows.length === 0) {
+      unlinkSync(req.file.path)
+      return res.status(403).json({ error: 'Not authorized to add photos to this story' })
+    }
+
     const result = await db.query(`
       INSERT INTO photos (story_id, filename, original_name, caption)
       VALUES ($1, $2, $3, $4)
@@ -76,15 +84,20 @@ router.get('/file/:filename', (req, res) => {
 // Delete a photo
 router.delete('/:id', async (req, res) => {
   const db = req.app.locals.db
+  const userId = req.user.id
   const { id } = req.params
 
   try {
-    // Get the photo info first
-    const result = await db.query('SELECT * FROM photos WHERE id = $1', [id])
+    // Get the photo info and verify ownership via story
+    const result = await db.query(`
+      SELECT p.* FROM photos p
+      JOIN stories s ON p.story_id = s.id
+      WHERE p.id = $1 AND s.user_id = $2
+    `, [id, userId])
     const photo = result.rows[0]
 
     if (!photo) {
-      return res.status(404).json({ error: 'Photo not found' })
+      return res.status(404).json({ error: 'Photo not found or not authorized' })
     }
 
     // Delete from database
@@ -106,12 +119,17 @@ router.delete('/:id', async (req, res) => {
 // Get all photos for a story
 router.get('/story/:storyId', async (req, res) => {
   const db = req.app.locals.db
+  const userId = req.user.id
   const { storyId } = req.params
 
   try {
+    // Verify user owns this story and get photos
     const result = await db.query(`
-      SELECT * FROM photos WHERE story_id = $1 ORDER BY created_at
-    `, [storyId])
+      SELECT p.* FROM photos p
+      JOIN stories s ON p.story_id = s.id
+      WHERE p.story_id = $1 AND s.user_id = $2
+      ORDER BY p.created_at
+    `, [storyId, userId])
 
     res.json(result.rows)
   } catch (err) {
