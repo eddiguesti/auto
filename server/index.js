@@ -15,6 +15,8 @@ import voiceRouter from './routes/voice.js'
 import luluRouter from './routes/lulu.js'
 import memoryRouter from './routes/memory.js'
 import seoRouter from './routes/seo.js'
+import exportRouter from './routes/export.js'
+import paymentsRouter, { handleStripeWebhook } from './routes/payments.js'
 
 dotenv.config()
 
@@ -66,6 +68,18 @@ app.use('/api/memory', authenticateToken, memoryRouter)
 
 // Lulu routes (protected)
 app.use('/api/lulu', authenticateToken, luluRouter)
+
+// Export routes (protected)
+app.use('/api/export', authenticateToken, exportRouter)
+
+// Payment routes (protected)
+app.use('/api/payments', authenticateToken, paymentsRouter)
+
+// Stripe webhook (needs raw body, no auth)
+app.post('/api/webhooks/stripe',
+  express.raw({ type: 'application/json' }),
+  (req, res) => handleStripeWebhook(req, res, pool)
+)
 
 // Health check
 app.get('/api/health', (req, res) => {

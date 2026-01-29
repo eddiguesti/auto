@@ -179,6 +179,23 @@ export async function initDatabase() {
       )
     `)
 
+    // Payments table for Stripe transactions
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS payments (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        stripe_session_id TEXT,
+        stripe_subscription_id TEXT,
+        product_id TEXT NOT NULL,
+        product_type TEXT NOT NULL, -- 'export', 'subscription'
+        amount INTEGER, -- in cents
+        currency TEXT DEFAULT 'usd',
+        status TEXT DEFAULT 'pending', -- 'pending', 'completed', 'failed', 'refunded'
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `)
+
     // Create indexes
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)
@@ -203,6 +220,12 @@ export async function initDatabase() {
     `)
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_memory_mentions_entity ON memory_mentions(entity_id)
+    `)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_payments_user ON payments(user_id)
+    `)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_payments_stripe_session ON payments(stripe_session_id)
     `)
 
     console.log('Database initialized successfully')
