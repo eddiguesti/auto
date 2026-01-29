@@ -60,10 +60,16 @@ export async function initDatabase() {
         password_hash TEXT,
         google_id TEXT UNIQUE,
         name TEXT,
+        birth_year INTEGER,
         avatar_url TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
+    `)
+
+    // Migration: Add birth_year column if it doesn't exist
+    await client.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS birth_year INTEGER
     `)
 
     // Migration: Drop old tables without user_id and recreate

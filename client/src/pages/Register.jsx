@@ -6,6 +6,7 @@ import { API_URL } from '../config'
 
 export default function Register() {
   const [name, setName] = useState('')
+  const [birthYear, setBirthYear] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -28,7 +29,7 @@ export default function Register() {
       const res = await fetch(`${API_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password })
+        body: JSON.stringify({ name, email, password, birthYear: birthYear ? parseInt(birthYear) : undefined })
       })
 
       const data = await res.json()
@@ -116,6 +117,18 @@ export default function Register() {
                 className="w-full px-4 py-3 rounded-lg border border-sepia/30 bg-white focus:outline-none focus:ring-2 focus:ring-sepia/30 focus:border-sepia"
                 placeholder="First name"
                 required
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-sepia/70 mb-1">Year of Birth</label>
+              <input
+                type="number"
+                value={birthYear}
+                onChange={(e) => setBirthYear(e.target.value)}
+                className="w-full px-4 py-3 rounded-lg border border-sepia/30 bg-white focus:outline-none focus:ring-2 focus:ring-sepia/30 focus:border-sepia"
+                placeholder="e.g. 1965"
+                min="1900"
+                max={new Date().getFullYear()}
               />
             </div>
             <div>

@@ -7,6 +7,9 @@ export default function Home() {
   const { user, authFetch } = useAuth()
   const [progress, setProgress] = useState({})
 
+  // Get first name for title
+  const firstName = user?.name?.split(' ')[0] || 'Your'
+
   useEffect(() => {
     fetchProgress()
   }, [])
@@ -41,7 +44,7 @@ export default function Home() {
         {/* Decorative flourish */}
         <div className="text-sepia/40 text-2xl mb-4 tracking-[0.5em] float">❧</div>
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-light text-ink mb-3 tracking-wide">
-          Steven's Life
+          {firstName}'s Life
         </h1>
         <div className="w-24 h-px bg-sepia/30 mx-auto mb-4" />
         <p className="text-lg sm:text-xl text-sepia/80 italic">
