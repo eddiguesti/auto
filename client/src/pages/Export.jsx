@@ -117,10 +117,6 @@ export default function Export() {
     }
   }
 
-  const handlePrint = () => {
-    window.print()
-  }
-
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-8 text-center">
@@ -220,15 +216,6 @@ export default function Export() {
                 </svg>
                 Order Printed Book
               </button>
-              <button
-                onClick={handlePrint}
-                className="inline-flex items-center gap-2 px-6 py-3 border border-sepia/30 text-sepia rounded-lg hover:bg-sepia/5 transition tap-bounce"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                </svg>
-                Print Preview
-              </button>
             </div>
           )}
         </div>
@@ -236,7 +223,7 @@ export default function Export() {
 
       {/* Export Options Cards */}
       {hasContent && (
-        <div className="grid md:grid-cols-3 gap-6 mb-12 print:hidden">
+        <div className="grid md:grid-cols-2 gap-6 mb-12 print:hidden">
           {/* eBook Card */}
           <div className="bg-white rounded-2xl p-6 border border-sepia/10 shadow-sm">
             <div className="w-12 h-12 bg-sepia/10 rounded-xl flex items-center justify-center mb-4">
@@ -293,27 +280,6 @@ export default function Export() {
             </button>
           </div>
 
-          {/* PDF Card */}
-          <div className="bg-white rounded-2xl p-6 border border-sepia/10 shadow-sm">
-            <div className="w-12 h-12 bg-sepia/10 rounded-xl flex items-center justify-center mb-4">
-              <svg className="w-6 h-6 text-sepia" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-              </svg>
-            </div>
-            <h3 className="font-display text-xl text-ink mb-2">PDF Preview</h3>
-            <p className="text-sm text-warmgray mb-4">
-              Print at home or use your browser's "Save as PDF" feature for a quick copy.
-            </p>
-            <div className="flex items-baseline gap-2 mb-4">
-              <span className="text-2xl font-medium text-green-600">Free</span>
-            </div>
-            <button
-              onClick={handlePrint}
-              className="w-full py-3 border border-sepia/30 text-sepia rounded-lg hover:bg-sepia/5 transition font-medium"
-            >
-              Open Print Preview
-            </button>
-          </div>
         </div>
       )}
 
