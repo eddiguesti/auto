@@ -49,9 +49,11 @@ export default function AIAssistant({ context, onClose, onInsertText }) {
   const callAI = async (endpoint, body) => {
     const res = await authFetch(`/api/ai/${endpoint}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     })
+    if (!res.ok) {
+      throw new Error('AI request failed')
+    }
     return res.json()
   }
 

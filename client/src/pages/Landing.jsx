@@ -63,12 +63,12 @@ export default function Landing() {
             <p className="font-sans text-sepia uppercase tracking-[0.3em] text-xs mb-6">
               Preserve Your Legacy
             </p>
-            <h1 className="font-display text-5xl sm:text-6xl lg:text-7xl text-ink leading-[1.1] mb-8">
+            <h1 className="hero-headline font-display text-5xl sm:text-6xl lg:text-7xl text-ink leading-[1.1] mb-8">
               Your life story,
               <br />
               <span className="italic text-sepia">beautifully told</span>
             </h1>
-            <p className="font-serif text-xl text-warmgray leading-relaxed mb-10 max-w-lg">
+            <p className="hero-description font-serif text-xl text-warmgray leading-relaxed mb-10 max-w-lg">
               Just talk about your memories. Our AI listens, asks thoughtful questions,
               and transforms your stories into a beautifully written autobiography
               your family will treasure forever.
@@ -147,7 +147,7 @@ export default function Landing() {
       </section>
 
       {/* How It Works */}
-      <section id="how-it-works" className="py-24 px-6">
+      <section id="how-it-works" className="how-it-works py-24 px-6">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-20">
             <p className="font-sans text-sepia uppercase tracking-[0.3em] text-xs mb-4">
@@ -601,7 +601,7 @@ export default function Landing() {
             Easy<span className="text-sepia">Memoir</span>
           </div>
           <p className="font-sans text-sm text-warmgray">
-            © 2025 Easy Memoir. Helping families preserve their stories.
+            © 2026 Easy Memoir. Helping families preserve their stories.
           </p>
         </div>
       </footer>

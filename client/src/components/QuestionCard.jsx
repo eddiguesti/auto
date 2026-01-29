@@ -14,6 +14,7 @@ export default function QuestionCard({
   const { authFetch } = useAuth()
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
   const fileInputRef = useRef(null)
   const saveTimeoutRef = useRef(null)
 
@@ -35,18 +36,25 @@ export default function QuestionCard({
     if (!file || !storyId) return
 
     setUploading(true)
+    setError(null)
     const formData = new FormData()
     formData.append('photo', file)
     formData.append('story_id', storyId)
 
     try {
-      await authFetch('/api/photos', {
+      const res = await authFetch('/api/photos', {
         method: 'POST',
         body: formData
       })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || 'Upload failed')
+      }
       onPhotosChange()
     } catch (err) {
       console.error('Error uploading photo:', err)
+      setError('Failed to upload photo. Please try again.')
+      setTimeout(() => setError(null), 4000)
     } finally {
       setUploading(false)
       if (fileInputRef.current) {
@@ -57,11 +65,17 @@ export default function QuestionCard({
 
   const deletePhoto = async (photoId) => {
     if (!confirm('Delete this photo?')) return
+    setError(null)
     try {
-      await authFetch(`/api/photos/${photoId}`, { method: 'DELETE' })
+      const res = await authFetch(`/api/photos/${photoId}`, { method: 'DELETE' })
+      if (!res.ok) {
+        throw new Error('Delete failed')
+      }
       onPhotosChange()
     } catch (err) {
       console.error('Error deleting photo:', err)
+      setError('Failed to delete photo. Please try again.')
+      setTimeout(() => setError(null), 4000)
     }
   }
 
@@ -92,6 +106,13 @@ export default function QuestionCard({
             </span>
           )}
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mt-3 p-2 bg-red-50 text-red-700 rounded text-sm text-center">
+            {error}
+          </div>
+        )}
 
         {/* Photos */}
         {photos && photos.length > 0 && (

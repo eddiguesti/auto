@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import OpenAI from 'openai'
+import { sanitizeForPrompt, createSafeContentBlock, checkRateLimit } from '../utils/security.js'
 
 const router = Router()
 
@@ -73,28 +74,47 @@ router.post('/interview', async (req, res) => {
   const db = req.app.locals.db
   const userId = req.user.id
 
+  // Rate limiting
+  const rateCheck = checkRateLimit(userId)
+  if (!rateCheck.allowed) {
+    return res.status(429).json({
+      error: 'Too many requests',
+      message: `Please wait ${Math.ceil(rateCheck.resetIn / 1000)} seconds before trying again.`
+    })
+  }
+
   try {
     const client = getClient()
     const memoryContext = await getMemoryContext(db, userId)
 
-    // Count how much content we have
-    const totalContent = gatheredContent.map(g => g.content).join(' ')
+    // Sanitize all user inputs to prevent prompt injection
+    const safeQuestion = sanitizeForPrompt(question, 500)
+    const safePrompt = sanitizeForPrompt(prompt, 500)
+    const safeExistingAnswer = sanitizeForPrompt(existingAnswer, 2000)
+    const safeLastResponse = sanitizeForPrompt(lastResponse, 2000)
+    const safeGatheredContent = gatheredContent.map(g => ({
+      ...g,
+      content: sanitizeForPrompt(g.content, 1000)
+    }))
+
+    // Count how much content we have (using sanitized content)
+    const totalContent = safeGatheredContent.map(g => g.content).join(' ')
     const wordCount = totalContent.split(/\s+/).filter(w => w).length
-    const responseCount = gatheredContent.filter(g => g.type === 'response').length
+    const responseCount = safeGatheredContent.filter(g => g.type === 'response').length
 
     // Determine if we have enough content (at least 100 words or 4+ responses)
     const hasEnoughContent = wordCount >= 100 || responseCount >= 4
 
     let systemPrompt
     if (action === 'start') {
-      // Starting the interview
+      // Starting the interview - using sanitized inputs
       systemPrompt = `You're helping someone jot down their memories. Keep it casual and brief - like texting a mate, not writing a greeting card.
 
-The question they're answering: "${question}"
-Context: ${prompt}
+The question they're answering: ${safeQuestion}
+Context: ${safePrompt}
 ${memoryContext ? `\nWhat you know about their story so far:${memoryContext}` : ''}
 
-${existingAnswer ? `They wrote: "${existingAnswer.substring(0, 500)}"
+${safeExistingAnswer ? `They wrote: ${safeExistingAnswer.substring(0, 500)}
 
 Just ask 1-2 quick follow-up questions to get more details. Things like:
 - What did it look/sound/smell like?
@@ -109,19 +129,19 @@ IMPORTANT TONE RULES:
 - No emojis
 - 2-3 sentences max`
     } else {
-      // Continuing the interview
+      // Continuing the interview - using sanitized inputs
       systemPrompt = `You're chatting with someone about their memories. Keep it casual and brief.
 
-Question they're answering: "${question}"
-Context: ${prompt}
+Question they're answering: ${safeQuestion}
+Context: ${safePrompt}
 ${memoryContext ? `\nWhat you know about their story so far:${memoryContext}` : ''}
 
-${existingAnswer ? `Their original notes: "${existingAnswer.substring(0, 300)}..."` : ''}
+${safeExistingAnswer ? `Their original notes: ${safeExistingAnswer.substring(0, 300)}...` : ''}
 
 What they've shared so far:
-${gatheredContent.map((g, i) => `${i + 1}. ${g.content.substring(0, 200)}...`).join('\n')}
+${safeGatheredContent.map((g, i) => `${i + 1}. ${g.content.substring(0, 200)}...`).join('\n')}
 
-Their latest response: "${lastResponse}"
+Their latest response: ${safeLastResponse}
 
 ${hasEnoughContent ?
 `Got enough to work with now. Just let them know they can add more if they want, or hit "Write My Story" when ready. Keep it brief.` :
@@ -143,11 +163,13 @@ TONE RULES:
       { role: 'system', content: systemPrompt }
     ]
 
-    // Add conversation history (filter out any empty content)
+    // Add conversation history (filter out any empty content, sanitize user messages)
     if (history.length > 0) {
       history.forEach(h => {
         if (h.content && h.content.trim()) {
-          messages.push({ role: h.role, content: h.content })
+          // Sanitize user messages to prevent injection via conversation history
+          const safeContent = h.role === 'user' ? sanitizeForPrompt(h.content, 2000) : h.content
+          messages.push({ role: h.role, content: safeContent })
         }
       })
     }
@@ -155,11 +177,11 @@ TONE RULES:
     // Always need a user message at the end for the API
     if (action === 'start') {
       messages.push({ role: 'user', content: 'Please start the interview.' })
-    } else if (lastResponse && lastResponse.trim()) {
+    } else if (safeLastResponse && safeLastResponse.trim()) {
       // For continue action, add the user's latest response if not already in history
       const lastMsg = messages[messages.length - 1]
       if (!lastMsg || lastMsg.role !== 'user') {
-        messages.push({ role: 'user', content: lastResponse })
+        messages.push({ role: 'user', content: safeLastResponse })
       }
     } else {
       // Fallback - ensure we have a user message
@@ -191,23 +213,41 @@ router.post('/write-story', async (req, res) => {
   const db = req.app.locals.db
   const userId = req.user.id
 
+  // Rate limiting
+  const rateCheck = checkRateLimit(userId)
+  if (!rateCheck.allowed) {
+    return res.status(429).json({
+      error: 'Too many requests',
+      message: `Please wait ${Math.ceil(rateCheck.resetIn / 1000)} seconds before trying again.`
+    })
+  }
+
   try {
     const client = getClient()
     const memoryContext = await getMemoryContext(db, userId)
 
-    // Compile all the raw material
+    // Sanitize all user inputs
+    const safeQuestion = sanitizeForPrompt(question, 500)
+    const safePrompt = sanitizeForPrompt(prompt, 500)
+    const safeExistingAnswer = sanitizeForPrompt(existingAnswer, 5000)
+    const safeGatheredContent = gatheredContent.map(g => ({
+      ...g,
+      content: sanitizeForPrompt(g.content, 2000)
+    }))
+
+    // Compile all the raw material (sanitized)
     const rawMaterial = []
-    if (existingAnswer) {
-      rawMaterial.push(`Original notes: ${existingAnswer}`)
+    if (safeExistingAnswer) {
+      rawMaterial.push(`Original notes: ${safeExistingAnswer}`)
     }
-    gatheredContent.forEach((g, i) => {
+    safeGatheredContent.forEach((g, i) => {
       rawMaterial.push(`Detail ${i + 1}: ${g.content}`)
     })
 
-    // Extract just the user's responses from conversation
+    // Extract just the user's responses from conversation (sanitized)
     const userResponses = conversationHistory
       .filter(m => m.role === 'user')
-      .map(m => m.content)
+      .map(m => sanitizeForPrompt(m.content, 2000))
       .join('\n\n')
 
     const systemPrompt = `You are helping someone capture their life story. Your task is to take their raw memories and notes and tidy them up into a cohesive passage - BUT you must write in THEIR voice, not yours.
@@ -238,8 +278,8 @@ WHAT NOT TO DO:
 - Don't use sophisticated vocabulary if they use simple words
 - Don't "elevate" their prose - just organise and polish it
 
-The autobiography question was: "${question}"
-Context: ${prompt}
+The autobiography question was: ${safeQuestion}
+Context: ${safePrompt}
 ${memoryContext ? `\nKnown people/places in their story:${memoryContext}` : ''}
 
 THEIR ORIGINAL WRITING (study their style carefully):
@@ -272,9 +312,27 @@ Now write a tidied-up, flowing version of their story IN THEIR VOICE AND STYLE. 
 // Original chat endpoint (kept for backward compatibility)
 router.post('/chat', async (req, res) => {
   const { mode, question, prompt, answer, userMessage, history = [] } = req.body
+  const userId = req.user?.id
+
+  // Rate limiting (if authenticated)
+  if (userId) {
+    const rateCheck = checkRateLimit(userId)
+    if (!rateCheck.allowed) {
+      return res.status(429).json({
+        error: 'Too many requests',
+        message: `Please wait ${Math.ceil(rateCheck.resetIn / 1000)} seconds before trying again.`
+      })
+    }
+  }
 
   try {
     const client = getClient()
+
+    // Sanitize all user inputs
+    const safeQuestion = sanitizeForPrompt(question, 500)
+    const safePrompt = sanitizeForPrompt(prompt, 500)
+    const safeAnswer = sanitizeForPrompt(answer, 2000)
+    const safeUserMessage = sanitizeForPrompt(userMessage, 2000)
 
     const systemPrompts = {
       followup: `You are helping someone write their autobiography. Ask 1-2 thoughtful follow-up questions about their memory. Focus on sensory details, emotions, and specific moments.`,
@@ -285,14 +343,17 @@ router.post('/chat', async (req, res) => {
 
     const systemMessage = `${systemPrompts[mode] || systemPrompts.chat}
 
-Context - The autobiography question: "${question}"
-Hint: "${prompt}"
-${answer ? `Their answer so far: "${answer}"` : '(No answer yet)'}`
+Context - The autobiography question: ${safeQuestion}
+Hint: ${safePrompt}
+${safeAnswer ? `Their answer so far: ${safeAnswer}` : '(No answer yet)'}`
 
     const messages = [
       { role: 'system', content: systemMessage },
-      ...history.map(m => ({ role: m.role, content: m.content })),
-      { role: 'user', content: userMessage }
+      ...history.map(m => ({
+        role: m.role,
+        content: m.role === 'user' ? sanitizeForPrompt(m.content, 2000) : m.content
+      })),
+      { role: 'user', content: safeUserMessage }
     ]
 
     const completion = await client.chat.completions.create({

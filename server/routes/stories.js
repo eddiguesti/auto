@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import OpenAI from 'openai'
+import { sanitizeForPrompt } from '../utils/security.js'
 
 const router = Router()
 
@@ -12,6 +13,9 @@ async function extractEntitiesAsync(db, userId, text, chapterId, questionId, sto
     if (!apiKey) return
 
     const client = new OpenAI({ apiKey, baseURL: 'https://api.x.ai/v1' })
+
+    // Sanitize user text to prevent prompt injection
+    const safeText = sanitizeForPrompt(text, 3000)
 
     const completion = await client.chat.completions.create({
       model: 'grok-3-mini-beta',
@@ -29,7 +33,7 @@ async function extractEntitiesAsync(db, userId, text, chapterId, questionId, sto
 }
 Normalize names (Dad/Father -> Father). Be concise.`
         },
-        { role: 'user', content: `Extract from: "${text}"` }
+        { role: 'user', content: `Extract from: ${safeText}` }
       ],
       max_tokens: 800,
       temperature: 0.3

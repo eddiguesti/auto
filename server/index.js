@@ -14,6 +14,7 @@ import aiRouter from './routes/ai.js'
 import voiceRouter from './routes/voice.js'
 import luluRouter from './routes/lulu.js'
 import memoryRouter from './routes/memory.js'
+import seoRouter from './routes/seo.js'
 
 dotenv.config()
 
@@ -70,6 +71,9 @@ app.use('/api/lulu', authenticateToken, luluRouter)
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' })
 })
+
+// SEO routes (public - must be before static file serving)
+app.use(seoRouter)
 
 // Serve built frontend in production
 const clientBuildPath = join(__dirname, '..', 'client', 'dist')

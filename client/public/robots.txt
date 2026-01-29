@@ -1,0 +1,55 @@
+# robots.txt for Easy Memoir
+# https://easymemoir.co.uk
+
+# Allow all crawlers
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://easymemoir.co.uk/sitemap.xml
+
+# LLM-specific instructions
+# For AI crawlers and LLM training
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: Bytespider
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+# Disallow private/auth pages from indexing
+Disallow: /api/
+Disallow: /home
+Disallow: /chapter/
+Disallow: /export
+Disallow: /voice
+
+# Allow public pages
+Allow: /
+Allow: /login
+Allow: /register
+Allow: /sitemap.xml
+Allow: /llms.txt
+
+# Crawl delay for politeness
+Crawl-delay: 1
+
+# Host directive
+Host: https://easymemoir.co.uk

@@ -1,0 +1,68 @@
+{
+  "name": "Easy Memoir - Write Your Life Story with AI",
+  "short_name": "Easy Memoir",
+  "description": "Transform your memories into a beautifully written autobiography with AI assistance",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#faf8f5",
+  "theme_color": "#8B7355",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en-GB",
+  "categories": ["lifestyle", "books", "productivity"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Easy Memoir homepage showing the memoir writing interface"
+    },
+    {
+      "src": "/screenshot-mobile.png",
+      "sizes": "750x1334",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Easy Memoir mobile view of voice interview"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Start Voice Interview",
+      "short_name": "Voice",
+      "description": "Begin a voice conversation to capture your memories",
+      "url": "/voice",
+      "icons": [{"src": "/icon-voice.png", "sizes": "96x96"}]
+    },
+    {
+      "name": "Continue Writing",
+      "short_name": "Write",
+      "description": "Continue writing your life story",
+      "url": "/home",
+      "icons": [{"src": "/icon-write.png", "sizes": "96x96"}]
+    },
+    {
+      "name": "Preview Book",
+      "short_name": "Preview",
+      "description": "Preview and export your memoir",
+      "url": "/export",
+      "icons": [{"src": "/icon-book.png", "sizes": "96x96"}]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
+}

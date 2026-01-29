@@ -13,8 +13,28 @@ export default function Chapter() {
   const [showAI, setShowAI] = useState(false)
   const [aiContext, setAiContext] = useState(null)
   const saveTimeoutRef = useRef({})
+  const [pendingSaves, setPendingSaves] = useState({}) // Track unsaved changes
+  const [saveStatus, setSaveStatus] = useState(null) // 'saving' | 'saved' | 'error'
+  const [lastError, setLastError] = useState(null)
 
   const chapter = chapters.find(c => c.id === chapterId)
+
+  // Check if there are any pending saves
+  const hasPendingSaves = Object.values(pendingSaves).some(Boolean)
+
+  // Warn user before closing/navigating with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (hasPendingSaves) {
+        e.preventDefault()
+        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?'
+        return e.returnValue
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [hasPendingSaves])
 
   useEffect(() => {
     if (chapter) {
@@ -62,6 +82,11 @@ export default function Chapter() {
       [questionId]: { ...prev[questionId], answer }
     }))
 
+    // Mark this question as having pending changes
+    setPendingSaves(prev => ({ ...prev, [questionId]: true }))
+    setSaveStatus('saving')
+    setLastError(null)
+
     // Debounce the save
     saveTimeoutRef.current[questionId] = setTimeout(async () => {
       try {
@@ -76,8 +101,16 @@ export default function Chapter() {
         if (!res.ok) {
           throw new Error('Failed to save')
         }
+        // Mark as saved successfully
+        setPendingSaves(prev => ({ ...prev, [questionId]: false }))
+        setSaveStatus('saved')
+        // Clear saved status after 2 seconds
+        setTimeout(() => setSaveStatus(prev => prev === 'saved' ? null : prev), 2000)
       } catch (err) {
         console.error('Error saving answer:', err)
+        setSaveStatus('error')
+        setLastError('Failed to save. Please check your connection.')
+        // Keep pending flag so user is warned before leaving
       }
     }, 1000)
   }
@@ -119,11 +152,52 @@ export default function Chapter() {
         </div>
       </header>
 
+      {/* Error Banner */}
+      {lastError && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
+          <span className="text-red-700 text-sm">{lastError}</span>
+          <button
+            onClick={() => {
+              // Retry saving the current answer
+              const currentAnswer = answers[question.id]?.answer || ''
+              if (currentAnswer) {
+                setLastError(null)
+                saveAnswer(question.id, currentAnswer)
+              }
+            }}
+            className="text-red-700 underline text-sm hover:text-red-800"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
       {/* Progress Bar */}
       <div className="bg-white/50 backdrop-blur-sm rounded-lg p-3 sm:p-4 border border-sepia/10 mb-4 sm:mb-6">
         <div className="flex justify-between text-xs sm:text-sm text-sepia/70 mb-2">
           <span>Question {currentQuestion + 1} of {chapter.questions.length}</span>
-          <span>{answeredCount} answered</span>
+          <div className="flex items-center gap-3">
+            {/* Save Status Indicator */}
+            {saveStatus === 'saving' && (
+              <span className="flex items-center gap-1 text-sepia/60">
+                <span className="w-2 h-2 bg-sepia/40 rounded-full animate-pulse" />
+                Saving...
+              </span>
+            )}
+            {saveStatus === 'saved' && (
+              <span className="flex items-center gap-1 text-green-600">
+                <span>✓</span>
+                Saved
+              </span>
+            )}
+            {saveStatus === 'error' && (
+              <span className="flex items-center gap-1 text-red-600">
+                <span>!</span>
+                Save failed
+              </span>
+            )}
+            <span>{answeredCount} answered</span>
+          </div>
         </div>
         <div className="flex gap-1 sm:gap-1.5">
           {chapter.questions.map((q, idx) => (
