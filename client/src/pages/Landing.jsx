@@ -126,22 +126,17 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Social Proof Strip */}
-      <section className="bg-white py-8 border-y border-sepia/10">
-        <div className="max-w-4xl mx-auto px-6 flex flex-wrap items-center justify-center gap-8 text-center">
-          <div>
-            <p className="font-display text-3xl text-ink">500+</p>
-            <p className="font-sans text-xs text-warmgray uppercase tracking-wider">Stories Written</p>
-          </div>
-          <div className="w-px h-10 bg-sepia/20 hidden sm:block" />
-          <div>
-            <p className="font-display text-3xl text-ink">50k+</p>
-            <p className="font-sans text-xs text-warmgray uppercase tracking-wider">Memories Preserved</p>
-          </div>
-          <div className="w-px h-10 bg-sepia/20 hidden sm:block" />
-          <div>
-            <p className="font-display text-3xl text-ink">4.9★</p>
-            <p className="font-sans text-xs text-warmgray uppercase tracking-wider">User Rating</p>
+      {/* Early Adopter Offer */}
+      <section className="bg-gradient-to-r from-sepia/10 via-sepia/5 to-sepia/10 py-6 border-y border-sepia/20">
+        <div className="max-w-4xl mx-auto px-6 text-center">
+          <div className="inline-flex items-center gap-3 bg-white px-6 py-3 rounded-full shadow-sm border border-sepia/20">
+            <span className="font-display text-2xl">🎁</span>
+            <div className="text-left">
+              <p className="font-display text-lg text-ink">
+                First <span className="text-sepia">100</span> users get their memoir <span className="italic text-sepia">completely free</span>
+              </p>
+              <p className="font-sans text-xs text-warmgray">Be an early adopter · Help us shape the future of storytelling</p>
+            </div>
           </div>
         </div>
       </section>
