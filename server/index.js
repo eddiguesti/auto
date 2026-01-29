@@ -1,3 +1,6 @@
+// Polyfills must be loaded first (before any module that uses File API)
+import './polyfills.js'
+
 import express from 'express'
 import cors from 'cors'
 import { fileURLToPath } from 'url'
