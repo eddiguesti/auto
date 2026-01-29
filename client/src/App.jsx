@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import { AuthProvider } from './context/AuthContext'
+import { GOOGLE_CLIENT_ID } from './config'
 import ProtectedRoute from './components/ProtectedRoute'
 import Home from './pages/Home'
 import Chapter from './pages/Chapter'
@@ -9,8 +10,6 @@ import VoiceChat from './pages/VoiceChat'
 import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Register from './pages/Register'
-
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
 
 function App() {
   return (
