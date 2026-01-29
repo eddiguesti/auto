@@ -291,108 +291,61 @@ export default function Export() {
           </Link>
         </div>
       ) : (
-        /* Story Content */
-        <div className="bg-white rounded-xl shadow-sm p-8 print:shadow-none print:p-0">
-          {/* Title Page */}
-          <div className="text-center mb-16 pb-16 border-b print:border-none print:page-break-after-always">
-            <h1 className="text-5xl font-bold text-ink mb-4">
-              {user?.name || 'My'}'s Life Story
-            </h1>
-            <p className="text-xl text-sepia">An Autobiography</p>
-            <p className="text-sepia/60 mt-8">
-              {new Date().toLocaleDateString('en-GB', {
-                year: 'numeric',
-                month: 'long'
-              })}
-            </p>
-          </div>
+        /* Book Summary - No content preview to protect from screenshots */
+        <div className="bg-white rounded-xl shadow-sm p-8">
+          <div className="text-center">
+            <div className="w-20 h-20 bg-sepia/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg className="w-10 h-10 text-sepia" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+            </div>
+            <h2 className="text-3xl font-display text-ink mb-2">{user?.name || 'My'}'s Life Story</h2>
+            <p className="text-sepia mb-8">Your memoir is ready to export</p>
 
-          {/* Chapters */}
-          {chapters.map(chapter => {
-            const chapterStories = stories[chapter.id]
-            if (!chapterStories) return null
-
-            const hasAnswers = Object.values(chapterStories).some(s => s.answer?.trim())
-            if (!hasAnswers) return null
-
-            return (
-              <div key={chapter.id} className="mb-16 print:page-break-before-always">
-                {/* Chapter Title */}
-                <div className="text-center mb-8 pb-4 border-b">
-                  <span className="text-4xl print:hidden">{chapter.icon}</span>
-                  <h2 className="text-3xl font-bold text-ink mt-2">{chapter.title}</h2>
-                  <p className="text-sepia">{chapter.subtitle}</p>
-                </div>
-
-                {/* Questions and Answers */}
-                <div className="space-y-8">
-                  {chapter.questions.map(question => {
-                    const story = chapterStories[question.id]
-                    if (!story?.answer?.trim()) return null
-
-                    return (
-                      <div key={question.id} className="prose max-w-none">
-                        <h3 className="text-lg font-semibold text-ink mb-2">
-                          {question.question}
-                        </h3>
-                        <div className="text-ink/80 whitespace-pre-wrap leading-relaxed">
-                          {story.answer}
-                        </div>
-                        {story.photos && story.photos.length > 0 && (
-                          <div className="flex flex-wrap gap-4 mt-4 print:block">
-                            {story.photos.map(photo => (
-                              <img
-                                key={photo.id}
-                                src={`/api/photos/file/${photo.filename}`}
-                                alt={photo.caption || ''}
-                                className="max-w-xs rounded-lg print:max-w-full print:my-4"
-                              />
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
+            {/* Stats */}
+            <div className="flex justify-center gap-8 mb-8">
+              <div className="text-center">
+                <p className="text-3xl font-display text-ink">
+                  {Object.keys(stories).length}
+                </p>
+                <p className="text-sm text-warmgray">Chapters</p>
               </div>
-            )
-          })}
+              <div className="text-center">
+                <p className="text-3xl font-display text-ink">
+                  {Object.values(stories).reduce((acc, chapter) =>
+                    acc + Object.values(chapter).filter(s => s.answer?.trim()).length, 0
+                  )}
+                </p>
+                <p className="text-sm text-warmgray">Stories</p>
+              </div>
+            </div>
 
-          {/* End Note */}
-          <div className="text-center pt-16 border-t print:page-break-before-always">
-            <p className="text-sepia italic">
-              "Every life is a story worth telling."
+            {/* Chapter list - just titles, no content */}
+            <div className="max-w-md mx-auto text-left">
+              <p className="text-sm text-warmgray mb-3 font-medium">Chapters included:</p>
+              <ul className="space-y-2">
+                {chapters.map(chapter => {
+                  const chapterStories = stories[chapter.id]
+                  const storyCount = chapterStories
+                    ? Object.values(chapterStories).filter(s => s.answer?.trim()).length
+                    : 0
+                  if (storyCount === 0) return null
+                  return (
+                    <li key={chapter.id} className="flex items-center justify-between text-sm">
+                      <span className="text-ink">{chapter.title}</span>
+                      <span className="text-warmgray">{storyCount} {storyCount === 1 ? 'story' : 'stories'}</span>
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
+
+            <p className="text-xs text-warmgray/60 mt-8">
+              Your full story content is securely stored and will be included in your export.
             </p>
           </div>
         </div>
       )}
-
-      {/* Print Styles */}
-      <style>{`
-        @media print {
-          body {
-            background: white !important;
-          }
-          .print\\:hidden {
-            display: none !important;
-          }
-          .print\\:shadow-none {
-            box-shadow: none !important;
-          }
-          .print\\:p-0 {
-            padding: 0 !important;
-          }
-          .print\\:border-none {
-            border: none !important;
-          }
-          .print\\:page-break-after-always {
-            page-break-after: always;
-          }
-          .print\\:page-break-before-always {
-            page-break-before: always;
-          }
-        }
-      `}</style>
 
       {/* Book Order Modal */}
       {showBookOrder && (
