@@ -66,6 +66,26 @@ export async function initDatabase() {
       )
     `)
 
+    // Migration: Drop old tables without user_id and recreate
+    // Check if stories table has user_id column
+    const checkColumn = await client.query(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_name = 'stories' AND column_name = 'user_id'
+    `)
+
+    if (checkColumn.rows.length === 0) {
+      // Old schema detected - drop and recreate tables
+      console.log('Migrating database to new schema with user authentication...')
+      await client.query('DROP TABLE IF EXISTS memory_relationships CASCADE')
+      await client.query('DROP TABLE IF EXISTS memory_mentions CASCADE')
+      await client.query('DROP TABLE IF EXISTS memory_entities CASCADE')
+      await client.query('DROP TABLE IF EXISTS followups CASCADE')
+      await client.query('DROP TABLE IF EXISTS photos CASCADE')
+      await client.query('DROP TABLE IF EXISTS stories CASCADE')
+      await client.query('DROP TABLE IF EXISTS settings CASCADE')
+      console.log('Old tables dropped, recreating with user_id...')
+    }
+
     // Create settings table with user_id
     await client.query(`
       CREATE TABLE IF NOT EXISTS settings (
