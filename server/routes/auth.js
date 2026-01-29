@@ -115,12 +115,16 @@ router.post('/google', async (req, res) => {
 
 
   try {
+    // Log what we're checking
+    console.log('Backend expected audience:', googleClientId)
+
     // Verify Google token
     const ticket = await googleClient.verifyIdToken({
       idToken: credential,
       audience: googleClientId
     })
     const payload = ticket.getPayload()
+    console.log('Token audience from Google:', payload.aud)
     const { sub: googleId, email, name, picture } = payload
 
     // Check if user exists by google_id or email
@@ -151,7 +155,16 @@ router.post('/google', async (req, res) => {
     const token = generateToken(user)
     res.json({ user, token })
   } catch (err) {
-    console.error('Google auth error:', err)
+    console.error('Google auth error:', err.message)
+    // Try to decode JWT to see its audience without verification
+    try {
+      const parts = credential.split('.')
+      const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString())
+      console.error('Token audience was:', payload.aud)
+      console.error('Expected audience:', googleClientId)
+    } catch (e) {
+      console.error('Could not decode token')
+    }
     res.status(401).json({ error: 'Google authentication failed' })
   }
 })
