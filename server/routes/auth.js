@@ -6,9 +6,8 @@ import { generateToken, authenticateToken } from '../middleware/auth.js'
 
 const router = Router()
 
-// Initialize Google client - fallback to production ID if env var has issues
-const PROD_GOOGLE_CLIENT_ID = '965574659024-9s7hved45v1626q8ljh5h92h0gvhps6q.apps.googleusercontent.com'
-const googleClientId = process.env.GOOGLE_CLIENT_ID?.trim() || PROD_GOOGLE_CLIENT_ID
+// Initialize Google client - hardcoded to avoid Railway env var corruption issues
+const googleClientId = '965574659024-9s7hved45v1626q8ljh5h92h0gvhps6q.apps.googleusercontent.com'
 const googleClient = new OAuth2Client(googleClientId)
 
 // Email/Password Registration
