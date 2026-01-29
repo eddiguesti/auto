@@ -20,11 +20,21 @@ export default function Chapter() {
     if (chapter) {
       fetchAnswers()
     }
+
+    // Cleanup timeouts on unmount
+    return () => {
+      Object.values(saveTimeoutRef.current).forEach(timeout => {
+        if (timeout) clearTimeout(timeout)
+      })
+    }
   }, [chapterId])
 
   const fetchAnswers = async () => {
     try {
       const res = await authFetch(`/api/stories/${chapterId}`)
+      if (!res.ok) {
+        throw new Error('Failed to fetch answers')
+      }
       const data = await res.json()
       const answersMap = {}
       data.forEach(story => {
@@ -55,15 +65,17 @@ export default function Chapter() {
     // Debounce the save
     saveTimeoutRef.current[questionId] = setTimeout(async () => {
       try {
-        await authFetch('/api/stories', {
+        const res = await authFetch('/api/stories', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             chapter_id: chapterId,
             question_id: questionId,
             answer
           })
         })
+        if (!res.ok) {
+          throw new Error('Failed to save')
+        }
       } catch (err) {
         console.error('Error saving answer:', err)
       }

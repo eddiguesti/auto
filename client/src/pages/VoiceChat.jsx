@@ -146,7 +146,7 @@ export default function VoiceChat() {
             modalities: ['text', 'audio'],
             instructions: `You're chatting with someone to help them record their life story. Be natural and conversational - like a friend catching up over coffee, not a formal interview.
 
-The topic to explore: "${question?.text}"
+The topic to explore: "${question?.question}"
 ${question?.prompt ? `Some context: ${question?.prompt}` : ''}
 
 HOW TO BEHAVE:
@@ -429,14 +429,18 @@ Start by saying hi casually and asking something simple to get them talking.`,
         .join('\n\n')
 
       // Save to database
-      await authFetch('/api/stories', {
+      const res = await authFetch('/api/stories', {
         method: 'POST',
         body: JSON.stringify({
-          chapterId: chapter.id,
-          questionId: question.id,
+          chapter_id: chapter.id,
+          question_id: question.id,
           answer: userResponses
         })
       })
+
+      if (!res.ok) {
+        throw new Error('Failed to save')
+      }
 
       setStatus('Saved!')
     } catch (err) {
@@ -482,7 +486,7 @@ Start by saying hi casually and asking something simple to get them talking.`,
               {chapter.title} - Question {questionIndex + 1}
             </p>
             <h2 className="text-xl text-ink leading-relaxed">
-              {question?.text}
+              {question?.question}
             </h2>
             {question?.prompt && (
               <p className="text-sepia/70 text-sm mt-3 italic">

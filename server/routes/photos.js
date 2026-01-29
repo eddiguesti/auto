@@ -42,6 +42,16 @@ router.post('/', upload.single('photo'), async (req, res) => {
     return res.status(400).json({ error: 'No file uploaded' })
   }
 
+  if (!db) {
+    if (req.file) unlinkSync(req.file.path)
+    return res.status(503).json({ error: 'Database not available' })
+  }
+
+  if (!story_id) {
+    if (req.file) unlinkSync(req.file.path)
+    return res.status(400).json({ error: 'Missing story_id' })
+  }
+
   try {
     // Verify user owns this story
     const storyCheck = await db.query('SELECT id FROM stories WHERE id = $1 AND user_id = $2', [story_id, userId])
@@ -72,7 +82,14 @@ router.post('/', upload.single('photo'), async (req, res) => {
 // Get photo file
 router.get('/file/:filename', (req, res) => {
   const { filename } = req.params
-  const filepath = join(__dirname, '..', '..', 'uploads', filename)
+
+  // Sanitize filename to prevent path traversal attacks
+  const sanitizedFilename = filename.replace(/[^a-zA-Z0-9._-]/g, '')
+  if (sanitizedFilename !== filename || filename.includes('..')) {
+    return res.status(400).json({ error: 'Invalid filename' })
+  }
+
+  const filepath = join(__dirname, '..', '..', 'uploads', sanitizedFilename)
 
   if (!existsSync(filepath)) {
     return res.status(404).json({ error: 'Photo not found' })
@@ -86,6 +103,10 @@ router.delete('/:id', async (req, res) => {
   const db = req.app.locals.db
   const userId = req.user.id
   const { id } = req.params
+
+  if (!db) {
+    return res.status(503).json({ error: 'Database not available' })
+  }
 
   try {
     // Get the photo info and verify ownership via story
@@ -121,6 +142,10 @@ router.get('/story/:storyId', async (req, res) => {
   const db = req.app.locals.db
   const userId = req.user.id
   const { storyId } = req.params
+
+  if (!db) {
+    return res.status(503).json({ error: 'Database not available' })
+  }
 
   try {
     // Verify user owns this story and get photos

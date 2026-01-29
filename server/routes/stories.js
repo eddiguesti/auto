@@ -85,6 +85,10 @@ router.get('/all', async (req, res) => {
   const db = req.app.locals.db
   const userId = req.user.id
 
+  if (!db) {
+    return res.status(503).json({ error: 'Database not available' })
+  }
+
   try {
     const result = await db.query(`
       SELECT s.*,
@@ -112,6 +116,10 @@ router.get('/progress', async (req, res) => {
   const db = req.app.locals.db
   const userId = req.user.id
 
+  if (!db) {
+    return res.status(503).json({ error: 'Database not available' })
+  }
+
   try {
     const result = await db.query(`
       SELECT chapter_id, COUNT(*) as count
@@ -137,6 +145,10 @@ router.get('/settings', async (req, res) => {
   const db = req.app.locals.db
   const userId = req.user.id
 
+  if (!db) {
+    return res.status(503).json({ error: 'Database not available' })
+  }
+
   try {
     const result = await db.query('SELECT * FROM settings WHERE user_id = $1', [userId])
     res.json(result.rows[0] || {})
@@ -151,6 +163,10 @@ router.post('/settings', async (req, res) => {
   const db = req.app.locals.db
   const userId = req.user.id
   const { name } = req.body
+
+  if (!db) {
+    return res.status(503).json({ error: 'Database not available' })
+  }
 
   try {
     await db.query(`
@@ -171,6 +187,10 @@ router.get('/:chapterId', async (req, res) => {
   const db = req.app.locals.db
   const userId = req.user.id
   const { chapterId } = req.params
+
+  if (!db) {
+    return res.status(503).json({ error: 'Database not available' })
+  }
 
   try {
     const result = await db.query(`
@@ -199,6 +219,14 @@ router.post('/', async (req, res) => {
   const db = req.app.locals.db
   const userId = req.user.id
   const { chapter_id, question_id, answer } = req.body
+
+  if (!db) {
+    return res.status(503).json({ error: 'Database not available' })
+  }
+
+  if (!chapter_id || !question_id) {
+    return res.status(400).json({ error: 'Missing chapter_id or question_id' })
+  }
 
   try {
     await db.query(`

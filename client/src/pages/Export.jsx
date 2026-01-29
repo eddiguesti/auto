@@ -8,6 +8,7 @@ export default function Export() {
   const { user, authFetch } = useAuth()
   const [stories, setStories] = useState({})
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [showBookOrder, setShowBookOrder] = useState(false)
   const [pageCount, setPageCount] = useState(50)
 
@@ -17,7 +18,11 @@ export default function Export() {
 
   const fetchAllStories = async () => {
     try {
+      setError(null)
       const storiesRes = await authFetch('/api/stories/all')
+      if (!storiesRes.ok) {
+        throw new Error('Failed to load stories')
+      }
       const storiesData = await storiesRes.json()
 
       // Organize by chapter and question
@@ -31,6 +36,7 @@ export default function Export() {
       setStories(organized)
     } catch (err) {
       console.error('Error fetching stories:', err)
+      setError('Unable to load your stories. Please try refreshing the page.')
     } finally {
       setLoading(false)
     }
@@ -44,6 +50,21 @@ export default function Export() {
     return (
       <div className="max-w-4xl mx-auto px-4 py-8 text-center">
         <p className="text-sepia">Loading your story...</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <div className="p-4 bg-red-50 text-red-700 rounded-lg text-center">
+          {error}
+        </div>
+        <div className="text-center mt-4">
+          <Link to="/" className="text-sepia hover:text-ink underline">
+            Back to Home
+          </Link>
+        </div>
       </div>
     )
   }

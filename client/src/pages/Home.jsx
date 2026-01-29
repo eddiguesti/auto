@@ -6,6 +6,8 @@ import { useAuth } from '../context/AuthContext'
 export default function Home() {
   const { user, authFetch } = useAuth()
   const [progress, setProgress] = useState({})
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   // Get first name for title
   const firstName = user?.name?.split(' ')[0] || 'Your'
@@ -16,11 +18,18 @@ export default function Home() {
 
   const fetchProgress = async () => {
     try {
+      setError(null)
       const res = await authFetch('/api/stories/progress')
+      if (!res.ok) {
+        throw new Error('Failed to load progress')
+      }
       const data = await res.json()
       setProgress(data)
     } catch (err) {
       console.error('Error fetching progress:', err)
+      setError('Unable to load your progress. Please try refreshing the page.')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -54,6 +63,13 @@ export default function Home() {
           A journey through memories, guided by thoughtful questions and the gentle assistance of AI
         </p>
       </header>
+
+      {/* Error Message */}
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-lg text-sm text-center">
+          {error}
+        </div>
+      )}
 
       {/* Overall Progress */}
           <div className="bg-white/60 backdrop-blur-sm rounded-lg p-5 sm:p-6 mb-10 sm:mb-12 border border-sepia/10 shadow-sm">

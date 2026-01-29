@@ -317,6 +317,168 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Memory Map Section */}
+      <section className="py-24 px-6 bg-gradient-to-b from-white to-cream">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-16">
+            <p className="font-sans text-sepia uppercase tracking-[0.3em] text-xs mb-4">
+              Intelligent Connections
+            </p>
+            <h2 className="font-display text-4xl sm:text-5xl text-ink mb-6">
+              Your memories, <span className="italic text-sepia">beautifully connected</span>
+            </h2>
+            <p className="font-serif text-lg text-warmgray max-w-2xl mx-auto">
+              As you share your stories, our AI automatically identifies the people, places,
+              and events in your life—building a rich map of your memories.
+            </p>
+          </div>
+
+          {/* Memory Graph Diagram */}
+          <div className="relative bg-white rounded-3xl p-8 sm:p-12 shadow-xl border border-sepia/10">
+            {/* Flow: Story → AI → Memory Map */}
+            <div className="grid md:grid-cols-3 gap-8 items-center">
+              {/* Step 1: You Tell Your Story */}
+              <div className="text-center">
+                <div className="w-16 h-16 rounded-full bg-sepia/10 flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl">💬</span>
+                </div>
+                <h3 className="font-display text-xl text-ink mb-2">You Share</h3>
+                <p className="font-serif text-sm text-warmgray">
+                  "My father worked at the Ford factory in Birmingham with Uncle Joe..."
+                </p>
+              </div>
+
+              {/* Arrow */}
+              <div className="hidden md:flex justify-center">
+                <div className="flex items-center gap-2 text-sepia/40">
+                  <div className="w-16 h-px bg-sepia/30"></div>
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
+                  </svg>
+                </div>
+              </div>
+
+              {/* Mobile arrow */}
+              <div className="md:hidden flex justify-center">
+                <svg className="w-6 h-6 text-sepia/40 rotate-90" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
+                </svg>
+              </div>
+
+              {/* Step 2: AI Extracts */}
+              <div className="text-center">
+                <div className="w-16 h-16 rounded-full bg-sepia/10 flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl">🧠</span>
+                </div>
+                <h3 className="font-display text-xl text-ink mb-2">AI Understands</h3>
+                <div className="flex flex-wrap justify-center gap-2 mt-3">
+                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">👤 Father</span>
+                  <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">📍 Birmingham</span>
+                  <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full">👤 Uncle Joe</span>
+                  <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">🏭 Ford Factory</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Memory Map Visual */}
+            <div className="mt-12 pt-8 border-t border-sepia/10">
+              <p className="text-center font-sans text-xs text-sepia uppercase tracking-wider mb-8">
+                Your Growing Memory Map
+              </p>
+
+              {/* Visual Network Graph */}
+              <div className="relative h-64 sm:h-80">
+                {/* Center node - You */}
+                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+                  <div className="w-16 h-16 rounded-full bg-sepia text-white flex items-center justify-center font-display text-sm shadow-lg">
+                    You
+                  </div>
+                </div>
+
+                {/* Connection lines - SVG */}
+                <svg className="absolute inset-0 w-full h-full" style={{zIndex: 1}}>
+                  {/* Lines from center to nodes */}
+                  <line x1="50%" y1="50%" x2="20%" y2="20%" stroke="#d4b896" strokeWidth="2" strokeDasharray="4"/>
+                  <line x1="50%" y1="50%" x2="80%" y2="25%" stroke="#d4b896" strokeWidth="2" strokeDasharray="4"/>
+                  <line x1="50%" y1="50%" x2="15%" y2="70%" stroke="#d4b896" strokeWidth="2" strokeDasharray="4"/>
+                  <line x1="50%" y1="50%" x2="85%" y2="75%" stroke="#d4b896" strokeWidth="2" strokeDasharray="4"/>
+                  <line x1="50%" y1="50%" x2="50%" y2="10%" stroke="#d4b896" strokeWidth="2" strokeDasharray="4"/>
+                  {/* Connection between nodes */}
+                  <line x1="20%" y1="20%" x2="15%" y2="70%" stroke="#d4b896" strokeWidth="1" strokeOpacity="0.5"/>
+                  <line x1="80%" y1="25%" x2="85%" y2="75%" stroke="#d4b896" strokeWidth="1" strokeOpacity="0.5"/>
+                </svg>
+
+                {/* Family nodes */}
+                <div className="absolute left-[15%] top-[15%] -translate-x-1/2 -translate-y-1/2 z-10">
+                  <div className="w-14 h-14 rounded-full bg-blue-100 border-2 border-blue-300 flex items-center justify-center text-xl shadow-md hover:scale-110 transition cursor-pointer" title="Father">
+                    👨
+                  </div>
+                  <p className="text-xs text-center mt-1 text-warmgray">Father</p>
+                </div>
+
+                <div className="absolute left-[80%] top-[20%] -translate-x-1/2 -translate-y-1/2 z-10">
+                  <div className="w-14 h-14 rounded-full bg-blue-100 border-2 border-blue-300 flex items-center justify-center text-xl shadow-md hover:scale-110 transition cursor-pointer" title="Mother">
+                    👩
+                  </div>
+                  <p className="text-xs text-center mt-1 text-warmgray">Mother</p>
+                </div>
+
+                <div className="absolute left-[50%] top-[5%] -translate-x-1/2 z-10">
+                  <div className="w-12 h-12 rounded-full bg-blue-100 border-2 border-blue-300 flex items-center justify-center text-lg shadow-md hover:scale-110 transition cursor-pointer" title="Uncle Joe">
+                    👴
+                  </div>
+                  <p className="text-xs text-center mt-1 text-warmgray">Uncle Joe</p>
+                </div>
+
+                {/* Place nodes */}
+                <div className="absolute left-[10%] top-[70%] -translate-x-1/2 -translate-y-1/2 z-10">
+                  <div className="w-12 h-12 rounded-full bg-green-100 border-2 border-green-300 flex items-center justify-center text-lg shadow-md hover:scale-110 transition cursor-pointer" title="Birmingham">
+                    🏠
+                  </div>
+                  <p className="text-xs text-center mt-1 text-warmgray">Birmingham</p>
+                </div>
+
+                <div className="absolute left-[85%] top-[75%] -translate-x-1/2 -translate-y-1/2 z-10">
+                  <div className="w-12 h-12 rounded-full bg-orange-100 border-2 border-orange-300 flex items-center justify-center text-lg shadow-md hover:scale-110 transition cursor-pointer" title="Ford Factory">
+                    🏭
+                  </div>
+                  <p className="text-xs text-center mt-1 text-warmgray">Ford Factory</p>
+                </div>
+              </div>
+
+              {/* Legend */}
+              <div className="flex flex-wrap justify-center gap-4 mt-6 text-xs font-sans">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-blue-200 border border-blue-400"></div>
+                  <span className="text-warmgray">People</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-green-200 border border-green-400"></div>
+                  <span className="text-warmgray">Places</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-orange-200 border border-orange-400"></div>
+                  <span className="text-warmgray">Events & Things</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-px bg-sepia/50" style={{borderTop: '2px dashed #d4b896'}}></div>
+                  <span className="text-warmgray">Connections</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Benefit callout */}
+            <div className="mt-8 bg-sepia/5 rounded-2xl p-6 text-center">
+              <p className="font-serif text-warmgray">
+                <span className="text-ink font-medium">The more you share, the smarter it gets.</span>
+                {' '}Our AI remembers everyone you mention—so when you talk about Dad later,
+                it already knows he worked at Ford with Uncle Joe.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Choose Your Style */}
       <section className="py-24 px-6">
         <div className="max-w-4xl mx-auto">
