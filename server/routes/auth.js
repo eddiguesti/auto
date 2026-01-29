@@ -6,9 +6,10 @@ import { generateToken, authenticateToken } from '../middleware/auth.js'
 
 const router = Router()
 
-// Initialize Google client (will be null if no client ID)
-const googleClientId = process.env.GOOGLE_CLIENT_ID
-const googleClient = googleClientId ? new OAuth2Client(googleClientId) : null
+// Initialize Google client - fallback to production ID if env var has issues
+const PROD_GOOGLE_CLIENT_ID = '965574659024-9s7hved45v1626q8ljh5h92h0gvhps6q.apps.googleusercontent.com'
+const googleClientId = process.env.GOOGLE_CLIENT_ID?.trim() || PROD_GOOGLE_CLIENT_ID
+const googleClient = new OAuth2Client(googleClientId)
 
 // Email/Password Registration
 router.post('/register', [
@@ -113,9 +114,6 @@ router.post('/google', async (req, res) => {
     return res.status(503).json({ error: 'Database not available' })
   }
 
-  if (!googleClient) {
-    return res.status(503).json({ error: 'Google Sign-In not configured' })
-  }
 
   try {
     // Verify Google token
