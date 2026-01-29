@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 export default function Landing() {
@@ -590,14 +590,49 @@ export default function Landing() {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 px-6 border-t border-sepia/10">
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="font-display text-xl text-ink">
-            Easy<span className="text-sepia">Memoir</span>
+      <footer className="py-12 px-6 border-t border-sepia/10 bg-white">
+        <div className="max-w-5xl mx-auto">
+          <div className="grid sm:grid-cols-4 gap-8 mb-8">
+            {/* Brand */}
+            <div className="sm:col-span-2">
+              <div className="font-display text-xl text-ink mb-3">
+                Easy<span className="text-sepia">Memoir</span>
+              </div>
+              <p className="font-sans text-sm text-warmgray max-w-xs">
+                Helping families preserve their stories for future generations through AI-powered memoir writing.
+              </p>
+            </div>
+
+            {/* Product Links */}
+            <div>
+              <h4 className="font-sans text-sm font-medium text-ink mb-3">Product</h4>
+              <ul className="space-y-2 text-sm">
+                <li><Link to="/how-it-works" className="text-warmgray hover:text-sepia transition">How It Works</Link></li>
+                <li><Link to="/blog" className="text-warmgray hover:text-sepia transition">Blog</Link></li>
+                <li><Link to="/register" className="text-warmgray hover:text-sepia transition">Get Started</Link></li>
+              </ul>
+            </div>
+
+            {/* Legal Links */}
+            <div>
+              <h4 className="font-sans text-sm font-medium text-ink mb-3">Legal</h4>
+              <ul className="space-y-2 text-sm">
+                <li><Link to="/privacy" className="text-warmgray hover:text-sepia transition">Privacy Policy</Link></li>
+                <li><Link to="/terms" className="text-warmgray hover:text-sepia transition">Terms of Service</Link></li>
+                <li><Link to="/cookies" className="text-warmgray hover:text-sepia transition">Cookie Policy</Link></li>
+              </ul>
+            </div>
           </div>
-          <p className="font-sans text-sm text-warmgray">
-            © 2026 Easy Memoir. Helping families preserve their stories.
-          </p>
+
+          {/* Bottom bar */}
+          <div className="pt-8 border-t border-sepia/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="font-sans text-sm text-warmgray">
+              © 2026 Easy Memoir Ltd. All rights reserved.
+            </p>
+            <p className="font-sans text-xs text-warmgray/60">
+              Made with care in the United Kingdom
+            </p>
+          </div>
         </div>
       </footer>
     </div>

@@ -44,6 +44,46 @@ router.get('/sitemap.xml', (req, res) => {
     <priority>0.8</priority>
   </url>
 
+  <!-- How It Works -->
+  <url>
+    <loc>${SITE_URL}/how-it-works</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Blog -->
+  <url>
+    <loc>${SITE_URL}/blog</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Privacy Policy -->
+  <url>
+    <loc>${SITE_URL}/privacy</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+  <!-- Terms of Service -->
+  <url>
+    <loc>${SITE_URL}/terms</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+  <!-- Cookie Policy -->
+  <url>
+    <loc>${SITE_URL}/cookies</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
+
 </urlset>`
 
   res.set('Content-Type', 'application/xml')
@@ -99,6 +139,11 @@ Disallow: /voice
 Allow: /
 Allow: /login
 Allow: /register
+Allow: /how-it-works
+Allow: /blog
+Allow: /privacy
+Allow: /terms
+Allow: /cookies
 Allow: /sitemap.xml
 Allow: /llms.txt
 
