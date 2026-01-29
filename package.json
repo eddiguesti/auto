@@ -1,8 +1,8 @@
 {
-  "name": "life-story",
+  "name": "easy-memoir",
   "version": "1.0.0",
   "type": "module",
-  "description": "Guided autobiography app",
+  "description": "Easy Memoir - Your life story, beautifully told",
   "scripts": {
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "server": "node server/index.js",

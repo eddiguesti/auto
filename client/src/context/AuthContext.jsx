@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react'
+import { API_URL } from '../config'
 
 const AuthContext = createContext(null)
 
@@ -17,7 +18,7 @@ export function AuthProvider({ children }) {
 
   const fetchUser = async () => {
     try {
-      const res = await fetch('/api/auth/me', {
+      const res = await fetch(`${API_URL}/api/auth/me`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       if (res.ok) {
@@ -62,7 +63,10 @@ export function AuthProvider({ children }) {
       headers['Content-Type'] = 'application/json'
     }
 
-    return fetch(url, {
+    // Prepend API_URL if url starts with /api
+    const fullUrl = url.startsWith('/api') ? `${API_URL}${url}` : url
+
+    return fetch(fullUrl, {
       ...options,
       headers
     })

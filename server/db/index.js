@@ -13,7 +13,7 @@ const databaseUrl = process.env.DATABASE_URL
 
 if (!databaseUrl && process.env.NODE_ENV === 'production') {
   console.error('ERROR: DATABASE_URL environment variable is not set!')
-  console.error('Please add a PostgreSQL database to your Railway project and link it.')
+  console.error('Please set DATABASE_URL to your Supabase/Neon PostgreSQL connection string.')
   process.exit(1)
 }
 
