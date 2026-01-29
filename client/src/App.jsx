@@ -16,6 +16,7 @@ import Privacy from './pages/Privacy'
 import Cookies from './pages/Cookies'
 import HowItWorks from './pages/HowItWorks'
 import Blog from './pages/Blog'
+import BlogPost from './pages/BlogPost'
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
             <Route path="/cookies" element={<Cookies />} />
             <Route path="/how-it-works" element={<HowItWorks />} />
             <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/:slug" element={<BlogPost />} />
 
             {/* Protected pages */}
             <Route path="/home" element={

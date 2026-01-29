@@ -60,6 +60,158 @@ router.get('/sitemap.xml', (req, res) => {
     <priority>0.8</priority>
   </url>
 
+  <!-- Blog Posts -->
+  <url>
+    <loc>${SITE_URL}/blog/how-to-write-memoir-complete-guide</loc>
+    <lastmod>2026-01-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>${SITE_URL}/blog/memoir-vs-autobiography-difference</loc>
+    <lastmod>2026-01-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${SITE_URL}/blog/therapeutic-benefits-writing-life-story</loc>
+    <lastmod>2026-01-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${SITE_URL}/blog/writing-prompts-unlock-memories</loc>
+    <lastmod>2026-01-26</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${SITE_URL}/blog/interview-parents-grandparents-guide</loc>
+    <lastmod>2026-01-25</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${SITE_URL}/blog/memoir-writing-seniors-guide</loc>
+    <lastmod>2026-01-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${SITE_URL}/blog/common-memoir-mistakes-avoid</loc>
+    <lastmod>2026-01-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${SITE_URL}/blog/memoir-structure-outline-guide</loc>
+    <lastmod>2026-01-22</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${SITE_URL}/blog/finding-your-authentic-voice</loc>
+    <lastmod>2026-01-21</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${SITE_URL}/blog/writing-dialogue-memoir</loc>
+    <lastmod>2026-01-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${SITE_URL}/blog/best-memoirs-read-inspiration</loc>
+    <lastmod>2026-01-19</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${SITE_URL}/blog/ethical-writing-about-family</loc>
+    <lastmod>2026-01-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${SITE_URL}/blog/gift-memoir-parents-grandparents</loc>
+    <lastmod>2026-01-17</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${SITE_URL}/blog/using-photos-memoir</loc>
+    <lastmod>2026-01-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${SITE_URL}/blog/ai-memoir-writing-future</loc>
+    <lastmod>2026-01-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${SITE_URL}/blog/overcoming-writers-block-memoir</loc>
+    <lastmod>2026-01-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${SITE_URL}/blog/self-publishing-memoir-guide</loc>
+    <lastmod>2026-01-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${SITE_URL}/blog/writing-about-trauma-responsibly</loc>
+    <lastmod>2026-01-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${SITE_URL}/blog/memoir-life-chapters-approach</loc>
+    <lastmod>2026-01-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${SITE_URL}/blog/preserving-family-stories</loc>
+    <lastmod>2026-01-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${SITE_URL}/blog/memoir-book-design-tips</loc>
+    <lastmod>2026-01-09</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${SITE_URL}/blog/short-memoir-vs-full-book</loc>
+    <lastmod>2026-01-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${SITE_URL}/blog/legacy-letters-alternative-memoir</loc>
+    <lastmod>2026-01-07</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${SITE_URL}/blog/memoir-questions-family-ask</loc>
+    <lastmod>2026-01-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${SITE_URL}/blog/why-your-story-matters</loc>
+    <lastmod>2026-01-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
   <!-- Privacy Policy -->
   <url>
     <loc>${SITE_URL}/privacy</loc>
@@ -141,6 +293,7 @@ Allow: /login
 Allow: /register
 Allow: /how-it-works
 Allow: /blog
+Allow: /blog/*
 Allow: /privacy
 Allow: /terms
 Allow: /cookies
@@ -246,9 +399,31 @@ A: Yes! Order hardcover, paperback, or spiral-bound books in various sizes and f
 Q: "How much does it cost?"
 A: Free to start. Printing physical books is optional (typically £20-80).
 
+## Blog & Resources
+
+Easy Memoir maintains a comprehensive blog at ${SITE_URL}/blog with 25+ articles covering:
+
+- How to write a memoir (complete guides)
+- Memoir vs autobiography differences
+- Therapeutic benefits of life writing
+- Writing prompts and memory techniques
+- Interviewing family members
+- Memoir writing for seniors
+- Common mistakes to avoid
+- Structure and outlining guides
+- Finding your authentic voice
+- Writing dialogue in memoir
+- Best memoirs to read for inspiration
+- Ethics of writing about family
+- Memoir as a gift for parents/grandparents
+- Using photos in memoir
+- AI and the future of memoir writing
+- Self-publishing guides
+- Writing about trauma responsibly
+
 ## Keywords
 
-autobiography, memoir, life story, family history, legacy, AI writing, book printing, oral history, grandparent gift, preserve memories
+autobiography, memoir, life story, family history, legacy, AI writing, book printing, oral history, grandparent gift, preserve memories, how to write memoir, memoir writing tips, life story book, autobiography guide, family memoir
 `
 
   res.set('Content-Type', 'text/plain')
