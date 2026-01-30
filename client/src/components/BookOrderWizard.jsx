@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
-import {
-  IconBook, IconBookmark, IconGift, IconSparkles, IconLeaf,
-  IconHome2, IconPalette, IconCrown, IconRefresh, IconX, IconCheck, IconZoomIn
-} from '@tabler/icons-react'
+import CoverEditor from './CoverEditor'
+import { IconBook, IconBookmark, IconGift, IconX, IconZoomIn, IconRefresh } from '@tabler/icons-react'
 
 // Full image lightbox modal
 function ImageLightbox({ imageUrl, onClose }) {
@@ -188,53 +186,6 @@ function BookPreview({ coverImage, title, authorName, format, size = 'normal', a
   )
 }
 
-// Icon mapping for cover styles using Tabler Icons
-const styleIcons = {
-  classic: <IconBookmark size={32} className="text-sepia" stroke={1.5} />,
-  modern: <IconSparkles size={32} className="text-sepia" stroke={1.5} />,
-  nature: <IconLeaf size={32} className="text-sepia" stroke={1.5} />,
-  family: <IconHome2 size={32} className="text-sepia" stroke={1.5} />,
-  artistic: <IconPalette size={32} className="text-sepia" stroke={1.5} />,
-  heritage: <IconCrown size={32} className="text-sepia" stroke={1.5} />
-}
-
-// Style card component
-function StyleCard({ style, selected, onClick }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`relative p-4 rounded-2xl border-2 transition-all duration-300 text-left ${
-        selected
-          ? 'border-sepia bg-sepia/10 shadow-lg scale-[1.02]'
-          : 'border-sepia/20 hover:border-sepia/40 hover:shadow-md'
-      }`}
-    >
-      <div className="flex items-start gap-3">
-        <div className="flex-shrink-0">{styleIcons[style.icon] || styleIcons.classic}</div>
-        <div>
-          <div className="font-medium text-ink">{style.name}</div>
-          <div className="text-sm text-warmgray mt-0.5">{style.description}</div>
-        </div>
-      </div>
-      {/* Color preview dots */}
-      <div className="flex gap-1.5 mt-3 ml-12">
-        {style.colors.map((color, i) => (
-          <div
-            key={i}
-            className="w-4 h-4 rounded-full border border-black/10"
-            style={{ backgroundColor: color }}
-          />
-        ))}
-      </div>
-      {selected && (
-        <div className="absolute top-2 right-2 w-6 h-6 bg-sepia rounded-full flex items-center justify-center">
-          <IconCheck size={16} className="text-white" stroke={2} />
-        </div>
-      )}
-    </button>
-  )
-}
-
 // Icon mapping for book formats using Tabler Icons
 const formatIcons = {
   paperback: <IconBook size={40} className="text-sepia" stroke={1.5} />,
@@ -270,14 +221,11 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
   const { authFetch } = useAuth()
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(true)
-  const [generating, setGenerating] = useState(false)
   const [options, setOptions] = useState(null)
-  const [error, setError] = useState(null)
   const [showLightbox, setShowLightbox] = useState(false)
 
   // Wizard state
   const [selectedFormat, setSelectedFormat] = useState('hardcover')
-  const [selectedStyle, setSelectedStyle] = useState('classic')
   const [coverImage, setCoverImage] = useState(null)
   const [bookTitle, setBookTitle] = useState('My Life Story')
   const [authorName, setAuthorName] = useState('')
@@ -304,48 +252,13 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
       setOptions(data)
     } catch (err) {
       console.error('Failed to load options:', err)
-      setError('Failed to load book options')
     } finally {
       setLoading(false)
     }
   }
 
-  const generateCover = async () => {
-    setGenerating(true)
-    setError(null)
-
-    try {
-      const res = await authFetch('/api/covers/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          styleId: selectedStyle,
-          bookTitle
-        })
-      })
-
-      if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.message || 'Failed to generate cover')
-      }
-
-      const data = await res.json()
-      setCoverImage(data.imageUrl)
-    } catch (err) {
-      console.error('Cover generation error:', err)
-      setError(err.message || 'Failed to generate cover. Please try again.')
-    } finally {
-      setGenerating(false)
-    }
-  }
-
-  const regenerateCover = () => {
-    setCoverImage(null)
-    generateCover()
-  }
-
-  const canProceedToStep2 = selectedFormat && selectedStyle
-  const canProceedToStep3 = coverImage
+  const canProceedToStep2 = selectedFormat
+  const canProceedToStep3 = true // Cover editor handles its own state
   const canProceedToStep4 = shipping.name && shipping.email && shipping.street1 && shipping.city && shipping.postcode
 
   if (loading) {
@@ -360,15 +273,15 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
   }
 
   const steps = [
-    { num: 1, label: 'Style' },
-    { num: 2, label: 'Cover' },
-    { num: 3, label: 'Details' },
+    { num: 1, label: 'Book' },
+    { num: 2, label: 'Design' },
+    { num: 3, label: 'Shipping' },
     { num: 4, label: 'Review' }
   ]
 
   return (
-    <div className="fixed inset-0 bg-ink/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 sm:p-4">
-      <div className="bg-gradient-to-b from-white to-cream rounded-t-2xl sm:rounded-2xl w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 bg-ink/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 sm:p-2">
+      <div className="bg-gradient-to-b from-white to-cream rounded-t-2xl sm:rounded-2xl w-full max-w-[95vw] max-h-[98vh] sm:max-h-[96vh] flex flex-col shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-sepia/10 flex justify-between items-center">
           <div className="min-w-0 flex-1">
@@ -419,21 +332,6 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
                 </div>
               </div>
 
-              {/* Cover Style */}
-              <div>
-                <h3 className="text-base sm:text-lg font-medium text-ink mb-3 sm:mb-4">Choose your cover style</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                  {options.coverStyles.map(style => (
-                    <StyleCard
-                      key={style.id}
-                      style={style}
-                      selected={selectedStyle === style.id}
-                      onClick={() => setSelectedStyle(style.id)}
-                    />
-                  ))}
-                </div>
-              </div>
-
               {/* Book Title & Author */}
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
@@ -460,107 +358,17 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
             </div>
           )}
 
-          {/* Step 2: Generate Cover */}
+          {/* Step 2: Design Cover */}
           {step === 2 && (
-            <div className="p-4 sm:p-6">
-              <div className="flex flex-col md:grid md:grid-cols-2 gap-6 md:gap-8 items-center">
-                {/* Preview */}
-                <div className="flex flex-col items-center order-1 md:order-1">
-                  <div className="scale-90 sm:scale-100">
-                    <BookPreview
-                      coverImage={coverImage}
-                      title={bookTitle}
-                      authorName={authorName}
-                      format={selectedFormat}
-                      size="large"
-                      onViewFull={coverImage ? () => setShowLightbox(true) : null}
-                    />
-                  </div>
-                  <p className="text-center text-xs sm:text-sm text-warmgray mt-3 sm:mt-4 max-w-xs px-4">
-                    {coverImage
-                      ? 'Your AI-generated cover. Tap to flip or view full image.'
-                      : 'Tap "Generate Cover" to create your unique book cover with AI.'}
-                  </p>
-                </div>
-
-                {/* Controls */}
-                <div className="space-y-4 sm:space-y-6 order-2 md:order-2 w-full">
-                  <div className="text-center md:text-left">
-                    <h3 className="text-lg sm:text-xl font-medium text-ink mb-1 sm:mb-2">Your Book Cover</h3>
-                    <p className="text-sm sm:text-base text-warmgray">
-                      We'll create a unique cover based on the "{options?.coverStyles.find(s => s.id === selectedStyle)?.name}" style.
-                    </p>
-                  </div>
-
-                  {error && (
-                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-                      {error}
-                    </div>
-                  )}
-
-                  <div className="space-y-3">
-                    {!coverImage ? (
-                      <button
-                        onClick={generateCover}
-                        disabled={generating}
-                        className="w-full py-4 bg-sepia text-white rounded-xl hover:bg-sepia/90 disabled:opacity-50 transition font-medium text-lg flex items-center justify-center gap-2"
-                      >
-                        {generating ? (
-                          <>
-                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            Creating your cover...
-                          </>
-                        ) : (
-                          <>
-                            <IconSparkles size={20} />
-                            Generate Cover
-                          </>
-                        )}
-                      </button>
-                    ) : (
-                      <>
-                        <button
-                          onClick={regenerateCover}
-                          disabled={generating}
-                          className="w-full py-3 border-2 border-sepia text-sepia rounded-xl hover:bg-sepia/10 disabled:opacity-50 transition font-medium flex items-center justify-center gap-2"
-                        >
-                          {generating ? (
-                            <>
-                              <div className="w-5 h-5 border-2 border-sepia/30 border-t-sepia rounded-full animate-spin" />
-                              Regenerating...
-                            </>
-                          ) : (
-                            <>
-                              <IconRefresh size={20} />
-                              Try a Different Design
-                            </>
-                          )}
-                        </button>
-                        <p className="text-center text-xs text-warmgray">
-                          Each generation creates a unique design
-                        </p>
-                      </>
-                    )}
-                  </div>
-
-                  {/* Style reminder */}
-                  <div className="p-4 bg-sepia/5 rounded-xl">
-                    <div className="flex items-center gap-3">
-                      <div className="flex-shrink-0">
-                        {styleIcons[options?.coverStyles.find(s => s.id === selectedStyle)?.icon] || styleIcons.classic}
-                      </div>
-                      <div>
-                        <div className="font-medium text-ink text-sm">
-                          {options?.coverStyles.find(s => s.id === selectedStyle)?.name}
-                        </div>
-                        <div className="text-xs text-warmgray">
-                          {options?.coverStyles.find(s => s.id === selectedStyle)?.description}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            <div className="p-2 sm:p-4">
+              <CoverEditor
+                initialTitle={bookTitle}
+                initialAuthor={authorName}
+                pageCount={pageCount || 200}
+                onSave={(coverData) => {
+                  setCoverImage(coverData?.imageUrl)
+                }}
+              />
             </div>
           )}
 
@@ -670,8 +478,8 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
                           <dd className="text-ink font-medium capitalize">{selectedFormat}</dd>
                         </div>
                         <div className="flex justify-between">
-                          <dt className="text-warmgray">Cover Style</dt>
-                          <dd className="text-ink font-medium">{options?.coverStyles.find(s => s.id === selectedStyle)?.name}</dd>
+                          <dt className="text-warmgray">Cover</dt>
+                          <dd className="text-ink font-medium">Custom Design</dd>
                         </div>
                         <div className="flex justify-between">
                           <dt className="text-warmgray">Pages</dt>

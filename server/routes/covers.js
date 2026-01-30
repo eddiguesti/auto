@@ -8,49 +8,49 @@ const COVER_STYLES = {
   classic: {
     id: 'classic',
     name: 'Classic & Elegant',
-    description: 'Timeless design with subtle textures',
+    description: 'Timeless and refined',
     icon: 'classic',
-    styleGuide: 'cream and gold abstract pattern, smooth gradient background',
-    colors: ['#f5e6d3', '#d4a574', '#8b6914']
+    styleGuide: 'elegant oil painting style, soft golden hour lighting, rich cream and gold tones',
+    colors: ['#1e3a5f', '#d4a574', '#8b6914']
   },
   modern: {
     id: 'modern',
     name: 'Modern & Clean',
-    description: 'Minimalist with bold design',
+    description: 'Contemporary design',
     icon: 'modern',
-    styleGuide: 'minimalist white background with bold black shape, negative space',
+    styleGuide: 'minimalist illustration, clean lines, bold shapes, modern graphic design, black white and one accent color',
     colors: ['#2d3748', '#4a5568', '#e2e8f0']
   },
   nature: {
     id: 'nature',
     name: 'Nature & Peaceful',
-    description: 'Soft organic patterns',
+    description: 'Organic and serene',
     icon: 'nature',
-    styleGuide: 'watercolor greens and blues, flowing organic shapes, soft gradients',
+    styleGuide: 'watercolor illustration, soft natural colors, botanical elements, peaceful landscape, sage green and soft blue',
     colors: ['#4a7c59', '#87a878', '#f0e6d3']
   },
   family: {
     id: 'family',
     name: 'Family & Warmth',
-    description: 'Warm tones and textures',
+    description: 'Warm and nostalgic',
     icon: 'family',
-    styleGuide: 'warm orange to pink gradient, soft light orbs, amber tones',
+    styleGuide: 'warm nostalgic illustration, golden sunset colors, cozy atmosphere, amber and soft orange tones',
     colors: ['#b45309', '#f59e0b', '#fef3c7']
   },
   artistic: {
     id: 'artistic',
     name: 'Artistic & Colorful',
-    description: 'Vibrant abstract patterns',
+    description: 'Bold and expressive',
     icon: 'artistic',
-    styleGuide: 'abstract paint splashes, bright pink blue green colors, energetic',
+    styleGuide: 'expressive artistic illustration, vibrant colors, creative brushwork, magenta cyan purple palette',
     colors: ['#7c3aed', '#ec4899', '#06b6d4']
   },
   heritage: {
     id: 'heritage',
     name: 'Heritage & Tradition',
-    description: 'Rich vintage textures',
+    description: 'Classic and timeless',
     icon: 'heritage',
-    styleGuide: 'deep burgundy and green, gold accents, vintage style',
+    styleGuide: 'vintage illustration style, sepia and burgundy tones, classic engraving aesthetic, rich detailed artwork',
     colors: ['#7c2d12', '#d4a574', '#1c1917']
   }
 }
@@ -123,21 +123,27 @@ router.get('/options', (_req, res) => {
 
 // Build prompt for image generation
 function buildImagePrompt(style, bookTitle) {
+  // Use the title to inspire the imagery
+  const titleInspiration = bookTitle
+    ? `Create an evocative illustration inspired by the theme "${bookTitle}". Include meaningful imagery - perhaps a path, doorway, landscape, silhouette, or symbolic scene that captures a life journey.`
+    : `Create an evocative illustration about life and memories. Include meaningful imagery - a winding path, old tree, distant horizon, or symbolic scene.`
+
   if (bookTitle) {
     return {
-      prompt: `Create a high end graphic design image, ${style.styleGuide}. Text "${bookTitle}" on the right. No other text.`,
-      negative_prompt: 'book, pages, spine, 3d, mockup, photo, realistic'
+      prompt: `${titleInspiration} Style: ${style.styleGuide}. Place the text "${bookTitle}" elegantly on the right side. Only this text, nothing else.`,
+      negative_prompt: 'book cover mockup, 3d render, photo frame, multiple text, subtitle, author name, ugly, blurry'
     }
   }
   return {
-    prompt: `Create a high end graphic design image, ${style.styleGuide}.`,
-    negative_prompt: 'book, pages, 3d, mockup, photo, realistic, text'
+    prompt: `${titleInspiration} Style: ${style.styleGuide}. Beautiful composition with space on the right for text.`,
+    negative_prompt: 'book cover mockup, 3d render, photo frame, text, words, letters, ugly, blurry'
   }
 }
 
 // Generate image
 router.post('/generate', async (req, res) => {
   const { styleId, bookTitle, customPrompt } = req.body
+  console.log('Generate request:', { styleId, bookTitle })
 
   const style = COVER_STYLES[styleId]
   if (!style && !customPrompt) {
@@ -154,6 +160,7 @@ router.post('/generate', async (req, res) => {
     console.log('Prompt:', promptData.prompt)
 
     // Generate image with Ideogram
+    console.log('Calling Replicate API...')
     const output = await replicate.run(
       "ideogram-ai/ideogram-v3-turbo",
       {
@@ -165,9 +172,22 @@ router.post('/generate', async (req, res) => {
         }
       }
     )
+    console.log('Replicate output type:', typeof output, output)
 
     // Ideogram returns a FileOutput object with url() method
-    const imageUrl = output?.url ? output.url() : (Array.isArray(output) ? output[0] : output)
+    let imageUrl
+    if (output?.url && typeof output.url === 'function') {
+      imageUrl = output.url()
+    } else if (Array.isArray(output) && output[0]) {
+      imageUrl = typeof output[0].url === 'function' ? output[0].url() : output[0]
+    } else if (typeof output === 'string') {
+      imageUrl = output
+    } else {
+      console.error('Unexpected output format:', output)
+      throw new Error('Unexpected response format from image generator')
+    }
+
+    console.log('Image URL:', imageUrl)
 
     res.json({
       success: true,
@@ -176,10 +196,10 @@ router.post('/generate', async (req, res) => {
       style: style?.id || 'custom'
     })
   } catch (err) {
-    console.error('Cover generation error:', err.message)
+    console.error('Cover generation error:', err)
     res.status(500).json({
       error: 'Failed to generate cover',
-      message: err.message
+      message: err.message || 'Unknown error'
     })
   }
 })
@@ -241,6 +261,65 @@ router.post('/generate-variations', async (req, res) => {
     res.status(500).json({
       error: 'Failed to generate cover variations',
       message: err.message
+    })
+  }
+})
+
+// Generate image for a specific region (template-based editor)
+router.post('/generate-region', async (req, res) => {
+  const { prompt, width, height, templateId } = req.body
+
+  if (!prompt) {
+    return res.status(400).json({ error: 'Prompt is required' })
+  }
+
+  try {
+    const replicate = getReplicateClient()
+
+    // Determine aspect ratio based on dimensions
+    let aspectRatio = '1:1'
+    const ratio = width / height
+    if (ratio > 1.4) aspectRatio = '3:2'
+    else if (ratio > 1.1) aspectRatio = '4:3'
+    else if (ratio < 0.7) aspectRatio = '2:3'
+    else if (ratio < 0.9) aspectRatio = '3:4'
+
+    console.log('Generating region:', { prompt, aspectRatio, templateId })
+
+    const output = await replicate.run(
+      "ideogram-ai/ideogram-v3-turbo",
+      {
+        input: {
+          prompt: `${prompt}, high quality, detailed`,
+          negative_prompt: 'text, words, letters, watermark, ugly, blurry, low quality',
+          aspect_ratio: aspectRatio,
+          magic_prompt_option: "Off"
+        }
+      }
+    )
+
+    // Extract URL from output
+    let imageUrl
+    if (output?.url && typeof output.url === 'function') {
+      imageUrl = output.url()
+    } else if (Array.isArray(output) && output[0]) {
+      imageUrl = typeof output[0].url === 'function' ? output[0].url() : output[0]
+    } else if (typeof output === 'string') {
+      imageUrl = output
+    } else {
+      throw new Error('Unexpected response format')
+    }
+
+    res.json({
+      success: true,
+      imageUrl,
+      prompt
+    })
+  } catch (err) {
+    console.error('Region generation error:', err)
+    res.status(500).json({
+      error: 'Failed to generate image',
+      message: err.message || 'Unknown error'
     })
   }
 })
