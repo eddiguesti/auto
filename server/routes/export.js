@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import Epub from 'epub-gen-memory'
+// epub-gen-memory is dynamically imported to ensure polyfills load first
 import { readFileSync } from 'fs'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
@@ -128,7 +128,9 @@ router.get('/epub', async (req, res) => {
       `
     })
 
-    // Generate EPUB
+    // Generate EPUB - dynamically import to ensure polyfills are loaded first
+    const { default: Epub } = await import('epub-gen-memory')
+
     const options = {
       title: `${userName}'s Life Story`,
       author: userName,
