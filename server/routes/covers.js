@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import Replicate from 'replicate'
+import { asyncHandler } from '../middleware/asyncHandler.js'
 
 const router = Router()
 
@@ -141,7 +142,7 @@ function buildImagePrompt(style, bookTitle) {
 }
 
 // Generate image
-router.post('/generate', async (req, res) => {
+router.post('/generate', asyncHandler(async (req, res) => {
   const { styleId, bookTitle, customPrompt } = req.body
   console.log('Generate request:', { styleId, bookTitle })
 
@@ -150,62 +151,54 @@ router.post('/generate', async (req, res) => {
     return res.status(400).json({ error: 'Invalid style or no custom prompt provided' })
   }
 
-  try {
-    const replicate = getReplicateClient()
+  const replicate = getReplicateClient()
 
-    // Build the prompt
-    const promptData = customPrompt
-      ? { prompt: customPrompt, negative_prompt: '' }
-      : buildImagePrompt(style, bookTitle)
-    console.log('Prompt:', promptData.prompt)
+  // Build the prompt
+  const promptData = customPrompt
+    ? { prompt: customPrompt, negative_prompt: '' }
+    : buildImagePrompt(style, bookTitle)
+  console.log('Prompt:', promptData.prompt)
 
-    // Generate image with Ideogram
-    console.log('Calling Replicate API...')
-    const output = await replicate.run(
-      "ideogram-ai/ideogram-v3-turbo",
-      {
-        input: {
-          prompt: promptData.prompt,
-          negative_prompt: promptData.negative_prompt,
-          aspect_ratio: "3:2",
-          magic_prompt_option: "Off"
-        }
+  // Generate image with Ideogram
+  console.log('Calling Replicate API...')
+  const output = await replicate.run(
+    "ideogram-ai/ideogram-v3-turbo",
+    {
+      input: {
+        prompt: promptData.prompt,
+        negative_prompt: promptData.negative_prompt,
+        aspect_ratio: "3:2",
+        magic_prompt_option: "Off"
       }
-    )
-    console.log('Replicate output type:', typeof output, output)
-
-    // Ideogram returns a FileOutput object with url() method
-    let imageUrl
-    if (output?.url && typeof output.url === 'function') {
-      imageUrl = output.url()
-    } else if (Array.isArray(output) && output[0]) {
-      imageUrl = typeof output[0].url === 'function' ? output[0].url() : output[0]
-    } else if (typeof output === 'string') {
-      imageUrl = output
-    } else {
-      console.error('Unexpected output format:', output)
-      throw new Error('Unexpected response format from image generator')
     }
+  )
+  console.log('Replicate output type:', typeof output, output)
 
-    console.log('Image URL:', imageUrl)
-
-    res.json({
-      success: true,
-      imageUrl,
-      prompt: promptData.prompt,
-      style: style?.id || 'custom'
-    })
-  } catch (err) {
-    console.error('Cover generation error:', err)
-    res.status(500).json({
-      error: 'Failed to generate cover',
-      message: err.message || 'Unknown error'
-    })
+  // Ideogram returns a FileOutput object with url() method
+  let imageUrl
+  if (output?.url && typeof output.url === 'function') {
+    imageUrl = output.url()
+  } else if (Array.isArray(output) && output[0]) {
+    imageUrl = typeof output[0].url === 'function' ? output[0].url() : output[0]
+  } else if (typeof output === 'string') {
+    imageUrl = output
+  } else {
+    console.error('Unexpected output format:', output)
+    throw new Error('Unexpected response format from image generator')
   }
-})
+
+  console.log('Image URL:', imageUrl)
+
+  res.json({
+    success: true,
+    imageUrl,
+    prompt: promptData.prompt,
+    style: style?.id || 'custom'
+  })
+}))
 
 // Generate multiple variations
-router.post('/generate-variations', async (req, res) => {
+router.post('/generate-variations', asyncHandler(async (req, res) => {
   const { styleId, bookTitle } = req.body
 
   const style = COVER_STYLES[styleId]
@@ -213,116 +206,100 @@ router.post('/generate-variations', async (req, res) => {
     return res.status(400).json({ error: 'Invalid style' })
   }
 
-  try {
-    const replicate = getReplicateClient()
+  const replicate = getReplicateClient()
 
-    // Build prompt
-    const promptData = buildImagePrompt(style, bookTitle)
+  // Build prompt
+  const promptData = buildImagePrompt(style, bookTitle)
 
-    // Generate variations with different compositions
-    const variationModifiers = [
-      'centered symmetrical composition',
-      'dramatic diagonal composition with depth',
-      'soft focus background with sharp foreground element'
-    ]
+  // Generate variations with different compositions
+  const variationModifiers = [
+    'centered symmetrical composition',
+    'dramatic diagonal composition with depth',
+    'soft focus background with sharp foreground element'
+  ]
 
-    const promises = variationModifiers.map(async (modifier, index) => {
-      const fullPrompt = `${promptData.prompt}, ${modifier}`
+  const promises = variationModifiers.map(async (modifier, index) => {
+    const fullPrompt = `${promptData.prompt}, ${modifier}`
 
-      const output = await replicate.run(
-        "ideogram-ai/ideogram-v3-turbo",
-        {
-          input: {
-            prompt: fullPrompt,
-            negative_prompt: promptData.negative_prompt,
-            aspect_ratio: "3:2",
-            magic_prompt_option: "Off"
-          }
+    const output = await replicate.run(
+      "ideogram-ai/ideogram-v3-turbo",
+      {
+        input: {
+          prompt: fullPrompt,
+          negative_prompt: promptData.negative_prompt,
+          aspect_ratio: "3:2",
+          magic_prompt_option: "Off"
         }
-      )
-
-      const imageUrl = output?.url ? output.url() : (Array.isArray(output) ? output[0] : output)
-
-      return {
-        imageUrl,
-        variationIndex: index
       }
-    })
+    )
 
-    const results = await Promise.all(promises)
+    const imageUrl = output?.url ? output.url() : (Array.isArray(output) ? output[0] : output)
 
-    res.json({
-      success: true,
-      variations: results,
-      style: style.id
-    })
-  } catch (err) {
-    console.error('Cover variations error:', err.message)
-    res.status(500).json({
-      error: 'Failed to generate cover variations',
-      message: err.message
-    })
-  }
-})
+    return {
+      imageUrl,
+      variationIndex: index
+    }
+  })
+
+  const results = await Promise.all(promises)
+
+  res.json({
+    success: true,
+    variations: results,
+    style: style.id
+  })
+}))
 
 // Generate image for a specific region (template-based editor)
-router.post('/generate-region', async (req, res) => {
+router.post('/generate-region', asyncHandler(async (req, res) => {
   const { prompt, width, height, templateId } = req.body
 
   if (!prompt) {
     return res.status(400).json({ error: 'Prompt is required' })
   }
 
-  try {
-    const replicate = getReplicateClient()
+  const replicate = getReplicateClient()
 
-    // Determine aspect ratio based on dimensions
-    let aspectRatio = '1:1'
-    const ratio = width / height
-    if (ratio > 1.4) aspectRatio = '3:2'
-    else if (ratio > 1.1) aspectRatio = '4:3'
-    else if (ratio < 0.7) aspectRatio = '2:3'
-    else if (ratio < 0.9) aspectRatio = '3:4'
+  // Determine aspect ratio based on dimensions
+  let aspectRatio = '1:1'
+  const ratio = width / height
+  if (ratio > 1.4) aspectRatio = '3:2'
+  else if (ratio > 1.1) aspectRatio = '4:3'
+  else if (ratio < 0.7) aspectRatio = '2:3'
+  else if (ratio < 0.9) aspectRatio = '3:4'
 
-    console.log('Generating region:', { prompt, aspectRatio, templateId })
+  console.log('Generating region:', { prompt, aspectRatio, templateId })
 
-    const output = await replicate.run(
-      "ideogram-ai/ideogram-v3-turbo",
-      {
-        input: {
-          prompt: `${prompt}, high quality, detailed`,
-          negative_prompt: 'text, words, letters, watermark, ugly, blurry, low quality',
-          aspect_ratio: aspectRatio,
-          magic_prompt_option: "Off"
-        }
+  const output = await replicate.run(
+    "ideogram-ai/ideogram-v3-turbo",
+    {
+      input: {
+        prompt: `${prompt}, high quality, detailed`,
+        negative_prompt: 'text, words, letters, watermark, ugly, blurry, low quality',
+        aspect_ratio: aspectRatio,
+        magic_prompt_option: "Off"
       }
-    )
-
-    // Extract URL from output
-    let imageUrl
-    if (output?.url && typeof output.url === 'function') {
-      imageUrl = output.url()
-    } else if (Array.isArray(output) && output[0]) {
-      imageUrl = typeof output[0].url === 'function' ? output[0].url() : output[0]
-    } else if (typeof output === 'string') {
-      imageUrl = output
-    } else {
-      throw new Error('Unexpected response format')
     }
+  )
 
-    res.json({
-      success: true,
-      imageUrl,
-      prompt
-    })
-  } catch (err) {
-    console.error('Region generation error:', err)
-    res.status(500).json({
-      error: 'Failed to generate image',
-      message: err.message || 'Unknown error'
-    })
+  // Extract URL from output
+  let imageUrl
+  if (output?.url && typeof output.url === 'function') {
+    imageUrl = output.url()
+  } else if (Array.isArray(output) && output[0]) {
+    imageUrl = typeof output[0].url === 'function' ? output[0].url() : output[0]
+  } else if (typeof output === 'string') {
+    imageUrl = output
+  } else {
+    throw new Error('Unexpected response format')
   }
-})
+
+  res.json({
+    success: true,
+    imageUrl,
+    prompt
+  })
+}))
 
 export default router
 export { COVER_STYLES, BOOK_FORMATS }

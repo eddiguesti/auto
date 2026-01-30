@@ -276,48 +276,39 @@ router.get('/status', requireDb, asyncHandler(async (req, res) => {
       LIMIT 5
     `, [userId])
 
-    res.json({
-      canGenerate: hasPaid || isEarlyAdopter,
-      isEarlyAdopter,
-      hasPaid,
-      hasVoiceModel: voiceResult.rows.length > 0 && voiceResult.rows[0].fish_model_id,
-      voiceConsentGiven: voiceResult.rows[0]?.consent_given || false,
-      previousAudiobooks: audiobooksResult.rows,
-      audiobookPrice: 14.99
-    })
-  } catch (err) {
-    console.error('Audiobook status error:', err)
-    res.status(500).json({ error: 'Failed to check audiobook status' })
-  }
-})
+  res.json({
+    canGenerate: hasPaid || isEarlyAdopter,
+    isEarlyAdopter,
+    hasPaid,
+    hasVoiceModel: voiceResult.rows.length > 0 && voiceResult.rows[0].fish_model_id,
+    voiceConsentGiven: voiceResult.rows[0]?.consent_given || false,
+    previousAudiobooks: audiobooksResult.rows,
+    audiobookPrice: 14.99
+  })
+}))
 
 // Download previous audiobook
-router.get('/download/:filename', async (req, res) => {
+router.get('/download/:filename', requireDb, asyncHandler(async (req, res) => {
   const db = req.app.locals.db
   const userId = req.user.id
   const { filename } = req.params
 
-  try {
-    // Verify ownership
-    const result = await db.query(
-      'SELECT filename FROM audiobooks WHERE user_id = $1 AND filename = $2',
-      [userId, filename]
-    )
+  // Verify ownership
+  const result = await db.query(
+    'SELECT filename FROM audiobooks WHERE user_id = $1 AND filename = $2',
+    [userId, filename]
+  )
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Audiobook not found' })
-    }
-
-    const filepath = join(__dirname, '..', '..', 'uploads', 'audiobooks', filename)
-    if (!existsSync(filepath)) {
-      return res.status(404).json({ error: 'Audiobook file not found' })
-    }
-
-    res.download(filepath, filename)
-  } catch (err) {
-    console.error('Audiobook download error:', err)
-    res.status(500).json({ error: 'Failed to download audiobook' })
+  if (result.rows.length === 0) {
+    return res.status(404).json({ error: 'Audiobook not found' })
   }
-})
+
+  const filepath = join(__dirname, '..', '..', 'uploads', 'audiobooks', filename)
+  if (!existsSync(filepath)) {
+    return res.status(404).json({ error: 'Audiobook file not found' })
+  }
+
+  res.download(filepath, filename)
+}))
 
 export default router

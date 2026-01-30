@@ -1,45 +1,41 @@
 import { Router } from 'express'
 import { getCompactMemoryContext } from '../utils/memoryContext.js'
+import { asyncHandler } from '../middleware/asyncHandler.js'
 
 const router = Router()
 
 // Generate ephemeral token for client-side WebSocket connection
-router.post('/session', async (req, res) => {
+router.post('/session', asyncHandler(async (req, res) => {
   const apiKey = process.env.GROK_API_KEY
 
   if (!apiKey) {
     return res.status(500).json({ error: 'GROK_API_KEY not configured' })
   }
 
-  try {
-    // Create ephemeral token via xAI API
-    const response = await fetch('https://api.x.ai/v1/realtime/client_secrets', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        expires_after: { seconds: 300 } // 5 minute token
-      })
+  // Create ephemeral token via xAI API
+  const response = await fetch('https://api.x.ai/v1/realtime/client_secrets', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      expires_after: { seconds: 300 } // 5 minute token
     })
+  })
 
-    if (!response.ok) {
-      const error = await response.text()
-      console.error('xAI session error:', error)
-      return res.status(response.status).json({ error: 'Failed to create voice session', details: error })
-    }
-
-    const data = await response.json()
-    res.json(data)
-  } catch (err) {
-    console.error('Voice session error:', err)
-    res.status(500).json({ error: 'Failed to create voice session' })
+  if (!response.ok) {
+    const error = await response.text()
+    console.error('xAI session error:', error)
+    return res.status(response.status).json({ error: 'Failed to create voice session', details: error })
   }
-})
+
+  const data = await response.json()
+  res.json(data)
+}))
 
 // Get voice configuration with memory context
-router.get('/config', async (req, res) => {
+router.get('/config', asyncHandler(async (req, res) => {
   const db = req.app.locals.db
   const userId = req.user.id
   const memoryContext = await getCompactMemoryContext(db, userId)
@@ -74,6 +70,6 @@ NEVER:
     model: 'grok-2-public',
     instructions
   })
-})
+}))
 
 export default router

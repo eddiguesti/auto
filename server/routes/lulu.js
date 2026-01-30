@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { asyncHandler } from '../middleware/asyncHandler.js'
 
 const router = Router()
 
@@ -298,50 +299,45 @@ router.get('/options', (req, res) => {
 })
 
 // Calculate print job cost
-router.post('/calculate-cost', async (req, res) => {
+router.post('/calculate-cost', asyncHandler(async (req, res) => {
   const { options, pageCount, quantity = 1, shippingAddress } = req.body
 
-  try {
-    const podPackageId = buildPodPackageId(options)
+  const podPackageId = buildPodPackageId(options)
 
-    const payload = {
-      line_items: [{
-        page_count: pageCount,
-        pod_package_id: podPackageId,
-        quantity: quantity
-      }]
-    }
-
-    // Add shipping info if provided for accurate shipping cost
-    if (shippingAddress) {
-      payload.shipping_address = {
-        country_code: shippingAddress.countryCode || 'US'
-      }
-    }
-
-    const result = await luluRequest('/print-job-cost-calculations/', {
-      method: 'POST',
-      body: JSON.stringify(payload)
-    })
-
-    res.json({
-      podPackageId,
-      costs: result,
-      breakdown: {
-        printing: result.line_item_costs?.[0]?.cost_excl_tax || 0,
-        shipping: result.shipping_cost?.cost_excl_tax || 0,
-        tax: result.total_tax || 0,
-        total: result.total_cost_incl_tax || 0
-      }
-    })
-  } catch (err) {
-    console.error('Cost calculation error:', err.message)
-    res.status(500).json({ error: 'Failed to calculate cost', message: err.message })
+  const payload = {
+    line_items: [{
+      page_count: pageCount,
+      pod_package_id: podPackageId,
+      quantity: quantity
+    }]
   }
-})
+
+  // Add shipping info if provided for accurate shipping cost
+  if (shippingAddress) {
+    payload.shipping_address = {
+      country_code: shippingAddress.countryCode || 'US'
+    }
+  }
+
+  const result = await luluRequest('/print-job-cost-calculations/', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  })
+
+  res.json({
+    podPackageId,
+    costs: result,
+    breakdown: {
+      printing: result.line_item_costs?.[0]?.cost_excl_tax || 0,
+      shipping: result.shipping_cost?.cost_excl_tax || 0,
+      tax: result.total_tax || 0,
+      total: result.total_cost_incl_tax || 0
+    }
+  })
+}))
 
 // Create print job order
-router.post('/create-order', async (req, res) => {
+router.post('/create-order', asyncHandler(async (req, res) => {
   const {
     options,
     pageCount,
@@ -353,152 +349,118 @@ router.post('/create-order', async (req, res) => {
     externalId
   } = req.body
 
-  try {
-    const podPackageId = buildPodPackageId(options)
+  const podPackageId = buildPodPackageId(options)
 
-    const payload = {
-      contact_email: shippingAddress.email,
-      external_id: externalId || `lifestory-${Date.now()}`,
-      line_items: [{
-        external_id: `book-${Date.now()}`,
-        printable_normalization: {
-          cover: { source_url: coverPdfUrl },
-          interior: { source_url: interiorPdfUrl }
-        },
-        page_count: pageCount,
-        pod_package_id: podPackageId,
-        quantity: quantity,
-        title: shippingAddress.bookTitle || 'My Life Story'
-      }],
-      production_delay: 120, // 2 minutes delay to allow cancellation
-      shipping_address: {
-        city: shippingAddress.city,
-        country_code: shippingAddress.countryCode,
-        name: shippingAddress.name,
-        phone_number: shippingAddress.phone || '',
-        postcode: shippingAddress.postcode,
-        state_code: shippingAddress.stateCode || '',
-        street1: shippingAddress.street1,
-        street2: shippingAddress.street2 || ''
+  const payload = {
+    contact_email: shippingAddress.email,
+    external_id: externalId || `lifestory-${Date.now()}`,
+    line_items: [{
+      external_id: `book-${Date.now()}`,
+      printable_normalization: {
+        cover: { source_url: coverPdfUrl },
+        interior: { source_url: interiorPdfUrl }
       },
-      shipping_level: shippingLevel
-    }
-
-    const result = await luluRequest('/print-jobs/', {
-      method: 'POST',
-      body: JSON.stringify(payload)
-    })
-
-    res.json({
-      success: true,
-      orderId: result.id,
-      status: result.status,
-      trackingUrl: result.status?.messages?.tracking_url,
-      order: result
-    })
-  } catch (err) {
-    console.error('Create order error:', err.message)
-    res.status(500).json({ error: 'Failed to create order', message: err.message })
+      page_count: pageCount,
+      pod_package_id: podPackageId,
+      quantity: quantity,
+      title: shippingAddress.bookTitle || 'My Life Story'
+    }],
+    production_delay: 120, // 2 minutes delay to allow cancellation
+    shipping_address: {
+      city: shippingAddress.city,
+      country_code: shippingAddress.countryCode,
+      name: shippingAddress.name,
+      phone_number: shippingAddress.phone || '',
+      postcode: shippingAddress.postcode,
+      state_code: shippingAddress.stateCode || '',
+      street1: shippingAddress.street1,
+      street2: shippingAddress.street2 || ''
+    },
+    shipping_level: shippingLevel
   }
-})
+
+  const result = await luluRequest('/print-jobs/', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  })
+
+  res.json({
+    success: true,
+    orderId: result.id,
+    status: result.status,
+    trackingUrl: result.status?.messages?.tracking_url,
+    order: result
+  })
+}))
 
 // Get order status
-router.get('/order/:orderId', async (req, res) => {
+router.get('/order/:orderId', asyncHandler(async (req, res) => {
   const { orderId } = req.params
 
-  try {
-    const result = await luluRequest(`/print-jobs/${orderId}/`)
+  const result = await luluRequest(`/print-jobs/${orderId}/`)
 
-    res.json({
-      orderId: result.id,
-      status: result.status?.name,
-      statusMessage: result.status?.message,
-      trackingUrl: result.status?.messages?.tracking_url,
-      estimatedShipDate: result.estimated_shipping_dates?.arrival_min,
-      order: result
-    })
-  } catch (err) {
-    console.error('Get order error:', err.message)
-    res.status(500).json({ error: 'Failed to get order status', message: err.message })
-  }
-})
+  res.json({
+    orderId: result.id,
+    status: result.status?.name,
+    statusMessage: result.status?.message,
+    trackingUrl: result.status?.messages?.tracking_url,
+    estimatedShipDate: result.estimated_shipping_dates?.arrival_min,
+    order: result
+  })
+}))
 
 // Get list of orders
-router.get('/orders', async (req, res) => {
-  try {
-    const result = await luluRequest('/print-jobs/')
-    res.json(result)
-  } catch (err) {
-    console.error('Get orders error:', err.message)
-    res.status(500).json({ error: 'Failed to get orders', message: err.message })
-  }
-})
+router.get('/orders', asyncHandler(async (req, res) => {
+  const result = await luluRequest('/print-jobs/')
+  res.json(result)
+}))
 
 // Cancel order (only within production delay window)
-router.post('/order/:orderId/cancel', async (req, res) => {
+router.post('/order/:orderId/cancel', asyncHandler(async (req, res) => {
   const { orderId } = req.params
 
-  try {
-    await luluRequest(`/print-jobs/${orderId}/`, {
-      method: 'DELETE'
-    })
+  await luluRequest(`/print-jobs/${orderId}/`, {
+    method: 'DELETE'
+  })
 
-    res.json({ success: true, message: 'Order cancelled' })
-  } catch (err) {
-    console.error('Cancel order error:', err.message)
-    res.status(500).json({ error: 'Failed to cancel order', message: err.message })
-  }
-})
+  res.json({ success: true, message: 'Order cancelled' })
+}))
 
 // Validate interior PDF
-router.post('/validate-interior', async (req, res) => {
+router.post('/validate-interior', asyncHandler(async (req, res) => {
   const { pdfUrl, podPackageId } = req.body
 
-  try {
-    const result = await luluRequest('/print-job-normalized-files/', {
-      method: 'POST',
-      body: JSON.stringify({
-        pod_package_id: podPackageId,
-        source_files: [{ type: 'INTERIOR', url: pdfUrl }]
-      })
+  const result = await luluRequest('/print-job-normalized-files/', {
+    method: 'POST',
+    body: JSON.stringify({
+      pod_package_id: podPackageId,
+      source_files: [{ type: 'INTERIOR', url: pdfUrl }]
     })
+  })
 
-    res.json(result)
-  } catch (err) {
-    console.error('Validate interior error:', err.message)
-    res.status(500).json({ error: 'Failed to validate interior', message: err.message })
-  }
-})
+  res.json(result)
+}))
 
 // Validate cover PDF
-router.post('/validate-cover', async (req, res) => {
+router.post('/validate-cover', asyncHandler(async (req, res) => {
   const { pdfUrl, podPackageId, pageCount } = req.body
 
-  try {
-    const result = await luluRequest('/print-job-normalized-files/', {
-      method: 'POST',
-      body: JSON.stringify({
-        pod_package_id: podPackageId,
-        page_count: pageCount,
-        source_files: [{ type: 'COVER', url: pdfUrl }]
-      })
+  const result = await luluRequest('/print-job-normalized-files/', {
+    method: 'POST',
+    body: JSON.stringify({
+      pod_package_id: podPackageId,
+      page_count: pageCount,
+      source_files: [{ type: 'COVER', url: pdfUrl }]
     })
+  })
 
-    res.json(result)
-  } catch (err) {
-    console.error('Validate cover error:', err.message)
-    res.status(500).json({ error: 'Failed to validate cover', message: err.message })
-  }
-})
+  res.json(result)
+}))
 
 // Health check for Lulu integration
-router.get('/health', async (req, res) => {
-  try {
-    await getAccessToken()
-    res.json({ status: 'ok', message: 'Lulu API connection successful' })
-  } catch (err) {
-    res.status(500).json({ status: 'error', message: err.message })
-  }
-})
+router.get('/health', asyncHandler(async (req, res) => {
+  await getAccessToken()
+  res.json({ status: 'ok', message: 'Lulu API connection successful' })
+}))
 
 export default router
