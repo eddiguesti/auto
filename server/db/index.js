@@ -219,6 +219,31 @@ export async function initDatabase() {
       )
     `)
 
+    // User style preferences for memoir writing style
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS user_style_preferences (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE UNIQUE,
+        tones TEXT[], -- Array of selected tones: 'formal', 'conversational', 'nostalgic', 'humorous'
+        narrative TEXT, -- Single narrative style: 'first-person-reflective', 'third-person', 'present-tense'
+        author_style TEXT, -- Single author inspiration: 'hemingway', 'austen', 'angelou', 'twain'
+        applied_at TIMESTAMP, -- When style was last applied to all stories
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `)
+
+    // Migration: Add style-related columns to stories table
+    await client.query(`
+      ALTER TABLE stories ADD COLUMN IF NOT EXISTS original_answer TEXT
+    `)
+    await client.query(`
+      ALTER TABLE stories ADD COLUMN IF NOT EXISTS style_applied TEXT
+    `)
+    await client.query(`
+      ALTER TABLE stories ADD COLUMN IF NOT EXISTS style_applied_at TIMESTAMP
+    `)
+
     // Create indexes
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)
@@ -255,6 +280,9 @@ export async function initDatabase() {
     `)
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_audiobooks_user ON audiobooks(user_id)
+    `)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_user_style_preferences_user ON user_style_preferences(user_id)
     `)
 
     console.log('Database initialized successfully')

@@ -92,20 +92,19 @@ export default function Home() {
               {chapters.map((chapter) => {
                 const chapterProgress = getChapterProgress(chapter.id)
                 return (
-                  <Link
+                  <div
                     key={chapter.id}
-                    to={`/chapter/${chapter.id}`}
-                    className="block bg-white/50 backdrop-blur-sm rounded-lg p-4 sm:p-5 border border-sepia/10 hover:border-sepia/30 hover:bg-white/70 transition group stagger-item card-hover"
+                    className="bg-white/50 backdrop-blur-sm rounded-lg p-4 sm:p-5 border border-sepia/10 hover:border-sepia/30 hover:bg-white/70 transition stagger-item"
                   >
                     <div className="flex items-center gap-4 sm:gap-6">
                       {/* Chapter Number */}
-                      <div className="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center border-2 border-sepia/30 rounded-full group-hover:border-sepia/50 transition flex-shrink-0">
+                      <div className="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center border-2 border-sepia/30 rounded-full flex-shrink-0">
                         <span className="text-sepia font-semibold text-sm sm:text-base">{chapter.icon}</span>
                       </div>
 
                       {/* Chapter Info */}
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-lg sm:text-xl text-ink group-hover:text-sepia transition font-medium">
+                        <h3 className="text-lg sm:text-xl text-ink font-medium">
                           {chapter.title}
                         </h3>
                         <p className="text-sepia/60 text-sm">{chapter.subtitle}</p>
@@ -123,26 +122,61 @@ export default function Home() {
                         <p className="text-sepia/40 text-xs mt-1">{chapter.questions.length} questions</p>
                       </div>
                     </div>
-                  </Link>
+
+                    {/* Write or Talk options */}
+                    <div className="flex gap-2 mt-4 ml-16 sm:ml-20">
+                      <Link
+                        to={`/chapter/${chapter.id}`}
+                        className="flex items-center gap-2 px-4 py-2 bg-sepia/10 hover:bg-sepia/20 text-sepia rounded-lg transition text-sm font-medium"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                        Write
+                      </Link>
+                      <Link
+                        to={`/voice?chapter=${chapter.id}`}
+                        className="flex items-center gap-2 px-4 py-2 bg-sepia hover:bg-sepia/90 text-white rounded-lg transition text-sm font-medium"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                        </svg>
+                        Talk
+                      </Link>
+                    </div>
+                  </div>
                 )
               })}
             </div>
           </div>
 
-          {/* Export Button */}
-          <div className="text-center">
-            <div className="inline-block">
-              <div className="text-sepia/30 text-lg mb-3 float">✦</div>
-              <Link
-                to="/export"
-                className="inline-flex items-center justify-center gap-3 px-8 py-4 bg-ink text-white/90 rounded hover:bg-ink/90 transition group pulse-gentle tap-bounce"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                </svg>
-                <span className="tracking-wide">Preview Your Story</span>
-              </Link>
-            </div>
+          {/* Action Buttons */}
+          <div className="text-center space-y-4">
+            <div className="text-sepia/30 text-lg mb-3 float">✦</div>
+
+            {/* Style Your Memoir - highlighted option */}
+            <Link
+              to="/preview-style"
+              className="inline-flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded hover:from-amber-700 hover:to-orange-700 transition group tap-bounce shadow-md"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+              <span className="tracking-wide">Style Your Memoir</span>
+            </Link>
+
+            <div className="text-sepia/40 text-sm">or</div>
+
+            {/* Export Button */}
+            <Link
+              to="/export"
+              className="inline-flex items-center justify-center gap-3 px-8 py-4 bg-ink text-white/90 rounded hover:bg-ink/90 transition group tap-bounce"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+              <span className="tracking-wide">Preview & Export</span>
+            </Link>
           </div>
     </div>
   )

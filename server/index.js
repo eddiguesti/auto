@@ -21,6 +21,7 @@ import coversRouter from './routes/covers.js'
 import seoRouter from './routes/seo.js'
 import exportRouter from './routes/export.js'
 import audiobookRouter from './routes/audiobook.js'
+import styleRouter from './routes/style.js'
 import paymentsRouter, { handleStripeWebhook } from './routes/payments.js'
 
 dotenv.config()
@@ -82,6 +83,9 @@ app.use('/api/export', authenticateToken, exportRouter)
 
 // Audiobook routes (protected)
 app.use('/api/audiobook', authenticateToken, audiobookRouter)
+
+// Style routes (protected)
+app.use('/api/style', authenticateToken, styleRouter)
 
 // Payment routes (protected)
 app.use('/api/payments', authenticateToken, paymentsRouter)

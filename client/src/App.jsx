@@ -17,6 +17,7 @@ import Cookies from './pages/Cookies'
 import HowItWorks from './pages/HowItWorks'
 import Blog from './pages/Blog'
 import BlogPost from './pages/BlogPost'
+import PreviewStyle from './pages/PreviewStyle'
 
 function App() {
   return (
@@ -47,6 +48,9 @@ function App() {
             } />
             <Route path="/voice" element={
               <ProtectedRoute><VoiceChat /></ProtectedRoute>
+            } />
+            <Route path="/preview-style" element={
+              <ProtectedRoute><PreviewStyle /></ProtectedRoute>
             } />
           </Routes>
 

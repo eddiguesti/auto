@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { chapters } from '../data/chapters'
 import BookOrderWizard from '../components/BookOrderWizard'
 import { useAuth } from '../context/AuthContext'
+import { IconSparkles } from '@tabler/icons-react'
 
 export default function Export() {
   const { user, authFetch } = useAuth()
@@ -365,6 +366,35 @@ export default function Export() {
           )}
         </div>
       </header>
+
+      {/* Style Your Memoir Banner */}
+      {hasContent && (
+        <div className="mb-8 print:hidden">
+          <Link
+            to="/preview-style"
+            className="block bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 rounded-2xl p-6 hover:border-amber-300 transition group"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
+                <IconSparkles size={28} className="text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-display text-xl text-ink mb-1 group-hover:text-amber-700 transition">
+                  Style Your Memoir
+                </h3>
+                <p className="text-sm text-warmgray">
+                  Transform your writing style - choose from Hemingway, Jane Austen, Maya Angelou & more
+                </p>
+              </div>
+              <div className="hidden sm:block text-amber-600 group-hover:translate-x-1 transition">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </div>
+          </Link>
+        </div>
+      )}
 
       {/* Export Options Cards */}
       {hasContent && (
