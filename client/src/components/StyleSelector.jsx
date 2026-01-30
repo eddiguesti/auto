@@ -44,8 +44,9 @@ function StyleSelector({
             return (
               <div key={tone.id} className="relative">
                 <button
+                  type="button"
                   onClick={() => toggleTone(tone.id)}
-                  className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
+                  className={`w-full text-left p-4 rounded-xl border-2 transition-all cursor-pointer ${
                     isSelected
                       ? 'border-accent bg-accent/10'
                       : 'border-sepia/20 hover:border-sepia/40 bg-white'
@@ -66,8 +67,11 @@ function StyleSelector({
 
                 {/* Sample preview toggle */}
                 <button
-                  onClick={() => setExpandedSample(expandedSample === tone.id ? null : tone.id)}
-                  className="absolute top-3 right-3 text-xs text-accent hover:underline"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setExpandedSample(expandedSample === tone.id ? null : tone.id)
+                  }}
+                  className="absolute top-3 right-3 text-xs text-accent hover:underline z-10"
                 >
                   {expandedSample === tone.id ? 'Hide sample' : 'See sample'}
                 </button>
@@ -95,8 +99,9 @@ function StyleSelector({
             return (
               <div key={narrative.id} className="relative">
                 <button
+                  type="button"
                   onClick={() => onNarrativeChange(isSelected ? null : narrative.id)}
-                  className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
+                  className={`w-full text-left p-4 rounded-xl border-2 transition-all cursor-pointer ${
                     isSelected
                       ? 'border-accent bg-accent/10'
                       : 'border-sepia/20 hover:border-sepia/40 bg-white'
@@ -116,8 +121,11 @@ function StyleSelector({
                 </button>
 
                 <button
-                  onClick={() => setExpandedSample(expandedSample === narrative.id ? null : narrative.id)}
-                  className="absolute top-3 right-3 text-xs text-accent hover:underline"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setExpandedSample(expandedSample === narrative.id ? null : narrative.id)
+                  }}
+                  className="absolute top-3 right-3 text-xs text-accent hover:underline z-10"
                 >
                   {expandedSample === narrative.id ? 'Hide sample' : 'See sample'}
                 </button>
@@ -146,8 +154,9 @@ function StyleSelector({
             return (
               <div key={author.id} className="relative">
                 <button
+                  type="button"
                   onClick={() => onAuthorChange(isSelected ? null : author.id)}
-                  className={`w-full text-left p-5 rounded-xl border-2 transition-all ${
+                  className={`w-full text-left p-5 rounded-xl border-2 transition-all cursor-pointer ${
                     isSelected
                       ? 'border-accent bg-gradient-to-br from-accent/10 to-accent/5'
                       : 'border-sepia/20 hover:border-sepia/40 bg-white hover:bg-cream/30'
@@ -176,7 +185,7 @@ function StyleSelector({
                     e.stopPropagation()
                     setExpandedSample(expandedSample === author.id ? null : author.id)
                   }}
-                  className="absolute top-3 right-3 text-xs text-accent hover:underline"
+                  className="absolute top-3 right-3 text-xs text-accent hover:underline z-10"
                 >
                   {expandedSample === author.id ? 'Hide sample' : 'See sample'}
                 </button>
