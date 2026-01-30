@@ -3,6 +3,8 @@ import bcrypt from 'bcryptjs'
 import { OAuth2Client } from 'google-auth-library'
 import { body, validationResult } from 'express-validator'
 import { generateToken, authenticateToken } from '../middleware/auth.js'
+import { asyncHandler } from '../middleware/asyncHandler.js'
+import { requireDb } from '../middleware/requireDb.js'
 
 const router = Router()
 
@@ -106,94 +108,62 @@ router.post('/login', [
 })
 
 // Google Sign-In
-router.post('/google', async (req, res) => {
+router.post('/google', requireDb, asyncHandler(async (req, res) => {
   const { credential } = req.body
   const db = req.app.locals.db
 
-  if (!db) {
-    return res.status(503).json({ error: 'Database not available' })
+  // Verify Google token
+  const ticket = await googleClient.verifyIdToken({
+    idToken: credential,
+    audience: googleClientId
+  })
+  const payload = ticket.getPayload()
+  const { sub: googleId, email, name, picture } = payload
+
+  // Check if user exists by google_id or email
+  let result = await db.query(
+    'SELECT id, email, name, avatar_url FROM users WHERE google_id = $1 OR email = $2',
+    [googleId, email]
+  )
+
+  let user
+  if (result.rows.length > 0) {
+    // Update existing user with Google ID if needed
+    user = result.rows[0]
+    await db.query(`
+      UPDATE users SET google_id = $1, avatar_url = $2, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $3
+    `, [googleId, picture, user.id])
+    user.avatar_url = picture
+  } else {
+    // Create new user
+    result = await db.query(`
+      INSERT INTO users (email, google_id, name, avatar_url)
+      VALUES ($1, $2, $3, $4)
+      RETURNING id, email, name, avatar_url
+    `, [email, googleId, name, picture])
+    user = result.rows[0]
   }
 
-
-  try {
-    // Log what we're checking
-    console.log('Backend expected audience:', googleClientId)
-
-    // Verify Google token
-    const ticket = await googleClient.verifyIdToken({
-      idToken: credential,
-      audience: googleClientId
-    })
-    const payload = ticket.getPayload()
-    console.log('Token audience from Google:', payload.aud)
-    const { sub: googleId, email, name, picture } = payload
-
-    // Check if user exists by google_id or email
-    let result = await db.query(
-      'SELECT id, email, name, avatar_url FROM users WHERE google_id = $1 OR email = $2',
-      [googleId, email]
-    )
-
-    let user
-    if (result.rows.length > 0) {
-      // Update existing user with Google ID if needed
-      user = result.rows[0]
-      await db.query(`
-        UPDATE users SET google_id = $1, avatar_url = $2, updated_at = CURRENT_TIMESTAMP
-        WHERE id = $3
-      `, [googleId, picture, user.id])
-      user.avatar_url = picture
-    } else {
-      // Create new user
-      result = await db.query(`
-        INSERT INTO users (email, google_id, name, avatar_url)
-        VALUES ($1, $2, $3, $4)
-        RETURNING id, email, name, avatar_url
-      `, [email, googleId, name, picture])
-      user = result.rows[0]
-    }
-
-    const token = generateToken(user)
-    res.json({ user, token })
-  } catch (err) {
-    console.error('Google auth error:', err.message)
-    // Try to decode JWT to see its audience without verification
-    try {
-      const parts = credential.split('.')
-      const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString())
-      console.error('Token audience was:', payload.aud)
-      console.error('Expected audience:', googleClientId)
-    } catch (e) {
-      console.error('Could not decode token')
-    }
-    res.status(401).json({ error: 'Google authentication failed' })
-  }
-})
+  const token = generateToken(user)
+  res.json({ user, token })
+}))
 
 // Get current user
-router.get('/me', authenticateToken, async (req, res) => {
+router.get('/me', authenticateToken, requireDb, asyncHandler(async (req, res) => {
   const db = req.app.locals.db
 
-  if (!db) {
-    return res.status(503).json({ error: 'Database not available' })
+  const result = await db.query(
+    'SELECT id, email, name, birth_year, avatar_url FROM users WHERE id = $1',
+    [req.user.id]
+  )
+
+  if (result.rows.length === 0) {
+    return res.status(404).json({ error: 'User not found' })
   }
 
-  try {
-    const result = await db.query(
-      'SELECT id, email, name, birth_year, avatar_url FROM users WHERE id = $1',
-      [req.user.id]
-    )
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'User not found' })
-    }
-
-    res.json({ user: result.rows[0] })
-  } catch (err) {
-    console.error('Get user error:', err)
-    res.status(500).json({ error: 'Failed to get user' })
-  }
-})
+  res.json({ user: result.rows[0] })
+}))
 
 // Update profile (for adding birth year after Google sign-in)
 router.put('/profile', authenticateToken, [

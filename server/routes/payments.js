@@ -1,5 +1,7 @@
 import { Router } from 'express'
 import Stripe from 'stripe'
+import { asyncHandler } from '../middleware/asyncHandler.js'
+import { requireDb } from '../middleware/requireDb.js'
 
 const router = Router()
 
@@ -54,7 +56,7 @@ const PRODUCTS = {
 }
 
 // Create checkout session
-router.post('/create-checkout', async (req, res) => {
+router.post('/create-checkout', asyncHandler(async (req, res) => {
   const { productId, successUrl, cancelUrl } = req.body
   const userId = req.user.id
   const userEmail = req.user.email
@@ -63,60 +65,52 @@ router.post('/create-checkout', async (req, res) => {
     return res.status(400).json({ error: 'Invalid product' })
   }
 
-  try {
-    const stripe = getStripe()
-    const product = PRODUCTS[productId]
+  const stripe = getStripe()
+  const product = PRODUCTS[productId]
 
-    let sessionConfig = {
-      customer_email: userEmail,
-      metadata: {
-        userId: userId.toString(),
-        productId,
-        productType: product.type
-      },
-      success_url: successUrl || `${process.env.APP_URL}/export?success=true`,
-      cancel_url: cancelUrl || `${process.env.APP_URL}/export?cancelled=true`,
-    }
-
-    if (product.type === 'subscription') {
-      // Create subscription checkout
-      sessionConfig.mode = 'subscription'
-      sessionConfig.line_items = [{
-        price_data: {
-          currency: product.currency || 'gbp',
-          product_data: {
-            name: product.name,
-            description: product.description
-          },
-          unit_amount: product.price,
-          recurring: { interval: product.interval }
-        },
-        quantity: 1
-      }]
-    } else {
-      // One-time payment
-      sessionConfig.mode = 'payment'
-      sessionConfig.line_items = [{
-        price_data: {
-          currency: product.currency || 'gbp',
-          product_data: {
-            name: product.name,
-            description: product.description
-          },
-          unit_amount: product.price
-        },
-        quantity: 1
-      }]
-    }
-
-    const session = await stripe.checkout.sessions.create(sessionConfig)
-
-    res.json({ url: session.url, sessionId: session.id })
-  } catch (err) {
-    console.error('Stripe checkout error:', err)
-    res.status(500).json({ error: 'Failed to create checkout session' })
+  const sessionConfig = {
+    customer_email: userEmail,
+    metadata: {
+      userId: userId.toString(),
+      productId,
+      productType: product.type
+    },
+    success_url: successUrl || `${process.env.APP_URL}/export?success=true`,
+    cancel_url: cancelUrl || `${process.env.APP_URL}/export?cancelled=true`,
   }
-})
+
+  if (product.type === 'subscription') {
+    sessionConfig.mode = 'subscription'
+    sessionConfig.line_items = [{
+      price_data: {
+        currency: product.currency || 'gbp',
+        product_data: {
+          name: product.name,
+          description: product.description
+        },
+        unit_amount: product.price,
+        recurring: { interval: product.interval }
+      },
+      quantity: 1
+    }]
+  } else {
+    sessionConfig.mode = 'payment'
+    sessionConfig.line_items = [{
+      price_data: {
+        currency: product.currency || 'gbp',
+        product_data: {
+          name: product.name,
+          description: product.description
+        },
+        unit_amount: product.price
+      },
+      quantity: 1
+    }]
+  }
+
+  const session = await stripe.checkout.sessions.create(sessionConfig)
+  res.json({ url: session.url, sessionId: session.id })
+}))
 
 // Stripe webhook handler (call this from main express app without auth)
 export async function handleStripeWebhook(req, res, db) {
@@ -172,23 +166,18 @@ export async function handleStripeWebhook(req, res, db) {
 }
 
 // Get payment history
-router.get('/history', async (req, res) => {
+router.get('/history', requireDb, asyncHandler(async (req, res) => {
   const db = req.app.locals.db
   const userId = req.user.id
 
-  try {
-    const result = await db.query(`
-      SELECT * FROM payments
-      WHERE user_id = $1
-      ORDER BY created_at DESC
-    `, [userId])
+  const result = await db.query(`
+    SELECT * FROM payments
+    WHERE user_id = $1
+    ORDER BY created_at DESC
+  `, [userId])
 
-    res.json(result.rows)
-  } catch (err) {
-    console.error('Payment history error:', err)
-    res.status(500).json({ error: 'Failed to fetch payment history' })
-  }
-})
+  res.json(result.rows)
+}))
 
 // Get available products/prices
 router.get('/products', (req, res) => {

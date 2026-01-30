@@ -1,37 +1,18 @@
 import { Router } from 'express'
 // epub-gen-memory is dynamically imported to ensure polyfills load first
-import { readFileSync } from 'fs'
-import { fileURLToPath } from 'url'
-import { dirname, join } from 'path'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-
-// Load chapters data - we duplicate the structure here to avoid complex imports
-const chapters = [
-  { id: 'earliest-memories', title: 'Earliest Memories', subtitle: 'Ages 0-5' },
-  { id: 'childhood', title: 'Childhood', subtitle: 'Ages 6-12' },
-  { id: 'school-days', title: 'School Days', subtitle: 'Education Years' },
-  { id: 'teenage-years', title: 'Teenage Years', subtitle: 'Coming of Age' },
-  { id: 'young-adulthood', title: 'Young Adulthood', subtitle: 'Starting Out' },
-  { id: 'family-career', title: 'Family & Career', subtitle: 'Building a Life' },
-  { id: 'wisdom-reflections', title: 'Wisdom & Reflections', subtitle: 'Looking Back' }
-]
+import { chapters } from '../shared/chapters.js'
+import { asyncHandler } from '../middleware/asyncHandler.js'
+import { requireDb } from '../middleware/requireDb.js'
 
 const router = Router()
 
 // Generate EPUB eBook
-router.get('/epub', async (req, res) => {
+router.get('/epub', requireDb, asyncHandler(async (req, res) => {
   const db = req.app.locals.db
   const userId = req.user.id
 
-  if (!db) {
-    return res.status(503).json({ error: 'Database not available' })
-  }
-
-  try {
-    // Get user settings for name
-    const settingsResult = await db.query('SELECT name FROM settings WHERE user_id = $1', [userId])
+  // Get user settings for name
+  const settingsResult = await db.query('SELECT name FROM settings WHERE user_id = $1', [userId])
     const userName = settingsResult.rows[0]?.name || 'My'
 
     // Get all stories
@@ -147,24 +128,18 @@ router.get('/epub', async (req, res) => {
     const epubBuffer = await Epub(options)
 
     // Set headers for download
-    res.setHeader('Content-Type', 'application/epub+zip')
-    res.setHeader('Content-Disposition', `attachment; filename="${userName.replace(/[^a-zA-Z0-9]/g, '_')}_Life_Story.epub"`)
-    res.send(Buffer.from(epubBuffer))
-
-  } catch (err) {
-    console.error('EPUB generation error:', err)
-    res.status(500).json({ error: 'Failed to generate eBook' })
-  }
-})
+  res.setHeader('Content-Type', 'application/epub+zip')
+  res.setHeader('Content-Disposition', `attachment; filename="${userName.replace(/[^a-zA-Z0-9]/g, '_')}_Life_Story.epub"`)
+  res.send(Buffer.from(epubBuffer))
+}))
 
 // Check export status/eligibility
-router.get('/status', async (req, res) => {
+router.get('/status', requireDb, asyncHandler(async (req, res) => {
   const db = req.app.locals.db
   const userId = req.user.id
 
-  try {
-    // Check user's subscription/payment status
-    const userResult = await db.query(`
+  // Check user's subscription/payment status
+  const userResult = await db.query(`
       SELECT u.*,
         (SELECT COUNT(*) FROM stories WHERE user_id = u.id AND answer IS NOT NULL AND answer != '') as story_count
       FROM users u WHERE u.id = $1
@@ -188,17 +163,13 @@ router.get('/status', async (req, res) => {
     `, [userId])
     const isEarlyAdopter = parseInt(earlyAdopterResult.rows[0].count) <= 100
 
-    res.json({
-      storyCount,
-      canExport: hasPaid || isEarlyAdopter,
-      isEarlyAdopter,
-      hasPaid,
-      exportPrice: 9.99 // Price for non-early adopters
-    })
-  } catch (err) {
-    console.error('Export status error:', err)
-    res.status(500).json({ error: 'Failed to check export status' })
-  }
-})
+  res.json({
+    storyCount,
+    canExport: hasPaid || isEarlyAdopter,
+    isEarlyAdopter,
+    hasPaid,
+    exportPrice: 9.99 // Price for non-early adopters
+  })
+}))
 
 export default router

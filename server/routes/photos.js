@@ -4,6 +4,8 @@ import { fileURLToPath } from 'url'
 import { dirname, join, extname } from 'path'
 import { existsSync, unlinkSync, mkdirSync } from 'fs'
 import crypto from 'crypto'
+import { asyncHandler } from '../middleware/asyncHandler.js'
+import { requireDb } from '../middleware/requireDb.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -106,68 +108,50 @@ router.get('/file/:filename', (req, res) => {
 })
 
 // Delete a photo
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireDb, asyncHandler(async (req, res) => {
   const db = req.app.locals.db
   const userId = req.user.id
   const { id } = req.params
 
-  if (!db) {
-    return res.status(503).json({ error: 'Database not available' })
+  // Get the photo info and verify ownership via story
+  const result = await db.query(`
+    SELECT p.* FROM photos p
+    JOIN stories s ON p.story_id = s.id
+    WHERE p.id = $1 AND s.user_id = $2
+  `, [id, userId])
+  const photo = result.rows[0]
+
+  if (!photo) {
+    return res.status(404).json({ error: 'Photo not found or not authorized' })
   }
 
-  try {
-    // Get the photo info and verify ownership via story
-    const result = await db.query(`
-      SELECT p.* FROM photos p
-      JOIN stories s ON p.story_id = s.id
-      WHERE p.id = $1 AND s.user_id = $2
-    `, [id, userId])
-    const photo = result.rows[0]
+  // Delete from database
+  await db.query('DELETE FROM photos WHERE id = $1', [id])
 
-    if (!photo) {
-      return res.status(404).json({ error: 'Photo not found or not authorized' })
-    }
-
-    // Delete from database
-    await db.query('DELETE FROM photos WHERE id = $1', [id])
-
-    // Delete file
-    const filepath = join(uploadsDir, photo.filename)
-    if (existsSync(filepath)) {
-      unlinkSync(filepath)
-    }
-
-    res.json({ success: true })
-  } catch (err) {
-    console.error('Error deleting photo:', err)
-    res.status(500).json({ error: 'Failed to delete photo' })
+  // Delete file
+  const filepath = join(uploadsDir, photo.filename)
+  if (existsSync(filepath)) {
+    unlinkSync(filepath)
   }
-})
+
+  res.json({ success: true })
+}))
 
 // Get all photos for a story
-router.get('/story/:storyId', async (req, res) => {
+router.get('/story/:storyId', requireDb, asyncHandler(async (req, res) => {
   const db = req.app.locals.db
   const userId = req.user.id
   const { storyId } = req.params
 
-  if (!db) {
-    return res.status(503).json({ error: 'Database not available' })
-  }
+  // Verify user owns this story and get photos
+  const result = await db.query(`
+    SELECT p.* FROM photos p
+    JOIN stories s ON p.story_id = s.id
+    WHERE p.story_id = $1 AND s.user_id = $2
+    ORDER BY p.created_at
+  `, [storyId, userId])
 
-  try {
-    // Verify user owns this story and get photos
-    const result = await db.query(`
-      SELECT p.* FROM photos p
-      JOIN stories s ON p.story_id = s.id
-      WHERE p.story_id = $1 AND s.user_id = $2
-      ORDER BY p.created_at
-    `, [storyId, userId])
-
-    res.json(result.rows)
-  } catch (err) {
-    console.error('Error fetching photos:', err)
-    res.status(500).json({ error: 'Failed to fetch photos' })
-  }
-})
+  res.json(result.rows)
+}))
 
 export default router

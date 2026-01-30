@@ -3,6 +3,9 @@ import { writeFile, mkdir, readFile, unlink } from 'fs/promises'
 import { existsSync } from 'fs'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
+import { chapters } from '../shared/chapters.js'
+import { asyncHandler } from '../middleware/asyncHandler.js'
+import { requireDb } from '../middleware/requireDb.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -10,17 +13,6 @@ const __dirname = dirname(__filename)
 const router = Router()
 
 const FISH_API_URL = 'https://api.fish.audio/v1'
-
-// Chapters structure for audiobook generation
-const chapters = [
-  { id: 'earliest-memories', title: 'Earliest Memories', subtitle: 'Ages 0-5' },
-  { id: 'childhood', title: 'Childhood', subtitle: 'Ages 6-12' },
-  { id: 'school-days', title: 'School Days', subtitle: 'Education Years' },
-  { id: 'teenage-years', title: 'Teenage Years', subtitle: 'Coming of Age' },
-  { id: 'young-adulthood', title: 'Young Adulthood', subtitle: 'Starting Out' },
-  { id: 'family-career', title: 'Family & Career', subtitle: 'Building a Life' },
-  { id: 'wisdom-reflections', title: 'Wisdom & Reflections', subtitle: 'Looking Back' }
-]
 
 // Get Fish.audio API key
 const getFishApiKey = () => {
@@ -32,7 +24,7 @@ const getFishApiKey = () => {
 }
 
 // Upload voice sample for cloning
-router.post('/voice-sample', async (req, res) => {
+router.post('/voice-sample', requireDb, asyncHandler(async (req, res) => {
   const db = req.app.locals.db
   const userId = req.user.id
   const { audioData, consentGiven } = req.body
@@ -45,105 +37,89 @@ router.post('/voice-sample', async (req, res) => {
     return res.status(400).json({ error: 'Audio data required' })
   }
 
-  try {
-    // Decode base64 audio
-    const audioBuffer = Buffer.from(audioData.split(',')[1] || audioData, 'base64')
+  // Decode base64 audio
+  const audioBuffer = Buffer.from(audioData.split(',')[1] || audioData, 'base64')
 
-    // Save voice sample locally
-    const voicesDir = join(__dirname, '..', '..', 'uploads', 'voices')
-    if (!existsSync(voicesDir)) {
-      await mkdir(voicesDir, { recursive: true })
-    }
-
-    const filename = `voice_${userId}_${Date.now()}.wav`
-    const filepath = join(voicesDir, filename)
-    await writeFile(filepath, audioBuffer)
-
-    // Store reference in database
-    await db.query(`
-      INSERT INTO voice_models (user_id, fish_model_id, consent_given, created_at)
-      VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
-      ON CONFLICT (user_id) DO UPDATE SET
-        fish_model_id = $2,
-        consent_given = $3,
-        updated_at = CURRENT_TIMESTAMP
-    `, [userId, filename, consentGiven])
-
-    res.json({
-      success: true,
-      message: 'Voice sample saved successfully'
-    })
-  } catch (err) {
-    console.error('Voice sample upload error:', err)
-    res.status(500).json({ error: 'Failed to process voice sample' })
+  // Save voice sample locally
+  const voicesDir = join(__dirname, '..', '..', 'uploads', 'voices')
+  if (!existsSync(voicesDir)) {
+    await mkdir(voicesDir, { recursive: true })
   }
-})
+
+  const filename = `voice_${userId}_${Date.now()}.wav`
+  const filepath = join(voicesDir, filename)
+  await writeFile(filepath, audioBuffer)
+
+  // Store reference in database
+  await db.query(`
+    INSERT INTO voice_models (user_id, fish_model_id, consent_given, created_at)
+    VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+    ON CONFLICT (user_id) DO UPDATE SET
+      fish_model_id = $2,
+      consent_given = $3,
+      updated_at = CURRENT_TIMESTAMP
+  `, [userId, filename, consentGiven])
+
+  res.json({
+    success: true,
+    message: 'Voice sample saved successfully'
+  })
+}))
 
 // Delete user's voice model
-router.delete('/voice-sample', async (req, res) => {
+router.delete('/voice-sample', requireDb, asyncHandler(async (req, res) => {
   const db = req.app.locals.db
   const userId = req.user.id
 
-  try {
-    // Get existing model
-    const result = await db.query(
-      'SELECT fish_model_id FROM voice_models WHERE user_id = $1',
-      [userId]
-    )
+  // Get existing model
+  const result = await db.query(
+    'SELECT fish_model_id FROM voice_models WHERE user_id = $1',
+    [userId]
+  )
 
-    if (result.rows.length > 0 && result.rows[0].fish_model_id) {
-      // Delete local file
-      const filepath = join(__dirname, '..', '..', 'uploads', 'voices', result.rows[0].fish_model_id)
-      if (existsSync(filepath)) {
-        await unlink(filepath)
-      }
+  if (result.rows.length > 0 && result.rows[0].fish_model_id) {
+    // Delete local file
+    const filepath = join(__dirname, '..', '..', 'uploads', 'voices', result.rows[0].fish_model_id)
+    if (existsSync(filepath)) {
+      await unlink(filepath)
     }
-
-    // Remove from database
-    await db.query('DELETE FROM voice_models WHERE user_id = $1', [userId])
-
-    res.json({ success: true, message: 'Voice model deleted' })
-  } catch (err) {
-    console.error('Voice model deletion error:', err)
-    res.status(500).json({ error: 'Failed to delete voice model' })
   }
-})
+
+  // Remove from database
+  await db.query('DELETE FROM voice_models WHERE user_id = $1', [userId])
+
+  res.json({ success: true, message: 'Voice model deleted' })
+}))
 
 // Get voice model status
-router.get('/voice-status', async (req, res) => {
+router.get('/voice-status', requireDb, asyncHandler(async (req, res) => {
   const db = req.app.locals.db
   const userId = req.user.id
 
-  try {
-    const result = await db.query(`
-      SELECT fish_model_id, consent_given, created_at
-      FROM voice_models
-      WHERE user_id = $1
-    `, [userId])
+  const result = await db.query(`
+    SELECT fish_model_id, consent_given, created_at
+    FROM voice_models
+    WHERE user_id = $1
+  `, [userId])
 
-    if (result.rows.length === 0) {
-      return res.json({ hasVoiceModel: false })
-    }
-
-    res.json({
-      hasVoiceModel: true,
-      consentGiven: result.rows[0].consent_given,
-      createdAt: result.rows[0].created_at
-    })
-  } catch (err) {
-    console.error('Voice status error:', err)
-    res.status(500).json({ error: 'Failed to check voice status' })
+  if (result.rows.length === 0) {
+    return res.json({ hasVoiceModel: false })
   }
-})
+
+  res.json({
+    hasVoiceModel: true,
+    consentGiven: result.rows[0].consent_given,
+    createdAt: result.rows[0].created_at
+  })
+}))
 
 // Generate audiobook
-router.post('/generate', async (req, res) => {
+router.post('/generate', requireDb, asyncHandler(async (req, res) => {
   const db = req.app.locals.db
   const userId = req.user.id
   const { useOwnVoice } = req.body
 
-  try {
-    const apiKey = getFishApiKey()
+  const apiKey = getFishApiKey()
 
     // Get user settings
     const settingsResult = await db.query('SELECT name FROM settings WHERE user_id = $1', [userId])
@@ -259,29 +235,23 @@ router.post('/generate', async (req, res) => {
       VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
     `, [userId, filename, useOwnVoice ? 'custom' : 'default'])
 
-    // Send the audio file
-    res.setHeader('Content-Type', 'audio/mpeg')
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
-    res.send(Buffer.from(audioBuffer))
-
-  } catch (err) {
-    console.error('Audiobook generation error:', err)
-    res.status(500).json({ error: 'Failed to generate audiobook' })
-  }
-})
+  // Send the audio file
+  res.setHeader('Content-Type', 'audio/mpeg')
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
+  res.send(Buffer.from(audioBuffer))
+}))
 
 // Get audiobook generation status and history
-router.get('/status', async (req, res) => {
+router.get('/status', requireDb, asyncHandler(async (req, res) => {
   const db = req.app.locals.db
   const userId = req.user.id
 
-  try {
-    // Check if user has paid for audiobook
-    const paymentResult = await db.query(`
-      SELECT * FROM payments
-      WHERE user_id = $1 AND product_type = 'audiobook' AND status = 'completed'
-      ORDER BY created_at DESC LIMIT 1
-    `, [userId])
+  // Check if user has paid for audiobook
+  const paymentResult = await db.query(`
+    SELECT * FROM payments
+    WHERE user_id = $1 AND product_type = 'audiobook' AND status = 'completed'
+    ORDER BY created_at DESC LIMIT 1
+  `, [userId])
 
     const hasPaid = paymentResult.rows.length > 0
 

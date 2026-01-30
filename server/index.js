@@ -10,6 +10,7 @@ import dotenv from 'dotenv'
 
 import pool, { initDatabase } from './db/index.js'
 import { authenticateToken } from './middleware/auth.js'
+import { errorHandler, notFoundHandler } from './middleware/errorHandler.js'
 import authRouter from './routes/auth.js'
 import storiesRouter from './routes/stories.js'
 import photosRouter from './routes/photos.js'
@@ -23,6 +24,7 @@ import exportRouter from './routes/export.js'
 import audiobookRouter from './routes/audiobook.js'
 import styleRouter from './routes/style.js'
 import paymentsRouter, { handleStripeWebhook } from './routes/payments.js'
+import supportRouter from './routes/support.js'
 
 dotenv.config()
 
@@ -64,6 +66,9 @@ app.use('/uploads', express.static(join(__dirname, '..', 'uploads')))
 
 // Auth routes (public)
 app.use('/api/auth', authRouter)
+
+// Support chat (public - so users can get help even when logged out)
+app.use('/api/support', supportRouter)
 
 // Protected routes - require authentication
 app.use('/api/stories', authenticateToken, storiesRouter)
@@ -117,6 +122,12 @@ if (existsSync(clientBuildPath)) {
     }
   })
 }
+
+// 404 handler for API routes
+app.use('/api/*', notFoundHandler)
+
+// Centralized error handling (must be last)
+app.use(errorHandler)
 
 // Initialize database and start server
 async function start() {

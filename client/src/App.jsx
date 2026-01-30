@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext'
 import { GOOGLE_CLIENT_ID } from './config'
 import ProtectedRoute from './components/ProtectedRoute'
 import CookieConsent from './components/CookieConsent'
+import HelpChatbot from './components/HelpChatbot'
 import Home from './pages/Home'
 import Chapter from './pages/Chapter'
 import Export from './pages/Export'
@@ -56,6 +57,9 @@ function App() {
 
           {/* Cookie Consent Banner */}
           <CookieConsent />
+
+          {/* Help Chatbot */}
+          <HelpChatbot />
         </div>
       </AuthProvider>
     </GoogleOAuthProvider>

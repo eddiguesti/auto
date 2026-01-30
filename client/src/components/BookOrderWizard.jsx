@@ -1,7 +1,32 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import CoverEditor from './CoverEditor'
-import { IconBook, IconBookmark, IconGift, IconX, IconZoomIn, IconRefresh } from '@tabler/icons-react'
+import { IconBook, IconBookmark, IconGift, IconX, IconZoomIn, IconRefresh, IconStack2, IconHeadphones, IconDiscount2 } from '@tabler/icons-react'
+
+// Package options with discounts
+const PACKAGES = {
+  single: {
+    id: 'single',
+    name: 'Single Copy',
+    quantity: 1,
+    discount: 0,
+    description: 'Perfect for yourself',
+    icon: 'book'
+  },
+  bundle10: {
+    id: 'bundle10',
+    name: '10 Book Bundle',
+    quantity: 10,
+    discount: 0.40,
+    description: 'Share with family - 40% OFF',
+    icon: 'stack',
+    popular: true
+  }
+}
+
+// Audiobook pricing
+const AUDIOBOOK_PRICE = 19.99
+const AUDIOBOOK_BUNDLE_DISCOUNT = 0.40 // 40% off when bundled with books
 
 // Full image lightbox modal
 function ImageLightbox({ imageUrl, onClose }) {
@@ -226,6 +251,8 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
 
   // Wizard state
   const [selectedFormat, setSelectedFormat] = useState('hardcover')
+  const [selectedPackage, setSelectedPackage] = useState('single')
+  const [includeAudiobook, setIncludeAudiobook] = useState(false)
   const [coverImage, setCoverImage] = useState(null)
   const [bookTitle, setBookTitle] = useState('My Life Story')
   const [authorName, setAuthorName] = useState('')
@@ -260,6 +287,40 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
   const canProceedToStep2 = selectedFormat
   const canProceedToStep3 = true // Cover editor handles its own state
   const canProceedToStep4 = shipping.name && shipping.email && shipping.street1 && shipping.city && shipping.postcode
+
+  // Calculate total price
+  const calculateTotal = () => {
+    if (!options) return { books: 0, audiobook: 0, total: 0, savings: 0 }
+
+    const format = options.bookFormats.find(f => f.id === selectedFormat)
+    const basePrice = parseFloat(format?.price?.replace('£', '') || 0)
+    const pkg = PACKAGES[selectedPackage]
+
+    // Books price with package discount
+    const booksFullPrice = basePrice * pkg.quantity
+    const booksPrice = booksFullPrice * (1 - pkg.discount)
+
+    // Audiobook price (40% off when bundled with 10 books)
+    let audiobookPrice = 0
+    if (includeAudiobook) {
+      audiobookPrice = selectedPackage === 'bundle10'
+        ? AUDIOBOOK_PRICE * (1 - AUDIOBOOK_BUNDLE_DISCOUNT)
+        : AUDIOBOOK_PRICE
+    }
+
+    const total = booksPrice + audiobookPrice
+    const savings = (booksFullPrice - booksPrice) + (includeAudiobook && selectedPackage === 'bundle10' ? AUDIOBOOK_PRICE * AUDIOBOOK_BUNDLE_DISCOUNT : 0)
+
+    return {
+      books: booksPrice,
+      audiobook: audiobookPrice,
+      total,
+      savings,
+      quantity: pkg.quantity
+    }
+  }
+
+  const pricing = calculateTotal()
 
   if (loading) {
     return (
@@ -332,6 +393,106 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
                 </div>
               </div>
 
+              {/* Package Selection */}
+              <div>
+                <h3 className="text-base sm:text-lg font-medium text-ink mb-3 sm:mb-4">Choose your package</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                  {/* Single Copy */}
+                  <button
+                    onClick={() => setSelectedPackage('single')}
+                    className={`relative p-5 rounded-2xl border-2 transition-all duration-300 text-left ${
+                      selectedPackage === 'single'
+                        ? 'border-sepia bg-sepia/10 shadow-lg'
+                        : 'border-sepia/20 hover:border-sepia/40 hover:shadow-md'
+                    }`}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full bg-sepia/10 flex items-center justify-center">
+                        <IconBook size={24} className="text-sepia" stroke={1.5} />
+                      </div>
+                      <div>
+                        <div className="font-medium text-ink text-lg">Single Copy</div>
+                        <div className="text-sm text-warmgray">Perfect for yourself</div>
+                      </div>
+                    </div>
+                  </button>
+
+                  {/* 10 Book Bundle */}
+                  <button
+                    onClick={() => setSelectedPackage('bundle10')}
+                    className={`relative p-5 rounded-2xl border-2 transition-all duration-300 text-left ${
+                      selectedPackage === 'bundle10'
+                        ? 'border-sepia bg-sepia/10 shadow-lg ring-2 ring-amber-400/50'
+                        : 'border-sepia/20 hover:border-sepia/40 hover:shadow-md ring-2 ring-amber-400/50'
+                    }`}
+                  >
+                    <span className="absolute -top-2.5 left-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs px-3 py-0.5 rounded-full font-medium flex items-center gap-1">
+                      <IconDiscount2 size={14} />
+                      40% OFF
+                    </span>
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center">
+                        <IconStack2 size={24} className="text-amber-600" stroke={1.5} />
+                      </div>
+                      <div>
+                        <div className="font-medium text-ink text-lg">10 Book Bundle</div>
+                        <div className="text-sm text-warmgray">Share with family & friends</div>
+                        <div className="text-xs text-amber-600 font-medium mt-1">
+                          Save £{((parseFloat(options.bookFormats.find(f => f.id === selectedFormat)?.price?.replace('£', '') || 0) * 10) * 0.4).toFixed(0)}
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Audiobook Add-on */}
+              <div>
+                <h3 className="text-base sm:text-lg font-medium text-ink mb-3 sm:mb-4">Add audiobook narration</h3>
+                <button
+                  onClick={() => setIncludeAudiobook(!includeAudiobook)}
+                  className={`w-full relative p-5 rounded-2xl border-2 transition-all duration-300 text-left ${
+                    includeAudiobook
+                      ? 'border-sepia bg-sepia/10 shadow-lg'
+                      : 'border-sepia/20 hover:border-sepia/40 hover:shadow-md'
+                  }`}
+                >
+                  {selectedPackage === 'bundle10' && (
+                    <span className="absolute -top-2.5 right-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs px-3 py-0.5 rounded-full font-medium">
+                      40% OFF with bundle
+                    </span>
+                  )}
+                  <div className="flex items-center gap-4">
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${includeAudiobook ? 'bg-sepia/20' : 'bg-sepia/10'}`}>
+                      <IconHeadphones size={24} className="text-sepia" stroke={1.5} />
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-medium text-ink text-lg">Professional AI Audiobook</div>
+                      <div className="text-sm text-warmgray">Your memoir read aloud with natural AI narration</div>
+                    </div>
+                    <div className="text-right">
+                      {selectedPackage === 'bundle10' ? (
+                        <>
+                          <div className="text-lg font-semibold text-sepia">£{(AUDIOBOOK_PRICE * (1 - AUDIOBOOK_BUNDLE_DISCOUNT)).toFixed(2)}</div>
+                          <div className="text-xs text-warmgray line-through">£{AUDIOBOOK_PRICE.toFixed(2)}</div>
+                        </>
+                      ) : (
+                        <div className="text-lg font-semibold text-sepia">£{AUDIOBOOK_PRICE.toFixed(2)}</div>
+                      )}
+                    </div>
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+                      includeAudiobook ? 'bg-sepia border-sepia' : 'border-sepia/30'
+                    }`}>
+                      {includeAudiobook && (
+                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </div>
+                  </div>
+                </button>
+              </div>
+
               {/* Book Title & Author */}
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
@@ -355,6 +516,22 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
                   />
                 </div>
               </div>
+
+              {/* Price Summary */}
+              {pricing.savings > 0 && (
+                <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <IconDiscount2 size={20} className="text-amber-600" />
+                      <span className="text-amber-800 font-medium">You're saving £{pricing.savings.toFixed(2)}!</span>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-ink">£{pricing.total.toFixed(2)}</div>
+                      <div className="text-xs text-warmgray">{pricing.quantity} book{pricing.quantity > 1 ? 's' : ''}{includeAudiobook ? ' + audiobook' : ''}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -478,6 +655,13 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
                           <dd className="text-ink font-medium capitalize">{selectedFormat}</dd>
                         </div>
                         <div className="flex justify-between">
+                          <dt className="text-warmgray">Quantity</dt>
+                          <dd className="text-ink font-medium">
+                            {pricing.quantity} book{pricing.quantity > 1 ? 's' : ''}
+                            {selectedPackage === 'bundle10' && <span className="text-amber-600 ml-1">(40% off)</span>}
+                          </dd>
+                        </div>
+                        <div className="flex justify-between">
                           <dt className="text-warmgray">Cover</dt>
                           <dd className="text-ink font-medium">Custom Design</dd>
                         </div>
@@ -485,6 +669,15 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
                           <dt className="text-warmgray">Pages</dt>
                           <dd className="text-ink font-medium">~{pageCount || 50} pages</dd>
                         </div>
+                        {includeAudiobook && (
+                          <div className="flex justify-between">
+                            <dt className="text-warmgray">Audiobook</dt>
+                            <dd className="text-ink font-medium">
+                              AI Narration
+                              {selectedPackage === 'bundle10' && <span className="text-green-600 ml-1">(40% off)</span>}
+                            </dd>
+                          </div>
+                        )}
                       </dl>
                     </div>
 
@@ -498,10 +691,28 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
                     </div>
 
                     <div className="bg-sepia/10 rounded-xl p-5">
-                      <div className="flex justify-between items-center">
+                      <dl className="space-y-2 text-sm mb-3">
+                        <div className="flex justify-between">
+                          <dt className="text-warmgray">Books ({pricing.quantity}x)</dt>
+                          <dd className="text-ink">£{pricing.books.toFixed(2)}</dd>
+                        </div>
+                        {includeAudiobook && (
+                          <div className="flex justify-between">
+                            <dt className="text-warmgray">Audiobook</dt>
+                            <dd className="text-ink">£{pricing.audiobook.toFixed(2)}</dd>
+                          </div>
+                        )}
+                        {pricing.savings > 0 && (
+                          <div className="flex justify-between text-green-600">
+                            <dt>You saved</dt>
+                            <dd>-£{pricing.savings.toFixed(2)}</dd>
+                          </div>
+                        )}
+                      </dl>
+                      <div className="flex justify-between items-center pt-3 border-t border-sepia/20">
                         <span className="text-ink font-medium">Total</span>
                         <span className="text-2xl font-semibold text-ink">
-                          {options?.bookFormats.find(f => f.id === selectedFormat)?.price}
+                          £{pricing.total.toFixed(2)}
                         </span>
                       </div>
                       <p className="text-xs text-warmgray mt-1">Includes shipping</p>
@@ -518,9 +729,15 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
           <div className="flex flex-col-reverse sm:flex-row sm:justify-between sm:items-center gap-3">
             <div className="hidden sm:block">
               {step === 1 && selectedFormat && (
-                <span className="text-lg font-medium text-ink">
-                  {options?.bookFormats.find(f => f.id === selectedFormat)?.price}
-                </span>
+                <div className="text-left">
+                  <span className="text-xl font-semibold text-ink">£{pricing.total.toFixed(2)}</span>
+                  {pricing.savings > 0 && (
+                    <span className="text-sm text-green-600 ml-2">Save £{pricing.savings.toFixed(2)}</span>
+                  )}
+                  <div className="text-xs text-warmgray">
+                    {pricing.quantity} book{pricing.quantity > 1 ? 's' : ''}{includeAudiobook ? ' + audiobook' : ''}
+                  </div>
+                </div>
               )}
             </div>
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">

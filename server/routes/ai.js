@@ -1,75 +1,13 @@
 import { Router } from 'express'
-import OpenAI from 'openai'
-import { sanitizeForPrompt, createSafeContentBlock, checkRateLimit } from '../utils/security.js'
+import { sanitizeForPrompt, checkRateLimit } from '../utils/security.js'
+import { getGrokClient } from '../utils/grokClient.js'
+import { getMemoryContext } from '../utils/memoryContext.js'
+import { asyncHandler } from '../middleware/asyncHandler.js'
 
 const router = Router()
 
-// Fetch memory context for AI prompts
-async function getMemoryContext(db, userId) {
-  if (!db || !userId) return ''
-
-  try {
-    // Get top mentioned people
-    const people = await db.query(`
-      SELECT name, mention_count FROM memory_entities
-      WHERE user_id = $1 AND entity_type = 'person'
-      ORDER BY mention_count DESC LIMIT 8
-    `, [userId])
-
-    // Get top mentioned places
-    const places = await db.query(`
-      SELECT name FROM memory_entities
-      WHERE user_id = $1 AND entity_type = 'place'
-      ORDER BY mention_count DESC LIMIT 8
-    `, [userId])
-
-    // Get key relationships
-    const relationships = await db.query(`
-      SELECT e1.name as person1, e2.name as person2, r.relationship_type
-      FROM memory_relationships r
-      JOIN memory_entities e1 ON r.entity1_id = e1.id
-      JOIN memory_entities e2 ON r.entity2_id = e2.id
-      WHERE e1.user_id = $1 AND (e1.entity_type = 'person' OR e2.entity_type = 'person')
-      LIMIT 10
-    `, [userId])
-
-    let context = ''
-
-    if (people.rows.length > 0) {
-      context += `\nPeople in their story: ${people.rows.map(p => p.name).join(', ')}`
-    }
-
-    if (places.rows.length > 0) {
-      context += `\nPlaces mentioned: ${places.rows.map(p => p.name).join(', ')}`
-    }
-
-    if (relationships.rows.length > 0) {
-      context += `\nRelationships: ${relationships.rows.map(r =>
-        `${r.person1} - ${r.relationship_type} - ${r.person2}`
-      ).join('; ')}`
-    }
-
-    return context
-  } catch (err) {
-    console.error('Error fetching memory context:', err.message)
-    return ''
-  }
-}
-
-// Initialize Grok client (OpenAI-compatible)
-const getClient = () => {
-  const apiKey = process.env.GROK_API_KEY
-  if (!apiKey) {
-    throw new Error('GROK_API_KEY not set in environment')
-  }
-  return new OpenAI({
-    apiKey,
-    baseURL: 'https://api.x.ai/v1'
-  })
-}
-
 // Interview endpoint - asks follow-up questions to gather content
-router.post('/interview', async (req, res) => {
+router.post('/interview', asyncHandler(async (req, res) => {
   const { question, prompt, existingAnswer, gatheredContent = [], lastResponse, history = [], action } = req.body
   const db = req.app.locals.db
   const userId = req.user.id
@@ -83,9 +21,8 @@ router.post('/interview', async (req, res) => {
     })
   }
 
-  try {
-    const client = getClient()
-    const memoryContext = await getMemoryContext(db, userId)
+  const client = getGrokClient()
+  const memoryContext = await getMemoryContext(db, userId)
 
     // Sanitize all user inputs to prevent prompt injection
     const safeQuestion = sanitizeForPrompt(question, 500)
@@ -197,18 +134,14 @@ TONE RULES:
 
     const response = completion.choices[0]?.message?.content || "That's wonderful! Can you tell me more about that moment?"
 
-    res.json({
-      response,
-      readyToWrite: hasEnoughContent
-    })
-  } catch (err) {
-    console.error('Interview error:', err.message)
-    res.status(500).json({ error: 'AI service error', message: err.message })
-  }
-})
+  res.json({
+    response,
+    readyToWrite: hasEnoughContent
+  })
+}))
 
 // Write the polished story from gathered content
-router.post('/write-story', async (req, res) => {
+router.post('/write-story', asyncHandler(async (req, res) => {
   const { question, prompt, existingAnswer, gatheredContent = [], conversationHistory = [] } = req.body
   const db = req.app.locals.db
   const userId = req.user.id
@@ -222,9 +155,8 @@ router.post('/write-story', async (req, res) => {
     })
   }
 
-  try {
-    const client = getClient()
-    const memoryContext = await getMemoryContext(db, userId)
+  const client = getGrokClient()
+  const memoryContext = await getMemoryContext(db, userId)
 
     // Sanitize all user inputs
     const safeQuestion = sanitizeForPrompt(question, 500)
@@ -300,17 +232,13 @@ Now write a tidied-up, flowing version of their story IN THEIR VOICE AND STYLE. 
       temperature: 0.7
     })
 
-    const story = completion.choices[0]?.message?.content || "I couldn't generate the story. Please try again."
+  const story = completion.choices[0]?.message?.content || "I couldn't generate the story. Please try again."
 
-    res.json({ story })
-  } catch (err) {
-    console.error('Write story error:', err.message)
-    res.status(500).json({ error: 'AI service error', message: err.message })
-  }
-})
+  res.json({ story })
+}))
 
 // Original chat endpoint (kept for backward compatibility)
-router.post('/chat', async (req, res) => {
+router.post('/chat', asyncHandler(async (req, res) => {
   const { mode, question, prompt, answer, userMessage, history = [] } = req.body
   const userId = req.user?.id
 
@@ -325,8 +253,7 @@ router.post('/chat', async (req, res) => {
     }
   }
 
-  try {
-    const client = getClient()
+  const client = getGrokClient()
 
     // Sanitize all user inputs
     const safeQuestion = sanitizeForPrompt(question, 500)
@@ -363,12 +290,8 @@ ${safeAnswer ? `Their answer so far: ${safeAnswer}` : '(No answer yet)'}`
       temperature: 0.7
     })
 
-    const response = completion.choices[0]?.message?.content || 'I had trouble generating a response.'
-    res.json({ response })
-  } catch (err) {
-    console.error('AI error:', err.message)
-    res.status(500).json({ error: 'AI service error', message: err.message })
-  }
-})
+  const response = completion.choices[0]?.message?.content || 'I had trouble generating a response.'
+  res.json({ response })
+}))
 
 export default router

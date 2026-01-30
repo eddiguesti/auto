@@ -1,32 +1,21 @@
 import { Router } from 'express'
-import OpenAI from 'openai'
+import { getGrokClient } from '../utils/grokClient.js'
+import { asyncHandler } from '../middleware/asyncHandler.js'
+import { requireDb } from '../middleware/requireDb.js'
 
 const router = Router()
 
-// Initialize Grok client
-const getClient = () => {
-  const apiKey = process.env.GROK_API_KEY
-  if (!apiKey) {
-    throw new Error('GROK_API_KEY not set')
-  }
-  return new OpenAI({
-    apiKey,
-    baseURL: 'https://api.x.ai/v1'
-  })
-}
-
 // Extract entities from text using Grok
-router.post('/extract', async (req, res) => {
+router.post('/extract', requireDb, asyncHandler(async (req, res) => {
   const { text, chapterId, questionId, storyId } = req.body
   const pool = req.app.locals.db
   const userId = req.user.id
 
-  if (!text || !pool) {
-    return res.json({ entities: [], message: 'No text or database' })
+  if (!text) {
+    return res.json({ entities: [], message: 'No text provided' })
   }
 
-  try {
-    const client = getClient()
+  const client = getGrokClient()
 
     const completion = await client.chat.completions.create({
       model: 'grok-3-mini-beta',
@@ -145,64 +134,48 @@ Return ONLY valid JSON in this format:
       }
     }
 
-    res.json({
-      entities: storedEntities,
-      relationships: relationships.length,
-      raw: entities
-    })
-  } catch (err) {
-    console.error('Entity extraction error:', err.message)
-    res.status(500).json({ error: 'Extraction failed', message: err.message })
-  }
-})
+  res.json({
+    entities: storedEntities,
+    relationships: relationships.length,
+    raw: entities
+  })
+}))
 
 // Get all entities (for the memory graph)
-router.get('/entities', async (req, res) => {
+router.get('/entities', requireDb, asyncHandler(async (req, res) => {
   const pool = req.app.locals.db
   const userId = req.user.id
-  if (!pool) return res.json({ entities: [] })
 
-  try {
-    const result = await pool.query(`
-      SELECT id, entity_type, name, description, mention_count, first_mentioned_chapter
-      FROM memory_entities
-      WHERE user_id = $1
-      ORDER BY mention_count DESC, name ASC
-    `, [userId])
-    res.json({ entities: result.rows })
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-})
+  const result = await pool.query(`
+    SELECT id, entity_type, name, description, mention_count, first_mentioned_chapter
+    FROM memory_entities
+    WHERE user_id = $1
+    ORDER BY mention_count DESC, name ASC
+  `, [userId])
+  res.json({ entities: result.rows })
+}))
 
 // Get entities by type
-router.get('/entities/:type', async (req, res) => {
+router.get('/entities/:type', requireDb, asyncHandler(async (req, res) => {
   const pool = req.app.locals.db
   const userId = req.user.id
   const { type } = req.params
-  if (!pool) return res.json({ entities: [] })
 
-  try {
-    const result = await pool.query(`
-      SELECT id, name, description, mention_count, first_mentioned_chapter
-      FROM memory_entities
-      WHERE user_id = $1 AND entity_type = $2
-      ORDER BY mention_count DESC, name ASC
-    `, [userId, type])
-    res.json({ entities: result.rows })
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-})
+  const result = await pool.query(`
+    SELECT id, name, description, mention_count, first_mentioned_chapter
+    FROM memory_entities
+    WHERE user_id = $1 AND entity_type = $2
+    ORDER BY mention_count DESC, name ASC
+  `, [userId, type])
+  res.json({ entities: result.rows })
+}))
 
 // Get context for AI prompts - returns a summary of known entities
-router.get('/context', async (req, res) => {
+router.get('/context', requireDb, asyncHandler(async (req, res) => {
   const pool = req.app.locals.db
   const userId = req.user.id
-  if (!pool) return res.json({ context: '' })
 
-  try {
-    // Get top mentioned people
+  // Get top mentioned people
     const people = await pool.query(`
       SELECT name, mention_count FROM memory_entities
       WHERE user_id = $1 AND entity_type = 'person'
@@ -270,31 +243,25 @@ router.get('/context', async (req, res) => {
       ).join('\n')
     }
 
-    res.json({
-      context,
-      stats: {
-        people: people.rows.length,
-        places: places.rows.length,
-        events: events.rows.length,
-        timePeriods: timePeriods.rows.length,
-        relationships: relationships.rows.length
-      }
-    })
-  } catch (err) {
-    console.error('Context error:', err)
-    res.status(500).json({ error: err.message, context: '' })
-  }
-})
+  res.json({
+    context,
+    stats: {
+      people: people.rows.length,
+      places: places.rows.length,
+      events: events.rows.length,
+      timePeriods: timePeriods.rows.length,
+      relationships: relationships.rows.length
+    }
+  })
+}))
 
 // Search for connections - find entities related to a given name/topic
-router.get('/connections/:name', async (req, res) => {
+router.get('/connections/:name', requireDb, asyncHandler(async (req, res) => {
   const pool = req.app.locals.db
   const userId = req.user.id
   const { name } = req.params
-  if (!pool) return res.json({ connections: [] })
 
-  try {
-    // Find the entity for this user
+  // Find the entity for this user
     const entity = await pool.query(
       'SELECT id, entity_type, name FROM memory_entities WHERE user_id = $1 AND name ILIKE $2',
       [userId, `%${name}%`]
@@ -329,14 +296,11 @@ router.get('/connections/:name', async (req, res) => {
       LIMIT 5
     `, [entityId])
 
-    res.json({
-      entity: entity.rows[0],
-      connections: connections.rows,
-      mentions: mentions.rows
-    })
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-})
+  res.json({
+    entity: entity.rows[0],
+    connections: connections.rows,
+    mentions: mentions.rows
+  })
+}))
 
 export default router

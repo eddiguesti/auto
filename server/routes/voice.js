@@ -1,36 +1,7 @@
 import { Router } from 'express'
+import { getCompactMemoryContext } from '../utils/memoryContext.js'
 
 const router = Router()
-
-// Fetch memory context for voice prompts
-async function getMemoryContext(db, userId) {
-  if (!db || !userId) return ''
-
-  try {
-    const people = await db.query(`
-      SELECT name FROM memory_entities
-      WHERE user_id = $1 AND entity_type = 'person'
-      ORDER BY mention_count DESC LIMIT 8
-    `, [userId])
-
-    const places = await db.query(`
-      SELECT name FROM memory_entities
-      WHERE user_id = $1 AND entity_type = 'place'
-      ORDER BY mention_count DESC LIMIT 6
-    `, [userId])
-
-    let context = ''
-    if (people.rows.length > 0) {
-      context += `People in their story: ${people.rows.map(p => p.name).join(', ')}. `
-    }
-    if (places.rows.length > 0) {
-      context += `Places mentioned: ${places.rows.map(p => p.name).join(', ')}.`
-    }
-    return context
-  } catch (err) {
-    return ''
-  }
-}
 
 // Generate ephemeral token for client-side WebSocket connection
 router.post('/session', async (req, res) => {
@@ -71,7 +42,7 @@ router.post('/session', async (req, res) => {
 router.get('/config', async (req, res) => {
   const db = req.app.locals.db
   const userId = req.user.id
-  const memoryContext = await getMemoryContext(db, userId)
+  const memoryContext = await getCompactMemoryContext(db, userId)
 
   const baseInstructions = `You're chatting with someone to help them record their life story. Be natural - like a friend catching up, not a formal interview.
 

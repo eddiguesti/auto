@@ -1,18 +1,18 @@
 import { Router } from 'express'
-import OpenAI from 'openai'
+import { getGrokClient, isGrokConfigured } from '../utils/grokClient.js'
 import { sanitizeForPrompt } from '../utils/security.js'
+import { asyncHandler } from '../middleware/asyncHandler.js'
+import { requireDb } from '../middleware/requireDb.js'
 
 const router = Router()
 
 // Extract entities asynchronously after saving
 async function extractEntitiesAsync(db, userId, text, chapterId, questionId, storyId) {
   if (!text || text.length < 20) return // Skip very short answers
+  if (!isGrokConfigured()) return
 
   try {
-    const apiKey = process.env.GROK_API_KEY
-    if (!apiKey) return
-
-    const client = new OpenAI({ apiKey, baseURL: 'https://api.x.ai/v1' })
+    const client = getGrokClient()
 
     // Sanitize user text to prevent prompt injection
     const safeText = sanitizeForPrompt(text, 3000)
@@ -85,176 +85,122 @@ Normalize names (Dad/Father -> Father). Be concise.`
 }
 
 // Get all stories (must be before /:chapterId to avoid conflicts)
-router.get('/all', async (req, res) => {
+router.get('/all', requireDb, asyncHandler(async (req, res) => {
   const db = req.app.locals.db
   const userId = req.user.id
 
-  if (!db) {
-    return res.status(503).json({ error: 'Database not available' })
-  }
+  const result = await db.query(`
+    SELECT s.*,
+      COALESCE(
+        json_agg(
+          json_build_object('id', p.id, 'filename', p.filename, 'caption', p.caption)
+        ) FILTER (WHERE p.id IS NOT NULL),
+        '[]'
+      ) as photos
+    FROM stories s
+    LEFT JOIN photos p ON p.story_id = s.id
+    WHERE s.user_id = $1
+    GROUP BY s.id
+  `, [userId])
 
-  try {
-    const result = await db.query(`
-      SELECT s.*,
-        COALESCE(
-          json_agg(
-            json_build_object('id', p.id, 'filename', p.filename, 'caption', p.caption)
-          ) FILTER (WHERE p.id IS NOT NULL),
-          '[]'
-        ) as photos
-      FROM stories s
-      LEFT JOIN photos p ON p.story_id = s.id
-      WHERE s.user_id = $1
-      GROUP BY s.id
-    `, [userId])
-
-    res.json(result.rows)
-  } catch (err) {
-    console.error('Error fetching all stories:', err)
-    res.status(500).json({ error: 'Failed to fetch stories' })
-  }
-})
+  res.json(result.rows)
+}))
 
 // Get progress (count of answered questions per chapter)
-router.get('/progress', async (req, res) => {
+router.get('/progress', requireDb, asyncHandler(async (req, res) => {
   const db = req.app.locals.db
   const userId = req.user.id
 
-  if (!db) {
-    return res.status(503).json({ error: 'Database not available' })
-  }
+  const result = await db.query(`
+    SELECT chapter_id, COUNT(*) as count
+    FROM stories
+    WHERE user_id = $1 AND answer IS NOT NULL AND answer != ''
+    GROUP BY chapter_id
+  `, [userId])
 
-  try {
-    const result = await db.query(`
-      SELECT chapter_id, COUNT(*) as count
-      FROM stories
-      WHERE user_id = $1 AND answer IS NOT NULL AND answer != ''
-      GROUP BY chapter_id
-    `, [userId])
+  const progress = {}
+  result.rows.forEach(p => {
+    progress[p.chapter_id] = parseInt(p.count)
+  })
 
-    const progress = {}
-    result.rows.forEach(p => {
-      progress[p.chapter_id] = parseInt(p.count)
-    })
-
-    res.json(progress)
-  } catch (err) {
-    console.error('Error fetching progress:', err)
-    res.status(500).json({ error: 'Failed to fetch progress' })
-  }
-})
+  res.json(progress)
+}))
 
 // Get settings
-router.get('/settings', async (req, res) => {
+router.get('/settings', requireDb, asyncHandler(async (req, res) => {
   const db = req.app.locals.db
   const userId = req.user.id
 
-  if (!db) {
-    return res.status(503).json({ error: 'Database not available' })
-  }
-
-  try {
-    const result = await db.query('SELECT * FROM settings WHERE user_id = $1', [userId])
-    res.json(result.rows[0] || {})
-  } catch (err) {
-    console.error('Error fetching settings:', err)
-    res.status(500).json({ error: 'Failed to fetch settings' })
-  }
-})
+  const result = await db.query('SELECT * FROM settings WHERE user_id = $1', [userId])
+  res.json(result.rows[0] || {})
+}))
 
 // Save settings
-router.post('/settings', async (req, res) => {
+router.post('/settings', requireDb, asyncHandler(async (req, res) => {
   const db = req.app.locals.db
   const userId = req.user.id
   const { name } = req.body
 
-  if (!db) {
-    return res.status(503).json({ error: 'Database not available' })
-  }
+  await db.query(`
+    INSERT INTO settings (user_id, name, updated_at)
+    VALUES ($1, $2, CURRENT_TIMESTAMP)
+    ON CONFLICT (user_id) DO UPDATE SET name = $2, updated_at = CURRENT_TIMESTAMP
+  `, [userId, name])
 
-  try {
-    await db.query(`
-      INSERT INTO settings (user_id, name, updated_at)
-      VALUES ($1, $2, CURRENT_TIMESTAMP)
-      ON CONFLICT (user_id) DO UPDATE SET name = $2, updated_at = CURRENT_TIMESTAMP
-    `, [userId, name])
-
-    res.json({ success: true })
-  } catch (err) {
-    console.error('Error saving settings:', err)
-    res.status(500).json({ error: 'Failed to save settings' })
-  }
-})
+  res.json({ success: true })
+}))
 
 // Get all stories for a chapter
-router.get('/:chapterId', async (req, res) => {
+router.get('/:chapterId', requireDb, asyncHandler(async (req, res) => {
   const db = req.app.locals.db
   const userId = req.user.id
   const { chapterId } = req.params
 
-  if (!db) {
-    return res.status(503).json({ error: 'Database not available' })
-  }
+  const result = await db.query(`
+    SELECT s.*,
+      COALESCE(
+        json_agg(
+          json_build_object('id', p.id, 'filename', p.filename, 'caption', p.caption)
+        ) FILTER (WHERE p.id IS NOT NULL),
+        '[]'
+      ) as photos
+    FROM stories s
+    LEFT JOIN photos p ON p.story_id = s.id
+    WHERE s.user_id = $1 AND s.chapter_id = $2
+    GROUP BY s.id
+  `, [userId, chapterId])
 
-  try {
-    const result = await db.query(`
-      SELECT s.*,
-        COALESCE(
-          json_agg(
-            json_build_object('id', p.id, 'filename', p.filename, 'caption', p.caption)
-          ) FILTER (WHERE p.id IS NOT NULL),
-          '[]'
-        ) as photos
-      FROM stories s
-      LEFT JOIN photos p ON p.story_id = s.id
-      WHERE s.user_id = $1 AND s.chapter_id = $2
-      GROUP BY s.id
-    `, [userId, chapterId])
-
-    res.json(result.rows)
-  } catch (err) {
-    console.error('Error fetching stories:', err)
-    res.status(500).json({ error: 'Failed to fetch stories' })
-  }
-})
+  res.json(result.rows)
+}))
 
 // Save/update a story
-router.post('/', async (req, res) => {
+router.post('/', requireDb, asyncHandler(async (req, res) => {
   const db = req.app.locals.db
   const userId = req.user.id
   const { chapter_id, question_id, answer } = req.body
-
-  if (!db) {
-    return res.status(503).json({ error: 'Database not available' })
-  }
 
   if (!chapter_id || !question_id) {
     return res.status(400).json({ error: 'Missing chapter_id or question_id' })
   }
 
-  try {
-    await db.query(`
-      INSERT INTO stories (user_id, chapter_id, question_id, answer, updated_at)
-      VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
-      ON CONFLICT (user_id, chapter_id, question_id)
-      DO UPDATE SET answer = $4, updated_at = CURRENT_TIMESTAMP
-    `, [userId, chapter_id, question_id, answer])
+  await db.query(`
+    INSERT INTO stories (user_id, chapter_id, question_id, answer, updated_at)
+    VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
+    ON CONFLICT (user_id, chapter_id, question_id)
+    DO UPDATE SET answer = $4, updated_at = CURRENT_TIMESTAMP
+  `, [userId, chapter_id, question_id, answer])
 
-    // Get the story ID
-    const result = await db.query(`
-      SELECT id FROM stories WHERE user_id = $1 AND chapter_id = $2 AND question_id = $3
-    `, [userId, chapter_id, question_id])
+  // Get the story ID
+  const result = await db.query(`
+    SELECT id FROM stories WHERE user_id = $1 AND chapter_id = $2 AND question_id = $3
+  `, [userId, chapter_id, question_id])
 
-    const storyId = result.rows[0].id
+  const storyId = result.rows[0].id
 
-    // Extract entities asynchronously (don't wait for it)
-    extractEntitiesAsync(db, userId, answer, chapter_id, question_id, storyId)
+  // Extract entities asynchronously (don't wait for it)
+  extractEntitiesAsync(db, userId, answer, chapter_id, question_id, storyId)
 
-    res.json({ success: true, id: storyId })
-  } catch (err) {
-    console.error('Error saving story:', err)
-    res.status(500).json({ error: 'Failed to save story' })
-  }
-})
+  res.json({ success: true, id: storyId })
+}))
 
 export default router
