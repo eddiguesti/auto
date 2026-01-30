@@ -3,12 +3,22 @@ import { API_URL } from '../config'
 
 const AuthContext = createContext(null)
 
+// Dev bypass - auto-authenticate in development
+const DEV_BYPASS = import.meta.env.VITE_DEV_BYPASS === 'true'
+const DEV_USER = {
+  id: 1,
+  email: 'dev@test.com',
+  name: 'Dev User'
+}
+
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
-  const [token, setToken] = useState(localStorage.getItem('token'))
-  const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState(DEV_BYPASS ? DEV_USER : null)
+  const [token, setToken] = useState(DEV_BYPASS ? 'dev-token' : localStorage.getItem('token'))
+  const [loading, setLoading] = useState(!DEV_BYPASS)
 
   useEffect(() => {
+    if (DEV_BYPASS) return // Skip auth check in dev bypass mode
+
     if (token) {
       fetchUser()
     } else {

@@ -17,8 +17,10 @@ import aiRouter from './routes/ai.js'
 import voiceRouter from './routes/voice.js'
 import luluRouter from './routes/lulu.js'
 import memoryRouter from './routes/memory.js'
+import coversRouter from './routes/covers.js'
 import seoRouter from './routes/seo.js'
 import exportRouter from './routes/export.js'
+import audiobookRouter from './routes/audiobook.js'
 import paymentsRouter, { handleStripeWebhook } from './routes/payments.js'
 
 dotenv.config()
@@ -72,8 +74,14 @@ app.use('/api/memory', authenticateToken, memoryRouter)
 // Lulu routes (protected)
 app.use('/api/lulu', authenticateToken, luluRouter)
 
+// Cover generation routes (protected)
+app.use('/api/covers', authenticateToken, coversRouter)
+
 // Export routes (protected)
 app.use('/api/export', authenticateToken, exportRouter)
+
+// Audiobook routes (protected)
+app.use('/api/audiobook', authenticateToken, audiobookRouter)
 
 // Payment routes (protected)
 app.use('/api/payments', authenticateToken, paymentsRouter)

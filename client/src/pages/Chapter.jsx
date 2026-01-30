@@ -131,6 +131,11 @@ export default function Chapter() {
 
   const question = chapter.questions[currentQuestion]
   const answeredCount = Object.values(answers).filter(a => a?.answer?.trim()).length
+  const isLastQuestion = currentQuestion === chapter.questions.length - 1
+
+  // Find next chapter
+  const currentChapterIndex = chapters.findIndex(c => c.id === chapterId)
+  const nextChapter = chapters[currentChapterIndex + 1]
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 page-enter">
@@ -239,14 +244,33 @@ export default function Chapter() {
           <span>←</span>
           <span>Previous</span>
         </button>
-        <button
-          onClick={() => setCurrentQuestion(prev => Math.min(chapter.questions.length - 1, prev + 1))}
-          disabled={currentQuestion === chapter.questions.length - 1}
-          className="flex-1 sm:flex-none px-5 py-3 sm:py-2 text-sepia/70 hover:text-sepia disabled:opacity-30 disabled:cursor-not-allowed transition flex items-center justify-center gap-2 rounded border border-sepia/20 hover:border-sepia/40 hover:bg-white/50 tap-bounce"
-        >
-          <span>Next</span>
-          <span>→</span>
-        </button>
+        {isLastQuestion ? (
+          nextChapter ? (
+            <Link
+              to={`/chapter/${nextChapter.id}`}
+              className="flex-1 sm:flex-none px-5 py-3 sm:py-2 bg-sepia text-white transition flex items-center justify-center gap-2 rounded hover:bg-sepia/90 tap-bounce"
+            >
+              <span>Next Chapter</span>
+              <span>→</span>
+            </Link>
+          ) : (
+            <Link
+              to="/home"
+              className="flex-1 sm:flex-none px-5 py-3 sm:py-2 bg-sepia text-white transition flex items-center justify-center gap-2 rounded hover:bg-sepia/90 tap-bounce"
+            >
+              <span>Finish Chapter</span>
+              <span>✓</span>
+            </Link>
+          )
+        ) : (
+          <button
+            onClick={() => setCurrentQuestion(prev => Math.min(chapter.questions.length - 1, prev + 1))}
+            className="flex-1 sm:flex-none px-5 py-3 sm:py-2 text-sepia/70 hover:text-sepia transition flex items-center justify-center gap-2 rounded border border-sepia/20 hover:border-sepia/40 hover:bg-white/50 tap-bounce"
+          >
+            <span>Next</span>
+            <span>→</span>
+          </button>
+        )}
       </div>
 
       {/* AI Assistant Modal */}

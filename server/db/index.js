@@ -187,12 +187,35 @@ export async function initDatabase() {
         stripe_session_id TEXT,
         stripe_subscription_id TEXT,
         product_id TEXT NOT NULL,
-        product_type TEXT NOT NULL, -- 'export', 'subscription'
+        product_type TEXT NOT NULL, -- 'export', 'subscription', 'audiobook'
         amount INTEGER, -- in cents
         currency TEXT DEFAULT 'usd',
         status TEXT DEFAULT 'pending', -- 'pending', 'completed', 'failed', 'refunded'
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `)
+
+    // Voice models for audiobook voice cloning
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS voice_models (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE UNIQUE,
+        fish_model_id TEXT,
+        consent_given BOOLEAN DEFAULT false,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `)
+
+    // Audiobooks generated for users
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS audiobooks (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        filename TEXT NOT NULL,
+        voice_type TEXT DEFAULT 'default', -- 'default' or 'custom'
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `)
 
@@ -226,6 +249,12 @@ export async function initDatabase() {
     `)
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_payments_stripe_session ON payments(stripe_session_id)
+    `)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_voice_models_user ON voice_models(user_id)
+    `)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_audiobooks_user ON audiobooks(user_id)
     `)
 
     console.log('Database initialized successfully')

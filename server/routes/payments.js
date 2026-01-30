@@ -21,6 +21,13 @@ const PRODUCTS = {
     currency: 'gbp',
     type: 'export'
   },
+  'export_audiobook': {
+    name: 'Audiobook Export',
+    description: 'Download your memoir as an MP3 audiobook',
+    price: 1499, // £14.99
+    currency: 'gbp',
+    type: 'audiobook'
+  },
   'printed_book': {
     name: 'Printed Book',
     description: 'Beautiful hardcover book delivered to your door',

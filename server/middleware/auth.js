@@ -1,6 +1,19 @@
 import jwt from 'jsonwebtoken'
 
+// Dev user for local testing - bypasses auth in development
+const DEV_USER = {
+  id: 1,
+  email: 'dev@test.com',
+  name: 'Dev User'
+}
+
 export function authenticateToken(req, res, next) {
+  // Dev bypass - auto-authenticate in development mode
+  if (process.env.NODE_ENV !== 'production' && process.env.DEV_BYPASS === 'true') {
+    req.user = DEV_USER
+    return next()
+  }
+
   const authHeader = req.headers['authorization']
   const token = authHeader && authHeader.split(' ')[1] // Bearer TOKEN
 

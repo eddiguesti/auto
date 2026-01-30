@@ -2,7 +2,7 @@ import { Router } from 'express'
 import multer from 'multer'
 import { fileURLToPath } from 'url'
 import { dirname, join, extname } from 'path'
-import { existsSync, unlinkSync } from 'fs'
+import { existsSync, unlinkSync, mkdirSync } from 'fs'
 import crypto from 'crypto'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -10,9 +10,16 @@ const __dirname = dirname(__filename)
 
 const router = Router()
 
+// Ensure uploads directory exists
+const uploadsDir = join(__dirname, '..', '..', 'uploads')
+if (!existsSync(uploadsDir)) {
+  mkdirSync(uploadsDir, { recursive: true })
+  console.log('Created uploads directory:', uploadsDir)
+}
+
 // Configure multer for file uploads
 const storage = multer.diskStorage({
-  destination: join(__dirname, '..', '..', 'uploads'),
+  destination: uploadsDir,
   filename: (req, file, cb) => {
     const uniqueSuffix = crypto.randomBytes(8).toString('hex')
     cb(null, `${Date.now()}-${uniqueSuffix}${extname(file.originalname)}`)
@@ -89,7 +96,7 @@ router.get('/file/:filename', (req, res) => {
     return res.status(400).json({ error: 'Invalid filename' })
   }
 
-  const filepath = join(__dirname, '..', '..', 'uploads', sanitizedFilename)
+  const filepath = join(uploadsDir, sanitizedFilename)
 
   if (!existsSync(filepath)) {
     return res.status(404).json({ error: 'Photo not found' })
@@ -125,7 +132,7 @@ router.delete('/:id', async (req, res) => {
     await db.query('DELETE FROM photos WHERE id = $1', [id])
 
     // Delete file
-    const filepath = join(__dirname, '..', '..', 'uploads', photo.filename)
+    const filepath = join(uploadsDir, photo.filename)
     if (existsSync(filepath)) {
       unlinkSync(filepath)
     }
