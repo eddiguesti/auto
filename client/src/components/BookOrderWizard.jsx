@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
+import {
+  IconBook, IconBookmark, IconGift, IconSparkles, IconLeaf,
+  IconHome2, IconPalette, IconScroll, IconRefresh, IconX, IconCheck
+} from '@tabler/icons-react'
 
 // 3D Flippable book cover preview
 // Takes a landscape full-wrap image (back | spine | front) and splits it
@@ -131,9 +135,7 @@ function BookPreview({ coverImage, title, authorName, format, size = 'normal', a
           onClick={() => setIsFlipped(!isFlipped)}
           className="text-xs text-sepia/60 hover:text-sepia flex items-center gap-1 transition-colors"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
+          <IconRefresh size={16} stroke={2} />
           {isFlipped ? 'View front' : 'View back'}
         </button>
       )}
@@ -141,40 +143,14 @@ function BookPreview({ coverImage, title, authorName, format, size = 'normal', a
   )
 }
 
-// Icon mapping for styles
+// Icon mapping for cover styles using Tabler Icons
 const styleIcons = {
-  classic: (
-    <svg className="w-8 h-8 text-sepia" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-    </svg>
-  ),
-  modern: (
-    <svg className="w-8 h-8 text-sepia" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-    </svg>
-  ),
-  nature: (
-    <svg className="w-8 h-8 text-sepia" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 12c0-4 3-7 7-7s7 3 7 7M12 5v7m0 0l-3-2m3 2l3-2M8 21h8m-4-4v4" />
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17c0-1.5 1.5-3 3-3s3 1.5 3 3" />
-    </svg>
-  ),
-  family: (
-    <svg className="w-8 h-8 text-sepia" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-    </svg>
-  ),
-  artistic: (
-    <svg className="w-8 h-8 text-sepia" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
-    </svg>
-  ),
-  heritage: (
-    <svg className="w-8 h-8 text-sepia" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 3v5a2 2 0 002 2h5" />
-    </svg>
-  )
+  classic: <IconBookmark size={32} className="text-sepia" stroke={1.5} />,
+  modern: <IconSparkles size={32} className="text-sepia" stroke={1.5} />,
+  nature: <IconLeaf size={32} className="text-sepia" stroke={1.5} />,
+  family: <IconHome2 size={32} className="text-sepia" stroke={1.5} />,
+  artistic: <IconPalette size={32} className="text-sepia" stroke={1.5} />,
+  heritage: <IconScroll size={32} className="text-sepia" stroke={1.5} />
 }
 
 // Style card component
@@ -207,37 +183,18 @@ function StyleCard({ style, selected, onClick }) {
       </div>
       {selected && (
         <div className="absolute top-2 right-2 w-6 h-6 bg-sepia rounded-full flex items-center justify-center">
-          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
+          <IconCheck size={16} className="text-white" stroke={2} />
         </div>
       )}
     </button>
   )
 }
 
-// Icon mapping for formats
+// Icon mapping for book formats using Tabler Icons
 const formatIcons = {
-  paperback: (
-    <svg className="w-10 h-10 text-sepia" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-    </svg>
-  ),
-  hardcover: (
-    <svg className="w-10 h-10 text-sepia" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-      <rect x="4" y="3" width="16" height="18" rx="2" strokeWidth={1.5} />
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 7h16M8 3v4M8 11h8M8 15h5" />
-      <path strokeWidth={1.5} d="M4 5a2 2 0 012-2h12a2 2 0 012 2" />
-    </svg>
-  ),
-  deluxe: (
-    <svg className="w-10 h-10 text-sepia" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-      <rect x="3" y="8" width="18" height="13" rx="2" strokeWidth={1.5} />
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v13M3 12h18" />
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c0 0-1.5-2-1.5-3.5a2.5 2.5 0 015 0C15.5 6 12 8 12 8z" />
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c0 0 1.5-2 1.5-3.5a2.5 2.5 0 00-5 0C8.5 6 12 8 12 8z" />
-    </svg>
-  )
+  paperback: <IconBook size={40} className="text-sepia" stroke={1.5} />,
+  hardcover: <IconBookmark size={40} className="text-sepia" stroke={1.5} />,
+  deluxe: <IconGift size={40} className="text-sepia" stroke={1.5} />
 }
 
 // Format card component
@@ -392,9 +349,7 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
             onClick={onClose}
             className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-sepia/10 text-sepia/60 hover:text-sepia transition"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <IconX size={24} stroke={2} />
           </button>
         </div>
 
@@ -508,10 +463,7 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
                           </>
                         ) : (
                           <>
-                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M12 3L13.5 8.5L19 10L13.5 11.5L12 17L10.5 11.5L5 10L10.5 8.5L12 3Z"/>
-                              <path d="M19 15L19.9 17.1L22 18L19.9 18.9L19 21L18.1 18.9L16 18L18.1 17.1L19 15Z"/>
-                            </svg>
+                            <IconSparkles size={20} />
                             Generate Cover
                           </>
                         )}
@@ -530,9 +482,7 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
                             </>
                           ) : (
                             <>
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                              </svg>
+                              <IconRefresh size={20} />
                               Try a Different Design
                             </>
                           )}

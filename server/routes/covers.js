@@ -189,9 +189,9 @@ function buildCoverPrompt(style, storyContext, bookTitle) {
   const base = `Professional book cover, full wrap design, landscape 3:2 ratio. Left side is back cover, right side is front cover. ${style.styleGuide}. High-end modern graphic design.`
 
   if (bookTitle) {
-    return `${base} Display the title '${bookTitle}' prominently on the right side (front cover). Only include this exact title text, nothing else.`
+    return `${base} The ONLY text on this cover is the title '${bookTitle}' on the right side. CRITICAL: Do NOT add any other text - no author name, no tagline, no subtitle, no quotes, no decorative words. Just '${bookTitle}' and nothing else.`
   }
-  return `${base} No text on the cover.`
+  return `${base} CRITICAL: No text whatsoever on this cover. Zero words, zero letters.`
 }
 
 // Generate AI book cover
@@ -223,7 +223,7 @@ router.post('/generate', async (req, res) => {
         input: {
           prompt: fullPrompt,
           aspect_ratio: "3:2",
-          magic_prompt_option: "On"
+          magic_prompt_option: "Off"
         }
       }
     )
@@ -249,7 +249,7 @@ router.post('/generate', async (req, res) => {
 
 // Generate multiple cover variations with different compositions
 router.post('/generate-variations', async (req, res) => {
-  const { styleId, userName, bookTitle, authorName } = req.body
+  const { styleId, bookTitle } = req.body
   const db = req.app.locals.db
 
   const style = COVER_STYLES[styleId]
@@ -263,7 +263,7 @@ router.post('/generate-variations', async (req, res) => {
     // Extract context from user's stories
     const storyContext = await extractStoryContext(db, req.user.id)
 
-    // Base prompt with story context, title, and author
+    // Base prompt with story context and title
     const basePrompt = buildCoverPrompt(style, storyContext, bookTitle)
 
     // Generate variations with different compositions
@@ -282,7 +282,7 @@ router.post('/generate-variations', async (req, res) => {
           input: {
             prompt: fullPrompt,
             aspect_ratio: "3:2",
-            output_format: "png"
+            magic_prompt_option: "Off"
           }
         }
       )

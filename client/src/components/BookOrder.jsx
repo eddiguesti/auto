@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
+import {
+  IconBook, IconStar, IconPhoto, IconGift, IconMinus, IconPlus,
+  IconCheck, IconInfoCircle, IconCoin, IconX
+} from '@tabler/icons-react'
 
 // 3D Book Mockup Component
 function BookMockup({ config, options, title }) {
@@ -418,9 +422,7 @@ export default function BookOrder({ userName, pageCount, onClose }) {
             onClick={onClose}
             className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-sepia/10 text-sepia/60 hover:text-sepia transition"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <IconX size={24} stroke={2} />
           </button>
         </div>
 
@@ -459,33 +461,10 @@ export default function BookOrder({ userName, pageCount, onClose }) {
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     {Object.entries(options.recommended).map(([key, preset]) => {
                       const icons = {
-                        memoir: (
-                          <svg className="w-10 h-10" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                          </svg>
-                        ),
-                        premium: (
-                          <svg className="w-10 h-10" viewBox="0 0 24 24" fill="none">
-                            <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
-                            <circle cx="12" cy="12" r="3" fill="currentColor" fillOpacity={0.2} />
-                          </svg>
-                        ),
-                        photoBook: (
-                          <svg className="w-10 h-10" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <rect x="3" y="3" width="18" height="18" rx="2" strokeWidth={1.5} />
-                            <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 15l-5-5L5 21" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14 14l-2-2-3 3" />
-                          </svg>
-                        ),
-                        gift: (
-                          <svg className="w-10 h-10" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <rect x="3" y="8" width="18" height="13" rx="2" strokeWidth={1.5} />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v13M3 12h18" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c0 0-1.5-2-1.5-3.5a2.5 2.5 0 015 0C15.5 6 12 8 12 8z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c0 0 1.5-2 1.5-3.5a2.5 2.5 0 00-5 0C8.5 6 12 8 12 8z" />
-                          </svg>
-                        )
+                        memoir: <IconBook size={40} stroke={1.5} />,
+                        premium: <IconStar size={40} stroke={1.5} />,
+                        photoBook: <IconPhoto size={40} stroke={1.5} />,
+                        gift: <IconGift size={40} stroke={1.5} />
                       }
                       return (
                         <button
@@ -700,9 +679,7 @@ export default function BookOrder({ userName, pageCount, onClose }) {
                     <div className="absolute bottom-0 left-0 w-24 h-24 bg-orange-400/10 rounded-full translate-y-1/2 -translate-x-1/2" />
                     <div className="relative flex items-center gap-4">
                       <div className="flex-shrink-0 w-14 h-14 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center shadow-lg">
-                        <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
+                        <IconCoin size={28} className="text-white" stroke={2} />
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
@@ -768,9 +745,7 @@ export default function BookOrder({ userName, pageCount, onClose }) {
                       onClick={() => setConfig(prev => ({ ...prev, quantity: Math.max(1, prev.quantity - 1) }))}
                       className="w-10 h-10 border-2 border-sepia/20 rounded-lg hover:bg-sepia/10 hover:border-sepia/40 text-lg font-medium text-sepia flex items-center justify-center transition"
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M20 12H4" />
-                      </svg>
+                      <IconMinus size={16} stroke={2.5} />
                     </button>
                     <input
                       type="number"
@@ -784,17 +759,13 @@ export default function BookOrder({ userName, pageCount, onClose }) {
                       onClick={() => setConfig(prev => ({ ...prev, quantity: prev.quantity + 1 }))}
                       className="w-10 h-10 border-2 border-sepia/20 rounded-lg hover:bg-sepia/10 hover:border-sepia/40 text-lg font-medium text-sepia flex items-center justify-center transition"
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-                      </svg>
+                      <IconPlus size={16} stroke={2.5} />
                     </button>
 
                     {/* Savings Badge */}
                     {config.quantity >= 3 && (
                       <div className="ml-auto flex items-center gap-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg">
-                        <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
+                        <IconCheck size={16} className="text-green-600" stroke={2} />
                         <span className="text-sm font-medium text-green-700">
                           {config.quantity >= 50 ? '50% savings!' :
                            config.quantity >= 25 ? '45% savings!' :
@@ -809,9 +780,7 @@ export default function BookOrder({ userName, pageCount, onClose }) {
                   {/* Discount Tiers Info */}
                   <div className="mt-4 p-4 bg-sepia/5 rounded-xl">
                     <div className="flex items-center gap-2 mb-3">
-                      <svg className="w-5 h-5 text-sepia" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
+                      <IconInfoCircle size={20} className="text-sepia" stroke={2} />
                       <span className="text-sm font-medium text-ink">Bulk Discount Tiers</span>
                     </div>
                     <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-center text-xs">
@@ -1015,9 +984,7 @@ export default function BookOrder({ userName, pageCount, onClose }) {
             <div className="flex-1 flex items-center justify-center p-6">
               <div className="text-center max-w-md">
                 <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <svg className="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
+                  <IconCheck size={48} className="text-green-600" stroke={2} />
                 </div>
                 <h3 className="text-3xl font-serif text-ink mb-4">Configuration Saved!</h3>
                 <p className="text-sepia/70 mb-8">
