@@ -2,12 +2,40 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import {
   IconBook, IconBookmark, IconGift, IconSparkles, IconLeaf,
-  IconHome2, IconPalette, IconCrown, IconRefresh, IconX, IconCheck
+  IconHome2, IconPalette, IconCrown, IconRefresh, IconX, IconCheck, IconZoomIn
 } from '@tabler/icons-react'
+
+// Full image lightbox modal
+function ImageLightbox({ imageUrl, onClose }) {
+  if (!imageUrl) return null
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/90 flex items-center justify-center z-[60] p-4 cursor-pointer"
+      onClick={onClose}
+    >
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 w-12 h-12 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition"
+      >
+        <IconX size={28} stroke={2} />
+      </button>
+      <img
+        src={imageUrl}
+        alt="Full cover preview"
+        className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+        onClick={e => e.stopPropagation()}
+      />
+      <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/60 text-sm">
+        Click anywhere to close
+      </p>
+    </div>
+  )
+}
 
 // 3D Flippable book cover preview
 // Takes a landscape full-wrap image (back | spine | front) and splits it
-function BookPreview({ coverImage, title, authorName, format, size = 'normal', allowFlip = true }) {
+function BookPreview({ coverImage, title, authorName, format, size = 'normal', allowFlip = true, onViewFull }) {
   const [isFlipped, setIsFlipped] = useState(false)
   const isHardcover = format === 'hardcover' || format === 'deluxe'
 
@@ -50,11 +78,13 @@ function BookPreview({ coverImage, title, authorName, format, size = 'normal', a
             }}
           >
             {coverImage ? (
-              <img
-                src={coverImage}
-                alt="Book cover"
-                className="w-full h-full object-cover"
-                style={{ objectPosition: 'right center' }}
+              <div
+                className="w-full h-full"
+                style={{
+                  backgroundImage: `url(${coverImage})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: '100% center'
+                }}
               />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-[#8b7355] via-[#6b5344] to-[#4a3728] flex flex-col justify-between p-5">
@@ -97,11 +127,13 @@ function BookPreview({ coverImage, title, authorName, format, size = 'normal', a
             }}
           >
             {coverImage ? (
-              <img
-                src={coverImage}
-                alt="Book back cover"
-                className="w-full h-full object-cover"
-                style={{ objectPosition: 'left center' }}
+              <div
+                className="w-full h-full"
+                style={{
+                  backgroundImage: `url(${coverImage})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: '0% center'
+                }}
               />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-[#6b5344] via-[#5a4335] to-[#4a3728] flex flex-col justify-between p-5">
@@ -129,15 +161,28 @@ function BookPreview({ coverImage, title, authorName, format, size = 'normal', a
         </div>
       </div>
 
-      {/* Flip indicator */}
-      {allowFlip && coverImage && (
-        <button
-          onClick={() => setIsFlipped(!isFlipped)}
-          className="text-xs text-sepia/60 hover:text-sepia flex items-center gap-1 transition-colors"
-        >
-          <IconRefresh size={16} stroke={2} />
-          {isFlipped ? 'View front' : 'View back'}
-        </button>
+      {/* Controls */}
+      {coverImage && (
+        <div className="flex items-center gap-4">
+          {allowFlip && (
+            <button
+              onClick={() => setIsFlipped(!isFlipped)}
+              className="text-xs text-sepia/60 hover:text-sepia flex items-center gap-1 transition-colors"
+            >
+              <IconRefresh size={16} stroke={2} />
+              {isFlipped ? 'View front' : 'View back'}
+            </button>
+          )}
+          {onViewFull && (
+            <button
+              onClick={onViewFull}
+              className="text-xs text-sepia/60 hover:text-sepia flex items-center gap-1 transition-colors"
+            >
+              <IconZoomIn size={16} stroke={2} />
+              View full image
+            </button>
+          )}
+        </div>
       )}
     </div>
   )
@@ -228,6 +273,7 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
   const [generating, setGenerating] = useState(false)
   const [options, setOptions] = useState(null)
   const [error, setError] = useState(null)
+  const [showLightbox, setShowLightbox] = useState(false)
 
   // Wizard state
   const [selectedFormat, setSelectedFormat] = useState('hardcover')
@@ -321,35 +367,35 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
   ]
 
   return (
-    <div className="fixed inset-0 bg-ink/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-gradient-to-b from-white to-cream rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 bg-ink/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 sm:p-4">
+      <div className="bg-gradient-to-b from-white to-cream rounded-t-2xl sm:rounded-2xl w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-sepia/10 flex justify-between items-center">
-          <div>
-            <h2 className="text-2xl font-serif text-ink">Create Your Book</h2>
-            {/* Progress steps */}
-            <div className="flex items-center gap-1 mt-2">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-sepia/10 flex justify-between items-center">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-xl sm:text-2xl font-serif text-ink">Create Your Book</h2>
+            {/* Progress steps - compact on mobile */}
+            <div className="flex items-center gap-0.5 sm:gap-1 mt-2 overflow-x-auto">
               {steps.map((s, i) => (
-                <div key={s.num} className="flex items-center">
-                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium transition-colors ${
+                <div key={s.num} className="flex items-center flex-shrink-0">
+                  <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-medium transition-colors ${
                     step > s.num ? 'bg-green-500 text-white' :
                     step === s.num ? 'bg-sepia text-white' : 'bg-sepia/20 text-sepia/60'
                   }`}>
                     {step > s.num ? '✓' : s.num}
                   </div>
-                  <span className={`ml-1.5 text-xs ${step === s.num ? 'text-ink font-medium' : 'text-sepia/60'}`}>
+                  <span className={`ml-1 sm:ml-1.5 text-[10px] sm:text-xs hidden xs:inline ${step === s.num ? 'text-ink font-medium' : 'text-sepia/60'}`}>
                     {s.label}
                   </span>
-                  {i < steps.length - 1 && <div className="w-6 h-0.5 mx-2 bg-sepia/20" />}
+                  {i < steps.length - 1 && <div className="w-3 sm:w-6 h-0.5 mx-1 sm:mx-2 bg-sepia/20" />}
                 </div>
               ))}
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-sepia/10 text-sepia/60 hover:text-sepia transition"
+            className="flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full hover:bg-sepia/10 text-sepia/60 hover:text-sepia transition ml-2"
           >
-            <IconX size={24} stroke={2} />
+            <IconX size={22} stroke={2} />
           </button>
         </div>
 
@@ -357,11 +403,11 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
         <div className="flex-1 overflow-y-auto">
           {/* Step 1: Choose Style */}
           {step === 1 && options && (
-            <div className="p-6 space-y-8">
+            <div className="p-4 sm:p-6 space-y-6 sm:space-y-8">
               {/* Book Format */}
               <div>
-                <h3 className="text-lg font-medium text-ink mb-4">Choose your book format</h3>
-                <div className="grid grid-cols-3 gap-4">
+                <h3 className="text-base sm:text-lg font-medium text-ink mb-3 sm:mb-4">Choose your book format</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                   {options.bookFormats.map(format => (
                     <FormatCard
                       key={format.id}
@@ -375,8 +421,8 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
 
               {/* Cover Style */}
               <div>
-                <h3 className="text-lg font-medium text-ink mb-4">Choose your cover style</h3>
-                <div className="grid grid-cols-2 gap-4">
+                <h3 className="text-base sm:text-lg font-medium text-ink mb-3 sm:mb-4">Choose your cover style</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   {options.coverStyles.map(style => (
                     <StyleCard
                       key={style.id}
@@ -416,29 +462,32 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
 
           {/* Step 2: Generate Cover */}
           {step === 2 && (
-            <div className="p-6">
-              <div className="grid md:grid-cols-2 gap-8 items-center">
+            <div className="p-4 sm:p-6">
+              <div className="flex flex-col md:grid md:grid-cols-2 gap-6 md:gap-8 items-center">
                 {/* Preview */}
-                <div className="flex flex-col items-center">
-                  <BookPreview
-                    coverImage={coverImage}
-                    title={bookTitle}
-                    authorName={authorName}
-                    format={selectedFormat}
-                    size="large"
-                  />
-                  <p className="text-center text-sm text-warmgray mt-4 max-w-xs">
+                <div className="flex flex-col items-center order-1 md:order-1">
+                  <div className="scale-90 sm:scale-100">
+                    <BookPreview
+                      coverImage={coverImage}
+                      title={bookTitle}
+                      authorName={authorName}
+                      format={selectedFormat}
+                      size="large"
+                      onViewFull={coverImage ? () => setShowLightbox(true) : null}
+                    />
+                  </div>
+                  <p className="text-center text-xs sm:text-sm text-warmgray mt-3 sm:mt-4 max-w-xs px-4">
                     {coverImage
-                      ? 'Your AI-generated cover. Click regenerate for a new design.'
-                      : 'Click "Generate Cover" to create your unique book cover with AI.'}
+                      ? 'Your AI-generated cover. Tap to flip or view full image.'
+                      : 'Tap "Generate Cover" to create your unique book cover with AI.'}
                   </p>
                 </div>
 
                 {/* Controls */}
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-xl font-medium text-ink mb-2">Your Book Cover</h3>
-                    <p className="text-warmgray">
+                <div className="space-y-4 sm:space-y-6 order-2 md:order-2 w-full">
+                  <div className="text-center md:text-left">
+                    <h3 className="text-lg sm:text-xl font-medium text-ink mb-1 sm:mb-2">Your Book Cover</h3>
+                    <p className="text-sm sm:text-base text-warmgray">
                       We'll create a unique cover based on the "{options?.coverStyles.find(s => s.id === selectedStyle)?.name}" style.
                     </p>
                   </div>
@@ -603,6 +652,7 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
                       authorName={authorName}
                       format={selectedFormat}
                       size="normal"
+                      onViewFull={coverImage ? () => setShowLightbox(true) : null}
                     />
                     <div className="mt-4 text-center">
                       <div className="font-medium text-ink">{bookTitle}</div>
@@ -656,64 +706,74 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-sepia/10 flex justify-between items-center bg-white/50">
-          <div>
-            {step === 1 && selectedFormat && (
-              <span className="text-lg font-medium text-ink">
-                {options?.bookFormats.find(f => f.id === selectedFormat)?.price}
-              </span>
-            )}
-          </div>
-          <div className="flex gap-3">
-            {step > 1 && (
-              <button
-                onClick={() => setStep(s => s - 1)}
-                className="px-6 py-3 border border-sepia/30 text-sepia rounded-xl hover:bg-sepia/5 transition font-medium"
-              >
-                Back
-              </button>
-            )}
-            {step === 1 && (
-              <button
-                onClick={() => setStep(2)}
-                disabled={!canProceedToStep2}
-                className="px-8 py-3 bg-sepia text-white rounded-xl hover:bg-sepia/90 disabled:opacity-40 transition font-medium"
-              >
-                Continue to Cover
-              </button>
-            )}
-            {step === 2 && (
-              <button
-                onClick={() => setStep(3)}
-                disabled={!canProceedToStep3}
-                className="px-8 py-3 bg-sepia text-white rounded-xl hover:bg-sepia/90 disabled:opacity-40 transition font-medium"
-              >
-                Continue to Shipping
-              </button>
-            )}
-            {step === 3 && (
-              <button
-                onClick={() => setStep(4)}
-                disabled={!canProceedToStep4}
-                className="px-8 py-3 bg-sepia text-white rounded-xl hover:bg-sepia/90 disabled:opacity-40 transition font-medium"
-              >
-                Review Order
-              </button>
-            )}
-            {step === 4 && (
-              <button
-                onClick={() => {
-                  // TODO: Integrate with Stripe payment
-                  alert('Payment integration coming soon!')
-                }}
-                className="px-8 py-3 bg-ink text-white rounded-xl hover:bg-ink/90 transition font-medium"
-              >
-                Complete Order
-              </button>
-            )}
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-sepia/10 bg-white/50">
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-between sm:items-center gap-3">
+            <div className="hidden sm:block">
+              {step === 1 && selectedFormat && (
+                <span className="text-lg font-medium text-ink">
+                  {options?.bookFormats.find(f => f.id === selectedFormat)?.price}
+                </span>
+              )}
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+              {step > 1 && (
+                <button
+                  onClick={() => setStep(s => s - 1)}
+                  className="w-full sm:w-auto px-6 py-3 border border-sepia/30 text-sepia rounded-xl hover:bg-sepia/5 transition font-medium order-2 sm:order-1"
+                >
+                  Back
+                </button>
+              )}
+              {step === 1 && (
+                <button
+                  onClick={() => setStep(2)}
+                  disabled={!canProceedToStep2}
+                  className="w-full sm:w-auto px-8 py-3.5 sm:py-3 bg-sepia text-white rounded-xl hover:bg-sepia/90 disabled:opacity-40 transition font-medium text-base order-1 sm:order-2"
+                >
+                  Continue to Cover
+                </button>
+              )}
+              {step === 2 && (
+                <button
+                  onClick={() => setStep(3)}
+                  disabled={!canProceedToStep3}
+                  className="w-full sm:w-auto px-8 py-3.5 sm:py-3 bg-sepia text-white rounded-xl hover:bg-sepia/90 disabled:opacity-40 transition font-medium text-base order-1 sm:order-2"
+                >
+                  Continue to Shipping
+                </button>
+              )}
+              {step === 3 && (
+                <button
+                  onClick={() => setStep(4)}
+                  disabled={!canProceedToStep4}
+                  className="w-full sm:w-auto px-8 py-3.5 sm:py-3 bg-sepia text-white rounded-xl hover:bg-sepia/90 disabled:opacity-40 transition font-medium text-base order-1 sm:order-2"
+                >
+                  Review Order
+                </button>
+              )}
+              {step === 4 && (
+                <button
+                  onClick={() => {
+                    // TODO: Integrate with Stripe payment
+                    alert('Payment integration coming soon!')
+                  }}
+                  className="w-full sm:w-auto px-8 py-3.5 sm:py-3 bg-ink text-white rounded-xl hover:bg-ink/90 transition font-medium text-base order-1 sm:order-2"
+                >
+                  Complete Order
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Lightbox for full image view */}
+      {showLightbox && (
+        <ImageLightbox
+          imageUrl={coverImage}
+          onClose={() => setShowLightbox(false)}
+        />
+      )}
     </div>
   )
 }

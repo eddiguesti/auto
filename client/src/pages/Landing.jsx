@@ -21,17 +21,17 @@ export default function Landing() {
     <div className="min-h-screen bg-cream">
       {/* Navigation */}
       <nav className="fixed top-0 w-full bg-cream/80 backdrop-blur-md z-50 border-b border-sepia/10">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="font-display text-2xl text-ink tracking-wide">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+          <div className="font-display text-xl sm:text-2xl text-ink tracking-wide">
             Easy<span className="text-sepia">Memoir</span>
           </div>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3 sm:gap-6">
             {user ? (
               <>
-                <span className="text-warmgray text-sm font-sans">Welcome, {user.name}</span>
+                <span className="text-warmgray text-xs sm:text-sm font-sans hidden sm:inline">Welcome, {user.name}</span>
                 <button
                   onClick={() => navigate('/home')}
-                  className="font-sans text-sm text-sepia hover:text-ink transition"
+                  className="font-sans text-xs sm:text-sm bg-sepia text-white px-4 py-2 rounded-full hover:bg-ink transition"
                 >
                   My Stories
                 </button>
@@ -40,13 +40,13 @@ export default function Landing() {
               <>
                 <button
                   onClick={() => navigate('/login')}
-                  className="font-sans text-sm text-warmgray hover:text-ink transition"
+                  className="font-sans text-xs sm:text-sm text-warmgray hover:text-ink transition"
                 >
                   Sign In
                 </button>
                 <button
                   onClick={() => navigate('/register')}
-                  className="font-sans text-sm bg-ink text-white px-5 py-2 rounded-full hover:bg-sepia transition"
+                  className="font-sans text-xs sm:text-sm bg-ink text-white px-4 sm:px-5 py-2 rounded-full hover:bg-sepia transition"
                 >
                   Get Started
                 </button>
@@ -57,38 +57,38 @@ export default function Landing() {
       </nav>
 
       {/* Hero Section */}
-      <section className="min-h-screen flex items-center pt-20">
-        <div className="max-w-6xl mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
-          <div className="page-enter">
-            <p className="font-sans text-sepia uppercase tracking-[0.3em] text-xs mb-6">
+      <section className="min-h-screen flex items-center pt-16 sm:pt-20 pb-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
+          <div className="page-enter text-center lg:text-left">
+            <p className="font-sans text-sepia uppercase tracking-[0.2em] sm:tracking-[0.3em] text-[10px] sm:text-xs mb-4 sm:mb-6">
               Preserve Your Legacy
             </p>
-            <h1 className="hero-headline font-display text-5xl sm:text-6xl lg:text-7xl text-ink leading-[1.1] mb-8">
+            <h1 className="hero-headline font-display text-4xl sm:text-5xl lg:text-7xl text-ink leading-[1.1] mb-6 sm:mb-8">
               Your life story,
               <br />
               <span className="italic text-sepia">beautifully told</span>
             </h1>
-            <p className="hero-description font-serif text-xl text-warmgray leading-relaxed mb-10 max-w-lg">
+            <p className="hero-description font-serif text-lg sm:text-xl text-warmgray leading-relaxed mb-8 sm:mb-10 max-w-lg mx-auto lg:mx-0">
               Just talk about your memories. Our AI listens, asks thoughtful questions,
               and transforms your stories into a beautifully written autobiography
               your family will treasure forever.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start">
               <button
                 onClick={handleGetStarted}
-                className="group font-sans bg-ink text-white px-8 py-4 rounded-full text-base hover:bg-sepia transition-all"
+                className="group font-sans bg-ink text-white px-6 sm:px-8 py-3.5 sm:py-4 rounded-full text-sm sm:text-base hover:bg-sepia transition-all"
               >
                 {user ? 'Continue Your Story' : 'Start Your Memoir'}
                 <span className="inline-block ml-2 group-hover:translate-x-1 transition-transform">→</span>
               </button>
               <button
                 onClick={() => document.getElementById('how-it-works').scrollIntoView({ behavior: 'smooth' })}
-                className="font-sans text-warmgray px-8 py-4 hover:text-ink transition"
+                className="font-sans text-warmgray px-6 sm:px-8 py-3 sm:py-4 hover:text-ink transition text-sm sm:text-base"
               >
                 See how it works
               </button>
             </div>
-            <p className="font-sans text-warmgray/60 text-sm mt-6">
+            <p className="font-sans text-warmgray/60 text-xs sm:text-sm mt-4 sm:mt-6">
               Free to start · No credit card required
             </p>
           </div>
@@ -127,9 +127,9 @@ export default function Landing() {
       </section>
 
       {/* Early Adopter Offer */}
-      <section className="bg-gradient-to-r from-sepia/10 via-sepia/5 to-sepia/10 py-6 border-y border-sepia/20">
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <div className="inline-flex items-center gap-3 bg-white px-6 py-3 rounded-full shadow-sm border border-sepia/20">
+      <section className="bg-gradient-to-r from-sepia/10 via-sepia/5 to-sepia/10 py-4 sm:py-6 border-y border-sepia/20">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
+          <div className="inline-flex flex-col sm:flex-row items-center gap-2 sm:gap-3 bg-white px-4 sm:px-6 py-3 rounded-2xl sm:rounded-full shadow-sm border border-sepia/20">
             <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center flex-shrink-0">
               <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <rect x="3" y="8" width="18" height="13" rx="2" strokeWidth={1.5} />
@@ -138,33 +138,33 @@ export default function Landing() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c0 0 1.5-2 1.5-3.5a2.5 2.5 0 00-5 0C8.5 6 12 8 12 8z" />
               </svg>
             </div>
-            <div className="text-left">
-              <p className="font-display text-lg text-ink">
+            <div className="text-center sm:text-left">
+              <p className="font-display text-base sm:text-lg text-ink">
                 First <span className="text-sepia">100</span> users get their memoir <span className="italic text-sepia">completely free</span>
               </p>
-              <p className="font-sans text-xs text-warmgray">Be an early adopter · Help us shape the future of storytelling</p>
+              <p className="font-sans text-[10px] sm:text-xs text-warmgray">Be an early adopter · Help us shape the future of storytelling</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* How It Works */}
-      <section id="how-it-works" className="how-it-works py-24 px-6">
+      <section id="how-it-works" className="how-it-works py-16 sm:py-24 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-20">
-            <p className="font-sans text-sepia uppercase tracking-[0.3em] text-xs mb-4">
+          <div className="text-center mb-12 sm:mb-20">
+            <p className="font-sans text-sepia uppercase tracking-[0.2em] sm:tracking-[0.3em] text-[10px] sm:text-xs mb-3 sm:mb-4">
               How It Works
             </p>
-            <h2 className="font-display text-4xl sm:text-5xl text-ink mb-6">
+            <h2 className="font-display text-3xl sm:text-4xl md:text-5xl text-ink mb-4 sm:mb-6">
               Three simple steps to your memoir
             </h2>
-            <p className="font-serif text-lg text-warmgray max-w-2xl mx-auto">
+            <p className="font-serif text-base sm:text-lg text-warmgray max-w-2xl mx-auto">
               No writing skills needed. Just share your memories naturally, and we'll
               handle the rest.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-12">
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-8 sm:gap-12">
             <div className="text-center group">
               <div className="w-20 h-20 rounded-full bg-sepia/10 flex items-center justify-center mx-auto mb-6 group-hover:bg-sepia/20 transition">
                 <svg className="w-8 h-8 text-sepia" fill="currentColor" viewBox="0 0 24 24">
@@ -212,14 +212,14 @@ export default function Landing() {
       </section>
 
       {/* Features Section */}
-      <section className="py-24 px-6 bg-white">
+      <section className="py-16 sm:py-24 px-4 sm:px-6 bg-white">
         <div className="max-w-5xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-            <div>
-              <p className="font-sans text-sepia uppercase tracking-[0.3em] text-xs mb-4">
+          <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+            <div className="text-center lg:text-left">
+              <p className="font-sans text-sepia uppercase tracking-[0.2em] sm:tracking-[0.3em] text-[10px] sm:text-xs mb-3 sm:mb-4">
                 Why Choose Easy Memoir
               </p>
-              <h2 className="font-display text-4xl sm:text-5xl text-ink mb-8 leading-tight">
+              <h2 className="font-display text-3xl sm:text-4xl md:text-5xl text-ink mb-6 sm:mb-8 leading-tight">
                 More than software—<br />
                 <span className="italic text-sepia">a legacy tool</span>
               </h2>

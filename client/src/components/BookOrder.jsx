@@ -398,31 +398,31 @@ export default function BookOrder({ userName, pageCount, onClose }) {
       <div className="bg-gradient-to-b from-[#fdfcf9] to-[#f8f5ef] rounded-t-2xl sm:rounded-2xl w-full max-w-5xl max-h-[95vh] sm:max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
 
         {/* Header */}
-        <div className="px-6 py-4 border-b border-sepia/10 flex justify-between items-center bg-white/50">
-          <div>
-            <h2 className="text-2xl font-serif text-ink">Create Your Book</h2>
-            <div className="flex items-center gap-2 mt-1">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-sepia/10 flex justify-between items-center bg-white/50">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-xl sm:text-2xl font-serif text-ink">Create Your Book</h2>
+            <div className="flex items-center gap-1 sm:gap-2 mt-1 overflow-x-auto">
               {['Design', 'Shipping', 'Review', 'Done'].map((label, i) => (
-                <div key={i} className="flex items-center">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
+                <div key={i} className="flex items-center flex-shrink-0">
+                  <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-medium ${
                     step > i + 1 ? 'bg-green-500 text-white' :
                     step === i + 1 ? 'bg-sepia text-white' : 'bg-sepia/20 text-sepia/60'
                   }`}>
                     {step > i + 1 ? '✓' : i + 1}
                   </div>
-                  <span className={`ml-1 text-xs ${step === i + 1 ? 'text-ink font-medium' : 'text-sepia/60'}`}>
+                  <span className={`ml-1 text-[10px] sm:text-xs hidden xs:inline ${step === i + 1 ? 'text-ink font-medium' : 'text-sepia/60'}`}>
                     {label}
                   </span>
-                  {i < 3 && <div className="w-8 h-0.5 mx-2 bg-sepia/20" />}
+                  {i < 3 && <div className="w-4 sm:w-8 h-0.5 mx-1 sm:mx-2 bg-sepia/20" />}
                 </div>
               ))}
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-sepia/10 text-sepia/60 hover:text-sepia transition"
+            className="flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full hover:bg-sepia/10 text-sepia/60 hover:text-sepia transition ml-2"
           >
-            <IconX size={24} stroke={2} />
+            <IconX size={22} stroke={2} />
           </button>
         </div>
 
@@ -451,14 +451,14 @@ export default function BookOrder({ userName, pageCount, onClose }) {
               </div>
 
               {/* Options */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-8">
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 sm:space-y-8">
                 {/* Quick Presets */}
                 <div>
-                  <h3 className="text-lg font-medium text-ink mb-4 flex items-center gap-2">
-                    <span className="w-8 h-8 bg-sepia/10 rounded-full flex items-center justify-center text-sepia">1</span>
+                  <h3 className="text-base sm:text-lg font-medium text-ink mb-3 sm:mb-4 flex items-center gap-2">
+                    <span className="w-7 h-7 sm:w-8 sm:h-8 bg-sepia/10 rounded-full flex items-center justify-center text-sepia text-sm">1</span>
                     Quick Start
                   </h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
                     {Object.entries(options.recommended).map(([key, preset]) => {
                       const icons = {
                         memoir: <IconBook size={40} stroke={1.5} />,
@@ -668,29 +668,32 @@ export default function BookOrder({ userName, pageCount, onClose }) {
 
                 {/* Quantity */}
                 <div>
-                  <h3 className="text-lg font-medium text-ink mb-4 flex items-center gap-2">
-                    <span className="w-8 h-8 bg-sepia/10 rounded-full flex items-center justify-center text-sepia">7</span>
+                  <h3 className="text-base sm:text-lg font-medium text-ink mb-3 sm:mb-4 flex items-center gap-2">
+                    <span className="w-7 h-7 sm:w-8 sm:h-8 bg-sepia/10 rounded-full flex items-center justify-center text-sepia text-sm">7</span>
                     Quantity
                   </h3>
 
                   {/* Special Bulk Offer Banner */}
-                  <div className="mb-6 p-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-amber-400/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-                    <div className="absolute bottom-0 left-0 w-24 h-24 bg-orange-400/10 rounded-full translate-y-1/2 -translate-x-1/2" />
-                    <div className="relative flex items-center gap-4">
-                      <div className="flex-shrink-0 w-14 h-14 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center shadow-lg">
-                        <IconCoin size={28} className="text-white" stroke={2} />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-amber-800 font-bold text-lg">Special Family Offer</span>
-                          <span className="px-2 py-0.5 bg-amber-500 text-white text-xs font-bold rounded-full">40% OFF</span>
+                  <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl sm:rounded-2xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-24 sm:w-32 h-24 sm:h-32 bg-amber-400/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+                    <div className="absolute bottom-0 left-0 w-16 sm:w-24 h-16 sm:h-24 bg-orange-400/10 rounded-full translate-y-1/2 -translate-x-1/2" />
+                    <div className="relative flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                      <div className="flex items-center gap-3 sm:gap-4">
+                        <div className="flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center shadow-lg">
+                          <IconCoin size={24} className="text-white sm:hidden" stroke={2} />
+                          <IconCoin size={28} className="text-white hidden sm:block" stroke={2} />
                         </div>
-                        <p className="text-amber-700 text-sm mt-0.5">Order 10+ books and save 40% – perfect for family gifts!</p>
+                        <div className="flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-amber-800 font-bold text-base sm:text-lg">Special Family Offer</span>
+                            <span className="px-2 py-0.5 bg-amber-500 text-white text-[10px] sm:text-xs font-bold rounded-full">40% OFF</span>
+                          </div>
+                          <p className="text-amber-700 text-xs sm:text-sm mt-0.5">Order 10+ books and save 40%!</p>
+                        </div>
                       </div>
                       <button
                         onClick={() => setConfig(prev => ({ ...prev, quantity: 10 }))}
-                        className="flex-shrink-0 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-medium rounded-lg hover:from-amber-600 hover:to-orange-600 transition shadow-md hover:shadow-lg"
+                        className="w-full sm:w-auto flex-shrink-0 px-4 py-2.5 sm:py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-medium rounded-lg hover:from-amber-600 hover:to-orange-600 transition shadow-md hover:shadow-lg text-sm"
                       >
                         Get 10 Books
                       </button>
@@ -698,9 +701,9 @@ export default function BookOrder({ userName, pageCount, onClose }) {
                   </div>
 
                   {/* Quick Select Buttons */}
-                  <div className="mb-4">
-                    <span className="text-sm text-sepia/60 mb-2 block">Quick select:</span>
-                    <div className="flex flex-wrap gap-2">
+                  <div className="mb-3 sm:mb-4">
+                    <span className="text-xs sm:text-sm text-sepia/60 mb-2 block">Quick select:</span>
+                    <div className="grid grid-cols-3 sm:flex sm:flex-wrap gap-2">
                       {[
                         { qty: 1, label: '1 Book', discount: null },
                         { qty: 3, label: '3 Books', discount: '5%' },
@@ -712,7 +715,7 @@ export default function BookOrder({ userName, pageCount, onClose }) {
                         <button
                           key={qty}
                           onClick={() => setConfig(prev => ({ ...prev, quantity: qty }))}
-                          className={`relative px-4 py-2.5 border-2 rounded-xl font-medium transition-all ${
+                          className={`relative px-2 sm:px-4 py-2 sm:py-2.5 border-2 rounded-lg sm:rounded-xl font-medium transition-all ${
                             config.quantity === qty
                               ? 'border-sepia bg-sepia text-white shadow-md scale-105'
                               : popular
@@ -721,13 +724,13 @@ export default function BookOrder({ userName, pageCount, onClose }) {
                           }`}
                         >
                           {popular && config.quantity !== qty && (
-                            <span className="absolute -top-2 -right-2 px-1.5 py-0.5 bg-amber-500 text-white text-[10px] font-bold rounded-full">
+                            <span className="absolute -top-2 -right-2 px-1 sm:px-1.5 py-0.5 bg-amber-500 text-white text-[8px] sm:text-[10px] font-bold rounded-full">
                               BEST
                             </span>
                           )}
-                          <span className="block text-sm">{label}</span>
+                          <span className="block text-xs sm:text-sm">{label}</span>
                           {discount && (
-                            <span className={`block text-xs mt-0.5 ${
+                            <span className={`block text-[10px] sm:text-xs mt-0.5 ${
                               config.quantity === qty ? 'text-white/80' : 'text-green-600 font-semibold'
                             }`}>
                               Save {discount}
@@ -739,8 +742,8 @@ export default function BookOrder({ userName, pageCount, onClose }) {
                   </div>
 
                   {/* Custom Quantity Input */}
-                  <div className="flex items-center gap-4 p-4 bg-white border border-sepia/10 rounded-xl">
-                    <span className="text-sm text-sepia/60">Custom quantity:</span>
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-4 p-3 sm:p-4 bg-white border border-sepia/10 rounded-xl">
+                    <span className="text-xs sm:text-sm text-sepia/60 w-full sm:w-auto">Custom quantity:</span>
                     <button
                       onClick={() => setConfig(prev => ({ ...prev, quantity: Math.max(1, prev.quantity - 1) }))}
                       className="w-10 h-10 border-2 border-sepia/20 rounded-lg hover:bg-sepia/10 hover:border-sepia/40 text-lg font-medium text-sepia flex items-center justify-center transition"
@@ -1003,42 +1006,44 @@ export default function BookOrder({ userName, pageCount, onClose }) {
 
         {/* Footer */}
         {step < 4 && (
-          <div className="px-6 py-4 border-t border-sepia/10 flex justify-between items-center bg-white/50">
-            <div>
-              {calculating ? (
-                <span className="text-sm text-sepia/60 animate-pulse">Calculating price...</span>
-              ) : cost ? (
-                <div>
-                  <span className="text-2xl font-medium text-ink">${cost.breakdown.total.toFixed(2)}</span>
-                  <span className="text-sm text-sepia/60 ml-2">estimated total</span>
-                </div>
-              ) : null}
-            </div>
-            <div className="flex gap-3">
-              {step > 1 && (
-                <button
-                  onClick={() => setStep(s => s - 1)}
-                  className="px-6 py-3 border border-sepia/30 text-sepia rounded-xl hover:bg-sepia/5 transition font-medium"
-                >
-                  Back
-                </button>
-              )}
-              {step < 3 ? (
-                <button
-                  onClick={() => setStep(s => s + 1)}
-                  disabled={step === 2 && (!shipping.name || !shipping.email || !shipping.street1 || !shipping.city || !shipping.postcode)}
-                  className="px-8 py-3 bg-sepia text-white rounded-xl hover:bg-sepia/90 disabled:opacity-40 transition font-medium"
-                >
-                  Continue
-                </button>
-              ) : (
-                <button
-                  onClick={handleOrder}
-                  className="px-8 py-3 bg-ink text-white rounded-xl hover:bg-ink/90 transition font-medium"
-                >
-                  Complete Order Preview
-                </button>
-              )}
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-sepia/10 bg-white/50">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+              <div className="hidden sm:block">
+                {calculating ? (
+                  <span className="text-sm text-sepia/60 animate-pulse">Calculating price...</span>
+                ) : cost ? (
+                  <div>
+                    <span className="text-2xl font-medium text-ink">${cost.breakdown.total.toFixed(2)}</span>
+                    <span className="text-sm text-sepia/60 ml-2">estimated total</span>
+                  </div>
+                ) : null}
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+                {step > 1 && (
+                  <button
+                    onClick={() => setStep(s => s - 1)}
+                    className="w-full sm:w-auto px-6 py-3 border border-sepia/30 text-sepia rounded-xl hover:bg-sepia/5 transition font-medium order-2 sm:order-1"
+                  >
+                    Back
+                  </button>
+                )}
+                {step < 3 ? (
+                  <button
+                    onClick={() => setStep(s => s + 1)}
+                    disabled={step === 2 && (!shipping.name || !shipping.email || !shipping.street1 || !shipping.city || !shipping.postcode)}
+                    className="w-full sm:w-auto px-8 py-3.5 sm:py-3 bg-sepia text-white rounded-xl hover:bg-sepia/90 disabled:opacity-40 transition font-medium order-1 sm:order-2"
+                  >
+                    Continue
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleOrder}
+                    className="w-full sm:w-auto px-8 py-3.5 sm:py-3 bg-ink text-white rounded-xl hover:bg-ink/90 transition font-medium order-1 sm:order-2"
+                  >
+                    Complete Order Preview
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         )}
