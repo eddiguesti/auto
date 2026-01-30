@@ -16,6 +16,13 @@ const getStripe = () => {
 
 // Product prices (in pence for Stripe GBP)
 const PRODUCTS = {
+  'export_style': {
+    name: 'Style Your Memoir',
+    description: 'Transform your writing in the style of famous authors',
+    price: 499, // £4.99
+    currency: 'gbp',
+    type: 'style'
+  },
   'export_ebook': {
     name: 'eBook Export',
     description: 'Download your memoir as an EPUB eBook',
