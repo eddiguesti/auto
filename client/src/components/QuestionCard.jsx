@@ -151,16 +151,26 @@ export default function QuestionCard({
           />
           <label
             htmlFor="photo-upload"
-            className={`inline-flex items-center justify-center gap-2 px-5 py-3 sm:py-2.5 border border-sepia/25 text-sepia/80 rounded hover:bg-white/50 hover:border-sepia/40 transition cursor-pointer ${
-              !storyId ? 'opacity-50 cursor-not-allowed' : ''
+            className={`inline-flex items-center justify-center gap-2 px-5 py-3 sm:py-2.5 border border-sepia/25 text-sepia/80 rounded hover:bg-white/50 hover:border-sepia/40 transition ${
+              !storyId ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
             } ${uploading ? 'opacity-50' : ''}`}
+            onClick={(e) => {
+              if (!storyId) {
+                e.preventDefault()
+                setError('Please write and save your answer first (wait a moment after typing)')
+                setTimeout(() => setError(null), 4000)
+              }
+            }}
           >
-            <span className="text-base">📷</span>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
             <span className="text-sm">{uploading ? 'Uploading...' : 'Add Photograph'}</span>
           </label>
-          {!storyId && answer.trim() && (
+          {!storyId && (
             <span className="text-xs text-sepia/50 self-center text-center sm:text-left italic">
-              (Write something first to add photos)
+              {answer.trim() ? '(Saving... photos enabled shortly)' : '(Write something first to add photos)'}
             </span>
           )}
 

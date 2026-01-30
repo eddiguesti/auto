@@ -48,7 +48,16 @@ export default function CookieConsent() {
           // Simple view
           <div className="p-6">
             <div className="flex items-start gap-4">
-              <span className="text-3xl">🍪</span>
+              <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <svg className="w-6 h-6 text-amber-600" viewBox="0 0 24 24" fill="currentColor">
+                  <circle cx="12" cy="12" r="10" fill="currentColor" fillOpacity={0.2} stroke="currentColor" strokeWidth={1.5} />
+                  <circle cx="8" cy="10" r="1.5" />
+                  <circle cx="14" cy="8" r="1" />
+                  <circle cx="16" cy="13" r="1.5" />
+                  <circle cx="10" cy="15" r="1" />
+                  <circle cx="6" cy="14" r="0.75" />
+                </svg>
+              </div>
               <div className="flex-1">
                 <h3 className="font-display text-xl text-ink mb-2">We value your privacy</h3>
                 <p className="text-sm text-warmgray leading-relaxed mb-4">

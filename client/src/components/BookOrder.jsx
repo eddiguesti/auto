@@ -457,19 +457,50 @@ export default function BookOrder({ userName, pageCount, onClose }) {
                     Quick Start
                   </h3>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    {Object.entries(options.recommended).map(([key, preset]) => (
-                      <button
-                        key={key}
-                        onClick={() => setConfig(prev => ({ ...prev, ...preset }))}
-                        className="p-4 text-center border border-sepia/20 rounded-xl hover:border-sepia/40 hover:bg-white/50 transition group"
-                      >
-                        <div className="text-3xl mb-2 group-hover:scale-110 transition">
-                          {key === 'memoir' ? '📖' : key === 'premium' ? '✨' : key === 'photoBook' ? '📸' : '🎁'}
-                        </div>
-                        <div className="font-medium text-ink capitalize">{key.replace(/([A-Z])/g, ' $1')}</div>
-                        <div className="text-[10px] text-sepia/60 mt-1 line-clamp-2">{preset.description}</div>
-                      </button>
-                    ))}
+                    {Object.entries(options.recommended).map(([key, preset]) => {
+                      const icons = {
+                        memoir: (
+                          <svg className="w-10 h-10" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                          </svg>
+                        ),
+                        premium: (
+                          <svg className="w-10 h-10" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+                            <circle cx="12" cy="12" r="3" fill="currentColor" fillOpacity={0.2} />
+                          </svg>
+                        ),
+                        photoBook: (
+                          <svg className="w-10 h-10" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <rect x="3" y="3" width="18" height="18" rx="2" strokeWidth={1.5} />
+                            <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 15l-5-5L5 21" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14 14l-2-2-3 3" />
+                          </svg>
+                        ),
+                        gift: (
+                          <svg className="w-10 h-10" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <rect x="3" y="8" width="18" height="13" rx="2" strokeWidth={1.5} />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v13M3 12h18" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c0 0-1.5-2-1.5-3.5a2.5 2.5 0 015 0C15.5 6 12 8 12 8z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c0 0 1.5-2 1.5-3.5a2.5 2.5 0 00-5 0C8.5 6 12 8 12 8z" />
+                          </svg>
+                        )
+                      }
+                      return (
+                        <button
+                          key={key}
+                          onClick={() => setConfig(prev => ({ ...prev, ...preset }))}
+                          className="p-4 text-center border border-sepia/20 rounded-xl hover:border-sepia/40 hover:bg-white/50 transition group"
+                        >
+                          <div className="flex justify-center mb-2 text-sepia group-hover:text-ink group-hover:scale-110 transition-all">
+                            {icons[key] || icons.gift}
+                          </div>
+                          <div className="font-medium text-ink capitalize">{key.replace(/([A-Z])/g, ' $1')}</div>
+                          <div className="text-[10px] text-sepia/60 mt-1 line-clamp-2">{preset.description}</div>
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
 
@@ -662,22 +693,153 @@ export default function BookOrder({ userName, pageCount, onClose }) {
                     <span className="w-8 h-8 bg-sepia/10 rounded-full flex items-center justify-center text-sepia">7</span>
                     Quantity
                   </h3>
-                  <div className="flex items-center gap-4">
+
+                  {/* Special Bulk Offer Banner */}
+                  <div className="mb-6 p-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-amber-400/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+                    <div className="absolute bottom-0 left-0 w-24 h-24 bg-orange-400/10 rounded-full translate-y-1/2 -translate-x-1/2" />
+                    <div className="relative flex items-center gap-4">
+                      <div className="flex-shrink-0 w-14 h-14 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center shadow-lg">
+                        <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-amber-800 font-bold text-lg">Special Family Offer</span>
+                          <span className="px-2 py-0.5 bg-amber-500 text-white text-xs font-bold rounded-full">40% OFF</span>
+                        </div>
+                        <p className="text-amber-700 text-sm mt-0.5">Order 10+ books and save 40% – perfect for family gifts!</p>
+                      </div>
+                      <button
+                        onClick={() => setConfig(prev => ({ ...prev, quantity: 10 }))}
+                        className="flex-shrink-0 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-medium rounded-lg hover:from-amber-600 hover:to-orange-600 transition shadow-md hover:shadow-lg"
+                      >
+                        Get 10 Books
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Quick Select Buttons */}
+                  <div className="mb-4">
+                    <span className="text-sm text-sepia/60 mb-2 block">Quick select:</span>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { qty: 1, label: '1 Book', discount: null },
+                        { qty: 3, label: '3 Books', discount: '5%' },
+                        { qty: 5, label: '5 Books', discount: '15%' },
+                        { qty: 10, label: '10 Books', discount: '40%', popular: true },
+                        { qty: 25, label: '25 Books', discount: '45%' },
+                        { qty: 50, label: '50 Books', discount: '50%' }
+                      ].map(({ qty, label, discount, popular }) => (
+                        <button
+                          key={qty}
+                          onClick={() => setConfig(prev => ({ ...prev, quantity: qty }))}
+                          className={`relative px-4 py-2.5 border-2 rounded-xl font-medium transition-all ${
+                            config.quantity === qty
+                              ? 'border-sepia bg-sepia text-white shadow-md scale-105'
+                              : popular
+                              ? 'border-amber-400 bg-amber-50 text-amber-800 hover:bg-amber-100'
+                              : 'border-sepia/20 bg-white text-ink hover:border-sepia/40 hover:bg-sepia/5'
+                          }`}
+                        >
+                          {popular && config.quantity !== qty && (
+                            <span className="absolute -top-2 -right-2 px-1.5 py-0.5 bg-amber-500 text-white text-[10px] font-bold rounded-full">
+                              BEST
+                            </span>
+                          )}
+                          <span className="block text-sm">{label}</span>
+                          {discount && (
+                            <span className={`block text-xs mt-0.5 ${
+                              config.quantity === qty ? 'text-white/80' : 'text-green-600 font-semibold'
+                            }`}>
+                              Save {discount}
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Custom Quantity Input */}
+                  <div className="flex items-center gap-4 p-4 bg-white border border-sepia/10 rounded-xl">
+                    <span className="text-sm text-sepia/60">Custom quantity:</span>
                     <button
                       onClick={() => setConfig(prev => ({ ...prev, quantity: Math.max(1, prev.quantity - 1) }))}
-                      className="w-12 h-12 border-2 border-sepia/30 rounded-xl hover:bg-sepia/10 text-xl font-medium text-sepia"
+                      className="w-10 h-10 border-2 border-sepia/20 rounded-lg hover:bg-sepia/10 hover:border-sepia/40 text-lg font-medium text-sepia flex items-center justify-center transition"
                     >
-                      -
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M20 12H4" />
+                      </svg>
                     </button>
-                    <span className="text-3xl font-medium text-ink w-16 text-center">{config.quantity}</span>
+                    <input
+                      type="number"
+                      min="1"
+                      max="999"
+                      value={config.quantity}
+                      onChange={e => setConfig(prev => ({ ...prev, quantity: Math.max(1, Math.min(999, parseInt(e.target.value) || 1)) }))}
+                      className="w-20 text-2xl font-semibold text-ink text-center border-2 border-sepia/20 rounded-lg py-2 focus:outline-none focus:border-sepia/40"
+                    />
                     <button
                       onClick={() => setConfig(prev => ({ ...prev, quantity: prev.quantity + 1 }))}
-                      className="w-12 h-12 border-2 border-sepia/30 rounded-xl hover:bg-sepia/10 text-xl font-medium text-sepia"
+                      className="w-10 h-10 border-2 border-sepia/20 rounded-lg hover:bg-sepia/10 hover:border-sepia/40 text-lg font-medium text-sepia flex items-center justify-center transition"
                     >
-                      +
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                      </svg>
                     </button>
-                    <div className="text-sm text-sepia/60 ml-4">
-                      {config.quantity > 1 && `Save on bulk orders!`}
+
+                    {/* Savings Badge */}
+                    {config.quantity >= 3 && (
+                      <div className="ml-auto flex items-center gap-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg">
+                        <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span className="text-sm font-medium text-green-700">
+                          {config.quantity >= 50 ? '50% savings!' :
+                           config.quantity >= 25 ? '45% savings!' :
+                           config.quantity >= 10 ? '40% savings!' :
+                           config.quantity >= 5 ? '15% savings!' :
+                           config.quantity >= 3 ? '5% savings!' : ''}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Discount Tiers Info */}
+                  <div className="mt-4 p-4 bg-sepia/5 rounded-xl">
+                    <div className="flex items-center gap-2 mb-3">
+                      <svg className="w-5 h-5 text-sepia" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className="text-sm font-medium text-ink">Bulk Discount Tiers</span>
+                    </div>
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-center text-xs">
+                      {[
+                        { min: 1, max: 2, discount: '0%' },
+                        { min: 3, max: 4, discount: '5%' },
+                        { min: 5, max: 9, discount: '15%' },
+                        { min: 10, max: 24, discount: '40%', highlight: true },
+                        { min: 25, max: 49, discount: '45%' },
+                        { min: 50, max: '+', discount: '50%' }
+                      ].map(tier => {
+                        const isActive = config.quantity >= tier.min && (tier.max === '+' || config.quantity <= tier.max)
+                        return (
+                          <div
+                            key={tier.min}
+                            className={`p-2 rounded-lg transition ${
+                              isActive
+                                ? 'bg-sepia text-white'
+                                : tier.highlight
+                                ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                                : 'bg-white text-sepia/70 border border-sepia/10'
+                            }`}
+                          >
+                            <div className="font-semibold">{tier.discount}</div>
+                            <div className="text-[10px] opacity-75">{tier.min}-{tier.max}</div>
+                          </div>
+                        )
+                      })}
                     </div>
                   </div>
                 </div>

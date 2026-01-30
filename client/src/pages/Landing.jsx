@@ -130,7 +130,14 @@ export default function Landing() {
       <section className="bg-gradient-to-r from-sepia/10 via-sepia/5 to-sepia/10 py-6 border-y border-sepia/20">
         <div className="max-w-4xl mx-auto px-6 text-center">
           <div className="inline-flex items-center gap-3 bg-white px-6 py-3 rounded-full shadow-sm border border-sepia/20">
-            <span className="font-display text-2xl">🎁</span>
+            <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center flex-shrink-0">
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <rect x="3" y="8" width="18" height="13" rx="2" strokeWidth={1.5} />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v13M3 12h18" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c0 0-1.5-2-1.5-3.5a2.5 2.5 0 015 0C15.5 6 12 8 12 8z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c0 0 1.5-2 1.5-3.5a2.5 2.5 0 00-5 0C8.5 6 12 8 12 8z" />
+              </svg>
+            </div>
             <div className="text-left">
               <p className="font-display text-lg text-ink">
                 First <span className="text-sepia">100</span> users get their memoir <span className="italic text-sepia">completely free</span>
@@ -220,7 +227,9 @@ export default function Landing() {
               <div className="space-y-8">
                 <div className="flex gap-4">
                   <div className="w-10 h-10 rounded-full bg-sepia/10 flex items-center justify-center flex-shrink-0">
-                    <span className="text-lg">💬</span>
+                    <svg className="w-5 h-5 text-sepia" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
                   </div>
                   <div>
                     <h3 className="font-display text-xl text-ink mb-1">Conversational & Natural</h3>
@@ -233,7 +242,9 @@ export default function Landing() {
 
                 <div className="flex gap-4">
                   <div className="w-10 h-10 rounded-full bg-sepia/10 flex items-center justify-center flex-shrink-0">
-                    <span className="text-lg">🧠</span>
+                    <svg className="w-5 h-5 text-sepia" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
                   </div>
                   <div>
                     <h3 className="font-display text-xl text-ink mb-1">Memories Unlocked</h3>
@@ -246,7 +257,9 @@ export default function Landing() {
 
                 <div className="flex gap-4">
                   <div className="w-10 h-10 rounded-full bg-sepia/10 flex items-center justify-center flex-shrink-0">
-                    <span className="text-lg">✨</span>
+                    <svg className="w-5 h-5 text-sepia" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                    </svg>
                   </div>
                   <div>
                     <h3 className="font-display text-xl text-ink mb-1">Beautiful Writing</h3>
@@ -259,7 +272,9 @@ export default function Landing() {
 
                 <div className="flex gap-4">
                   <div className="w-10 h-10 rounded-full bg-sepia/10 flex items-center justify-center flex-shrink-0">
-                    <span className="text-lg">📚</span>
+                    <svg className="w-5 h-5 text-sepia" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
                   </div>
                   <div>
                     <h3 className="font-display text-xl text-ink mb-1">Print-Ready Books</h3>
@@ -335,7 +350,9 @@ export default function Landing() {
               {/* Step 1: You Tell Your Story */}
               <div className="text-center">
                 <div className="w-16 h-16 rounded-full bg-sepia/10 flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl">💬</span>
+                  <svg className="w-8 h-8 text-sepia" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
                 </div>
                 <h3 className="font-display text-xl text-ink mb-2">You Share</h3>
                 <p className="font-serif text-sm text-warmgray">
@@ -363,14 +380,28 @@ export default function Landing() {
               {/* Step 2: AI Extracts */}
               <div className="text-center">
                 <div className="w-16 h-16 rounded-full bg-sepia/10 flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl">🧠</span>
+                  <svg className="w-8 h-8 text-sepia" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
                 </div>
                 <h3 className="font-display text-xl text-ink mb-2">AI Understands</h3>
                 <div className="flex flex-wrap justify-center gap-2 mt-3">
-                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">👤 Father</span>
-                  <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">📍 Birmingham</span>
-                  <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full">👤 Uncle Joe</span>
-                  <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">🏭 Ford Factory</span>
+                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                    Father
+                  </span>
+                  <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                    Birmingham
+                  </span>
+                  <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                    Uncle Joe
+                  </span>
+                  <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14l-5-5 1.41-1.41L12 14.17l4.59-4.58L18 11l-6 6z"/></svg>
+                    Ford Factory
+                  </span>
                 </div>
               </div>
             </div>
@@ -405,37 +436,47 @@ export default function Landing() {
 
                 {/* Family nodes */}
                 <div className="absolute left-[15%] top-[15%] -translate-x-1/2 -translate-y-1/2 z-10">
-                  <div className="w-14 h-14 rounded-full bg-blue-100 border-2 border-blue-300 flex items-center justify-center text-xl shadow-md hover:scale-110 transition cursor-pointer" title="Father">
-                    👨
+                  <div className="w-14 h-14 rounded-full bg-blue-100 border-2 border-blue-300 flex items-center justify-center shadow-md hover:scale-110 transition cursor-pointer" title="Father">
+                    <svg className="w-7 h-7 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                    </svg>
                   </div>
                   <p className="text-xs text-center mt-1 text-warmgray">Father</p>
                 </div>
 
                 <div className="absolute left-[80%] top-[20%] -translate-x-1/2 -translate-y-1/2 z-10">
-                  <div className="w-14 h-14 rounded-full bg-blue-100 border-2 border-blue-300 flex items-center justify-center text-xl shadow-md hover:scale-110 transition cursor-pointer" title="Mother">
-                    👩
+                  <div className="w-14 h-14 rounded-full bg-pink-100 border-2 border-pink-300 flex items-center justify-center shadow-md hover:scale-110 transition cursor-pointer" title="Mother">
+                    <svg className="w-7 h-7 text-pink-600" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                    </svg>
                   </div>
                   <p className="text-xs text-center mt-1 text-warmgray">Mother</p>
                 </div>
 
                 <div className="absolute left-[50%] top-[5%] -translate-x-1/2 z-10">
-                  <div className="w-12 h-12 rounded-full bg-blue-100 border-2 border-blue-300 flex items-center justify-center text-lg shadow-md hover:scale-110 transition cursor-pointer" title="Uncle Joe">
-                    👴
+                  <div className="w-12 h-12 rounded-full bg-purple-100 border-2 border-purple-300 flex items-center justify-center shadow-md hover:scale-110 transition cursor-pointer" title="Uncle Joe">
+                    <svg className="w-6 h-6 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                    </svg>
                   </div>
                   <p className="text-xs text-center mt-1 text-warmgray">Uncle Joe</p>
                 </div>
 
                 {/* Place nodes */}
                 <div className="absolute left-[10%] top-[70%] -translate-x-1/2 -translate-y-1/2 z-10">
-                  <div className="w-12 h-12 rounded-full bg-green-100 border-2 border-green-300 flex items-center justify-center text-lg shadow-md hover:scale-110 transition cursor-pointer" title="Birmingham">
-                    🏠
+                  <div className="w-12 h-12 rounded-full bg-green-100 border-2 border-green-300 flex items-center justify-center shadow-md hover:scale-110 transition cursor-pointer" title="Birmingham">
+                    <svg className="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                    </svg>
                   </div>
                   <p className="text-xs text-center mt-1 text-warmgray">Birmingham</p>
                 </div>
 
                 <div className="absolute left-[85%] top-[75%] -translate-x-1/2 -translate-y-1/2 z-10">
-                  <div className="w-12 h-12 rounded-full bg-orange-100 border-2 border-orange-300 flex items-center justify-center text-lg shadow-md hover:scale-110 transition cursor-pointer" title="Ford Factory">
-                    🏭
+                  <div className="w-12 h-12 rounded-full bg-orange-100 border-2 border-orange-300 flex items-center justify-center shadow-md hover:scale-110 transition cursor-pointer" title="Ford Factory">
+                    <svg className="w-6 h-6 text-orange-600" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM7 10h2v7H7zm4-3h2v10h-2zm4 6h2v4h-2z"/>
+                    </svg>
                   </div>
                   <p className="text-xs text-center mt-1 text-warmgray">Ford Factory</p>
                 </div>
