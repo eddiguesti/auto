@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import {
   IconBook, IconBookmark, IconGift, IconSparkles, IconLeaf,
-  IconHome2, IconPalette, IconScroll, IconRefresh, IconX, IconCheck
+  IconHome2, IconPalette, IconCrown, IconRefresh, IconX, IconCheck
 } from '@tabler/icons-react'
 
 // 3D Flippable book cover preview
@@ -150,7 +150,7 @@ const styleIcons = {
   nature: <IconLeaf size={32} className="text-sepia" stroke={1.5} />,
   family: <IconHome2 size={32} className="text-sepia" stroke={1.5} />,
   artistic: <IconPalette size={32} className="text-sepia" stroke={1.5} />,
-  heritage: <IconScroll size={32} className="text-sepia" stroke={1.5} />
+  heritage: <IconCrown size={32} className="text-sepia" stroke={1.5} />
 }
 
 // Style card component
