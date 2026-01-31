@@ -1,7 +1,50 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useAuth } from '../context/AuthContext'
+import { chapters } from '../data/chapters'
 
 export default function BookPreview({ userName, totalProgress, onClose }) {
+  const { authFetch } = useAuth()
   const [currentPage, setCurrentPage] = useState(0)
+  const [firstStory, setFirstStory] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchFirstStory()
+  }, [])
+
+  const fetchFirstStory = async () => {
+    try {
+      // Fetch all stories and find the first one with content
+      const res = await authFetch('/api/stories/all')
+      if (res.ok) {
+        const stories = await res.json()
+        // Sort by chapter_id and question_id to get the first answered question
+        const sortedStories = stories
+          .filter(s => s.answer && s.answer.trim())
+          .sort((a, b) => {
+            if (a.chapter_id !== b.chapter_id) return a.chapter_id - b.chapter_id
+            return a.question_id - b.question_id
+          })
+
+        if (sortedStories.length > 0) {
+          const story = sortedStories[0]
+          // Find the chapter and question from our data
+          const chapter = chapters.find(c => c.id === story.chapter_id)
+          const question = chapter?.questions?.[story.question_id]
+
+          setFirstStory({
+            answer: story.answer,
+            chapterTitle: chapter?.title || 'Chapter One',
+            question: question || 'My earliest memory'
+          })
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching first story:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const pages = [
     { type: 'cover' },
@@ -9,6 +52,19 @@ export default function BookPreview({ userName, totalProgress, onClose }) {
     { type: 'dedication' },
     { type: 'chapter-preview' }
   ]
+
+  // Get first letter for drop cap
+  const getDropCap = (text) => {
+    if (!text) return { letter: 'M', rest: 'y story begins...' }
+    const clean = text.replace(/^["'\s]+/, '') // Remove leading quotes/spaces
+    return {
+      letter: clean.charAt(0).toUpperCase(),
+      rest: clean.slice(1)
+    }
+  }
+
+  const storyContent = firstStory?.answer
+  const { letter, rest } = getDropCap(storyContent)
 
   return (
     <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={onClose}>
@@ -91,21 +147,37 @@ export default function BookPreview({ userName, totalProgress, onClose }) {
               <div className="absolute inset-0 flex flex-col p-8 bg-cream overflow-hidden">
                 <div className="text-center mb-6">
                   <p className="text-sepia/60 text-xs uppercase tracking-widest">Chapter One</p>
-                  <h2 className="font-display text-2xl text-ink">Earliest Memories</h2>
-                  <p className="text-sepia/70 italic text-sm">Ages 0-5</p>
+                  <h2 className="font-display text-2xl text-ink">
+                    {firstStory?.chapterTitle || 'Earliest Memories'}
+                  </h2>
+                  <p className="text-sepia/70 italic text-sm">
+                    {firstStory?.question ? `"${firstStory.question}"` : 'Ages 0-5'}
+                  </p>
                 </div>
 
-                {/* Sample text */}
+                {/* Story content */}
                 <div className="flex-1 overflow-hidden relative">
-                  <div className="font-serif text-ink/80 text-sm leading-relaxed space-y-4">
-                    <p>
-                      <span className="text-4xl font-display float-left mr-2 mt-1 text-sepia">M</span>
-                      y first memory is a feeling more than an image. The warmth of sunlight streaming through a window, the smell of something baking, and the soft hum of my mother's voice singing in the kitchen...
-                    </p>
-                    <p>
-                      Our house on Maple Street had creaky wooden floors that announced every footstep. I can still hear the particular squeak of the third stair from the bottom, the one we all learned to skip when sneaking down for midnight snacks.
-                    </p>
-                  </div>
+                  {loading ? (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="w-8 h-8 border-2 border-sepia/30 border-t-sepia rounded-full animate-spin" />
+                    </div>
+                  ) : storyContent ? (
+                    <div className="font-serif text-ink/80 text-sm leading-relaxed">
+                      <p>
+                        <span className="text-4xl font-display float-left mr-2 mt-1 text-sepia">{letter}</span>
+                        {rest.length > 300 ? rest.slice(0, 300) + '...' : rest}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="font-serif text-ink/80 text-sm leading-relaxed space-y-4">
+                      <p className="text-sepia/60 italic text-center mt-12">
+                        Your story will appear here once you start writing.
+                      </p>
+                      <p className="text-sepia/40 text-center text-xs">
+                        Answer questions in any chapter to see your memoir come to life.
+                      </p>
+                    </div>
+                  )}
                   {/* Fade out */}
                   <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-cream to-transparent" />
                 </div>
@@ -143,7 +215,7 @@ export default function BookPreview({ userName, totalProgress, onClose }) {
 
         {/* Caption */}
         <p className="text-center text-white/70 text-sm mt-6">
-          This is a preview of how your finished book will look
+          {storyContent ? 'Preview of your memoir' : 'This is how your finished book will look'}
         </p>
 
         {/* Navigation */}

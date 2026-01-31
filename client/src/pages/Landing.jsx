@@ -109,10 +109,10 @@ export default function Landing() {
         {/* Main content */}
         <div className="relative z-10 w-full px-6 pt-24 pb-16">
           <div className="max-w-lg mx-auto text-center">
-            {/* Animated badge */}
+            {/* Emotional urgency badge */}
             <div className="inline-flex items-center gap-2 bg-white/60 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm border border-sepia/10 mb-6 animate-[fadeSlideIn_0.6s_ease-out]">
-              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-              <span className="font-sans text-xs text-sepia tracking-wide">AI-Powered Memoir Writing</span>
+              <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
+              <span className="font-sans text-xs text-sepia tracking-wide">Every story deserves to be remembered</span>
             </div>
 
             {/* Hero headline */}
@@ -478,25 +478,124 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Testimonial - Dark dramatic section */}
+      {/* Emotional "Why Now" Section */}
+      <section className="py-16 px-6 bg-gradient-to-b from-white to-amber-50/30">
+        <div className="max-w-lg mx-auto text-center">
+          <div className="w-16 h-16 bg-gradient-to-br from-amber-100 to-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <svg className="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h2 className="font-display text-2xl text-ink mb-4">
+            The memories we wish we'd captured
+          </h2>
+          <p className="font-serif text-warmgray leading-relaxed mb-6">
+            We all have that one relative whose stories we'd give anything to hear again.
+            The way they described the old neighbourhood. That time they met someone famous.
+            How they fell in love.
+          </p>
+          <p className="font-serif text-ink font-medium">
+            Don't let your stories become the ones your family wishes they'd saved.
+          </p>
+        </div>
+      </section>
+
+      {/* Testimonials - Multiple stories */}
       <section className="relative py-20 px-6 bg-gradient-to-br from-ink via-stone-900 to-ink overflow-hidden">
         {/* Decorative elements */}
         <div className="absolute top-10 left-6 text-6xl text-white/5 font-serif">"</div>
         <div className="absolute bottom-10 right-6 text-6xl text-white/5 font-serif rotate-180">"</div>
 
-        <div className="relative max-w-lg mx-auto text-center">
-          <p className="font-display text-xl italic text-white/90 leading-relaxed mb-8">
-            I never thought I'd write my life story. But talking to the AI felt so natural—
-            like chatting with an old friend. Now my grandchildren will know who I really was.
-          </p>
-          <div className="flex items-center justify-center gap-3">
-            <div className="w-12 h-12 bg-sepia/30 rounded-full flex items-center justify-center">
-              <span className="text-white font-display text-lg">M</span>
+        <div className="relative max-w-lg mx-auto">
+          <div className="text-center mb-10">
+            <h2 className="font-display text-2xl text-white mb-2">Stories being preserved</h2>
+            <p className="font-serif text-sm text-white/60">Real families, real memories</p>
+          </div>
+
+          <div className="space-y-6">
+            {/* Testimonial 1 */}
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-5 border border-white/10">
+              <p className="font-serif text-white/90 italic leading-relaxed mb-4">
+                "I never thought I'd write my life story. But talking to the AI felt so natural—
+                like chatting with an old friend. Now my grandchildren will know who I really was."
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-sepia/30 rounded-full flex items-center justify-center">
+                  <span className="text-white font-display">M</span>
+                </div>
+                <div>
+                  <p className="font-sans text-white font-medium text-sm">Margaret T.</p>
+                  <p className="font-sans text-white/50 text-xs">Age 78, Birmingham</p>
+                </div>
+              </div>
             </div>
-            <div className="text-left">
-              <p className="font-sans text-white font-medium text-sm">Margaret T.</p>
-              <p className="font-sans text-white/50 text-xs">Age 78, Birmingham</p>
+
+            {/* Testimonial 2 */}
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-5 border border-white/10">
+              <p className="font-serif text-white/90 italic leading-relaxed mb-4">
+                "Dad passed last year. Before he did, we captured 47 stories. Now my kids
+                can hear their grandad talk about the war, his wedding day, the day I was born.
+                It's priceless."
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-amber-600/30 rounded-full flex items-center justify-center">
+                  <span className="text-white font-display">J</span>
+                </div>
+                <div>
+                  <p className="font-sans text-white font-medium text-sm">James W.</p>
+                  <p className="font-sans text-white/50 text-xs">Son of Harold W., Leeds</p>
+                </div>
+              </div>
             </div>
+
+            {/* Testimonial 3 */}
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-5 border border-white/10">
+              <p className="font-serif text-white/90 italic leading-relaxed mb-4">
+                "Mum has early dementia. We started capturing her memories before they fade.
+                Some days she reads her own stories and remembers things she'd forgotten.
+                It's brought her so much joy."
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-purple-600/30 rounded-full flex items-center justify-center">
+                  <span className="text-white font-display">S</span>
+                </div>
+                <div>
+                  <p className="font-sans text-white font-medium text-sm">Sarah K.</p>
+                  <p className="font-sans text-white/50 text-xs">Daughter, Manchester</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* What You'll Capture - Life stages */}
+      <section className="py-16 px-6 bg-cream">
+        <div className="max-w-lg mx-auto">
+          <div className="text-center mb-10">
+            <h2 className="font-display text-2xl text-ink mb-2">
+              Every chapter of your life
+            </h2>
+            <p className="font-serif text-sm text-warmgray">
+              91 thoughtful questions across 10 life stages
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { icon: '💒', title: 'Childhood', desc: 'Early memories & family' },
+              { icon: '🎓', title: 'Growing Up', desc: 'School days & friends' },
+              { icon: '💑', title: 'Love & Family', desc: 'Romance & parenthood' },
+              { icon: '💼', title: 'Career', desc: 'Work & achievements' },
+              { icon: '🌍', title: 'Adventures', desc: 'Travel & experiences' },
+              { icon: '💭', title: 'Wisdom', desc: 'Lessons & reflections' },
+            ].map((item, i) => (
+              <div key={i} className="bg-white rounded-xl p-4 border border-sepia/10 text-center">
+                <span className="text-2xl mb-2 block">{item.icon}</span>
+                <h3 className="font-display text-sm text-ink">{item.title}</h3>
+                <p className="font-sans text-xs text-warmgray">{item.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -513,13 +612,14 @@ export default function Landing() {
           </div>
 
           <h2 className="font-display text-3xl text-ink mb-4 leading-tight">
-            Your stories matter.
+            In 50 years, what will
             <br />
-            <span className="italic text-sepia">Don't let them fade away.</span>
+            <span className="italic text-sepia">your family remember?</span>
           </h2>
 
           <p className="font-serif text-warmgray mb-8 max-w-sm mx-auto">
-            Create a memoir your family will treasure forever. Start your journey today.
+            The stories you don't tell disappear forever. Your memories are worth saving.
+            Your family deserves to know who you really are.
           </p>
 
           <button
@@ -528,7 +628,7 @@ export default function Landing() {
           >
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
             <span className="relative flex items-center justify-center gap-2">
-              {user ? 'Continue Your Story' : 'Start For Free'}
+              {user ? 'Continue Your Story' : 'Start Preserving Your Memories'}
               <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
               </svg>
@@ -536,7 +636,7 @@ export default function Landing() {
           </button>
 
           <p className="font-sans text-warmgray/60 text-xs mt-4">
-            No credit card required · Start in seconds
+            Free to start · No credit card required · Takes 5 minutes
           </p>
         </div>
       </section>

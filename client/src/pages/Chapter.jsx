@@ -3,6 +3,8 @@ import { useParams, Link } from 'react-router-dom'
 import { chapters } from '../data/chapters'
 import QuestionCard from '../components/QuestionCard'
 import AIAssistant from '../components/AIAssistant'
+import MemoryTriggers from '../components/MemoryTriggers'
+import ChapterIllustration from '../components/ChapterIllustration'
 import { useAuth } from '../context/AuthContext'
 
 export default function Chapter() {
@@ -16,6 +18,9 @@ export default function Chapter() {
   const [pendingSaves, setPendingSaves] = useState({}) // Track unsaved changes
   const [saveStatus, setSaveStatus] = useState(null) // 'saving' | 'saved' | 'error'
   const [lastError, setLastError] = useState(null)
+  const [showMemoryTriggers, setShowMemoryTriggers] = useState(false)
+  const [skippedQuestions, setSkippedQuestions] = useState([])
+  const [showIllustration, setShowIllustration] = useState(false)
 
   const chapter = chapters.find(c => c.id === chapterId)
 
@@ -157,6 +162,31 @@ export default function Chapter() {
         </div>
       </header>
 
+      {/* Chapter Illustration Toggle */}
+      <div className="mb-4">
+        <button
+          onClick={() => setShowIllustration(!showIllustration)}
+          className="text-sepia/60 hover:text-sepia text-sm flex items-center gap-2 transition"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          {showIllustration ? 'Hide' : 'Show'} chapter illustration
+        </button>
+
+        {showIllustration && (
+          <div className="mt-3">
+            <ChapterIllustration
+              chapterId={chapterId}
+              stories={Object.entries(answers).map(([qId, data]) => ({
+                questionId: qId,
+                answer: data.answer
+              }))}
+            />
+          </div>
+        )}
+      </div>
+
       {/* Error Banner */}
       {lastError && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
@@ -205,20 +235,28 @@ export default function Chapter() {
           </div>
         </div>
         <div className="flex gap-1 sm:gap-1.5">
-          {chapter.questions.map((q, idx) => (
-            <button
-              key={q.id}
-              onClick={() => setCurrentQuestion(idx)}
-              className={`flex-1 h-2 sm:h-1.5 rounded-full transition min-w-[8px] ${
-                idx === currentQuestion
-                  ? 'bg-sepia'
-                  : answers[q.id]?.answer?.trim()
-                    ? 'bg-sepia/40'
-                    : 'bg-sepia/15 hover:bg-sepia/25'
-              }`}
-              title={q.question}
-            />
-          ))}
+          {chapter.questions.map((q, idx) => {
+            const isAnswered = answers[q.id]?.answer?.trim()
+            const isSkipped = skippedQuestions.includes(q.id) && !isAnswered
+            const isCurrent = idx === currentQuestion
+
+            return (
+              <button
+                key={q.id}
+                onClick={() => setCurrentQuestion(idx)}
+                className={`flex-1 h-2 sm:h-1.5 rounded-full transition min-w-[8px] ${
+                  isCurrent
+                    ? 'bg-sepia'
+                    : isAnswered
+                      ? 'bg-sepia/40'
+                      : isSkipped
+                        ? 'bg-amber-300'
+                        : 'bg-sepia/15 hover:bg-sepia/25'
+                }`}
+                title={`${q.question}${isSkipped ? ' (skipped)' : ''}`}
+              />
+            )
+          })}
         </div>
       </div>
 
@@ -233,6 +271,57 @@ export default function Chapter() {
         photos={answers[question.id]?.photos || []}
         onPhotosChange={fetchAnswers}
       />
+
+      {/* Quick Actions Row */}
+      <div className="flex items-center justify-between mt-4 gap-3">
+        {/* Memory Triggers Toggle */}
+        <button
+          onClick={() => setShowMemoryTriggers(!showMemoryTriggers)}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition ${
+            showMemoryTriggers
+              ? 'bg-amber-100 text-amber-800 border border-amber-200'
+              : 'bg-sepia/5 text-sepia/70 hover:bg-sepia/10 border border-sepia/10'
+          }`}
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+          </svg>
+          {showMemoryTriggers ? 'Hide Tips' : 'Need Ideas?'}
+        </button>
+
+        {/* Skip Question */}
+        {!answers[question.id]?.answer?.trim() && !skippedQuestions.includes(question.id) && (
+          <button
+            onClick={() => {
+              setSkippedQuestions(prev => [...prev, question.id])
+              // Move to next question
+              if (currentQuestion < chapter.questions.length - 1) {
+                setCurrentQuestion(prev => prev + 1)
+              }
+            }}
+            className="flex items-center gap-2 px-4 py-2 text-sepia/50 hover:text-sepia/70 text-sm transition"
+          >
+            <span>Skip for now</span>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+            </svg>
+          </button>
+        )}
+
+        {/* Show if this was skipped */}
+        {skippedQuestions.includes(question.id) && !answers[question.id]?.answer?.trim() && (
+          <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded">
+            Skipped - you can answer anytime
+          </span>
+        )}
+      </div>
+
+      {/* Memory Triggers Panel */}
+      {showMemoryTriggers && (
+        <div className="mt-4">
+          <MemoryTriggers chapterId={chapterId} />
+        </div>
+      )}
 
       {/* Navigation */}
       <div className="flex justify-between mt-4 sm:mt-6 gap-4">

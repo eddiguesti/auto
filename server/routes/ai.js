@@ -294,4 +294,60 @@ ${safeAnswer ? `Their answer so far: ${safeAnswer}` : '(No answer yet)'}`
   res.json({ response })
 }))
 
+// Generate illustration prompt for a chapter based on stories
+router.post('/generate-illustration', asyncHandler(async (req, res) => {
+  const { chapterId, stories } = req.body
+  const userId = req.user.id
+
+  // Rate limiting
+  const rateCheck = checkRateLimit(userId)
+  if (!rateCheck.allowed) {
+    return res.status(429).json({
+      error: 'Too many requests',
+      message: `Please wait ${Math.ceil(rateCheck.resetIn / 1000)} seconds before trying again.`
+    })
+  }
+
+  const client = getGrokClient()
+
+  // Sanitize story content
+  const safeStories = (stories || []).map(s => sanitizeForPrompt(s, 500)).join('\n\n')
+
+  const systemPrompt = `You are an art director creating illustration prompts for a memoir book. Based on the user's stories, create a single illustration prompt that would capture the essence of their memories.
+
+GUIDELINES:
+- Create a warm, nostalgic illustration in a gentle watercolor or soft pencil sketch style
+- Focus on a specific memorable scene or moment from their stories
+- Include specific details they mentioned (places, objects, people silhouettes)
+- Make it feel personal and intimate, not generic
+- Avoid faces - use silhouettes or back views of people
+- Use a warm, sepia-toned or vintage colour palette
+- The style should be suitable for a printed memoir book
+
+Stories to illustrate:
+${safeStories || 'No stories provided yet - create a placeholder scene for this chapter.'}
+
+Respond with ONLY the illustration prompt, no explanations. Keep it under 100 words.`
+
+  const completion = await client.chat.completions.create({
+    model: 'grok-3-mini-beta',
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: 'Generate an illustration prompt for these memories.' }
+    ],
+    max_tokens: 200,
+    temperature: 0.7
+  })
+
+  const illustrationPrompt = completion.choices[0]?.message?.content || 'A warm, nostalgic scene with gentle watercolor tones.'
+
+  // For now, return the prompt - actual image generation would need integration with DALL-E, Midjourney, or similar
+  res.json({
+    prompt: illustrationPrompt,
+    // Placeholder URL - replace with actual generated image when integrated
+    placeholderUrl: null,
+    note: 'Image generation coming soon'
+  })
+}))
+
 export default router
