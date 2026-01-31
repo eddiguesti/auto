@@ -495,7 +495,7 @@ export default function Blog() {
             </Link>
           </div>
           <p className="text-sm text-[#999] mt-6">
-            Free to start &bull; No credit card required &bull; First 100 users get a free printed book
+            Free to start &bull; No credit card required
           </p>
         </div>
       </section>

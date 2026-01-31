@@ -176,8 +176,8 @@ export default function ExportModal({ onClose, userName }) {
   }
 
   const handleStyleMemoir = () => {
-    // Style is included with any export purchase or early adopter
-    if (exportStatus?.canExport || exportStatus?.isEarlyAdopter) {
+    // Style is included with any export purchase
+    if (exportStatus?.canExport) {
       onClose()
       navigate('/preview-style')
     } else {
@@ -256,23 +256,6 @@ export default function ExportModal({ onClose, userName }) {
           </div>
         </div>
 
-        {/* Early Adopter Badge */}
-        {exportStatus?.isEarlyAdopter && (
-          <div className="mx-6 -mt-4 relative z-20">
-            <div className="bg-gradient-to-r from-amber-400 to-orange-400 text-white rounded-xl p-4 flex items-center gap-3 shadow-lg">
-              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
-                </svg>
-              </div>
-              <div>
-                <p className="font-semibold">Early Adopter Benefits</p>
-                <p className="text-sm text-white/80">Free eBook exports & style transformations forever!</p>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Error Message */}
         {error && (
           <div className="mx-6 mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm flex justify-between items-center">
@@ -309,7 +292,7 @@ export default function ExportModal({ onClose, userName }) {
                   Transform your writing in the style of Hemingway, Jane Austen, Maya Angelou & more
                 </p>
                 <div className="flex items-center justify-between">
-                  {exportStatus?.canExport || exportStatus?.isEarlyAdopter ? (
+                  {exportStatus?.canExport ? (
                     <span className="text-green-600 font-medium">Included</span>
                   ) : (
                     <span className="font-semibold text-ink">£4.99</span>
