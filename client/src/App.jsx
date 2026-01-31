@@ -10,6 +10,7 @@ import Chapter from './pages/Chapter'
 import Export from './pages/Export'
 import VoiceChat from './pages/VoiceChat'
 import Landing from './pages/Landing'
+import FacebookLanding from './pages/FacebookLanding'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Terms from './pages/Terms'
@@ -28,6 +29,7 @@ function App() {
           <Routes>
             {/* Public pages */}
             <Route path="/" element={<Landing />} />
+            <Route path="/welcome" element={<FacebookLanding />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/terms" element={<Terms />} />
