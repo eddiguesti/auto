@@ -285,6 +285,66 @@ export async function initDatabase() {
       CREATE INDEX IF NOT EXISTS idx_user_style_preferences_user ON user_style_preferences(user_id)
     `)
 
+    // Telegram integration tables
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS telegram_users (
+        id SERIAL PRIMARY KEY,
+        telegram_chat_id TEXT UNIQUE NOT NULL,
+        telegram_username TEXT,
+        telegram_first_name TEXT,
+        telegram_last_name TEXT,
+        user_id INTEGER REFERENCES users(id) ON DELETE SET NULL, -- Linked webapp user (null for guests)
+        guest_name TEXT, -- For unlinked users
+        guest_email TEXT, -- For unlinked users
+        is_registered BOOLEAN DEFAULT false, -- Has completed registration/linking
+        link_code TEXT UNIQUE, -- Code to link with webapp account
+        link_code_expires TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `)
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS telegram_sessions (
+        id SERIAL PRIMARY KEY,
+        telegram_user_id INTEGER REFERENCES telegram_users(id) ON DELETE CASCADE,
+        session_state TEXT DEFAULT 'idle', -- 'idle', 'registering', 'interviewing', 'waiting_answer'
+        current_chapter_id TEXT,
+        current_question_id TEXT,
+        context JSONB DEFAULT '{}', -- Extra context for conversation
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(telegram_user_id)
+      )
+    `)
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS telegram_messages (
+        id SERIAL PRIMARY KEY,
+        telegram_user_id INTEGER REFERENCES telegram_users(id) ON DELETE CASCADE,
+        message_id TEXT, -- Telegram message ID
+        direction TEXT NOT NULL, -- 'incoming' or 'outgoing'
+        content TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `)
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_telegram_users_chat_id ON telegram_users(telegram_chat_id)
+    `)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_telegram_users_user_id ON telegram_users(user_id)
+    `)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_telegram_users_link_code ON telegram_users(link_code)
+    `)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_telegram_sessions_user ON telegram_sessions(telegram_user_id)
+    `)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_telegram_messages_user ON telegram_messages(telegram_user_id)
+    `)
+
     console.log('Database initialized successfully')
   } catch (err) {
     console.error('Database initialization error:', err)

@@ -6,6 +6,7 @@ import ExportModal from '../components/ExportModal'
 import ProgressCard from '../components/ProgressCard'
 import BookPreview from '../components/BookPreview'
 import CompletionCertificate from '../components/CompletionCertificate'
+import TelegramLinkModal from '../components/TelegramLinkModal'
 
 export default function Home() {
   const { user, authFetch } = useAuth()
@@ -15,6 +16,7 @@ export default function Home() {
   const [showExportModal, setShowExportModal] = useState(false)
   const [showBookPreview, setShowBookPreview] = useState(false)
   const [showCertificate, setShowCertificate] = useState(false)
+  const [showTelegramLink, setShowTelegramLink] = useState(false)
   const [lastWorkedOn, setLastWorkedOn] = useState(null)
 
   // Get first name for title
@@ -144,7 +146,7 @@ export default function Home() {
       )}
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-2 gap-3 mb-10">
+      <div className="grid grid-cols-3 gap-3 mb-10">
         <Link
           to={`/chapter/${nextChapter.id}`}
           className="flex items-center gap-3 p-4 bg-white rounded-xl border border-sepia/10 hover:border-sepia/30 hover:shadow-md transition"
@@ -156,7 +158,7 @@ export default function Home() {
           </div>
           <div>
             <p className="text-ink font-medium">Write</p>
-            <p className="text-sepia/60 text-xs">Type your stories</p>
+            <p className="text-sepia/60 text-xs">Type stories</p>
           </div>
         </Link>
 
@@ -171,9 +173,24 @@ export default function Home() {
           </div>
           <div>
             <p className="font-medium">Talk</p>
-            <p className="text-white/80 text-xs">Voice interview</p>
+            <p className="text-white/80 text-xs">Voice mode</p>
           </div>
         </Link>
+
+        <button
+          onClick={() => setShowTelegramLink(true)}
+          className="flex items-center gap-3 p-4 bg-[#0088cc]/10 rounded-xl border border-[#0088cc]/20 hover:border-[#0088cc]/40 hover:bg-[#0088cc]/15 transition"
+        >
+          <div className="w-10 h-10 bg-[#0088cc]/20 rounded-lg flex items-center justify-center">
+            <svg className="w-5 h-5 text-[#0088cc]" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
+            </svg>
+          </div>
+          <div>
+            <p className="text-[#0088cc] font-medium">Telegram</p>
+            <p className="text-[#0088cc]/60 text-xs">On the go</p>
+          </div>
+        </button>
       </div>
 
       {/* Chapters - Table of Contents */}
@@ -358,6 +375,10 @@ export default function Home() {
           totalStories={totalAnswered}
           onClose={() => setShowCertificate(false)}
         />
+      )}
+
+      {showTelegramLink && (
+        <TelegramLinkModal onClose={() => setShowTelegramLink(false)} />
       )}
     </div>
   )

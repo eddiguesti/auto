@@ -69,7 +69,7 @@ export default function Landing() {
               <span className="italic text-sepia">beautifully told</span>
             </h1>
             <p className="hero-description font-serif text-lg sm:text-xl text-warmgray leading-relaxed mb-8 sm:mb-10 max-w-lg mx-auto lg:mx-0">
-              Just talk about your memories. Our AI listens, asks thoughtful questions,
+              Just talk about your memories. Lisa listens, asks thoughtful questions,
               and transforms your stories into a beautifully written autobiography
               your family will treasure forever.
             </p>
@@ -115,7 +115,7 @@ export default function Landing() {
               <div className="mt-6 pt-4 border-t border-sepia/10">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                  <p className="font-sans text-xs text-sepia">AI is listening...</p>
+                  <p className="font-sans text-xs text-sepia">Lisa is listening...</p>
                 </div>
               </div>
             </div>
@@ -130,19 +130,16 @@ export default function Landing() {
       <section className="bg-gradient-to-r from-sepia/10 via-sepia/5 to-sepia/10 py-4 sm:py-6 border-y border-sepia/20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
           <div className="inline-flex flex-col sm:flex-row items-center gap-2 sm:gap-3 bg-white px-4 sm:px-6 py-3 rounded-2xl sm:rounded-full shadow-sm border border-sepia/20">
-            <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 bg-gradient-to-br from-sepia to-amber-600 rounded-xl flex items-center justify-center flex-shrink-0">
               <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <rect x="3" y="8" width="18" height="13" rx="2" strokeWidth={1.5} />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v13M3 12h18" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c0 0-1.5-2-1.5-3.5a2.5 2.5 0 015 0C15.5 6 12 8 12 8z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c0 0 1.5-2 1.5-3.5a2.5 2.5 0 00-5 0C8.5 6 12 8 12 8z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
             </div>
             <div className="text-center sm:text-left">
               <p className="font-display text-base sm:text-lg text-ink">
-                First <span className="text-sepia">100</span> users get their memoir <span className="italic text-sepia">completely free</span>
+                Designed to <span className="italic text-sepia">get you talking</span>
               </p>
-              <p className="font-sans text-[10px] sm:text-xs text-warmgray">Be an early adopter · Help us shape the future of storytelling</p>
+              <p className="font-sans text-[10px] sm:text-xs text-warmgray">No writing needed · Just have a conversation with Lisa</p>
             </div>
           </div>
         </div>
@@ -175,7 +172,7 @@ export default function Landing() {
               <p className="font-sans text-sepia text-sm uppercase tracking-wider mb-2">Step 1</p>
               <h3 className="font-display text-2xl text-ink mb-3 italic">Just Talk</h3>
               <p className="font-serif text-warmgray leading-relaxed">
-                Our AI interviewer asks thoughtful questions about your life.
+                Lisa, your personal interviewer, asks thoughtful questions about your life.
                 Answer naturally, just like talking to a friend.
               </p>
             </div>
@@ -189,7 +186,7 @@ export default function Landing() {
               <p className="font-sans text-sepia text-sm uppercase tracking-wider mb-2">Step 2</p>
               <h3 className="font-display text-2xl text-ink mb-3 italic">We Write</h3>
               <p className="font-serif text-warmgray leading-relaxed">
-                AI transforms your spoken words into beautifully written prose.
+                Lisa transforms your spoken words into beautifully written prose.
                 Your voice, your stories—polished and preserved.
               </p>
             </div>
@@ -234,7 +231,7 @@ export default function Landing() {
                   <div>
                     <h3 className="font-display text-xl text-ink mb-1">Conversational & Natural</h3>
                     <p className="font-serif text-warmgray">
-                      No awkward interviews or blank pages. Our AI feels like talking to
+                      No awkward interviews or blank pages. Lisa feels like talking to
                       someone who genuinely wants to hear your stories.
                     </p>
                   </div>
@@ -297,7 +294,7 @@ export default function Landing() {
                 </div>
                 <div className="space-y-4">
                   <div className="flex gap-3">
-                    <div className="w-8 h-8 rounded-full bg-sepia/20 flex items-center justify-center text-xs">AI</div>
+                    <div className="w-8 h-8 rounded-full bg-sepia/20 flex items-center justify-center text-xs font-medium text-sepia">L</div>
                     <div className="bg-white rounded-2xl rounded-tl-none p-4 max-w-[80%]">
                       <p className="font-serif text-sm text-warmgray">
                         Tell me about your childhood home. What do you remember most vividly?
@@ -313,7 +310,7 @@ export default function Landing() {
                     </div>
                   </div>
                   <div className="flex gap-3">
-                    <div className="w-8 h-8 rounded-full bg-sepia/20 flex items-center justify-center text-xs">AI</div>
+                    <div className="w-8 h-8 rounded-full bg-sepia/20 flex items-center justify-center text-xs font-medium text-sepia">L</div>
                     <div className="bg-white rounded-2xl rounded-tl-none p-4 max-w-[80%]">
                       <p className="font-serif text-sm text-warmgray">
                         That sounds wonderful. Who baked the bread? Tell me more about them.
@@ -338,7 +335,7 @@ export default function Landing() {
               Your memories, <span className="italic text-sepia">beautifully connected</span>
             </h2>
             <p className="font-serif text-lg text-warmgray max-w-2xl mx-auto">
-              As you share your stories, our AI automatically identifies the people, places,
+              As you share your stories, Lisa automatically identifies the people, places,
               and events in your life—building a rich map of your memories.
             </p>
           </div>
@@ -377,14 +374,14 @@ export default function Landing() {
                 </svg>
               </div>
 
-              {/* Step 2: AI Extracts */}
+              {/* Step 2: Lisa Extracts */}
               <div className="text-center">
                 <div className="w-16 h-16 rounded-full bg-sepia/10 flex items-center justify-center mx-auto mb-4">
                   <svg className="w-8 h-8 text-sepia" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                   </svg>
                 </div>
-                <h3 className="font-display text-xl text-ink mb-2">AI Understands</h3>
+                <h3 className="font-display text-xl text-ink mb-2">Lisa Understands</h3>
                 <div className="flex flex-wrap justify-center gap-2 mt-3">
                   <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full flex items-center gap-1">
                     <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
@@ -506,9 +503,9 @@ export default function Landing() {
             {/* Benefit callout */}
             <div className="mt-8 bg-sepia/5 rounded-2xl p-6 text-center">
               <p className="font-serif text-warmgray">
-                <span className="text-ink font-medium">The more you share, the smarter it gets.</span>
-                {' '}Our AI remembers everyone you mention—so when you talk about Dad later,
-                it already knows he worked at Ford with Uncle Joe.
+                <span className="text-ink font-medium">The more you share, the smarter Lisa gets.</span>
+                {' '}Lisa remembers everyone you mention—so when you talk about Dad later,
+                she already knows he worked at Ford with Uncle Joe.
               </p>
             </div>
           </div>
@@ -549,7 +546,7 @@ export default function Landing() {
                 Voice Interview
               </h3>
               <p className="font-serif text-warmgray mb-6">
-                Just talk naturally. Our AI listens, asks follow-up questions, and
+                Just talk naturally. Lisa listens, asks follow-up questions, and
                 captures every detail of your stories.
               </p>
               <span className="font-sans text-sepia text-sm flex items-center gap-2">
@@ -575,7 +572,7 @@ export default function Landing() {
                 Written Memoir
               </h3>
               <p className="font-serif text-warmgray mb-6">
-                Prefer typing? Answer guided questions at your own pace. Our AI helps
+                Prefer typing? Answer guided questions at your own pace. Lisa helps
                 expand your notes into beautiful prose.
               </p>
               <span className="font-sans text-warmgray text-sm flex items-center gap-2 group-hover:text-sepia transition">
@@ -596,7 +593,7 @@ export default function Landing() {
             <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/>
           </svg>
           <p className="font-display text-2xl sm:text-3xl italic mb-8 leading-relaxed text-white/90">
-            I never thought I'd write my life story. But talking to the AI felt so natural—
+            I never thought I'd write my life story. But talking to Lisa felt so natural—
             like chatting with an old friend. Now my grandchildren will know who I really was.
           </p>
           <div>

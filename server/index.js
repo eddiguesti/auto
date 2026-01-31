@@ -25,6 +25,7 @@ import audiobookRouter from './routes/audiobook.js'
 import styleRouter from './routes/style.js'
 import paymentsRouter, { handleStripeWebhook } from './routes/payments.js'
 import supportRouter from './routes/support.js'
+import telegramRouter, { handleTelegramWebhook } from './routes/telegram.js'
 
 dotenv.config()
 
@@ -95,10 +96,18 @@ app.use('/api/style', authenticateToken, styleRouter)
 // Payment routes (protected)
 app.use('/api/payments', authenticateToken, paymentsRouter)
 
+// Telegram routes (protected - for linking accounts)
+app.use('/api/telegram', authenticateToken, telegramRouter)
+
 // Stripe webhook (needs raw body, no auth)
 app.post('/api/webhooks/stripe',
   express.raw({ type: 'application/json' }),
   (req, res) => handleStripeWebhook(req, res, pool)
+)
+
+// Telegram webhook (no auth - called by Telegram servers)
+app.post('/api/webhooks/telegram',
+  (req, res) => handleTelegramWebhook(req, res, pool)
 )
 
 // Health check
