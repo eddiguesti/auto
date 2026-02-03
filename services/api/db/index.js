@@ -45,10 +45,13 @@ if (databaseUrl) {
       }
     : { rejectUnauthorized: false }
 
+  // Railway internal URLs and localhost don't need SSL
+  const isInternalConnection = databaseUrl.includes('localhost') || databaseUrl.includes('.railway.internal')
+
   pool = new Pool({
     ...poolConfig,
     connectionString: databaseUrl,
-    ssl: databaseUrl.includes('localhost') ? false : sslConfig
+    ssl: isInternalConnection ? false : sslConfig
   })
 } else {
   // Try local connection, but don't fail if not available
