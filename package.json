@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "description": "Easy Memoir - Your life story, beautifully told",
-  "workspaces": ["apps/*", "services/*", "packages/*"],
+  "workspaces": ["apps/web", "services/*", "packages/*"],
   "scripts": {
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "server": "node services/api/index.js",
