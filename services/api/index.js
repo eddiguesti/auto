@@ -4,6 +4,7 @@ import './polyfills.js'
 import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
+import compression from 'compression'
 import rateLimit from 'express-rate-limit'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
@@ -50,6 +51,10 @@ const __dirname = dirname(__filename)
 const app = express()
 const PORT = process.env.PORT || 3001
 
+// Trust proxy when behind reverse proxy (Railway, Render, etc.)
+// This is required for rate limiting to work correctly with X-Forwarded-For headers
+app.set('trust proxy', 1)
+
 // Wrap pool with query timing and make available to routes
 const timedPool = wrapPoolWithTiming(pool)
 app.locals.db = timedPool
@@ -78,6 +83,9 @@ app.use(
     credentials: true
   })
 )
+
+// Gzip compression for all responses (reduces transfer size by ~70%)
+app.use(compression())
 
 // Security headers
 app.use(

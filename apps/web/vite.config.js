@@ -28,7 +28,7 @@ export default defineConfig({
         manualChunks: {
           // Vendor chunks - rarely change, cache well
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'ui-vendor': ['@react-oauth/google', '@tabler/icons-react', 'lucide-react'],
+          'ui-vendor': ['@react-oauth/google', '@tabler/icons-react']
         }
       }
     }

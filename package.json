@@ -3,7 +3,11 @@
   "version": "1.0.0",
   "type": "module",
   "description": "Easy Memoir - Your life story, beautifully told",
-  "workspaces": ["apps/web", "services/*", "packages/*"],
+  "workspaces": [
+    "apps/web",
+    "services/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "server": "node services/api/index.js",
@@ -30,6 +34,7 @@
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
+    "compression": "1.8.1",
     "concurrently": "^8.2.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
