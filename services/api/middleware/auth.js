@@ -47,9 +47,9 @@ export function generateToken(user) {
     throw new Error('JWT_SECRET not properly configured. Generate with: openssl rand -base64 64')
   }
 
-  return jwt.sign(
-    { id: user.id, email: user.email },
-    secret,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
-  )
+  // Validate expiresIn - must be non-empty string or number
+  const expiresIn = process.env.JWT_EXPIRES_IN
+  const validExpiresIn = expiresIn && expiresIn.trim() !== '' ? expiresIn : '7d'
+
+  return jwt.sign({ id: user.id, email: user.email }, secret, { expiresIn: validExpiresIn })
 }
