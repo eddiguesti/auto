@@ -295,14 +295,24 @@ async function start() {
     // Additional security checks
     const securityCheck = validateSecurityConfig()
     if (!securityCheck.valid) {
-      if (isProduction()) {
-        console.error('Security configuration issues detected:')
-        securityCheck.issues.forEach(issue => console.error(`  - ${issue}`))
+      // Critical issues that must block startup
+      const criticalIssues = securityCheck.issues.filter(i =>
+        i.includes('JWT_SECRET') || i.includes('DEV_BYPASS')
+      )
+      const warnings = securityCheck.issues.filter(i =>
+        !i.includes('JWT_SECRET') && !i.includes('DEV_BYPASS')
+      )
+
+      if (warnings.length > 0) {
+        console.warn('Security configuration warnings:')
+        warnings.forEach(issue => console.warn(`  - ${issue}`))
+      }
+
+      if (criticalIssues.length > 0 && isProduction()) {
+        console.error('Critical security issues detected:')
+        criticalIssues.forEach(issue => console.error(`  - ${issue}`))
         console.error('\nFix these issues before running in production.')
         process.exit(1)
-      } else {
-        console.warn('Security configuration warnings (non-production):')
-        securityCheck.issues.forEach(issue => console.warn(`  - ${issue}`))
       }
     }
 
