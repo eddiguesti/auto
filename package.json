@@ -8,7 +8,7 @@
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "server": "node services/api/index.js",
     "client": "cd apps/web && npm run dev",
-    "build": "cd apps/web && npm install && npm run build && npm run build:validate",
+    "build": "cd apps/web && npm install && npm run build && cd ../.. && npm run build:validate",
     "build:validate": "node tools/scripts/validate-build.js",
     "start": "node services/api/index.js",
     "install-all": "npm install && cd apps/web && npm install",
