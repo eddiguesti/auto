@@ -61,42 +61,65 @@ const allowedOrigins = [
   'https://easymemoir.co.uk',
   'https://www.easymemoir.co.uk'
 ]
-app.use(cors({
-  origin: function(origin, callback) {
-    // Allow requests with no origin (mobile apps, curl, etc)
-    if (!origin) return callback(null, true)
-    if (allowedOrigins.includes(origin)) {
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // Allow requests with no origin (mobile apps, curl, etc)
+      if (!origin) return callback(null, true)
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true)
+      }
+      // In production, reject unknown origins; in dev, allow for flexibility
+      if (process.env.NODE_ENV === 'production') {
+        return callback(new Error('Not allowed by CORS'), false)
+      }
       return callback(null, true)
-    }
-    // In production, reject unknown origins; in dev, allow for flexibility
-    if (process.env.NODE_ENV === 'production') {
-      return callback(new Error('Not allowed by CORS'), false)
-    }
-    return callback(null, true)
-  },
-  credentials: true
-}))
+    },
+    credentials: true
+  })
+)
 
 // Security headers
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Needed for React dev
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:", "https:", "blob:"],
-      connectSrc: ["'self'", "https://api.x.ai", "https://api.stripe.com", "https://api.replicate.com", "wss:"],
-      frameSrc: ["'self'", "https://js.stripe.com"],
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: [
+          "'self'",
+          "'unsafe-inline'",
+          "'unsafe-eval'",
+          'https://accounts.google.com',
+          'https://apis.google.com'
+        ],
+        styleSrc: [
+          "'self'",
+          "'unsafe-inline'",
+          'https://fonts.googleapis.com',
+          'https://accounts.google.com'
+        ],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+        imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
+        connectSrc: [
+          "'self'",
+          'https://api.x.ai',
+          'https://api.stripe.com',
+          'https://api.replicate.com',
+          'https://accounts.google.com',
+          'wss:'
+        ],
+        frameSrc: ["'self'", 'https://js.stripe.com', 'https://accounts.google.com']
+      }
     },
-  },
-  crossOriginEmbedderPolicy: false, // Allow loading external images
-  hsts: {
-    maxAge: 31536000,
-    includeSubDomains: true,
-    preload: true,
-  },
-}))
+    crossOriginEmbedderPolicy: false, // Allow loading external images
+    crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' }, // Required for Google OAuth popup
+    hsts: {
+      maxAge: 31536000,
+      includeSubDomains: true,
+      preload: true
+    }
+  })
+)
 
 // Global rate limiting
 const globalLimiter = rateLimit({
@@ -148,7 +171,7 @@ app.post('/api/landing-voice/session', async (req, res) => {
     const response = await fetch('https://api.x.ai/v1/realtime/client_secrets', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -211,15 +234,12 @@ app.use('/api/game', gameRouter)
 app.use('/api/notifications', notificationRoutes)
 
 // Stripe webhook (needs raw body, no auth)
-app.post('/api/webhooks/stripe',
-  express.raw({ type: 'application/json' }),
-  (req, res) => handleStripeWebhook(req, res, pool)
+app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), (req, res) =>
+  handleStripeWebhook(req, res, pool)
 )
 
 // Telegram webhook (no auth - called by Telegram servers)
-app.post('/api/webhooks/telegram',
-  (req, res) => handleTelegramWebhook(req, res, pool)
-)
+app.post('/api/webhooks/telegram', (req, res) => handleTelegramWebhook(req, res, pool))
 
 // Health check with comprehensive status
 app.get('/api/health', async (req, res) => {
@@ -268,11 +288,13 @@ const clientBuildPath = join(__dirname, '..', '..', 'apps', 'web', 'dist')
 
 if (existsSync(clientBuildPath)) {
   // Serve static files with aggressive caching (Vite uses content hashes in filenames)
-  app.use(express.static(clientBuildPath, {
-    maxAge: '1y',
-    immutable: true,
-    etag: false
-  }))
+  app.use(
+    express.static(clientBuildPath, {
+      maxAge: '1y',
+      immutable: true,
+      etag: false
+    })
+  )
 
   // Handle client-side routing - serve index.html for all non-API routes
   // index.html should not be cached so users always get latest version
@@ -303,11 +325,11 @@ async function start() {
     const securityCheck = validateSecurityConfig()
     if (!securityCheck.valid) {
       // Critical issues that must block startup
-      const criticalIssues = securityCheck.issues.filter(i =>
-        i.includes('JWT_SECRET') || i.includes('DEV_BYPASS')
+      const criticalIssues = securityCheck.issues.filter(
+        i => i.includes('JWT_SECRET') || i.includes('DEV_BYPASS')
       )
-      const warnings = securityCheck.issues.filter(i =>
-        !i.includes('JWT_SECRET') && !i.includes('DEV_BYPASS')
+      const warnings = securityCheck.issues.filter(
+        i => !i.includes('JWT_SECRET') && !i.includes('DEV_BYPASS')
       )
 
       if (warnings.length > 0) {
