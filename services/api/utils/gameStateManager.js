@@ -25,15 +25,17 @@ export async function initializeGameState(userId) {
       [userId]
     );
 
-    // Initialize collection progress for all collections
+    // Initialize collection progress for all collections in a single batch query
     const collections = await pool.query('SELECT id FROM collections WHERE is_active = true');
 
-    for (const collection of collections.rows) {
+    if (collections.rows.length > 0) {
+      const values = collections.rows.map((c, i) => `($1, $${i + 2})`).join(', ');
+      const params = [userId, ...collections.rows.map(c => c.id)];
       await pool.query(
         `INSERT INTO user_collection_progress (user_id, collection_id)
-         VALUES ($1, $2)
+         VALUES ${values}
          ON CONFLICT (user_id, collection_id) DO NOTHING`,
-        [userId, collection.id]
+        params
       );
     }
 
