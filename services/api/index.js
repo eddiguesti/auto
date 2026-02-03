@@ -267,11 +267,18 @@ app.use(seoRouter)
 const clientBuildPath = join(__dirname, '..', '..', 'apps', 'web', 'dist')
 
 if (existsSync(clientBuildPath)) {
-  app.use(express.static(clientBuildPath))
+  // Serve static files with aggressive caching (Vite uses content hashes in filenames)
+  app.use(express.static(clientBuildPath, {
+    maxAge: '1y',
+    immutable: true,
+    etag: false
+  }))
 
   // Handle client-side routing - serve index.html for all non-API routes
+  // index.html should not be cached so users always get latest version
   app.get('*', (req, res) => {
     if (!req.path.startsWith('/api')) {
+      res.set('Cache-Control', 'no-cache, must-revalidate')
       res.sendFile(join(clientBuildPath, 'index.html'))
     }
   })

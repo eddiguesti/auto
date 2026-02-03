@@ -315,6 +315,17 @@ export async function initDatabase() {
       CREATE INDEX IF NOT EXISTS idx_user_style_preferences_user ON user_style_preferences(user_id)
     `)
 
+    // Performance indexes for memory relationships
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_memory_relationships_entity1 ON memory_relationships(entity1_id)
+    `)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_memory_relationships_entity2 ON memory_relationships(entity2_id)
+    `)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_memory_mentions_story ON memory_mentions(story_id)
+    `)
+
     // Telegram integration tables
     await client.query(`
       CREATE TABLE IF NOT EXISTS telegram_users (
