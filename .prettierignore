@@ -1,0 +1,12 @@
+node_modules
+apps/web/node_modules
+apps/web/dist
+apps/mobile/node_modules
+services/api/node_modules
+packages/shared/node_modules
+dist
+build
+coverage
+*.min.js
+*.min.css
+package-lock.json

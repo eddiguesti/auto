@@ -1,0 +1,8 @@
+{
+  "services/api/**/*.js": ["eslint --fix", "prettier --write"],
+  "packages/shared/**/*.js": ["eslint --fix", "prettier --write"],
+  "tools/**/*.js": ["eslint --fix", "prettier --write"],
+  "*.js": ["eslint --fix", "prettier --write"],
+  "apps/web/src/**/*.{js,jsx}": ["eslint --fix --config apps/web/eslint.config.js", "prettier --write"],
+  "*.{json,md,css}": ["prettier --write"]
+}
