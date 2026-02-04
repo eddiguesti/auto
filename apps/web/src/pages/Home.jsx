@@ -24,17 +24,14 @@ const ChapterCard = memo(function ChapterCard({
   const hasStarted = chapterProgress > 0
   const isImageGenerating = chapterImage?.status === 'generating'
   const rawImageUrl = chapterImage?.imageUrl?.replace(/^"|"$/g, '')
-  const showImage = rawImageUrl && (isImageRevealed || (chapterImage?.status === 'completed' && !isAnimatingThis))
+  const showImage =
+    rawImageUrl && (isImageRevealed || (chapterImage?.status === 'completed' && !isAnimatingThis))
   const imageUrl = showImage ? rawImageUrl : null
 
   return (
     <div
       className={`relative overflow-hidden rounded-xl border transition-all hover:shadow-lg hover:-translate-y-1 stagger-item group ${
-        isComplete
-          ? 'border-green-300'
-          : hasStarted
-          ? 'border-sepia/30'
-          : 'border-sepia/20'
+        isComplete ? 'border-green-300' : hasStarted ? 'border-sepia/30' : 'border-sepia/20'
       }`}
     >
       {/* Image Section */}
@@ -44,7 +41,7 @@ const ChapterCard = memo(function ChapterCard({
             src={imageUrl}
             alt={chapter.title}
             loading="lazy"
-            onClick={(e) => {
+            onClick={e => {
               e.preventDefault()
               e.stopPropagation()
               onImageClick(imageUrl, chapter.title)
@@ -71,13 +68,15 @@ const ChapterCard = memo(function ChapterCard({
         )}
 
         {/* Progress badge */}
-        <div className={`absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs font-medium ${
-          isComplete
-            ? 'bg-green-500 text-white'
-            : hasStarted
-            ? 'bg-white/90 text-sepia'
-            : 'bg-white/80 text-sepia/60'
-        }`}>
+        <div
+          className={`absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs font-medium ${
+            isComplete
+              ? 'bg-green-500 text-white'
+              : hasStarted
+                ? 'bg-white/90 text-sepia'
+                : 'bg-white/80 text-sepia/60'
+          }`}
+        >
           {isComplete ? '✓ Complete' : `${chapterProgress}%`}
         </div>
 
@@ -111,7 +110,12 @@ const ChapterCard = memo(function ChapterCard({
             className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-sepia/10 hover:bg-sepia/20 text-sepia rounded-lg transition text-sm font-medium"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+              />
             </svg>
             Write
           </Link>
@@ -120,7 +124,12 @@ const ChapterCard = memo(function ChapterCard({
             className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-sepia hover:bg-ink text-white rounded-lg transition text-sm font-medium"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+              />
             </svg>
             Talk
           </Link>
@@ -266,9 +275,8 @@ export default function Home() {
     const map = {}
     for (const chapter of chapters) {
       const answered = progress[chapter.id] || 0
-      map[chapter.id] = chapter.questions.length > 0
-        ? Math.round((answered / chapter.questions.length) * 100)
-        : 0
+      map[chapter.id] =
+        chapter.questions.length > 0 ? Math.round((answered / chapter.questions.length) * 100) : 0
     }
     return map
   }, [progress])
@@ -306,13 +314,23 @@ export default function Home() {
         {/* Settings link */}
         <Link
           to="/settings"
-          className="absolute top-0 right-0 p-2 text-sepia/40 hover:text-sepia transition"
-          title="Settings"
+          className="absolute top-0 right-0 flex items-center gap-2 px-3 py-2 rounded-lg bg-sepia/10 hover:bg-sepia/20 text-sepia transition"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+            />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+            />
           </svg>
+          <span className="text-sm font-medium hidden sm:inline">Settings</span>
         </Link>
         {/* Decorative flourish */}
         <div className="text-sepia/40 text-2xl mb-4 tracking-[0.5em] float">❧</div>
@@ -348,8 +366,18 @@ export default function Home() {
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-sepia/10 rounded-full flex items-center justify-center">
-                <svg className="w-5 h-5 text-sepia" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg
+                  className="w-5 h-5 text-sepia"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
               </div>
               <div>
@@ -365,7 +393,12 @@ export default function Home() {
             >
               Continue
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
               </svg>
             </Link>
           </div>
@@ -379,8 +412,18 @@ export default function Home() {
           className="flex items-center gap-3 p-4 bg-white rounded-xl border border-sepia/10 hover:border-sepia/30 hover:shadow-md transition"
         >
           <div className="w-10 h-10 bg-sepia/10 rounded-lg flex items-center justify-center">
-            <svg className="w-5 h-5 text-sepia" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            <svg
+              className="w-5 h-5 text-sepia"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+              />
             </svg>
           </div>
           <div>
@@ -395,7 +438,12 @@ export default function Home() {
         >
           <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+              />
             </svg>
           </div>
           <div>
@@ -410,7 +458,7 @@ export default function Home() {
         >
           <div className="w-10 h-10 bg-[#0088cc]/20 rounded-lg flex items-center justify-center">
             <svg className="w-5 h-5 text-[#0088cc]" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z" />
             </svg>
           </div>
           <div>
@@ -430,14 +478,19 @@ export default function Home() {
             className="flex items-center gap-2 px-4 py-2 bg-stone-800 text-white rounded-lg hover:bg-stone-700 transition text-sm"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+              />
             </svg>
             Export Book
           </button>
         </div>
 
         <div id="chapter-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {chapters.map((chapter) => (
+          {chapters.map(chapter => (
             <ChapterCard
               key={chapter.id}
               chapter={chapter}
@@ -455,8 +508,18 @@ export default function Home() {
       {totalProgress === 100 && (
         <div className="mb-10 p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border border-green-200/50 text-center">
           <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            <svg
+              className="w-10 h-10 text-white"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
             </svg>
           </div>
           <h3 className="font-display text-2xl text-ink mb-2">Congratulations!</h3>
@@ -469,7 +532,12 @@ export default function Home() {
               className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-medium hover:shadow-lg transition flex items-center justify-center gap-2"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"
+                />
               </svg>
               View Certificate
             </button>
@@ -478,7 +546,12 @@ export default function Home() {
               className="px-6 py-3 bg-stone-800 text-white rounded-xl font-medium hover:bg-stone-700 transition flex items-center justify-center gap-2"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                />
               </svg>
               Order Your Book
             </button>
@@ -490,13 +563,25 @@ export default function Home() {
       {totalProgress >= 80 && totalProgress < 100 && (
         <div className="mb-10 p-6 bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl border border-amber-200/50 text-center">
           <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            <svg
+              className="w-8 h-8 text-amber-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+              />
             </svg>
           </div>
           <h3 className="font-display text-xl text-ink mb-2">Your memoir is almost ready!</h3>
           <p className="text-amber-800/70 mb-4">
-            Just {totalQuestions - totalAnswered} more {totalQuestions - totalAnswered === 1 ? 'question' : 'questions'} to complete your life story.
+            Just {totalQuestions - totalAnswered} more{' '}
+            {totalQuestions - totalAnswered === 1 ? 'question' : 'questions'} to complete your life
+            story.
           </p>
           <button
             onClick={() => setShowExportModal(true)}
@@ -514,10 +599,7 @@ export default function Home() {
 
       {/* Modals */}
       {showExportModal && (
-        <ExportModal
-          onClose={() => setShowExportModal(false)}
-          userName={user?.name || 'Your'}
-        />
+        <ExportModal onClose={() => setShowExportModal(false)} userName={user?.name || 'Your'} />
       )}
 
       {showBookPreview && (
@@ -537,28 +619,25 @@ export default function Home() {
         />
       )}
 
-      {showTelegramLink && (
-        <TelegramLinkModal onClose={() => setShowTelegramLink(false)} />
-      )}
+      {showTelegramLink && <TelegramLinkModal onClose={() => setShowTelegramLink(false)} />}
 
       {showOnboarding && (
-        <OnboardingModal onClose={(options) => {
-          setShowOnboarding(false)
-          // Refresh chapter images after onboarding - image generation started
-          fetchChapterImages()
-          // Show tour if user requested it
-          if (options?.showTour) {
-            setTimeout(() => setShowTour(true), 500)
-          }
-        }} />
+        <OnboardingModal
+          onClose={options => {
+            setShowOnboarding(false)
+            // Refresh chapter images after onboarding - image generation started
+            fetchChapterImages()
+            // Show tour if user requested it
+            if (options?.showTour) {
+              setTimeout(() => setShowTour(true), 500)
+            }
+          }}
+        />
       )}
 
       {/* Interactive Tour */}
       {showTour && (
-        <TourOverlay
-          onComplete={() => setShowTour(false)}
-          onSkip={() => setShowTour(false)}
-        />
+        <TourOverlay onComplete={() => setShowTour(false)} onSkip={() => setShowTour(false)} />
       )}
 
       {/* Chapter Image Unlock Animation */}
@@ -586,12 +665,17 @@ export default function Home() {
             className="absolute top-4 right-4 text-white/70 hover:text-white transition p-2"
           >
             <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
 
           {/* Image */}
-          <div className="max-w-[90vw] max-h-[90vh] relative" onClick={(e) => e.stopPropagation()}>
+          <div className="max-w-[90vw] max-h-[90vh] relative" onClick={e => e.stopPropagation()}>
             <img
               src={lightboxImage.imageUrl}
               alt={lightboxImage.title}
