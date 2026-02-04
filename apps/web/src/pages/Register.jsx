@@ -13,7 +13,7 @@ export default function Register() {
   const { login } = useAuth()
   const navigate = useNavigate()
 
-  const handleEmailRegister = async (e) => {
+  const handleEmailRegister = async e => {
     e.preventDefault()
     setError('')
 
@@ -44,7 +44,7 @@ export default function Register() {
     }
   }
 
-  const handleGoogleSuccess = async (credentialResponse) => {
+  const handleGoogleSuccess = async credentialResponse => {
     setError('')
     setLoading(true)
 
@@ -60,17 +60,21 @@ export default function Register() {
 
       login(data.user, data.token)
 
-      // Check if this is a new user (via register page, likely needs onboarding)
-      const onboardingRes = await fetch(`${API_URL}/api/onboarding/status`, {
-        headers: { 'Authorization': `Bearer ${data.token}` }
-      })
-      const onboardingData = await onboardingRes.json()
-
-      if (!onboardingData.completed) {
-        navigate('/home?onboarding=true')
-      } else {
-        navigate('/home')
+      // Check onboarding status - but always navigate even if this fails
+      let needsOnboarding = true // Default to showing onboarding for new users
+      try {
+        const onboardingRes = await fetch(`${API_URL}/api/onboarding/status`, {
+          headers: { Authorization: `Bearer ${data.token}` }
+        })
+        if (onboardingRes.ok) {
+          const onboardingData = await onboardingRes.json()
+          needsOnboarding = !onboardingData.completed
+        }
+      } catch {
+        // Ignore onboarding check errors - default to showing onboarding
       }
+
+      navigate(needsOnboarding ? '/home?onboarding=true' : '/home')
     } catch (err) {
       setError(err.message)
     } finally {
@@ -82,7 +86,10 @@ export default function Register() {
     <div className="min-h-screen flex items-center justify-center px-4 py-12 page-enter">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Link to="/" className="text-sepia/30 text-2xl tracking-[0.3em] hover:text-sepia/50 transition">
+          <Link
+            to="/"
+            className="text-sepia/30 text-2xl tracking-[0.3em] hover:text-sepia/50 transition"
+          >
             ❧
           </Link>
           <h1 className="text-3xl text-ink mt-4 mb-2">Create Account</h1>
@@ -91,9 +98,7 @@ export default function Register() {
 
         <div className="bg-white/80 backdrop-blur rounded-2xl p-8 border border-sepia/20 shadow-lg">
           {error && (
-            <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm">
-              {error}
-            </div>
+            <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>
           )}
 
           {/* Google Sign-In */}
@@ -124,7 +129,7 @@ export default function Register() {
               <input
                 type="text"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={e => setName(e.target.value)}
                 className="w-full px-4 py-3 rounded-lg border border-sepia/30 bg-white focus:outline-none focus:ring-2 focus:ring-sepia/30 focus:border-sepia"
                 placeholder="First name"
                 required
@@ -135,7 +140,7 @@ export default function Register() {
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={e => setEmail(e.target.value)}
                 className="w-full px-4 py-3 rounded-lg border border-sepia/30 bg-white focus:outline-none focus:ring-2 focus:ring-sepia/30 focus:border-sepia"
                 placeholder="you@example.com"
                 required
@@ -146,7 +151,7 @@ export default function Register() {
               <input
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={e => setPassword(e.target.value)}
                 className="w-full px-4 py-3 rounded-lg border border-sepia/30 bg-white focus:outline-none focus:ring-2 focus:ring-sepia/30 focus:border-sepia"
                 placeholder="At least 8 characters"
                 required
