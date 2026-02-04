@@ -16,29 +16,30 @@ const router = Router()
 
 // Chapter image prompts (same as onboarding.js)
 const CHAPTER_PROMPTS = {
-  'earliest-memories': (ctx) =>
+  'earliest-memories': ctx =>
     `Nostalgic soft watercolor illustration of early childhood in ${ctx.birth_place || 'a small town'}${ctx.birth_country ? `, ${ctx.birth_country}` : ''}, circa ${ctx.birth_year ? ctx.birth_year + 3 : '1960s'}, warm morning light, vintage toys, cozy nursery`,
-  'childhood': (ctx) =>
+  childhood: ctx =>
     `Joyful childhood scene, neighborhood in ${ctx.birth_place || 'a village'}${ctx.birth_country ? `, ${ctx.birth_country}` : ''}, children playing outside, ${ctx.birth_year ? ctx.birth_year + 8 : '1960s'} era, golden summer afternoon`,
-  'school-days': (ctx) =>
+  'school-days': ctx =>
     `Traditional school building in ${ctx.birth_country || 'England'}, ${ctx.birth_year ? ctx.birth_year + 10 : '1960s'} era, autumn leaves, children with satchels, nostalgic`,
-  'teenage-years': (ctx) =>
+  'teenage-years': ctx =>
     `Teen bedroom scene, ${ctx.birth_year ? ctx.birth_year + 15 : '1970s'} era, vinyl records, posters, coming of age, ${ctx.birth_country || 'British'} setting`,
-  'key-people': (ctx) =>
+  'key-people': ctx =>
     `Warm family gathering, multiple generations around a table, ${ctx.birth_country || 'British'} home, soft golden lighting, nostalgic portrait`,
-  'young-adulthood': (ctx) =>
+  'young-adulthood': ctx =>
     `Young adult starting out, ${ctx.birth_year ? ctx.birth_year + 20 : '1970s'} era, first apartment, optimism, morning light`,
-  'family-career': (ctx) =>
+  'family-career': ctx =>
     `Family life, home with children, ${ctx.birth_year ? ctx.birth_year + 35 : '1980s'} era, warmth, garden or living room`,
-  'world-around-you': (ctx) =>
+  'world-around-you': ctx =>
     `Historical moments collage, newspaper clippings style, world events, ${ctx.birth_country || 'British'} perspective, sepia tones`,
-  'passions-beliefs': (ctx) =>
+  'passions-beliefs': ctx =>
     `Personal hobby scene, artistic expression, nature, books, peaceful and meaningful atmosphere`,
-  'wisdom-reflections': (ctx) =>
+  'wisdom-reflections': ctx =>
     `Peaceful reflection, comfortable armchair by window, golden sunset, books and photographs, wisdom and contentment`
 }
 
-const STYLE_SUFFIX = '. Style: soft nostalgic illustration, warm sepia and golden tones, painterly watercolor, no text, memoir book art.'
+const STYLE_SUFFIX =
+  '. Style: soft nostalgic illustration, warm sepia and golden tones, painterly watercolor, no text, memoir book art.'
 
 // Check if chapter is complete and generate personalized image
 async function checkAndGenerateChapterImage(db, userId, chapterId, totalQuestions) {
@@ -69,7 +70,10 @@ async function checkAndGenerateChapterImage(db, userId, chapterId, totalQuestion
     `SELECT answer FROM stories WHERE user_id = $1 AND chapter_id = $2 AND answer IS NOT NULL ORDER BY question_id`,
     [userId, chapterId]
   )
-  const chapterContent = storiesResult.rows.map(r => r.answer).join(' ').substring(0, 2000)
+  const chapterContent = storiesResult.rows
+    .map(r => r.answer)
+    .join(' ')
+    .substring(0, 2000)
 
   // Get user context (birth info)
   const ctxResult = await db.query(
@@ -79,10 +83,13 @@ async function checkAndGenerateChapterImage(db, userId, chapterId, totalQuestion
   const context = ctxResult.rows[0] || {}
 
   try {
-    await db.query(`
+    await db.query(
+      `
       INSERT INTO chapter_images (user_id, chapter_id, generation_status, created_at, updated_at)
       VALUES ($1, $2, 'generating', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-    `, [userId, chapterId])
+    `,
+      [userId, chapterId]
+    )
 
     // Use Grok to create a personalized image prompt based on their actual stories
     let personalizedPrompt = ''
@@ -116,28 +123,38 @@ Create an image prompt:`,
 
     logger.info('Generating personalized image', { chapterId, userId })
 
-    const output = await replicate.run("ideogram-ai/ideogram-v3-turbo", {
-      input: { prompt, aspect_ratio: "16:9", magic_prompt_option: "Auto" }
+    const output = await replicate.run('ideogram-ai/ideogram-v3-turbo', {
+      input: { prompt, aspect_ratio: '16:9', magic_prompt_option: 'Auto' }
     })
 
     let imageUrl = null
-    if (typeof output === 'string') imageUrl = output
-    else if (Array.isArray(output) && output[0]) imageUrl = typeof output[0] === 'string' ? output[0] : null
-    else if (output?.url) imageUrl = typeof output.url === 'function' ? output.url() : output.url
+    if (output?.url && typeof output.url === 'function') {
+      imageUrl = output.url()
+    } else if (Array.isArray(output) && output[0]) {
+      imageUrl = typeof output[0].url === 'function' ? output[0].url() : output[0]
+    } else if (typeof output === 'string') {
+      imageUrl = output
+    }
 
     if (imageUrl) {
-      await db.query(`
+      await db.query(
+        `
         UPDATE chapter_images SET image_url = $1, prompt_used = $2, generation_status = 'completed', updated_at = CURRENT_TIMESTAMP
         WHERE user_id = $3 AND chapter_id = $4
-      `, [imageUrl, prompt, userId, chapterId])
+      `,
+        [imageUrl, prompt, userId, chapterId]
+      )
       logger.info('Generated personalized image', { chapterId, userId })
     }
   } catch (err) {
     logger.error('Image generation failed', { chapterId, userId, error: err.message })
-    await db.query(`
+    await db.query(
+      `
       UPDATE chapter_images SET generation_status = 'failed', updated_at = CURRENT_TIMESTAMP
       WHERE user_id = $1 AND chapter_id = $2
-    `, [userId, chapterId])
+    `,
+      [userId, chapterId]
+    )
   }
 }
 
@@ -152,108 +169,149 @@ async function extractEntitiesAsync(db, userId, text, chapterId, questionId, sto
 }
 
 // Get all stories (must be before /:chapterId to avoid conflicts)
-router.get('/all', requireDb, asyncHandler(async (req, res) => {
-  const db = req.app.locals.db
-  const userId = req.user.id
+router.get(
+  '/all',
+  requireDb,
+  asyncHandler(async (req, res) => {
+    const db = req.app.locals.db
+    const userId = req.user.id
 
-  const stories = await getStoriesWithPhotos(db, userId)
-  res.json(stories)
-}))
+    const stories = await getStoriesWithPhotos(db, userId)
+    res.json(stories)
+  })
+)
 
 // Get progress (count of answered questions per chapter) - cached for 60s
-router.get('/progress', requireDb, asyncHandler(async (req, res) => {
-  const db = req.app.locals.db
-  const userId = req.user.id
+router.get(
+  '/progress',
+  requireDb,
+  asyncHandler(async (req, res) => {
+    const db = req.app.locals.db
+    const userId = req.user.id
 
-  const progress = await cache.getOrSet(
-    cacheKeys.userProgress(userId),
-    async () => {
-      const result = await db.query(`
+    const progress = await cache.getOrSet(
+      cacheKeys.userProgress(userId),
+      async () => {
+        const result = await db.query(
+          `
         SELECT chapter_id, COUNT(*) as count
         FROM stories
         WHERE user_id = $1 AND answer IS NOT NULL AND answer != ''
         GROUP BY chapter_id
-      `, [userId])
+      `,
+          [userId]
+        )
 
-      const progressMap = {}
-      result.rows.forEach(p => {
-        progressMap[p.chapter_id] = parseInt(p.count)
-      })
-      return progressMap
-    },
-    60 // 60 second TTL
-  )
+        const progressMap = {}
+        result.rows.forEach(p => {
+          progressMap[p.chapter_id] = parseInt(p.count)
+        })
+        return progressMap
+      },
+      60 // 60 second TTL
+    )
 
-  res.json(progress)
-}))
+    res.json(progress)
+  })
+)
 
 // Get settings
-router.get('/settings', requireDb, asyncHandler(async (req, res) => {
-  const db = req.app.locals.db
-  const userId = req.user.id
+router.get(
+  '/settings',
+  requireDb,
+  asyncHandler(async (req, res) => {
+    const db = req.app.locals.db
+    const userId = req.user.id
 
-  const result = await db.query('SELECT * FROM settings WHERE user_id = $1', [userId])
-  res.json(result.rows[0] || {})
-}))
+    const result = await db.query('SELECT * FROM settings WHERE user_id = $1', [userId])
+    res.json(result.rows[0] || {})
+  })
+)
 
 // Save settings
-router.post('/settings', requireDb, asyncHandler(async (req, res) => {
-  const db = req.app.locals.db
-  const userId = req.user.id
-  const { name } = req.body
+router.post(
+  '/settings',
+  requireDb,
+  asyncHandler(async (req, res) => {
+    const db = req.app.locals.db
+    const userId = req.user.id
+    const { name } = req.body
 
-  await db.query(`
+    await db.query(
+      `
     INSERT INTO settings (user_id, name, updated_at)
     VALUES ($1, $2, CURRENT_TIMESTAMP)
     ON CONFLICT (user_id) DO UPDATE SET name = $2, updated_at = CURRENT_TIMESTAMP
-  `, [userId, name])
+  `,
+      [userId, name]
+    )
 
-  res.json({ success: true })
-}))
+    res.json({ success: true })
+  })
+)
 
 // Get all stories for a chapter
-router.get('/:chapterId', validate(storySchemas.getChapter), requireDb, asyncHandler(async (req, res) => {
-  const db = req.app.locals.db
-  const userId = req.user.id
-  const { chapterId } = req.validatedParams
+router.get(
+  '/:chapterId',
+  validate(storySchemas.getChapter),
+  requireDb,
+  asyncHandler(async (req, res) => {
+    const db = req.app.locals.db
+    const userId = req.user.id
+    const { chapterId } = req.validatedParams
 
-  const stories = await getChapterStoriesWithPhotos(db, userId, chapterId)
-  res.json(stories)
-}))
+    const stories = await getChapterStoriesWithPhotos(db, userId, chapterId)
+    res.json(stories)
+  })
+)
 
 // Save/update a story
-router.post('/', validate(storySchemas.saveStory), requireDb, asyncHandler(async (req, res) => {
-  const db = req.app.locals.db
-  const userId = req.user.id
-  const { chapter_id, question_id, answer, total_questions } = req.validatedBody
+router.post(
+  '/',
+  validate(storySchemas.saveStory),
+  requireDb,
+  asyncHandler(async (req, res) => {
+    const db = req.app.locals.db
+    const userId = req.user.id
+    const { chapter_id, question_id, answer, total_questions } = req.validatedBody
 
-  await db.query(`
+    await db.query(
+      `
     INSERT INTO stories (user_id, chapter_id, question_id, answer, updated_at)
     VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
     ON CONFLICT (user_id, chapter_id, question_id)
     DO UPDATE SET answer = $4, updated_at = CURRENT_TIMESTAMP
-  `, [userId, chapter_id, question_id, answer])
+  `,
+      [userId, chapter_id, question_id, answer]
+    )
 
-  // Get the story ID
-  const result = await db.query(`
+    // Get the story ID
+    const result = await db.query(
+      `
     SELECT id FROM stories WHERE user_id = $1 AND chapter_id = $2 AND question_id = $3
-  `, [userId, chapter_id, question_id])
+  `,
+      [userId, chapter_id, question_id]
+    )
 
-  const storyId = result.rows[0].id
+    const storyId = result.rows[0].id
 
-  // Invalidate user's cached data since progress changed
-  invalidateUserCache(userId)
+    // Invalidate user's cached data since progress changed
+    invalidateUserCache(userId)
 
-  // Extract entities asynchronously (don't wait for it)
-  extractEntitiesAsync(db, userId, answer, chapter_id, question_id, storyId)
+    // Extract entities asynchronously (don't wait for it)
+    extractEntitiesAsync(db, userId, answer, chapter_id, question_id, storyId)
 
-  // Check if chapter is now complete and generate personalized artwork (don't wait)
-  const totalQuestions = total_questions || 5 // Default assumption
-  checkAndGenerateChapterImage(db, userId, chapter_id, totalQuestions).catch(err => {
-    logger.error('Background image generation error', { chapterId: chapter_id, error: err.message })
+    // Check if chapter is now complete and generate personalized artwork (don't wait)
+    const totalQuestions = total_questions || 5 // Default assumption
+    checkAndGenerateChapterImage(db, userId, chapter_id, totalQuestions).catch(err => {
+      logger.error('Background image generation error', {
+        chapterId: chapter_id,
+        error: err.message
+      })
+    })
+
+    res.json({ success: true, id: storyId })
   })
-
-  res.json({ success: true, id: storyId })
-}))
+)
 
 export default router
