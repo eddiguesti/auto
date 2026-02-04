@@ -25,10 +25,26 @@ export default memo(function BookPreview({ userName, totalProgress, onClose }) {
   const [currentPage, setCurrentPage] = useState(0)
   const [firstStory, setFirstStory] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [savedCover, setSavedCover] = useState(null)
 
   useEffect(() => {
     fetchFirstStory()
+    fetchSavedCover()
   }, [])
+
+  const fetchSavedCover = async () => {
+    try {
+      const res = await authFetch('/api/covers/saved')
+      if (res.ok) {
+        const data = await res.json()
+        if (data.cover) {
+          setSavedCover(data.cover)
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching saved cover:', err)
+    }
+  }
 
   const fetchFirstStory = async () => {
     try {
@@ -69,7 +85,10 @@ export default memo(function BookPreview({ userName, totalProgress, onClose }) {
   const { letter, rest } = useMemo(() => getDropCap(storyContent), [storyContent])
 
   return (
-    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
       <div className="relative max-w-lg w-full" onClick={e => e.stopPropagation()}>
         {/* Close button */}
         <button
@@ -77,7 +96,12 @@ export default memo(function BookPreview({ userName, totalProgress, onClose }) {
           className="absolute -top-12 right-0 text-white/70 hover:text-white transition p-2"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
           </svg>
         </button>
 
@@ -87,31 +111,51 @@ export default memo(function BookPreview({ userName, totalProgress, onClose }) {
           <div className="absolute inset-0 bg-black/30 rounded-lg blur-xl translate-y-4" />
 
           {/* Book */}
-          <div className="relative bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg overflow-hidden shadow-2xl border border-amber-200/50" style={{ aspectRatio: '3/4' }}>
+          <div
+            className="relative bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg overflow-hidden shadow-2xl border border-amber-200/50"
+            style={{ aspectRatio: '3/4' }}
+          >
             {/* Page content based on current page */}
             {PAGES[currentPage].type === 'cover' && (
               <div className="absolute inset-0 flex flex-col items-center justify-center p-8 bg-gradient-to-br from-stone-800 to-stone-900 text-white">
-                {/* Decorative border */}
-                <div className="absolute inset-4 border border-amber-500/30 rounded-lg" />
-                <div className="absolute inset-6 border border-amber-500/20 rounded" />
+                {/* Custom cover image if available */}
+                {savedCover?.front_cover_url && (
+                  <div
+                    className="absolute inset-0 bg-cover bg-center"
+                    style={{ backgroundImage: `url(${savedCover.front_cover_url})` }}
+                  />
+                )}
+
+                {/* Overlay for text readability if using custom image */}
+                {savedCover?.front_cover_url && (
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30" />
+                )}
+
+                {/* Decorative border (only show if no custom cover) */}
+                {!savedCover?.front_cover_url && (
+                  <>
+                    <div className="absolute inset-4 border border-amber-500/30 rounded-lg" />
+                    <div className="absolute inset-6 border border-amber-500/20 rounded" />
+                  </>
+                )}
 
                 {/* Title */}
                 <div className="text-center z-10">
                   <div className="text-amber-400/60 text-3xl mb-4">❧</div>
-                  <h1 className="font-display text-3xl sm:text-4xl mb-2 tracking-wide">
-                    {userName?.split(' ')[0]}'s Life
+                  <h1 className="font-display text-3xl sm:text-4xl mb-2 tracking-wide drop-shadow-lg">
+                    {savedCover?.title || `${userName?.split(' ')[0]}'s Life`}
                   </h1>
                   <div className="w-16 h-px bg-amber-500/50 mx-auto mb-4" />
-                  <p className="text-amber-200/80 italic text-lg">
+                  <p className="text-amber-200/80 italic text-lg drop-shadow">
                     The Autobiography of
                   </p>
-                  <p className="text-white text-xl font-medium">
-                    {userName || 'Your Name'}
+                  <p className="text-white text-xl font-medium drop-shadow-lg">
+                    {savedCover?.author || userName || 'Your Name'}
                   </p>
                 </div>
 
                 {/* Year */}
-                <div className="absolute bottom-8 text-amber-400/50 text-sm">
+                <div className="absolute bottom-8 text-amber-400/50 text-sm z-10">
                   {new Date().getFullYear()}
                 </div>
               </div>
@@ -125,7 +169,9 @@ export default memo(function BookPreview({ userName, totalProgress, onClose }) {
                 </h1>
                 <div className="w-24 h-px bg-sepia/30 mb-4" />
                 <p className="text-sepia italic text-center">
-                  A memoir of memories, moments,<br />and the stories that made me
+                  A memoir of memories, moments,
+                  <br />
+                  and the stories that made me
                 </p>
                 <div className="mt-auto text-sepia/60 text-sm">
                   Written with love for future generations
@@ -137,9 +183,12 @@ export default memo(function BookPreview({ userName, totalProgress, onClose }) {
               <div className="absolute inset-0 flex flex-col items-center justify-center p-8 bg-cream">
                 <p className="text-sepia/60 text-sm uppercase tracking-widest mb-4">Dedication</p>
                 <p className="font-display text-xl text-ink italic text-center leading-relaxed max-w-xs">
-                  "For my children and grandchildren,<br />
-                  so they may know who I was,<br />
-                  where I came from,<br />
+                  "For my children and grandchildren,
+                  <br />
+                  so they may know who I was,
+                  <br />
+                  where I came from,
+                  <br />
                   and how much I loved them."
                 </p>
               </div>
@@ -166,7 +215,9 @@ export default memo(function BookPreview({ userName, totalProgress, onClose }) {
                   ) : storyContent ? (
                     <div className="font-serif text-ink/80 text-sm leading-relaxed">
                       <p>
-                        <span className="text-4xl font-display float-left mr-2 mt-1 text-sepia">{letter}</span>
+                        <span className="text-4xl font-display float-left mr-2 mt-1 text-sepia">
+                          {letter}
+                        </span>
                         {rest.length > 300 ? rest.slice(0, 300) + '...' : rest}
                       </p>
                     </div>

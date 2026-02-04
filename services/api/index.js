@@ -43,6 +43,7 @@ import onboardingRouter from './routes/onboarding.js'
 import chapterImagesRouter from './routes/chapter-images.js'
 import gameRouter from './routes/game.js'
 import notificationRoutes from './routes/notifications.js'
+import userRouter from './routes/user.js'
 import { initializeCronJobs } from './cron/index.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -240,6 +241,9 @@ app.use('/api/game', gameRouter)
 
 // Notification routes (protected)
 app.use('/api/notifications', notificationRoutes)
+
+// User routes (protected - data export, account deletion)
+app.use('/api/user', userRouter)
 
 // Stripe webhook (needs raw body, no auth)
 app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), (req, res) =>

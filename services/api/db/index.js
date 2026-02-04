@@ -39,14 +39,16 @@ if (databaseUrl) {
   // Configure SSL based on environment
   // In production, prefer SSL verification; cloud providers like Supabase/Neon may need rejectUnauthorized: false
   // Set DATABASE_SSL_REJECT_UNAUTHORIZED=false explicitly if needed for your provider
-  const sslConfig = process.env.NODE_ENV === 'production'
-    ? {
-        rejectUnauthorized: process.env.DATABASE_SSL_REJECT_UNAUTHORIZED !== 'false'
-      }
-    : { rejectUnauthorized: false }
+  const sslConfig =
+    process.env.NODE_ENV === 'production'
+      ? {
+          rejectUnauthorized: process.env.DATABASE_SSL_REJECT_UNAUTHORIZED !== 'false'
+        }
+      : { rejectUnauthorized: false }
 
   // Railway internal URLs and localhost don't need SSL
-  const isInternalConnection = databaseUrl.includes('localhost') || databaseUrl.includes('.railway.internal')
+  const isInternalConnection =
+    databaseUrl.includes('localhost') || databaseUrl.includes('.railway.internal')
 
   pool = new Pool({
     ...poolConfig,
@@ -427,6 +429,28 @@ export async function initDatabase() {
       CREATE INDEX IF NOT EXISTS idx_chapter_images_status ON chapter_images(generation_status)
     `)
 
+    // Book covers - stores user's book cover designs
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS book_covers (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE UNIQUE,
+        template_id TEXT NOT NULL DEFAULT 'classic',
+        title TEXT,
+        author TEXT,
+        front_cover_url TEXT,
+        back_cover_url TEXT,
+        spine_text TEXT,
+        color_scheme JSONB DEFAULT '{}',
+        custom_settings JSONB DEFAULT '{}',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `)
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_book_covers_user ON book_covers(user_id)
+    `)
+
     // ==================== MEMORY QUEST TABLES ====================
 
     // User gamification state
@@ -776,10 +800,10 @@ export async function initDatabase() {
     // ==================== END MEMORY QUEST TABLES ====================
 
     // Seed collections data
-    await seedCollections(pool);
+    await seedCollections(pool)
 
     // Seed prompt library
-    await seedPrompts(pool);
+    await seedPrompts(pool)
 
     console.log('Database initialized successfully')
   } catch (err) {

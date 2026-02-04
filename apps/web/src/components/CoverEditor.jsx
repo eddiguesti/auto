@@ -1,17 +1,40 @@
 import { useState, useRef, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { COVER_TEMPLATES, TEMPLATE_CATEGORIES, AVAILABLE_FONTS, COLOR_PALETTES } from '../data/coverTemplates'
 import {
-  IconSparkles, IconDownload, IconArrowLeft, IconPhoto,
-  IconTypography, IconLoader2, IconPalette, IconLayoutGrid,
-  IconWand, IconRefresh, IconBook2, IconSquare, IconRectangle,
-  IconTrash, IconPlus, IconTextPlus, IconUpload, IconCopy,
-  IconArrowUp, IconArrowDown, IconZoomIn, IconZoomOut,
-  IconDropletHalf, IconShadow
+  COVER_TEMPLATES,
+  TEMPLATE_CATEGORIES,
+  AVAILABLE_FONTS,
+  COLOR_PALETTES
+} from '../data/coverTemplates'
+import {
+  IconSparkles,
+  IconDownload,
+  IconArrowLeft,
+  IconPhoto,
+  IconTypography,
+  IconLoader2,
+  IconPalette,
+  IconLayoutGrid,
+  IconWand,
+  IconRefresh,
+  IconBook2,
+  IconSquare,
+  IconRectangle,
+  IconTrash,
+  IconPlus,
+  IconTextPlus,
+  IconUpload,
+  IconCopy,
+  IconArrowUp,
+  IconArrowDown,
+  IconZoomIn,
+  IconZoomOut,
+  IconDropletHalf,
+  IconShadow
 } from '@tabler/icons-react'
 
 // Load Google Fonts
-const loadFont = (fontName) => {
+const loadFont = fontName => {
   const existing = document.querySelector(`link[href*="${fontName.replace(' ', '+')}"]`)
   if (existing) return
   const link = document.createElement('link')
@@ -27,14 +50,29 @@ const BOOK_CONFIG = {
   backWidth: 600,
   backHeight: 900,
   bleed: 9,
-  getSpineWidth: (pageCount) => Math.max(20, Math.round(pageCount * 0.002252 * 72))
+  getSpineWidth: pageCount => Math.max(20, Math.round(pageCount * 0.002252 * 72))
 }
 
 // Generation mode options - Full Book first as most users want this
 const GENERATION_MODES = [
-  { id: 'full-book', name: 'Full Book', icon: IconBook2, description: 'Generate matching art for front & back covers together' },
-  { id: 'full-front', name: 'Front Only', icon: IconSquare, description: 'Generate art for front cover only' },
-  { id: 'regions', name: 'Template Regions', icon: IconLayoutGrid, description: 'Use template with specific image areas' }
+  {
+    id: 'full-book',
+    name: 'Full Book',
+    icon: IconBook2,
+    description: 'Generate matching art for front & back covers together'
+  },
+  {
+    id: 'full-front',
+    name: 'Front Only',
+    icon: IconSquare,
+    description: 'Generate art for front cover only'
+  },
+  {
+    id: 'regions',
+    name: 'Template Regions',
+    icon: IconLayoutGrid,
+    description: 'Use template with specific image areas'
+  }
 ]
 
 // Section view component
@@ -82,56 +120,60 @@ function BookSection({
       )}
 
       {/* Render template regions (when using regions mode) */}
-      {generationMode === 'regions' && regions?.map(region => {
-        if (region.type === 'ai-image') {
-          return (
-            <ImageRegion
-              key={region.id}
-              region={region}
-              imageUrl={imageData[region.id]}
-              isGenerating={generatingRegion === region.id}
-              onGenerate={() => onGenerateImage(region)}
-              scale={scale}
-            />
-          )
-        }
-        if (region.type === 'text') {
-          const data = regionData[region.id]
-          return (
-            <TextRegion
-              key={region.id}
-              region={{ ...region, ...data }}
-              value={data?.text}
-              isSelected={selectedRegion === region.id}
-              onSelect={() => onSelectRegion(region.id)}
-              scale={scale}
-              onPositionChange={onPositionChange}
-              onDelete={onDeleteRegion}
-            />
-          )
-        }
-        if (region.type === 'shape') {
-          return <ShapeRegion key={region.id} region={region} scale={scale} />
-        }
-        return null
-      })}
+      {generationMode === 'regions' &&
+        regions?.map(region => {
+          if (region.type === 'ai-image') {
+            return (
+              <ImageRegion
+                key={region.id}
+                region={region}
+                imageUrl={imageData[region.id]}
+                isGenerating={generatingRegion === region.id}
+                onGenerate={() => onGenerateImage(region)}
+                scale={scale}
+              />
+            )
+          }
+          if (region.type === 'text') {
+            const data = regionData[region.id]
+            return (
+              <TextRegion
+                key={region.id}
+                region={{ ...region, ...data }}
+                value={data?.text}
+                isSelected={selectedRegion === region.id}
+                onSelect={() => onSelectRegion(region.id)}
+                scale={scale}
+                onPositionChange={onPositionChange}
+                onDelete={onDeleteRegion}
+              />
+            )
+          }
+          if (region.type === 'shape') {
+            return <ShapeRegion key={region.id} region={region} scale={scale} />
+          }
+          return null
+        })}
 
       {/* Text overlay for full cover modes */}
-      {generationMode !== 'regions' && regions?.filter(r => r.type === 'text').map(region => {
-        const data = regionData[region.id]
-        return (
-          <TextRegion
-            key={region.id}
-            region={{ ...region, ...data }}
-            value={data?.text}
-            isSelected={selectedRegion === region.id}
-            onSelect={() => onSelectRegion(region.id)}
-            scale={scale}
-            onPositionChange={onPositionChange}
-            onDelete={onDeleteRegion}
-          />
-        )
-      })}
+      {generationMode !== 'regions' &&
+        regions
+          ?.filter(r => r.type === 'text')
+          .map(region => {
+            const data = regionData[region.id]
+            return (
+              <TextRegion
+                key={region.id}
+                region={{ ...region, ...data }}
+                value={data?.text}
+                isSelected={selectedRegion === region.id}
+                onSelect={() => onSelectRegion(region.id)}
+                scale={scale}
+                onPositionChange={onPositionChange}
+                onDelete={onDeleteRegion}
+              />
+            )
+          })}
     </div>
   )
 }
@@ -152,7 +194,7 @@ function TextRegion({ region, value, isSelected, onSelect, scale, onPositionChan
   useEffect(() => {
     if (!isSelected) return
 
-    const handleKeyDown = (e) => {
+    const handleKeyDown = e => {
       if ((e.key === 'Delete' || e.key === 'Backspace') && onDelete) {
         // Don't delete if user is typing in an input
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
@@ -165,7 +207,7 @@ function TextRegion({ region, value, isSelected, onSelect, scale, onPositionChan
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isSelected, onDelete, region.id])
 
-  const handleMouseDown = (e) => {
+  const handleMouseDown = e => {
     if (e.button !== 0) return // Only left click
     e.stopPropagation()
     onSelect()
@@ -176,7 +218,7 @@ function TextRegion({ region, value, isSelected, onSelect, scale, onPositionChan
     })
   }
 
-  const handleMouseMove = (e) => {
+  const handleMouseMove = e => {
     if (!isDragging) return
     const newX = (e.clientX - dragStart.x) / scale
     const newY = (e.clientY - dragStart.y) / scale
@@ -203,7 +245,7 @@ function TextRegion({ region, value, isSelected, onSelect, scale, onPositionChan
 
   const style = {
     position: 'absolute',
-    left: (position.x - (region.width / 2)) * scale,
+    left: (position.x - region.width / 2) * scale,
     top: position.y * scale,
     width: region.width * scale,
     textAlign: region.align || 'center',
@@ -212,7 +254,7 @@ function TextRegion({ region, value, isSelected, onSelect, scale, onPositionChan
     fontWeight: region.fontWeight || '400',
     fontStyle: region.fontStyle || 'normal',
     color: region.color || region.defaultColor || '#000000',
-    cursor: isDragging ? 'grabbing' : (isSelected ? 'grab' : 'pointer'),
+    cursor: isDragging ? 'grabbing' : isSelected ? 'grab' : 'pointer',
     padding: '4px',
     border: isSelected ? '2px dashed #8b6914' : '2px dashed transparent',
     borderRadius: '4px',
@@ -220,7 +262,7 @@ function TextRegion({ region, value, isSelected, onSelect, scale, onPositionChan
     lineHeight: 1.2,
     whiteSpace: 'pre-wrap',
     wordWrap: 'break-word',
-    zIndex: isDragging ? 100 : (region.zIndex || 10),
+    zIndex: isDragging ? 100 : region.zIndex || 10,
     textShadow: region.textShadow || 'none',
     userSelect: 'none'
   }
@@ -230,7 +272,10 @@ function TextRegion({ region, value, isSelected, onSelect, scale, onPositionChan
       ref={elementRef}
       style={style}
       onMouseDown={handleMouseDown}
-      onClick={(e) => { e.stopPropagation(); onSelect(); }}
+      onClick={e => {
+        e.stopPropagation()
+        onSelect()
+      }}
     >
       {value || region.defaultText}
       {isSelected && (
@@ -266,7 +311,13 @@ function ImageRegion({ region, imageUrl, isGenerating, onGenerate, scale }) {
   }
 
   return (
-    <div style={style} onClick={(e) => { e.stopPropagation(); onGenerate(); }}>
+    <div
+      style={style}
+      onClick={e => {
+        e.stopPropagation()
+        onGenerate()
+      }}
+    >
       {isGenerating ? (
         <div className="flex flex-col items-center gap-2 text-sepia/60 bg-white/80 rounded-lg p-3">
           <IconLoader2 size={24} className="animate-spin" />
@@ -338,14 +389,46 @@ function ShapeRegion({ region, scale }) {
 
 // Art style presets for full cover generation
 const ART_STYLES = [
-  { id: 'watercolor', name: 'Watercolor', prompt: 'soft watercolor painting style, gentle flowing colors, artistic brushstrokes' },
-  { id: 'oil', name: 'Oil Painting', prompt: 'classical oil painting style, rich textures, masterful brushwork' },
-  { id: 'minimalist', name: 'Minimalist', prompt: 'minimalist design, clean shapes, elegant simplicity, modern aesthetic' },
-  { id: 'vintage', name: 'Vintage', prompt: 'vintage illustration style, sepia tones, nostalgic antique feel' },
-  { id: 'botanical', name: 'Botanical', prompt: 'botanical illustration, delicate florals and nature elements, elegant' },
-  { id: 'abstract', name: 'Abstract', prompt: 'abstract expressionist art, bold colors, dynamic shapes and movement' },
-  { id: 'photographic', name: 'Photographic', prompt: 'cinematic photography style, dramatic lighting, high quality' },
-  { id: 'geometric', name: 'Geometric', prompt: 'geometric patterns, art deco inspired, sophisticated shapes' }
+  {
+    id: 'watercolor',
+    name: 'Watercolor',
+    prompt: 'soft watercolor painting style, gentle flowing colors, artistic brushstrokes'
+  },
+  {
+    id: 'oil',
+    name: 'Oil Painting',
+    prompt: 'classical oil painting style, rich textures, masterful brushwork'
+  },
+  {
+    id: 'minimalist',
+    name: 'Minimalist',
+    prompt: 'minimalist design, clean shapes, elegant simplicity, modern aesthetic'
+  },
+  {
+    id: 'vintage',
+    name: 'Vintage',
+    prompt: 'vintage illustration style, sepia tones, nostalgic antique feel'
+  },
+  {
+    id: 'botanical',
+    name: 'Botanical',
+    prompt: 'botanical illustration, delicate florals and nature elements, elegant'
+  },
+  {
+    id: 'abstract',
+    name: 'Abstract',
+    prompt: 'abstract expressionist art, bold colors, dynamic shapes and movement'
+  },
+  {
+    id: 'photographic',
+    name: 'Photographic',
+    prompt: 'cinematic photography style, dramatic lighting, high quality'
+  },
+  {
+    id: 'geometric',
+    name: 'Geometric',
+    prompt: 'geometric patterns, art deco inspired, sophisticated shapes'
+  }
 ]
 
 export default function CoverEditor({ onSave, initialTitle, initialAuthor, pageCount = 200 }) {
@@ -380,8 +463,106 @@ export default function CoverEditor({ onSave, initialTitle, initialAuthor, pageC
   const fileInputRef = useRef(null)
   const [uploadTarget, setUploadTarget] = useState('front') // 'front' or 'back'
 
+  // Auto-save state
+  const [isLoaded, setIsLoaded] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const saveTimeoutRef = useRef(null)
+
   const template = COVER_TEMPLATES[selectedTemplate]
   const spineWidth = BOOK_CONFIG.getSpineWidth(pageCount)
+
+  // Load saved cover on mount
+  useEffect(() => {
+    const loadSavedCover = async () => {
+      try {
+        const res = await authFetch('/api/covers/saved')
+        if (res.ok) {
+          const data = await res.json()
+          if (data.cover) {
+            // Restore saved state
+            if (data.cover.template_id) setSelectedTemplate(data.cover.template_id)
+            if (data.cover.front_cover_url) setFrontCoverImage(data.cover.front_cover_url)
+            if (data.cover.back_cover_url) setBackCoverImage(data.cover.back_cover_url)
+            if (data.cover.color_scheme?.bgColor) setBgColor(data.cover.color_scheme.bgColor)
+            if (data.cover.custom_settings) {
+              const settings = data.cover.custom_settings
+              if (settings.regionData) setRegionData(settings.regionData)
+              if (settings.customTextElements) setCustomTextElements(settings.customTextElements)
+              if (settings.deletedRegions) setDeletedRegions(settings.deletedRegions)
+              if (settings.generationMode) setGenerationMode(settings.generationMode)
+              if (settings.selectedArtStyle) setSelectedArtStyle(settings.selectedArtStyle)
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to load saved cover:', err)
+      } finally {
+        setIsLoaded(true)
+      }
+    }
+    loadSavedCover()
+  }, [])
+
+  // Auto-save cover when state changes (debounced)
+  useEffect(() => {
+    if (!isLoaded) return // Don't save until initial load completes
+
+    // Clear any pending save
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current)
+    }
+
+    // Debounce save by 1 second
+    saveTimeoutRef.current = setTimeout(async () => {
+      setIsSaving(true)
+      try {
+        await authFetch('/api/covers/save', {
+          method: 'POST',
+          body: JSON.stringify({
+            templateId: selectedTemplate,
+            title: regionData.title?.text || initialTitle,
+            author: regionData.author?.text || initialAuthor,
+            frontCoverUrl: frontCoverImage,
+            backCoverUrl: backCoverImage,
+            spineText: regionData.title?.text || initialTitle,
+            colorScheme: { bgColor },
+            customSettings: {
+              regionData,
+              customTextElements,
+              deletedRegions,
+              generationMode,
+              selectedArtStyle
+            }
+          })
+        })
+        // Notify parent about save if callback provided
+        if (onSave) {
+          onSave({ frontCoverImage, backCoverImage, selectedTemplate })
+        }
+      } catch (err) {
+        console.warn('Failed to auto-save cover:', err)
+      } finally {
+        setIsSaving(false)
+      }
+    }, 1000)
+
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current)
+      }
+    }
+  }, [
+    selectedTemplate,
+    frontCoverImage,
+    backCoverImage,
+    regionData,
+    bgColor,
+    customTextElements,
+    deletedRegions,
+    generationMode,
+    selectedArtStyle,
+    isLoaded
+  ])
 
   // Calculate scale based on view and zoom
   const getBaseScale = () => {
@@ -401,9 +582,12 @@ export default function CoverEditor({ onSave, initialTitle, initialAuthor, pageC
     template?.regions?.forEach(region => {
       if (region.type === 'text') {
         initialData[region.id] = {
-          text: region.id === 'title' ? (initialTitle || region.defaultText) :
-                region.id === 'author' ? (initialAuthor || region.defaultText) :
-                region.defaultText,
+          text:
+            region.id === 'title'
+              ? initialTitle || region.defaultText
+              : region.id === 'author'
+                ? initialAuthor || region.defaultText
+                : region.defaultText,
           font: region.defaultFont,
           size: region.defaultSize,
           color: region.defaultColor,
@@ -424,8 +608,9 @@ export default function CoverEditor({ onSave, initialTitle, initialAuthor, pageC
 
   // Get all text regions (template + custom, minus deleted)
   const getAllTextRegions = () => {
-    const templateTextRegions = (template?.regions || [])
-      .filter(r => r.type === 'text' && !deletedRegions.includes(r.id))
+    const templateTextRegions = (template?.regions || []).filter(
+      r => r.type === 'text' && !deletedRegions.includes(r.id)
+    )
     return [...templateTextRegions, ...customTextElements]
   }
 
@@ -490,7 +675,7 @@ export default function CoverEditor({ onSave, initialTitle, initialAuthor, pageC
   }
 
   // Delete text element
-  const deleteTextElement = (regionId) => {
+  const deleteTextElement = regionId => {
     // Check if it's a custom element
     const isCustom = customTextElements.some(el => el.id === regionId)
 
@@ -512,7 +697,7 @@ export default function CoverEditor({ onSave, initialTitle, initialAuthor, pageC
   }
 
   // Duplicate text element
-  const duplicateTextElement = (regionId) => {
+  const duplicateTextElement = regionId => {
     const sourceData = regionData[regionId]
     if (!sourceData) return
 
@@ -545,12 +730,12 @@ export default function CoverEditor({ onSave, initialTitle, initialAuthor, pageC
   }
 
   // Handle image upload
-  const handleImageUpload = (e) => {
+  const handleImageUpload = e => {
     const file = e.target.files?.[0]
     if (!file) return
 
     const reader = new FileReader()
-    reader.onload = (event) => {
+    reader.onload = event => {
       const imageUrl = event.target?.result
       if (uploadTarget === 'front') {
         setFrontCoverImage(imageUrl)
@@ -563,7 +748,7 @@ export default function CoverEditor({ onSave, initialTitle, initialAuthor, pageC
   }
 
   // Trigger file upload
-  const triggerUpload = (target) => {
+  const triggerUpload = target => {
     setUploadTarget(target)
     fileInputRef.current?.click()
   }
@@ -574,9 +759,12 @@ export default function CoverEditor({ onSave, initialTitle, initialAuthor, pageC
     template?.regions?.forEach(region => {
       if (region.type === 'text') {
         initialData[region.id] = {
-          text: region.id === 'title' ? (initialTitle || region.defaultText) :
-                region.id === 'author' ? (initialAuthor || region.defaultText) :
-                region.defaultText,
+          text:
+            region.id === 'title'
+              ? initialTitle || region.defaultText
+              : region.id === 'author'
+                ? initialAuthor || region.defaultText
+                : region.defaultText,
           font: region.defaultFont,
           size: region.defaultSize,
           color: region.defaultColor,
@@ -605,7 +793,9 @@ export default function CoverEditor({ onSave, initialTitle, initialAuthor, pageC
   const buildFullCoverPrompt = (isBack = false) => {
     const title = regionData.title?.text || initialTitle || 'My Life Story'
     const style = ART_STYLES.find(s => s.id === selectedArtStyle)
-    const basePrompt = customPrompt || `A beautiful memoir book cover illustration inspired by "${title}". Evocative imagery representing life's journey, memories, and personal history.`
+    const basePrompt =
+      customPrompt ||
+      `A beautiful memoir book cover illustration inspired by "${title}". Evocative imagery representing life's journey, memories, and personal history.`
 
     if (isBack) {
       return `${basePrompt} ${style?.prompt}. Design suitable for back cover, subtle and complementary, space for text at center. No text or words in image.`
@@ -708,7 +898,7 @@ export default function CoverEditor({ onSave, initialTitle, initialAuthor, pageC
   }
 
   // Generate image for a specific region
-  const generateRegionImage = async (region) => {
+  const generateRegionImage = async region => {
     setGeneratingRegion(region.id)
     setError(null)
 
@@ -754,9 +944,23 @@ export default function CoverEditor({ onSave, initialTitle, initialAuthor, pageC
     <div className="flex flex-col h-[70vh]">
       {/* Top toolbar */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-sepia/10 bg-white/80 gap-4">
+        {/* Saving indicator */}
+        <div className="flex items-center gap-2 text-xs text-sepia/60">
+          {isSaving ? (
+            <>
+              <IconLoader2 size={12} className="animate-spin" />
+              <span>Saving...</span>
+            </>
+          ) : isLoaded ? (
+            <span className="text-green-600">✓ Saved</span>
+          ) : null}
+        </div>
+
         {/* Generation Mode Selector */}
         <div className="flex items-center gap-3">
-          <span className="text-xs font-medium text-sepia/60 uppercase tracking-wide">Generate:</span>
+          <span className="text-xs font-medium text-sepia/60 uppercase tracking-wide">
+            Generate:
+          </span>
           <div className="flex rounded-lg border border-sepia/20 overflow-hidden">
             {GENERATION_MODES.map(mode => (
               <button
@@ -787,7 +991,9 @@ export default function CoverEditor({ onSave, initialTitle, initialAuthor, pageC
             >
               <IconZoomOut size={16} />
             </button>
-            <span className="text-xs text-sepia/70 w-12 text-center">{Math.round(zoomLevel * 100)}%</span>
+            <span className="text-xs text-sepia/70 w-12 text-center">
+              {Math.round(zoomLevel * 100)}%
+            </span>
             <button
               onClick={() => setZoomLevel(z => Math.min(1.5, z + 0.1))}
               className="p-1.5 hover:bg-sepia/10 text-sepia"
@@ -845,14 +1051,18 @@ export default function CoverEditor({ onSave, initialTitle, initialAuthor, pageC
                     className="w-full px-2 py-1.5 text-sm border border-sepia/20 rounded-lg bg-white"
                   >
                     {ART_STYLES.map(style => (
-                      <option key={style.id} value={style.id}>{style.name}</option>
+                      <option key={style.id} value={style.id}>
+                        {style.name}
+                      </option>
                     ))}
                   </select>
                 </div>
 
                 {/* Custom prompt */}
                 <div>
-                  <label className="block text-xs text-warmgray mb-1.5">Custom Description (optional)</label>
+                  <label className="block text-xs text-warmgray mb-1.5">
+                    Custom Description (optional)
+                  </label>
                   <textarea
                     value={customPrompt}
                     onChange={e => setCustomPrompt(e.target.value)}
@@ -876,13 +1086,17 @@ export default function CoverEditor({ onSave, initialTitle, initialAuthor, pageC
                           <span>{generationProgress || 'Generating...'}</span>
                         </div>
                         {generationMode === 'full-book' && (
-                          <span className="text-[10px] opacity-70">Creating front & back covers</span>
+                          <span className="text-[10px] opacity-70">
+                            Creating front & back covers
+                          </span>
                         )}
                       </div>
                     ) : (
                       <>
                         <IconWand size={16} />
-                        {generationMode === 'full-book' ? 'Generate Front & Back Covers' : 'Generate Front Cover'}
+                        {generationMode === 'full-book'
+                          ? 'Generate Front & Back Covers'
+                          : 'Generate Front Cover'}
                       </>
                     )}
                   </button>
@@ -906,7 +1120,10 @@ export default function CoverEditor({ onSave, initialTitle, initialAuthor, pageC
 
                   {(frontCoverImage || backCoverImage) && !isGenerating && (
                     <button
-                      onClick={() => { setFrontCoverImage(null); setBackCoverImage(null); }}
+                      onClick={() => {
+                        setFrontCoverImage(null)
+                        setBackCoverImage(null)
+                      }}
                       className="flex items-center justify-center gap-2 w-full px-3 py-1.5 text-sepia/60 text-xs hover:text-sepia transition"
                     >
                       <IconRefresh size={14} />
@@ -920,7 +1137,9 @@ export default function CoverEditor({ onSave, initialTitle, initialAuthor, pageC
 
                 {/* Upload your own images */}
                 <div className="space-y-2">
-                  <p className="text-[10px] text-warmgray text-center uppercase tracking-wide">Or upload your own</p>
+                  <p className="text-[10px] text-warmgray text-center uppercase tracking-wide">
+                    Or upload your own
+                  </p>
                   <div className="flex gap-2">
                     <button
                       onClick={() => triggerUpload('front')}
@@ -968,14 +1187,18 @@ export default function CoverEditor({ onSave, initialTitle, initialAuthor, pageC
           {/* Templates */}
           <div className="p-3 flex-1 overflow-y-auto">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xs font-medium text-sepia/60 uppercase tracking-wide">Templates</h3>
+              <h3 className="text-xs font-medium text-sepia/60 uppercase tracking-wide">
+                Templates
+              </h3>
               <select
                 value={selectedCategory}
                 onChange={e => setSelectedCategory(e.target.value)}
                 className="text-xs px-2 py-1 border border-sepia/20 rounded bg-white"
               >
                 {TEMPLATE_CATEGORIES.map(cat => (
-                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
                 ))}
               </select>
             </div>
@@ -992,7 +1215,12 @@ export default function CoverEditor({ onSave, initialTitle, initialAuthor, pageC
                   style={{ backgroundColor: t.backgroundColor }}
                 >
                   <div className="w-full h-full flex items-center justify-center p-2">
-                    <span className="text-[8px] text-center font-medium" style={{ color: t.regions?.find(r => r.id === 'title')?.defaultColor || '#333' }}>
+                    <span
+                      className="text-[8px] text-center font-medium"
+                      style={{
+                        color: t.regions?.find(r => r.id === 'title')?.defaultColor || '#333'
+                      }}
+                    >
                       {t.name}
                     </span>
                   </div>
@@ -1046,7 +1274,9 @@ export default function CoverEditor({ onSave, initialTitle, initialAuthor, pageC
                 >
                   <span
                     className="text-[10px] font-medium tracking-wider"
-                    style={{ color: template?.regions?.find(r => r.id === 'title')?.defaultColor || '#333' }}
+                    style={{
+                      color: template?.regions?.find(r => r.id === 'title')?.defaultColor || '#333'
+                    }}
                   >
                     {regionData.title?.text || initialTitle || 'My Life Story'}
                   </span>
@@ -1164,7 +1394,8 @@ export default function CoverEditor({ onSave, initialTitle, initialAuthor, pageC
                       className="bg-transparent text-center font-medium outline-none"
                       style={{
                         writingMode: 'vertical-rl',
-                        color: template?.regions?.find(r => r.id === 'title')?.defaultColor || '#333',
+                        color:
+                          template?.regions?.find(r => r.id === 'title')?.defaultColor || '#333',
                         fontSize: '18px'
                       }}
                     />
@@ -1247,7 +1478,9 @@ export default function CoverEditor({ onSave, initialTitle, initialAuthor, pageC
         <div className="w-64 border-l border-sepia/10 overflow-y-auto bg-white p-4">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-medium text-ink">
-              {selectedRegion ? `Edit: ${selectedRegion.replace('custom-text-', 'Text ')}` : 'Text & Colors'}
+              {selectedRegion
+                ? `Edit: ${selectedRegion.replace('custom-text-', 'Text ')}`
+                : 'Text & Colors'}
             </h3>
             {selectedRegion && (
               <button
@@ -1325,7 +1558,9 @@ export default function CoverEditor({ onSave, initialTitle, initialAuthor, pageC
 
           {currentRegionConfig?.type === 'text' && currentRegionData && (
             <div className="space-y-4">
-              <h4 className="text-xs font-medium text-sepia/60 uppercase tracking-wide">Selected Element</h4>
+              <h4 className="text-xs font-medium text-sepia/60 uppercase tracking-wide">
+                Selected Element
+              </h4>
 
               {/* Font selector */}
               <div>
@@ -1336,14 +1571,18 @@ export default function CoverEditor({ onSave, initialTitle, initialAuthor, pageC
                   className="w-full px-3 py-2 border border-sepia/20 rounded-lg text-sm bg-white"
                 >
                   {AVAILABLE_FONTS.map(font => (
-                    <option key={font.name} value={font.name}>{font.name}</option>
+                    <option key={font.name} value={font.name}>
+                      {font.name}
+                    </option>
                   ))}
                 </select>
               </div>
 
               {/* Font size */}
               <div>
-                <label className="block text-xs text-warmgray mb-1">Size: {currentRegionData.size}px</label>
+                <label className="block text-xs text-warmgray mb-1">
+                  Size: {currentRegionData.size}px
+                </label>
                 <input
                   type="range"
                   min="12"
@@ -1389,7 +1628,13 @@ export default function CoverEditor({ onSave, initialTitle, initialAuthor, pageC
                           : 'bg-sepia/10 text-sepia hover:bg-sepia/20'
                       }`}
                     >
-                      {weight === '400' ? 'Regular' : weight === '500' ? 'Medium' : weight === '600' ? 'Semi' : 'Bold'}
+                      {weight === '400'
+                        ? 'Regular'
+                        : weight === '500'
+                          ? 'Medium'
+                          : weight === '600'
+                            ? 'Semi'
+                            : 'Bold'}
                     </button>
                   ))}
                 </div>
@@ -1399,7 +1644,12 @@ export default function CoverEditor({ onSave, initialTitle, initialAuthor, pageC
               <div>
                 <label className="block text-xs text-warmgray mb-1">Text Shadow</label>
                 <button
-                  onClick={() => updateTextShadow(selectedRegion, !currentRegionData.textShadow || currentRegionData.textShadow === 'none')}
+                  onClick={() =>
+                    updateTextShadow(
+                      selectedRegion,
+                      !currentRegionData.textShadow || currentRegionData.textShadow === 'none'
+                    )
+                  }
                   className={`flex items-center gap-2 px-3 py-1.5 rounded text-xs transition ${
                     currentRegionData.textShadow && currentRegionData.textShadow !== 'none'
                       ? 'bg-sepia text-white'
@@ -1407,7 +1657,9 @@ export default function CoverEditor({ onSave, initialTitle, initialAuthor, pageC
                   }`}
                 >
                   <IconShadow size={14} />
-                  {currentRegionData.textShadow && currentRegionData.textShadow !== 'none' ? 'Shadow On' : 'Add Shadow'}
+                  {currentRegionData.textShadow && currentRegionData.textShadow !== 'none'
+                    ? 'Shadow On'
+                    : 'Add Shadow'}
                 </button>
                 <p className="text-[10px] text-warmgray mt-1">Helps text stand out on images</p>
               </div>
@@ -1420,7 +1672,9 @@ export default function CoverEditor({ onSave, initialTitle, initialAuthor, pageC
               <div className="pt-4 border-t border-sepia/10">
                 <p className="text-xs font-medium text-ink mb-1">Book Details</p>
                 <p className="text-xs text-warmgray">Pages: {pageCount}</p>
-                <p className="text-xs text-warmgray">Spine: {(spineWidth / 72).toFixed(2)}" ({spineWidth}px)</p>
+                <p className="text-xs text-warmgray">
+                  Spine: {(spineWidth / 72).toFixed(2)}" ({spineWidth}px)
+                </p>
               </div>
             </div>
           )}

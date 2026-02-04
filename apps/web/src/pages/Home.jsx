@@ -310,11 +310,11 @@ export default function Home() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12 page-enter">
       {/* Header */}
-      <header className="text-center mb-8 sm:mb-10 relative">
-        {/* Settings link */}
+      <header className="text-center mb-8 sm:mb-10 relative pt-2">
+        {/* Settings link - positioned with better hitbox */}
         <Link
           to="/settings"
-          className="absolute top-0 right-0 flex items-center gap-2 px-3 py-2 rounded-lg bg-sepia/10 hover:bg-sepia/20 text-sepia transition"
+          className="absolute -top-2 -right-2 z-10 flex items-center gap-2 px-4 py-3 rounded-xl bg-sepia/10 hover:bg-sepia/20 text-sepia transition active:scale-95"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
