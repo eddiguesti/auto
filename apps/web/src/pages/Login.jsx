@@ -30,7 +30,7 @@ export default function Login() {
       login(data.user, data.token)
 
       // Check onboarding status - but always navigate even if this fails
-      let needsOnboarding = true // Default to showing onboarding if check fails
+      let needsOnboarding = false // Returning users likely completed onboarding
       try {
         const onboardingRes = await fetch(`${API_URL}/api/onboarding/status`, {
           headers: { Authorization: `Bearer ${data.token}` }
@@ -68,7 +68,7 @@ export default function Login() {
       login(data.user, data.token)
 
       // Check onboarding status - but always navigate even if this fails
-      let needsOnboarding = true // Default to showing onboarding if check fails
+      let needsOnboarding = false // Returning users likely completed onboarding
       try {
         const onboardingRes = await fetch(`${API_URL}/api/onboarding/status`, {
           headers: { Authorization: `Bearer ${data.token}` }
