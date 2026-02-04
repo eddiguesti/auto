@@ -47,11 +47,27 @@ export function generateToken(user) {
     throw new Error('JWT_SECRET not properly configured. Generate with: openssl rand -base64 64')
   }
 
-  // Validate expiresIn - must be non-empty string or number
-  // Strip quotes and whitespace that might come from env var misconfiguration
-  const rawExpiresIn = process.env.JWT_EXPIRES_IN || ''
-  const cleanedExpiresIn = rawExpiresIn.trim().replace(/^["']|["']$/g, '')
-  const validExpiresIn = cleanedExpiresIn !== '' ? cleanedExpiresIn : '7d'
+  // Use hardcoded default - env var parsing has caused issues
+  // Valid formats: '7d', '24h', '60' (seconds as string), 3600 (seconds as number)
+  const DEFAULT_EXPIRES = '7d'
 
-  return jwt.sign({ id: user.id, email: user.email }, secret, { expiresIn: validExpiresIn })
+  let expiresIn = DEFAULT_EXPIRES
+  const rawValue = process.env.JWT_EXPIRES_IN
+
+  if (rawValue) {
+    // Clean the value: trim whitespace, remove surrounding quotes
+    const cleaned = String(rawValue)
+      .trim()
+      .replace(/^["']|["']$/g, '')
+    // Validate format: must be like "7d", "24h", "60m", or a number
+    if (/^\d+[smhd]?$/.test(cleaned)) {
+      expiresIn = cleaned
+    } else {
+      console.warn(
+        `Invalid JWT_EXPIRES_IN format: "${rawValue}", using default: ${DEFAULT_EXPIRES}`
+      )
+    }
+  }
+
+  return jwt.sign({ id: user.id, email: user.email }, secret, { expiresIn })
 }
