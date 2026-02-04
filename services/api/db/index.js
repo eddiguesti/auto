@@ -815,4 +815,9 @@ export async function initDatabase() {
   }
 }
 
+// Helper function for simple queries
+export async function query(text, params) {
+  return pool.query(text, params)
+}
+
 export default pool
