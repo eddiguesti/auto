@@ -48,8 +48,10 @@ export function generateToken(user) {
   }
 
   // Validate expiresIn - must be non-empty string or number
-  const expiresIn = process.env.JWT_EXPIRES_IN
-  const validExpiresIn = expiresIn && expiresIn.trim() !== '' ? expiresIn : '7d'
+  // Strip quotes and whitespace that might come from env var misconfiguration
+  const rawExpiresIn = process.env.JWT_EXPIRES_IN || ''
+  const cleanedExpiresIn = rawExpiresIn.trim().replace(/^["']|["']$/g, '')
+  const validExpiresIn = cleanedExpiresIn !== '' ? cleanedExpiresIn : '7d'
 
   return jwt.sign({ id: user.id, email: user.email }, secret, { expiresIn: validExpiresIn })
 }
