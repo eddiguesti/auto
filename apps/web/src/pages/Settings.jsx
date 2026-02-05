@@ -9,13 +9,13 @@ export default function Settings() {
   const { speakingPace, setSpeakingPace, voiceGender, setVoiceGender } = useSettings()
   const [activeTab, setActiveTab] = useState('account')
 
-  // Profile editing state
-  const [isEditingProfile, setIsEditingProfile] = useState(false)
+  // Profile editing state - always editable
   const [profileName, setProfileName] = useState(user?.name || '')
   const [profileBirthYear, setProfileBirthYear] = useState(user?.birth_year || '')
   const [profileLoading, setProfileLoading] = useState(false)
   const [profileError, setProfileError] = useState(null)
   const [profileSuccess, setProfileSuccess] = useState(false)
+  const [hasProfileChanges, setHasProfileChanges] = useState(false)
 
   // Delete account state
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -51,7 +51,7 @@ export default function Settings() {
       if (res.ok) {
         await refreshUser()
         setProfileSuccess(true)
-        setIsEditingProfile(false)
+        setHasProfileChanges(false)
         setTimeout(() => setProfileSuccess(false), 3000)
       } else {
         const data = await res.json()
@@ -62,6 +62,13 @@ export default function Settings() {
     } finally {
       setProfileLoading(false)
     }
+  }
+
+  const handleProfileFieldChange = (field, value) => {
+    if (field === 'name') setProfileName(value)
+    if (field === 'birthYear') setProfileBirthYear(value)
+    setHasProfileChanges(true)
+    setProfileSuccess(false)
   }
 
   const handleDeleteAccount = async () => {
@@ -138,7 +145,7 @@ export default function Settings() {
               </div>
 
               <div className="p-5">
-                {/* Avatar and basic info */}
+                {/* Avatar and email (non-editable) */}
                 <div className="flex items-center gap-4 mb-6">
                   {user?.avatar_url ? (
                     <img
@@ -149,19 +156,25 @@ export default function Settings() {
                   ) : (
                     <div className="w-16 h-16 rounded-full bg-sepia/10 flex items-center justify-center border-2 border-sepia/20">
                       <span className="text-2xl text-sepia font-display">
-                        {user?.name?.charAt(0)?.toUpperCase() || '?'}
+                        {profileName?.charAt(0)?.toUpperCase() || '?'}
                       </span>
                     </div>
                   )}
                   <div>
-                    <h3 className="font-medium text-ink text-lg">{user?.name || 'Unknown'}</h3>
                     <p className="text-sm text-warmgray">{user?.email}</p>
                   </div>
                 </div>
 
                 {profileSuccess && (
-                  <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-800 text-sm">
-                    Profile updated successfully!
+                  <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-800 text-sm flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    Saved! Your memoir will use the updated details.
                   </div>
                 )}
 
@@ -171,76 +184,74 @@ export default function Settings() {
                   </div>
                 )}
 
-                {isEditingProfile ? (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-ink mb-1">Name</label>
-                      <input
-                        type="text"
-                        value={profileName}
-                        onChange={e => setProfileName(e.target.value)}
-                        className="w-full px-4 py-2 border border-sepia/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-sepia/30"
-                        placeholder="Your name"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-ink mb-1">Birth Year</label>
-                      <input
-                        type="number"
-                        value={profileBirthYear}
-                        onChange={e => setProfileBirthYear(e.target.value)}
-                        className="w-full px-4 py-2 border border-sepia/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-sepia/30"
-                        placeholder="e.g., 1950"
-                        min="1900"
-                        max={new Date().getFullYear()}
-                      />
-                      <p className="text-xs text-warmgray mt-1">
-                        This helps personalize your memoir experience
-                      </p>
-                    </div>
-                    <div className="flex gap-3">
+                {/* Always-visible editable fields */}
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-ink mb-1.5">
+                      Your Name
+                      <span className="text-warmgray font-normal ml-1">
+                        (appears on your book cover)
+                      </span>
+                    </label>
+                    <input
+                      type="text"
+                      value={profileName}
+                      onChange={e => handleProfileFieldChange('name', e.target.value)}
+                      className="w-full px-4 py-3 border border-sepia/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-sepia/30 text-ink text-lg"
+                      placeholder="Your full name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-ink mb-1.5">
+                      Birth Year
+                      <span className="text-warmgray font-normal ml-1">
+                        (helps personalise prompts)
+                      </span>
+                    </label>
+                    <input
+                      type="number"
+                      value={profileBirthYear}
+                      onChange={e => handleProfileFieldChange('birthYear', e.target.value)}
+                      className="w-full px-4 py-3 border border-sepia/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-sepia/30 text-ink text-lg"
+                      placeholder="e.g., 1950"
+                      min="1900"
+                      max={new Date().getFullYear()}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-ink mb-1.5">Email</label>
+                    <input
+                      type="email"
+                      value={user?.email || ''}
+                      disabled
+                      className="w-full px-4 py-3 border border-sepia/10 rounded-lg bg-sepia/5 text-warmgray cursor-not-allowed"
+                    />
+                  </div>
+
+                  {/* Save button - only shows when changes are made */}
+                  {hasProfileChanges && (
+                    <div className="flex gap-3 pt-2">
                       <button
                         onClick={handleProfileSave}
                         disabled={profileLoading}
-                        className="px-4 py-2 bg-sepia text-white rounded-lg hover:bg-ink transition disabled:opacity-50"
+                        className="flex-1 px-4 py-3 bg-sepia text-white rounded-lg hover:bg-ink transition disabled:opacity-50 font-medium"
                       >
                         {profileLoading ? 'Saving...' : 'Save Changes'}
                       </button>
                       <button
                         onClick={() => {
-                          setIsEditingProfile(false)
                           setProfileName(user?.name || '')
                           setProfileBirthYear(user?.birth_year || '')
+                          setHasProfileChanges(false)
                           setProfileError(null)
                         }}
-                        className="px-4 py-2 border border-sepia/20 text-ink rounded-lg hover:bg-sepia/5 transition"
+                        className="px-4 py-3 border border-sepia/20 text-ink rounded-lg hover:bg-sepia/5 transition"
                       >
                         Cancel
                       </button>
                     </div>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center py-2 border-b border-sepia/10">
-                      <span className="text-warmgray">Name</span>
-                      <span className="text-ink">{user?.name || 'Not set'}</span>
-                    </div>
-                    <div className="flex justify-between items-center py-2 border-b border-sepia/10">
-                      <span className="text-warmgray">Email</span>
-                      <span className="text-ink">{user?.email}</span>
-                    </div>
-                    <div className="flex justify-between items-center py-2 border-b border-sepia/10">
-                      <span className="text-warmgray">Birth Year</span>
-                      <span className="text-ink">{user?.birth_year || 'Not set'}</span>
-                    </div>
-                    <button
-                      onClick={() => setIsEditingProfile(true)}
-                      className="mt-2 px-4 py-2 border border-sepia/20 text-sepia rounded-lg hover:bg-sepia/5 transition text-sm"
-                    >
-                      Edit Profile
-                    </button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
 

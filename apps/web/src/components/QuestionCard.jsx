@@ -15,10 +15,15 @@ export default memo(function QuestionCard({
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
+  const [showFindReplace, setShowFindReplace] = useState(false)
+  const [findText, setFindText] = useState('')
+  const [replaceText, setReplaceText] = useState('')
+  const [replaceCount, setReplaceCount] = useState(null)
   const fileInputRef = useRef(null)
   const saveTimeoutRef = useRef(null)
+  const textareaRef = useRef(null)
 
-  const handleAnswerChange = (e) => {
+  const handleAnswerChange = e => {
     onAnswerChange(e.target.value)
 
     // Show saving indicator
@@ -31,7 +36,7 @@ export default memo(function QuestionCard({
     }, 1500)
   }
 
-  const handlePhotoUpload = async (e) => {
+  const handlePhotoUpload = async e => {
     const file = e.target.files?.[0]
     if (!file || !storyId) return
 
@@ -63,7 +68,7 @@ export default memo(function QuestionCard({
     }
   }
 
-  const deletePhoto = async (photoId) => {
+  const deletePhoto = async photoId => {
     if (!confirm('Delete this photo?')) return
     setError(null)
     try {
@@ -86,15 +91,14 @@ export default memo(function QuestionCard({
         <h2 className="text-lg sm:text-xl text-ink mb-2 font-medium leading-relaxed">
           {question.question}
         </h2>
-        <p className="text-sepia/70 text-sm italic">
-          {question.prompt}
-        </p>
+        <p className="text-sepia/70 text-sm italic">{question.prompt}</p>
       </div>
 
       {/* Answer Area */}
       <div className="p-4 sm:p-6">
         <div className="relative">
           <textarea
+            ref={textareaRef}
             value={answer}
             onChange={handleAnswerChange}
             placeholder="Begin your recollection here... Take your time, every memory matters."
@@ -107,11 +111,88 @@ export default memo(function QuestionCard({
           )}
         </div>
 
+        {/* Quick edit hint + find/replace - shows when there's substantial content */}
+        {answer && answer.length > 100 && (
+          <div className="mt-2 flex items-center justify-between gap-2">
+            <p className="text-xs text-sepia/50 italic">
+              You can edit the text directly above — fix any names, dates, or details
+            </p>
+            <button
+              onClick={() => setShowFindReplace(!showFindReplace)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs transition whitespace-nowrap ${
+                showFindReplace
+                  ? 'bg-sepia/10 text-sepia border border-sepia/20'
+                  : 'text-sepia/60 hover:text-sepia hover:bg-sepia/5'
+              }`}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+              Find & Replace
+            </button>
+          </div>
+        )}
+
+        {/* Find & Replace panel */}
+        {showFindReplace && (
+          <div className="mt-2 p-3 bg-sepia/5 rounded-lg border border-sepia/15 space-y-2">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={findText}
+                onChange={e => {
+                  setFindText(e.target.value)
+                  setReplaceCount(null)
+                }}
+                placeholder="Find text..."
+                className="flex-1 px-3 py-2 border border-sepia/20 rounded text-sm bg-white focus:outline-none focus:ring-1 focus:ring-sepia/30"
+              />
+              <input
+                type="text"
+                value={replaceText}
+                onChange={e => setReplaceText(e.target.value)}
+                placeholder="Replace with..."
+                className="flex-1 px-3 py-2 border border-sepia/20 rounded text-sm bg-white focus:outline-none focus:ring-1 focus:ring-sepia/30"
+              />
+              <button
+                onClick={() => {
+                  if (!findText) return
+                  const regex = new RegExp(findText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi')
+                  const matches = (answer.match(regex) || []).length
+                  if (matches > 0) {
+                    const newAnswer = answer.replace(regex, replaceText)
+                    onAnswerChange(newAnswer)
+                    setReplaceCount(matches)
+                    setTimeout(() => setReplaceCount(null), 3000)
+                  } else {
+                    setReplaceCount(0)
+                    setTimeout(() => setReplaceCount(null), 3000)
+                  }
+                }}
+                disabled={!findText}
+                className="px-4 py-2 bg-sepia text-white rounded text-sm hover:bg-ink transition disabled:opacity-40"
+              >
+                Replace All
+              </button>
+            </div>
+            {replaceCount !== null && (
+              <p className="text-xs text-sepia/70">
+                {replaceCount === 0
+                  ? 'No matches found'
+                  : `Replaced ${replaceCount} occurrence${replaceCount > 1 ? 's' : ''}`}
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Error Message */}
         {error && (
-          <div className="mt-3 p-2 bg-red-50 text-red-700 rounded text-sm text-center">
-            {error}
-          </div>
+          <div className="mt-3 p-2 bg-red-50 text-red-700 rounded text-sm text-center">{error}</div>
         )}
 
         {/* Photos */}
@@ -155,7 +236,7 @@ export default memo(function QuestionCard({
             className={`inline-flex items-center justify-center gap-2 px-5 py-3 sm:py-2.5 border border-sepia/25 text-sepia/80 rounded hover:bg-white/50 hover:border-sepia/40 transition ${
               !storyId ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
             } ${uploading ? 'opacity-50' : ''}`}
-            onClick={(e) => {
+            onClick={e => {
               if (!storyId) {
                 e.preventDefault()
                 setError('Please write and save your answer first (wait a moment after typing)')
@@ -164,14 +245,26 @@ export default memo(function QuestionCard({
             }}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
+              />
             </svg>
             <span className="text-sm">{uploading ? 'Uploading...' : 'Add Photograph'}</span>
           </label>
           {!storyId && (
             <span className="text-xs text-sepia/50 self-center text-center sm:text-left italic">
-              {answer.trim() ? '(Saving... photos enabled shortly)' : '(Write something first to add photos)'}
+              {answer.trim()
+                ? '(Saving... photos enabled shortly)'
+                : '(Write something first to add photos)'}
             </span>
           )}
 
@@ -188,8 +281,8 @@ export default memo(function QuestionCard({
         {/* Tips */}
         <div className="mt-5 sm:mt-6 p-4 bg-sepia/5 rounded border-l-2 border-sepia/30">
           <p className="text-sm text-sepia/70 italic leading-relaxed">
-            <span className="text-sepia not-italic">A note:</span> Write as though speaking to a dear friend.
-            The words need not be perfect — the assistant can help refine your thoughts
+            <span className="text-sepia not-italic">A note:</span> Write as though speaking to a
+            dear friend. The words need not be perfect — the assistant can help refine your thoughts
             and draw out the richer details of your memories.
           </p>
         </div>

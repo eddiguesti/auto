@@ -17,6 +17,7 @@ const Export = lazy(() => import('./pages/Export'))
 const VoiceChat = lazy(() => import('./pages/VoiceChat'))
 const Settings = lazy(() => import('./pages/Settings'))
 const Landing = lazy(() => import('./pages/Landing'))
+const LandingDesign1 = lazy(() => import('./pages/LandingDesign1'))
 const FacebookLanding = lazy(() => import('./pages/FacebookLanding'))
 const Login = lazy(() => import('./pages/Login'))
 const Register = lazy(() => import('./pages/Register'))
@@ -43,39 +44,69 @@ function App() {
           <div className="min-h-screen bg-parchment">
             <Suspense fallback={<PageLoader />}>
               <Routes>
-              {/* Public pages */}
-              <Route path="/" element={<Landing />} />
-              <Route path="/welcome" element={<FacebookLanding />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/terms" element={<Terms />} />
-              <Route path="/privacy" element={<Privacy />} />
-              <Route path="/cookies" element={<Cookies />} />
-              <Route path="/how-it-works" element={<HowItWorks />} />
-              <Route path="/blog" element={<Blog />} />
-              <Route path="/blog/:slug" element={<BlogPost />} />
+                {/* Public pages */}
+                <Route path="/" element={<Landing />} />
+                <Route path="/design1" element={<LandingDesign1 />} />
+                <Route path="/welcome" element={<FacebookLanding />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/terms" element={<Terms />} />
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/cookies" element={<Cookies />} />
+                <Route path="/how-it-works" element={<HowItWorks />} />
+                <Route path="/blog" element={<Blog />} />
+                <Route path="/blog/:slug" element={<BlogPost />} />
 
-              {/* Protected pages */}
-              <Route path="/home" element={
-                <ProtectedRoute><Home /></ProtectedRoute>
-              } />
-              <Route path="/chapter/:chapterId" element={
-                <ProtectedRoute><Chapter /></ProtectedRoute>
-              } />
-              <Route path="/export" element={
-                <ProtectedRoute><Export /></ProtectedRoute>
-              } />
-              <Route path="/voice" element={
-                <ProtectedRoute><VoiceChat /></ProtectedRoute>
-              } />
-              <Route path="/preview-style" element={
-                <ProtectedRoute><PreviewStyle /></ProtectedRoute>
-              } />
-              <Route path="/settings" element={
-                <ProtectedRoute><Settings /></ProtectedRoute>
-              } />
-
-            </Routes>
+                {/* Protected pages */}
+                <Route
+                  path="/home"
+                  element={
+                    <ProtectedRoute>
+                      <Home />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/chapter/:chapterId"
+                  element={
+                    <ProtectedRoute>
+                      <Chapter />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/export"
+                  element={
+                    <ProtectedRoute>
+                      <Export />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/voice"
+                  element={
+                    <ProtectedRoute>
+                      <VoiceChat />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/preview-style"
+                  element={
+                    <ProtectedRoute>
+                      <PreviewStyle />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/settings"
+                  element={
+                    <ProtectedRoute>
+                      <Settings />
+                    </ProtectedRoute>
+                  }
+                />
+              </Routes>
             </Suspense>
 
             {/* Cookie Consent Banner - lazy loaded */}

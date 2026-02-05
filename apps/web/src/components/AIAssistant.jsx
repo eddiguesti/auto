@@ -6,10 +6,12 @@ export default function AIAssistant({ context, onClose, onInsertText }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const [phase, setPhase] = useState('start') // 'start', 'interview', 'ready', 'writing'
+  const [phase, setPhase] = useState('start') // 'start', 'interview', 'ready', 'writing', 'review'
   const [gatheredContent, setGatheredContent] = useState([])
   const [closing, setClosing] = useState(false)
+  const [editableStory, setEditableStory] = useState('') // Editable version of generated story
   const messagesEndRef = useRef(null)
+  const storyTextareaRef = useRef(null)
 
   // Storage key for this specific question
   const storageKey = `ai-chat-${context.chapterId}-${context.question.id}`
@@ -19,7 +21,11 @@ export default function AIAssistant({ context, onClose, onInsertText }) {
     const saved = localStorage.getItem(storageKey)
     if (saved) {
       try {
-        const { messages: savedMessages, phase: savedPhase, gatheredContent: savedContent } = JSON.parse(saved)
+        const {
+          messages: savedMessages,
+          phase: savedPhase,
+          gatheredContent: savedContent
+        } = JSON.parse(saved)
         if (savedMessages?.length > 0) {
           setMessages(savedMessages)
           setPhase(savedPhase || 'interview')
@@ -80,7 +86,10 @@ export default function AIAssistant({ context, onClose, onInsertText }) {
         setGatheredContent([{ type: 'existing', content: context.answer }])
       }
     } catch (err) {
-      addMessage('assistant', "Let's start exploring this memory together. What's the first thing that comes to mind when you think about this?")
+      addMessage(
+        'assistant',
+        "Let's start exploring this memory together. What's the first thing that comes to mind when you think about this?"
+      )
     } finally {
       setLoading(false)
     }
@@ -114,7 +123,10 @@ export default function AIAssistant({ context, onClose, onInsertText }) {
         setPhase('ready')
       }
     } catch (err) {
-      addMessage('assistant', "That's great detail! Tell me more - what else do you remember about this?")
+      addMessage(
+        'assistant',
+        "That's great detail! Tell me more - what else do you remember about this?"
+      )
     } finally {
       setLoading(false)
     }
@@ -124,7 +136,10 @@ export default function AIAssistant({ context, onClose, onInsertText }) {
   const writeStory = async () => {
     setPhase('writing')
     setLoading(true)
-    addMessage('assistant', "Now I'll weave everything you've shared into a beautifully written section of your story...")
+    addMessage(
+      'assistant',
+      "Now I'll weave everything you've shared into a beautifully written section of your story..."
+    )
 
     try {
       const data = await callAI('write-story', {
@@ -136,21 +151,21 @@ export default function AIAssistant({ context, onClose, onInsertText }) {
       })
 
       addMessage('assistant', data.story)
+      // Move to review phase with editable story
+      setEditableStory(data.story)
+      setPhase('review')
     } catch (err) {
-      addMessage('assistant', "I had trouble generating the story. Please try again.")
+      addMessage('assistant', 'I had trouble generating the story. Please try again.')
       setPhase('ready')
     } finally {
       setLoading(false)
     }
   }
 
-  // Insert the final story
+  // Insert the final story (from editable review)
   const insertStory = () => {
-    const lastAssistant = [...messages].reverse().find(m => m.role === 'assistant')
-    if (lastAssistant) {
-      // Replace the existing answer with the polished story
-      onInsertText(lastAssistant.content, true) // true = replace instead of append
-      // Clear saved chat since they used the story
+    if (editableStory.trim()) {
+      onInsertText(editableStory.trim(), true) // true = replace instead of append
       localStorage.removeItem(storageKey)
     }
   }
@@ -158,7 +173,10 @@ export default function AIAssistant({ context, onClose, onInsertText }) {
   // Signal we have enough content
   const markReady = () => {
     setPhase('ready')
-    addMessage('assistant', "Got enough to work with. Click 'Compose My Story' when ready, or keep adding more.")
+    addMessage(
+      'assistant',
+      "Got enough to work with. Click 'Compose My Story' when ready, or keep adding more."
+    )
   }
 
   // Handle closing - auto-generate draft if there's content
@@ -202,6 +220,7 @@ export default function AIAssistant({ context, onClose, onInsertText }) {
               {!closing && phase === 'interview' && 'Gathering your memories...'}
               {!closing && phase === 'ready' && 'Ready to compose your narrative'}
               {!closing && phase === 'writing' && 'Crafting your story...'}
+              {!closing && phase === 'review' && 'Review and edit before saving'}
             </p>
           </div>
           <button
@@ -209,33 +228,39 @@ export default function AIAssistant({ context, onClose, onInsertText }) {
             disabled={closing}
             className="w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center rounded-full hover:bg-sepia/10 active:bg-sepia/20 transition flex-shrink-0 text-sepia/60 hover:text-sepia disabled:opacity-50"
           >
-            {closing ? (
-              <span className="text-xs">...</span>
-            ) : (
-              <span className="text-xl">×</span>
-            )}
+            {closing ? <span className="text-xs">...</span> : <span className="text-xl">×</span>}
           </button>
         </div>
 
         {/* Context Preview */}
         <div className="p-3 border-b border-sepia/10 flex-shrink-0">
-          <p className="text-sm text-sepia/80 line-clamp-2 italic">
-            "{context.question.question}"
-          </p>
+          <p className="text-sm text-sepia/80 line-clamp-2 italic">"{context.question.question}"</p>
         </div>
 
         {/* Start Screen */}
         {phase === 'start' && (
           <div className="flex-1 p-4 sm:p-6 flex flex-col items-center justify-center text-center overflow-y-auto">
             <div className="w-14 h-14 bg-sepia/10 rounded-2xl flex items-center justify-center mb-4">
-              <svg className="w-8 h-8 text-sepia" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              <svg
+                className="w-8 h-8 text-sepia"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
               </svg>
             </div>
-            <h3 className="text-lg sm:text-xl text-ink mb-2 font-medium">Let's Write Your Story Together</h3>
+            <h3 className="text-lg sm:text-xl text-ink mb-2 font-medium">
+              Let's Write Your Story Together
+            </h3>
             <p className="text-sepia/70 mb-6 max-w-md text-sm sm:text-base leading-relaxed">
-              I'll ask questions to draw out the details of your memory.
-              Once we've gathered enough, I'll compose it into a beautifully written passage for your autobiography.
+              I'll ask questions to draw out the details of your memory. Once we've gathered enough,
+              I'll compose it into a beautifully written passage for your autobiography.
             </p>
             <button
               onClick={startInterview}
@@ -268,7 +293,9 @@ export default function AIAssistant({ context, onClose, onInsertText }) {
                       : 'bg-white/70 text-ink border border-sepia/10'
                   }`}
                 >
-                  <p className="whitespace-pre-wrap leading-relaxed text-sm sm:text-base">{msg.content}</p>
+                  <p className="whitespace-pre-wrap leading-relaxed text-sm sm:text-base">
+                    {msg.content}
+                  </p>
                 </div>
               </div>
             ))}
@@ -276,9 +303,18 @@ export default function AIAssistant({ context, onClose, onInsertText }) {
               <div className="flex justify-start">
                 <div className="bg-white/70 p-3 rounded border border-sepia/10">
                   <div className="flex gap-1.5">
-                    <span className="w-2 h-2 bg-sepia/40 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <span className="w-2 h-2 bg-sepia/40 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <span className="w-2 h-2 bg-sepia/40 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    <span
+                      className="w-2 h-2 bg-sepia/40 rounded-full animate-bounce"
+                      style={{ animationDelay: '0ms' }}
+                    />
+                    <span
+                      className="w-2 h-2 bg-sepia/40 rounded-full animate-bounce"
+                      style={{ animationDelay: '150ms' }}
+                    />
+                    <span
+                      className="w-2 h-2 bg-sepia/40 rounded-full animate-bounce"
+                      style={{ animationDelay: '300ms' }}
+                    />
                   </div>
                 </div>
               </div>
@@ -310,38 +346,85 @@ export default function AIAssistant({ context, onClose, onInsertText }) {
               </button>
             )}
 
-            {phase === 'writing' && messages.length > 0 && !loading && (
-              <div className="space-y-2">
+            {(phase === 'writing' || phase === 'review') && !loading && editableStory && (
+              <div className="space-y-3">
+                {/* Editable story review */}
+                <div className="bg-white rounded-lg border border-sepia/20 overflow-hidden">
+                  <div className="px-3 py-2 bg-amber-50 border-b border-amber-200/50 flex items-center gap-2">
+                    <svg
+                      className="w-4 h-4 text-amber-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                      />
+                    </svg>
+                    <span className="text-sm text-amber-800 font-medium">
+                      Review & edit before saving
+                    </span>
+                    <span className="text-xs text-amber-600/70 ml-auto">
+                      Fix any names, dates or details
+                    </span>
+                  </div>
+                  <textarea
+                    ref={storyTextareaRef}
+                    value={editableStory}
+                    onChange={e => setEditableStory(e.target.value)}
+                    className="w-full p-4 text-ink leading-relaxed text-sm sm:text-base resize-none focus:outline-none min-h-[120px] max-h-[200px]"
+                    style={{
+                      height:
+                        Math.min(200, Math.max(120, editableStory.split('\n').length * 24)) + 'px'
+                    }}
+                  />
+                </div>
+
                 <button
                   onClick={insertStory}
-                  className="w-full py-4 sm:py-3 bg-sepia text-white rounded hover:bg-sepia/90 transition flex items-center justify-center gap-2"
+                  className="w-full py-4 sm:py-3 bg-sepia text-white rounded hover:bg-sepia/90 transition flex items-center justify-center gap-2 font-medium"
                 >
                   <span>✓</span>
-                  <span>Use This Passage</span>
+                  <span>Save to My Story</span>
                 </button>
-                <button
-                  onClick={() => {
-                    localStorage.removeItem(storageKey)
-                    setMessages([])
-                    setGatheredContent([])
-                    setPhase('start')
-                  }}
-                  className="w-full py-2 text-sm text-sepia/60 hover:text-sepia transition"
-                >
-                  Start over
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setPhase('ready')
+                      setEditableStory('')
+                    }}
+                    className="flex-1 py-2 text-sm text-sepia/60 hover:text-sepia transition border border-sepia/15 rounded"
+                  >
+                    Regenerate
+                  </button>
+                  <button
+                    onClick={() => {
+                      localStorage.removeItem(storageKey)
+                      setMessages([])
+                      setGatheredContent([])
+                      setEditableStory('')
+                      setPhase('start')
+                    }}
+                    className="flex-1 py-2 text-sm text-sepia/60 hover:text-sepia transition border border-sepia/15 rounded"
+                  >
+                    Start over
+                  </button>
+                </div>
               </div>
             )}
 
-            {/* Text Input */}
+            {/* Text Input - hidden during review */}
             {(phase === 'interview' || phase === 'ready') && (
               <div className="space-y-2">
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleUserResponse()}
+                    onChange={e => setInput(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleUserResponse()}
                     placeholder="Share more details..."
                     className="flex-1 px-4 py-3 sm:py-2.5 border border-sepia/20 rounded bg-white/70 focus:outline-none focus:ring-1 focus:ring-sepia/30 focus:border-sepia/40 text-base"
                     disabled={loading || closing}

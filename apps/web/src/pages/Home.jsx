@@ -140,7 +140,7 @@ const ChapterCard = memo(function ChapterCard({
 })
 
 export default function Home() {
-  const { user, authFetch } = useAuth()
+  const { user, authFetch, refreshUser } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const [progress, setProgress] = useState({})
   const [loading, setLoading] = useState(true)
@@ -157,6 +157,10 @@ export default function Home() {
   const [showTour, setShowTour] = useState(false)
   const [lightboxImage, setLightboxImage] = useState(null) // { imageUrl, title }
   const prevChapterImagesRef = useRef({})
+  const [editingTitle, setEditingTitle] = useState(false)
+  const [editName, setEditName] = useState(user?.name || '')
+  const [savingName, setSavingName] = useState(false)
+  const titleInputRef = useRef(null)
 
   // Get first name for title
   const firstName = user?.name?.split(' ')[0] || 'Your'
@@ -307,6 +311,35 @@ export default function Home() {
     setLightboxImage({ imageUrl, title })
   }, [])
 
+  // Inline title edit
+  const handleTitleEdit = () => {
+    setEditName(user?.name || '')
+    setEditingTitle(true)
+    setTimeout(() => titleInputRef.current?.focus(), 50)
+  }
+
+  const handleTitleSave = async () => {
+    if (!editName.trim() || editName.trim() === user?.name) {
+      setEditingTitle(false)
+      return
+    }
+    setSavingName(true)
+    try {
+      const res = await authFetch('/api/auth/profile', {
+        method: 'PUT',
+        body: JSON.stringify({ name: editName.trim() })
+      })
+      if (res.ok) {
+        await refreshUser()
+      }
+    } catch (err) {
+      console.error('Error saving name:', err)
+    } finally {
+      setSavingName(false)
+      setEditingTitle(false)
+    }
+  }
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12 page-enter">
       {/* Header */}
@@ -334,9 +367,45 @@ export default function Home() {
         </Link>
         {/* Decorative flourish */}
         <div className="text-sepia/40 text-2xl mb-4 tracking-[0.5em] float">❧</div>
-        <h1 className="text-4xl sm:text-5xl md:text-6xl font-light text-ink mb-3 tracking-wide">
-          {firstName}'s Life
-        </h1>
+
+        {editingTitle ? (
+          <div className="mb-3">
+            <input
+              ref={titleInputRef}
+              type="text"
+              value={editName}
+              onChange={e => setEditName(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') handleTitleSave()
+                if (e.key === 'Escape') setEditingTitle(false)
+              }}
+              onBlur={handleTitleSave}
+              className="text-4xl sm:text-5xl md:text-6xl font-light text-ink tracking-wide text-center bg-transparent border-b-2 border-sepia/40 focus:border-sepia focus:outline-none w-full max-w-md mx-auto"
+              placeholder="Your name"
+              disabled={savingName}
+            />
+            <p className="text-sm text-sepia/50 mt-2">Press Enter to save, Escape to cancel</p>
+          </div>
+        ) : (
+          <h1
+            onClick={handleTitleEdit}
+            className="text-4xl sm:text-5xl md:text-6xl font-light text-ink mb-3 tracking-wide cursor-pointer group"
+            title="Click to edit your name"
+          >
+            {firstName}'s Life
+            <span className="inline-block ml-2 opacity-0 group-hover:opacity-60 transition text-sepia text-xl align-middle">
+              <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                />
+              </svg>
+            </span>
+          </h1>
+        )}
+
         <div className="w-24 h-px bg-sepia/30 mx-auto mb-4" />
         <p className="text-lg sm:text-xl text-sepia/80 italic">
           The Autobiography of {user?.name || 'You'}
