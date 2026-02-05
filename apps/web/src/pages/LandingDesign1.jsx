@@ -96,7 +96,7 @@ export default function LandingDesign1() {
               </h1>
 
               <p className="font-serif text-lg sm:text-xl text-heritage-text leading-relaxed mb-10 max-w-xl mx-auto lg:mx-0">
-                Just talk about your memories. Lisa listens, asks thoughtful questions, and
+                Just talk about your memories. Clio listens, asks thoughtful questions, and
                 transforms your stories into a beautifully written autobiography your family will
                 treasure forever.
               </p>
@@ -177,7 +177,7 @@ export default function LandingDesign1() {
                 <div className="mt-6 pt-4 border-t border-heritage-sepia-light/20">
                   <div className="flex items-center gap-2">
                     <div className="w-2.5 h-2.5 rounded-full bg-heritage-sage animate-pulse" />
-                    <p className="font-sans text-sm text-heritage-sepia">Lisa is listening...</p>
+                    <p className="font-sans text-sm text-heritage-sepia">Clio is listening...</p>
                   </div>
                 </div>
               </div>
@@ -215,7 +215,7 @@ export default function LandingDesign1() {
                 Designed to <span className="italic text-heritage-sepia">get you talking</span>
               </p>
               <p className="font-sans text-sm text-heritage-text">
-                No writing needed — Just have a conversation with Lisa
+                No writing needed — Just have a conversation with Clio
               </p>
             </div>
           </div>
@@ -256,7 +256,7 @@ export default function LandingDesign1() {
               </p>
               <h3 className="font-display text-2xl text-heritage-ink mb-4">Just Talk</h3>
               <p className="font-serif text-heritage-text leading-relaxed text-base">
-                Lisa, your personal interviewer, asks thoughtful questions about your life. Answer
+                Clio, your personal interviewer, asks thoughtful questions about your life. Answer
                 naturally, just like talking to a friend.
               </p>
             </div>
@@ -283,7 +283,7 @@ export default function LandingDesign1() {
               </p>
               <h3 className="font-display text-2xl text-heritage-ink mb-4">We Write</h3>
               <p className="font-serif text-heritage-text leading-relaxed text-base">
-                Lisa transforms your spoken words into beautifully written prose. Your voice, your
+                Clio transforms your spoken words into beautifully written prose. Your voice, your
                 stories—polished and preserved.
               </p>
             </div>
@@ -355,7 +355,7 @@ export default function LandingDesign1() {
                       Conversational & Natural
                     </h3>
                     <p className="font-serif text-heritage-text text-base leading-relaxed">
-                      No awkward interviews or blank pages. Lisa feels like talking to someone who
+                      No awkward interviews or blank pages. Clio feels like talking to someone who
                       genuinely wants to hear your stories.
                     </p>
                   </div>
@@ -458,7 +458,7 @@ export default function LandingDesign1() {
                 <div className="space-y-5">
                   <div className="flex gap-3">
                     <div className="w-10 h-10 rounded-full bg-heritage-sepia/20 flex items-center justify-center text-sm font-medium text-heritage-sepia flex-shrink-0">
-                      L
+                      C
                     </div>
                     <div className="bg-heritage-card rounded-2xl rounded-tl-none p-4 max-w-[80%] border border-heritage-sepia-light/20">
                       <p className="font-serif text-base text-heritage-text">
@@ -476,7 +476,7 @@ export default function LandingDesign1() {
                   </div>
                   <div className="flex gap-3">
                     <div className="w-10 h-10 rounded-full bg-heritage-sepia/20 flex items-center justify-center text-sm font-medium text-heritage-sepia flex-shrink-0">
-                      L
+                      C
                     </div>
                     <div className="bg-heritage-card rounded-2xl rounded-tl-none p-4 max-w-[80%] border border-heritage-sepia-light/20">
                       <p className="font-serif text-base text-heritage-text">
@@ -503,7 +503,7 @@ export default function LandingDesign1() {
               <span className="italic text-heritage-sepia">beautifully connected</span>
             </h2>
             <p className="font-serif text-lg sm:text-xl text-heritage-text max-w-2xl mx-auto">
-              As you share your stories, Lisa automatically identifies the people, places, and
+              As you share your stories, Clio automatically identifies the people, places, and
               events in your life—building a rich map of your memories.
             </p>
           </div>
@@ -565,7 +565,7 @@ export default function LandingDesign1() {
                     />
                   </svg>
                 </div>
-                <h3 className="font-display text-xl text-heritage-ink mb-2">Lisa Understands</h3>
+                <h3 className="font-display text-xl text-heritage-ink mb-2">Clio Understands</h3>
                 <div className="flex flex-wrap justify-center gap-2 mt-3">
                   <span className="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-sans">
                     Father
@@ -587,9 +587,9 @@ export default function LandingDesign1() {
             <div className="mt-10 bg-heritage-sepia-light/20 rounded-2xl p-6 text-center border border-heritage-sepia-light/30">
               <p className="font-serif text-heritage-text text-base">
                 <span className="text-heritage-ink font-medium">
-                  The more you share, the smarter Lisa gets.
+                  The more you share, the smarter Clio gets.
                 </span>{' '}
-                Lisa remembers everyone you mention—so when you talk about Dad later, she already
+                Clio remembers everyone you mention—so when you talk about Dad later, she already
                 knows he worked at Ford with Uncle Joe.
               </p>
             </div>
@@ -637,7 +637,7 @@ export default function LandingDesign1() {
                 Voice Interview
               </h3>
               <p className="font-serif text-heritage-text mb-6 text-base leading-relaxed">
-                Just talk naturally. Lisa listens, asks follow-up questions, and captures every
+                Just talk naturally. Clio listens, asks follow-up questions, and captures every
                 detail of your stories.
               </p>
               <span className="font-sans text-heritage-cta text-sm flex items-center gap-2 font-medium">
@@ -683,7 +683,7 @@ export default function LandingDesign1() {
                 Written Memoir
               </h3>
               <p className="font-serif text-heritage-text mb-6 text-base leading-relaxed">
-                Prefer typing? Answer guided questions at your own pace. Lisa helps expand your
+                Prefer typing? Answer guided questions at your own pace. Clio helps expand your
                 notes into beautiful prose.
               </p>
               <span className="font-sans text-heritage-text text-sm flex items-center gap-2 group-hover:text-heritage-sepia transition-colors">
@@ -1060,7 +1060,7 @@ export default function LandingDesign1() {
             <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
           </svg>
           <p className="font-display text-2xl sm:text-3xl italic mb-8 leading-relaxed text-white/95">
-            I never thought I'd write my life story. But talking to Lisa felt so natural— like
+            I never thought I'd write my life story. But talking to Clio felt so natural— like
             chatting with an old friend. Now my grandchildren will know who I really was.
           </p>
           <div>

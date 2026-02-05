@@ -359,7 +359,7 @@ export default function Settings() {
               <div className="p-5 border-b border-sepia/10">
                 <h2 className="text-lg font-display text-ink mb-1">Conversation Pace</h2>
                 <p className="text-sm text-warmgray">
-                  Choose how quickly Lisa responds after you stop speaking
+                  Choose how quickly Clio responds after you stop speaking
                 </p>
               </div>
 
@@ -401,7 +401,7 @@ export default function Settings() {
 
               <div className="px-5 py-4 bg-amber-50/50 border-t border-sepia/10">
                 <p className="text-sm text-warmgray">
-                  <span className="font-medium text-ink">Tip:</span> If Lisa interrupts you often,
+                  <span className="font-medium text-ink">Tip:</span> If Clio interrupts you often,
                   try "Slow". If conversations feel sluggish, try "Fast".
                 </p>
               </div>
@@ -411,7 +411,7 @@ export default function Settings() {
             <div className="bg-white rounded-xl border border-sepia/10 overflow-hidden mt-6">
               <div className="p-5 border-b border-sepia/10">
                 <h2 className="text-lg font-display text-ink mb-1">Voice</h2>
-                <p className="text-sm text-warmgray">Choose your preferred voice for Lisa</p>
+                <p className="text-sm text-warmgray">Choose your preferred voice for Clio</p>
               </div>
 
               <div className="p-5 flex gap-3">

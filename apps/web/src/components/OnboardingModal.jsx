@@ -33,7 +33,7 @@ export default function OnboardingModal({ onClose }) {
   }
 
   // Save preference and move to next step
-  const handlePreferenceSelect = async (pref) => {
+  const handlePreferenceSelect = async pref => {
     setPreference(pref)
 
     try {
@@ -53,7 +53,7 @@ export default function OnboardingModal({ onClose }) {
   }
 
   // Handle voice interview completion
-  const handleVoiceComplete = async (transcripts) => {
+  const handleVoiceComplete = async transcripts => {
     setStep(STEPS.PROCESSING)
 
     let wantsTour = false
@@ -89,7 +89,7 @@ export default function OnboardingModal({ onClose }) {
   }
 
   // Handle type form submission
-  const handleTypeFormSubmit = async (formData) => {
+  const handleTypeFormSubmit = async formData => {
     setStep(STEPS.PROCESSING)
 
     try {
@@ -158,8 +158,8 @@ export default function OnboardingModal({ onClose }) {
               </h2>
 
               <p className="text-warmgray mb-8 leading-relaxed">
-                I'm Lisa, and I'll be helping you capture your life story.
-                Before we dive in, let me get to know you a little better.
+                I'm Clio, and I'll be helping you capture your life story. Before we dive in, let me
+                get to know you a little better.
               </p>
 
               <button
@@ -172,9 +172,7 @@ export default function OnboardingModal({ onClose }) {
           )}
 
           {/* Preference Step */}
-          {step === STEPS.PREFERENCE && (
-            <PreferenceSelector onSelect={handlePreferenceSelect} />
-          )}
+          {step === STEPS.PREFERENCE && <PreferenceSelector onSelect={handlePreferenceSelect} />}
 
           {/* Voice Interview Step */}
           {step === STEPS.VOICE_INTERVIEW && (
@@ -199,24 +197,24 @@ export default function OnboardingModal({ onClose }) {
                 <div className="absolute inset-0 border-4 border-sepia/20 rounded-full" />
                 <div className="absolute inset-0 border-4 border-sepia border-t-transparent rounded-full animate-spin" />
               </div>
-              <h3 className="text-xl font-display text-ink mb-2">
-                Setting Up Your Journey
-              </h3>
-              <p className="text-warmgray">
-                Creating personalized chapter artwork just for you...
-              </p>
+              <h3 className="text-xl font-display text-ink mb-2">Setting Up Your Journey</h3>
+              <p className="text-warmgray">Creating personalized chapter artwork just for you...</p>
             </div>
           )}
         </div>
 
         {/* Step indicator (for multi-step flow) */}
-        {[STEPS.WELCOME, STEPS.PREFERENCE, STEPS.VOICE_INTERVIEW, STEPS.TYPE_FORM].includes(step) && (
+        {[STEPS.WELCOME, STEPS.PREFERENCE, STEPS.VOICE_INTERVIEW, STEPS.TYPE_FORM].includes(
+          step
+        ) && (
           <div className="pb-6 flex justify-center gap-2">
             {[STEPS.WELCOME, STEPS.PREFERENCE, 'interview'].map((s, i) => (
               <div
                 key={i}
                 className={`w-2 h-2 rounded-full transition-colors ${
-                  (s === step || (s === 'interview' && (step === STEPS.VOICE_INTERVIEW || step === STEPS.TYPE_FORM)))
+                  s === step ||
+                  (s === 'interview' &&
+                    (step === STEPS.VOICE_INTERVIEW || step === STEPS.TYPE_FORM))
                     ? 'bg-sepia'
                     : 'bg-sepia/20'
                 }`}

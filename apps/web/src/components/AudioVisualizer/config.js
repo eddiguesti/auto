@@ -19,7 +19,7 @@ export const defaultColorSchemes = {
     glow: 'rgba(90, 155, 107, 0.45)',
     center: 'rgba(90, 155, 107, 0.18)'
   },
-  // AI/Lisa speaking - soft blue/violet
+  // AI/Clio speaking - soft blue/violet
   speaking: {
     primary: '#6B8DD9',
     secondary: '#8BA8E8',

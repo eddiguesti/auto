@@ -49,7 +49,7 @@ export default function AudioVisualizer({
   const config = defaultSizes[size] || defaultSizes.lg
 
   // Helper to parse color string to RGB
-  const parseColor = (color) => {
+  const parseColor = color => {
     if (color.startsWith('#')) {
       const hex = color.slice(1)
       return {
@@ -181,7 +181,8 @@ export default function AudioVisualizer({
     } else if (isSpeaking) {
       // Organic simulated audio for AI speaking
       const t = timeRef.current
-      audioLevel = 0.35 +
+      audioLevel =
+        0.35 +
         Math.sin(t * 6) * 0.12 +
         Math.sin(t * 9.5) * 0.08 +
         Math.sin(t * 14) * 0.05 +
@@ -248,7 +249,14 @@ export default function AudioVisualizer({
 
     // Draw subtle ambient glow
     const outerGlowRadius = 80 + smoothedLevelRef.current * 15
-    const outerGradient = ctx.createRadialGradient(centerX, centerY, 20, centerX, centerY, outerGlowRadius)
+    const outerGradient = ctx.createRadialGradient(
+      centerX,
+      centerY,
+      20,
+      centerX,
+      centerY,
+      outerGlowRadius
+    )
     outerGradient.addColorStop(0, colorToString(currentColorsRef.current.center, 0.12))
     outerGradient.addColorStop(0.5, colorToString(currentColorsRef.current.glow, 0.06))
     outerGradient.addColorStop(1, 'rgba(0,0,0,0)')
@@ -262,9 +270,12 @@ export default function AudioVisualizer({
 
     sortedParticles.forEach(particle => {
       particle.update(smoothedLevelRef.current, timeRef.current, isIdle)
-      const particleColor = particle.layer === 0 ? colors.primary :
-                           particle.layer === 1 ? colors.secondary :
-                           colorToString(currentColorsRef.current.glow, 0.8)
+      const particleColor =
+        particle.layer === 0
+          ? colors.primary
+          : particle.layer === 1
+            ? colors.secondary
+            : colorToString(currentColorsRef.current.glow, 0.8)
       particle.draw(ctx, particleColor)
     })
 
@@ -331,7 +342,7 @@ export default function AudioVisualizer({
       return 'drop-shadow(0 0 20px rgba(16, 185, 129, 0.4)) drop-shadow(0 0 40px rgba(16, 185, 129, 0.15))'
     }
     if (isSpeaking) {
-      // AI/Lisa speaking - soft blue
+      // AI/Clio speaking - soft blue
       return 'drop-shadow(0 0 18px rgba(107, 141, 217, 0.35)) drop-shadow(0 0 35px rgba(107, 141, 217, 0.12))'
     }
     if (isActive) {
