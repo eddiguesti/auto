@@ -45,8 +45,8 @@ function App() {
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 {/* Public pages */}
-                <Route path="/" element={<Landing />} />
-                <Route path="/design1" element={<LandingDesign1 />} />
+                <Route path="/" element={<LandingDesign1 />} />
+                <Route path="/landing-original" element={<Landing />} />
                 <Route path="/welcome" element={<FacebookLanding />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
