@@ -26,80 +26,90 @@ function getGoogleClient() {
 }
 
 // Email/Password Registration
-router.post('/register', requireDb, validate(authSchemas.register), async (req, res) => {
-  const { email, password, name, birthYear } = req.validatedBody
-  const db = req.app.locals.db
+router.post(
+  '/register',
+  requireDb,
+  validate(authSchemas.register),
+  asyncHandler(async (req, res) => {
+    const { email, password, name, birthYear } = req.validatedBody
+    const db = req.app.locals.db
 
-  try {
-    // Check if email exists
-    const existing = await db.query('SELECT id FROM users WHERE email = $1', [email])
-    if (existing.rows.length > 0) {
-      return res.status(400).json({ error: 'Email already registered' })
-    }
+    try {
+      // Check if email exists
+      const existing = await db.query('SELECT id FROM users WHERE email = $1', [email])
+      if (existing.rows.length > 0) {
+        return res.status(400).json({ error: 'Email already registered' })
+      }
 
-    // Hash password
-    const passwordHash = await bcrypt.hash(password, 12)
+      // Hash password
+      const passwordHash = await bcrypt.hash(password, 12)
 
-    // Create user
-    const result = await db.query(
-      `
+      // Create user
+      const result = await db.query(
+        `
       INSERT INTO users (email, password_hash, name, birth_year)
       VALUES ($1, $2, $3, $4)
       RETURNING id, email, name, birth_year, avatar_url
     `,
-      [email, passwordHash, name, birthYear || null]
-    )
+        [email, passwordHash, name, birthYear || null]
+      )
 
-    const user = result.rows[0]
+      const user = result.rows[0]
 
-    // Initialize game state for new user
-    await initializeGameState(user.id)
+      // Initialize game state for new user
+      await initializeGameState(user.id)
 
-    const token = generateToken(user)
+      const token = generateToken(user)
 
-    res.status(201).json({ user, token })
-  } catch (err) {
-    authLogger.error('Registration failed', { error: err.message, email, requestId: req.id })
-    res.status(500).json({ error: 'Registration failed' })
-  }
-})
+      res.status(201).json({ user, token })
+    } catch (err) {
+      authLogger.error('Registration failed', { error: err.message, email, requestId: req.id })
+      res.status(500).json({ error: 'Registration failed' })
+    }
+  })
+)
 
 // Email/Password Login
-router.post('/login', requireDb, validate(authSchemas.login), async (req, res) => {
-  const { email, password } = req.validatedBody
-  const db = req.app.locals.db
+router.post(
+  '/login',
+  requireDb,
+  validate(authSchemas.login),
+  asyncHandler(async (req, res) => {
+    const { email, password } = req.validatedBody
+    const db = req.app.locals.db
 
-  try {
-    const result = await db.query(
-      'SELECT id, email, name, password_hash, avatar_url FROM users WHERE email = $1',
-      [email]
-    )
+    try {
+      const result = await db.query(
+        'SELECT id, email, name, password_hash, avatar_url FROM users WHERE email = $1',
+        [email]
+      )
 
-    if (result.rows.length === 0) {
-      return res.status(401).json({ error: 'Invalid email or password' })
+      if (result.rows.length === 0) {
+        return res.status(401).json({ error: 'Invalid email or password' })
+      }
+
+      const user = result.rows[0]
+
+      if (!user.password_hash) {
+        return res.status(401).json({ error: 'Please use Google Sign-In for this account' })
+      }
+
+      const validPassword = await bcrypt.compare(password, user.password_hash)
+      if (!validPassword) {
+        return res.status(401).json({ error: 'Invalid email or password' })
+      }
+
+      const token = generateToken(user)
+      res.json({
+        user: { id: user.id, email: user.email, name: user.name, avatar_url: user.avatar_url },
+        token
+      })
+    } catch (err) {
+      authLogger.error('Login failed', { error: err.message, email, requestId: req.id })
+      res.status(500).json({ error: 'Login failed' })
     }
-
-    const user = result.rows[0]
-
-    if (!user.password_hash) {
-      return res.status(401).json({ error: 'Please use Google Sign-In for this account' })
-    }
-
-    const validPassword = await bcrypt.compare(password, user.password_hash)
-    if (!validPassword) {
-      return res.status(401).json({ error: 'Invalid email or password' })
-    }
-
-    const token = generateToken(user)
-    res.json({
-      user: { id: user.id, email: user.email, name: user.name, avatar_url: user.avatar_url },
-      token
-    })
-  } catch (err) {
-    authLogger.error('Login failed', { error: err.message, email, requestId: req.id })
-    res.status(500).json({ error: 'Login failed' })
-  }
-})
+  })
+)
 
 // Google Sign-In
 router.post(
@@ -143,38 +153,54 @@ router.post(
     const payload = ticket.getPayload()
     const { sub: googleId, email, name, picture } = payload
 
-    // Check if user exists by google_id or email
+    // Check if user exists by google_id first, then email
     let result = await db.query(
-      'SELECT id, email, name, avatar_url FROM users WHERE google_id = $1 OR email = $2',
-      [googleId, email]
+      'SELECT id, email, name, avatar_url, google_id FROM users WHERE google_id = $1',
+      [googleId]
     )
 
     let user
     if (result.rows.length > 0) {
-      // Update existing user with Google ID if needed
+      // Existing Google user — update avatar
       user = result.rows[0]
       await db.query(
-        `
-      UPDATE users SET google_id = $1, avatar_url = $2, updated_at = CURRENT_TIMESTAMP
-      WHERE id = $3
-    `,
-        [googleId, picture, user.id]
+        `UPDATE users SET avatar_url = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`,
+        [picture, user.id]
       )
       user.avatar_url = picture
     } else {
-      // Create new user
-      result = await db.query(
-        `
-      INSERT INTO users (email, google_id, name, avatar_url)
-      VALUES ($1, $2, $3, $4)
-      RETURNING id, email, name, avatar_url
-    `,
-        [email, googleId, name, picture]
+      // Check if email exists without google_id (email/password account)
+      const emailResult = await db.query(
+        'SELECT id, email, name, avatar_url, google_id FROM users WHERE email = $1',
+        [email]
       )
-      user = result.rows[0]
 
-      // Initialize game state for new user
-      await initializeGameState(user.id)
+      if (emailResult.rows.length > 0 && !emailResult.rows[0].google_id) {
+        // Link Google to existing email account — safe because Google verified the email
+        user = emailResult.rows[0]
+        await db.query(
+          `UPDATE users SET google_id = $1, avatar_url = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3`,
+          [googleId, picture, user.id]
+        )
+        user.avatar_url = picture
+      } else if (emailResult.rows.length > 0) {
+        // Email exists with different google_id — reject to prevent takeover
+        return res
+          .status(409)
+          .json({ error: 'This email is already linked to a different Google account' })
+      } else {
+        // Create new user
+        result = await db.query(
+          `INSERT INTO users (email, google_id, name, avatar_url)
+           VALUES ($1, $2, $3, $4)
+           RETURNING id, email, name, avatar_url`,
+          [email, googleId, name, picture]
+        )
+        user = result.rows[0]
+
+        // Initialize game state for new user
+        await initializeGameState(user.id)
+      }
     }
 
     const token = generateToken(user)
@@ -223,7 +249,7 @@ router.put(
   authenticateToken,
   requireDb,
   validate(authSchemas.updateProfile),
-  async (req, res) => {
+  asyncHandler(async (req, res) => {
     const { name, birthYear } = req.validatedBody || {}
     const db = req.app.locals.db
 
@@ -268,7 +294,7 @@ router.put(
       })
       res.status(500).json({ error: 'Failed to update profile' })
     }
-  }
+  })
 )
 
 export default router

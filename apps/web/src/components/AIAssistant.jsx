@@ -40,7 +40,11 @@ export default function AIAssistant({ context, onClose, onInsertText }) {
   // Save chat state whenever it changes
   useEffect(() => {
     if (messages.length > 0) {
-      localStorage.setItem(storageKey, JSON.stringify({ messages, phase, gatheredContent }))
+      const messagesToSave = messages.slice(-50)
+      localStorage.setItem(
+        storageKey,
+        JSON.stringify({ messages: messagesToSave, phase, gatheredContent })
+      )
     }
   }, [messages, phase, gatheredContent, storageKey])
 

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
 import { API_URL } from '../config'
 
 const AuthContext = createContext(null)
@@ -31,7 +31,7 @@ export function AuthProvider({ children }) {
   const fetchUser = async () => {
     try {
       const res = await fetch(`${API_URL}/api/auth/me`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` }
       })
       if (res.ok) {
         const data = await res.json()
@@ -51,7 +51,7 @@ export function AuthProvider({ children }) {
   const refreshUser = async () => {
     try {
       const res = await fetch(`${API_URL}/api/auth/me`, {
-        headers: { 'Authorization': `Bearer ${token || 'dev-token'}` }
+        headers: { Authorization: `Bearer ${token || 'dev-token'}` }
       })
       if (res.ok) {
         const data = await res.json()
@@ -62,19 +62,20 @@ export function AuthProvider({ children }) {
     }
   }
 
-  const login = (userData, authToken) => {
+  const login = useCallback((userData, authToken) => {
     localStorage.setItem('token', authToken)
     setToken(authToken)
     setUser(userData)
-  }
+  }, [])
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     // Notify server of logout (for audit trail)
-    if (token && token !== 'dev-token') {
+    const currentToken = token
+    if (currentToken && currentToken !== 'dev-token') {
       try {
         await fetch(`${API_URL}/api/auth/logout`, {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${currentToken}` }
         })
       } catch (err) {
         // Continue with client-side logout even if server call fails
@@ -84,38 +85,50 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('token')
     setToken(null)
     setUser(null)
-  }
+  }, [token])
 
   // Helper for authenticated fetch requests
-  const authFetch = async (url, options = {}) => {
-    const headers = {
-      ...options.headers,
-    }
+  const authFetch = useCallback(
+    async (url, options = {}) => {
+      const headers = {
+        ...options.headers
+      }
 
-    // Only add Authorization header if we have a token
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`
-    }
+      // Only add Authorization header if we have a token
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
 
-    // Add Content-Type for JSON if body is provided and not FormData
-    if (options.body && !(options.body instanceof FormData)) {
-      headers['Content-Type'] = 'application/json'
-    }
+      // Add Content-Type for JSON if body is provided and not FormData
+      if (options.body && !(options.body instanceof FormData)) {
+        headers['Content-Type'] = 'application/json'
+      }
 
-    // Prepend API_URL if url starts with /api
-    const fullUrl = url.startsWith('/api') ? `${API_URL}${url}` : url
+      // Prepend API_URL if url starts with /api
+      const fullUrl = url.startsWith('/api') ? `${API_URL}${url}` : url
 
-    return fetch(fullUrl, {
-      ...options,
-      headers
-    })
-  }
-
-  return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout, authFetch, refreshUser }}>
-      {children}
-    </AuthContext.Provider>
+      return fetch(fullUrl, {
+        ...options,
+        headers
+      })
+    },
+    [token]
   )
+
+  const value = useMemo(
+    () => ({
+      user,
+      token,
+      loading,
+      login,
+      logout,
+      authFetch,
+      refreshUser
+    }),
+    [user, token, loading, login, logout, authFetch, refreshUser]
+  )
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 export const useAuth = () => {

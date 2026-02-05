@@ -15,6 +15,7 @@ export default function Chapter() {
   const [showAI, setShowAI] = useState(false)
   const [aiContext, setAiContext] = useState(null)
   const saveTimeoutRef = useRef({})
+  const abortControllersRef = useRef({})
   const [pendingSaves, setPendingSaves] = useState({}) // Track unsaved changes
   const [saveStatus, setSaveStatus] = useState(null) // 'saving' | 'saved' | 'error'
   const [lastError, setLastError] = useState(null)
@@ -28,13 +29,16 @@ export default function Chapter() {
   const hasPendingSaves = useMemo(() => Object.values(pendingSaves).some(Boolean), [pendingSaves])
 
   // Memoize beforeunload handler to prevent recreation
-  const handleBeforeUnload = useCallback((e) => {
-    if (hasPendingSaves) {
-      e.preventDefault()
-      e.returnValue = 'You have unsaved changes. Are you sure you want to leave?'
-      return e.returnValue
-    }
-  }, [hasPendingSaves])
+  const handleBeforeUnload = useCallback(
+    e => {
+      if (hasPendingSaves) {
+        e.preventDefault()
+        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?'
+        return e.returnValue
+      }
+    },
+    [hasPendingSaves]
+  )
 
   // Warn user before closing/navigating with unsaved changes
   useEffect(() => {
@@ -44,16 +48,72 @@ export default function Chapter() {
 
   useEffect(() => {
     if (chapter) {
-      fetchAnswers()
+      fetchAnswers().then(() => {
+        // For earliest-memories chapter, pre-fill birth-details from onboarding if not already answered
+        if (chapterId === 'earliest-memories') {
+          prefillFromOnboarding()
+        }
+      })
     }
 
-    // Cleanup timeouts on unmount
+    // Cleanup timeouts and abort in-flight saves on unmount
     return () => {
       Object.values(saveTimeoutRef.current).forEach(timeout => {
         if (timeout) clearTimeout(timeout)
       })
+      Object.values(abortControllersRef.current).forEach(controller => {
+        if (controller) controller.abort()
+      })
     }
   }, [chapterId])
+
+  // Pre-fill birth-details answer from onboarding data if user hasn't answered it yet
+  const prefillFromOnboarding = async () => {
+    try {
+      const res = await authFetch('/api/onboarding/status')
+      if (!res.ok) return
+      const data = await res.json()
+      if (!data.completed) return
+
+      const birthPlace = data.birthPlace
+      const birthCountry = data.birthCountry
+      const birthYear = data.birthYear
+      if (!birthPlace && !birthYear) return
+
+      // Only pre-fill if birth-details hasn't been answered yet
+      setAnswers(prev => {
+        if (prev['birth-details']?.answer?.trim()) return prev
+
+        const parts = []
+        if (birthPlace && birthCountry) {
+          parts.push(`I was born in ${birthPlace}, ${birthCountry}`)
+        } else if (birthPlace) {
+          parts.push(`I was born in ${birthPlace}`)
+        }
+        if (birthYear) {
+          parts.push(`in ${birthYear}`)
+        }
+
+        const prefilled = parts.join(' ') + '.'
+        // Save to backend so it persists
+        authFetch('/api/stories', {
+          method: 'POST',
+          body: JSON.stringify({
+            chapter_id: 'earliest-memories',
+            question_id: 'birth-details',
+            answer: prefilled
+          })
+        }).catch(err => console.error('Error pre-filling birth details:', err))
+
+        return {
+          ...prev,
+          'birth-details': { ...prev['birth-details'], answer: prefilled }
+        }
+      })
+    } catch (err) {
+      console.error('Error fetching onboarding data:', err)
+    }
+  }
 
   const fetchAnswers = async () => {
     try {
@@ -95,6 +155,13 @@ export default function Chapter() {
 
     // Debounce the save
     saveTimeoutRef.current[questionId] = setTimeout(async () => {
+      // Abort any previous in-flight save for this question
+      if (abortControllersRef.current[questionId]) {
+        abortControllersRef.current[questionId].abort()
+      }
+      const controller = new AbortController()
+      abortControllersRef.current[questionId] = controller
+
       try {
         const res = await authFetch('/api/stories', {
           method: 'POST',
@@ -102,7 +169,8 @@ export default function Chapter() {
             chapter_id: chapterId,
             question_id: questionId,
             answer
-          })
+          }),
+          signal: controller.signal
         })
         if (!res.ok) {
           throw new Error('Failed to save')
@@ -111,8 +179,9 @@ export default function Chapter() {
         setPendingSaves(prev => ({ ...prev, [questionId]: false }))
         setSaveStatus('saved')
         // Clear saved status after 2 seconds
-        setTimeout(() => setSaveStatus(prev => prev === 'saved' ? null : prev), 2000)
+        setTimeout(() => setSaveStatus(prev => (prev === 'saved' ? null : prev)), 2000)
       } catch (err) {
+        if (err.name === 'AbortError') return // Superseded by newer save
         console.error('Error saving answer:', err)
         setSaveStatus('error')
         setLastError('Failed to save. Please check your connection.')
@@ -126,18 +195,7 @@ export default function Chapter() {
     setShowAI(true)
   }
 
-  if (!chapter) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 py-8 text-center">
-        <p className="text-sepia">Chapter not found</p>
-        <Link to="/" className="text-ink underline">Go back home</Link>
-      </div>
-    )
-  }
-
-  const question = chapter?.questions[currentQuestion]
-
-  // Memoize derived values to prevent recalculation on every render
+  // Memoize derived values (must be before early return to satisfy rules of hooks)
   const answeredCount = useMemo(
     () => Object.values(answers).filter(a => a?.answer?.trim()).length,
     [answers]
@@ -145,17 +203,32 @@ export default function Chapter() {
 
   const isLastQuestion = chapter ? currentQuestion === chapter.questions.length - 1 : false
 
-  // Memoize next chapter lookup
   const nextChapter = useMemo(() => {
     const currentChapterIndex = chapters.findIndex(c => c.id === chapterId)
     return chapters[currentChapterIndex + 1]
   }, [chapterId])
 
+  if (!chapter) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-8 text-center">
+        <p className="text-sepia">Chapter not found</p>
+        <Link to="/" className="text-ink underline">
+          Go back home
+        </Link>
+      </div>
+    )
+  }
+
+  const question = chapter.questions[currentQuestion]
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 page-enter">
       {/* Header */}
       <header className="mb-6 sm:mb-8">
-        <Link to="/" className="text-sepia/70 hover:text-sepia transition inline-flex items-center gap-2 mb-6 py-1 text-sm">
+        <Link
+          to="/"
+          className="text-sepia/70 hover:text-sepia transition inline-flex items-center gap-2 mb-6 py-1 text-sm"
+        >
           <span>←</span>
           <span>Return to Contents</span>
         </Link>
@@ -178,7 +251,12 @@ export default function Chapter() {
           className="text-sepia/60 hover:text-sepia text-sm flex items-center gap-2 transition"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+            />
           </svg>
           {showIllustration ? 'Hide' : 'Show'} chapter illustration
         </button>
@@ -219,7 +297,9 @@ export default function Chapter() {
       {/* Progress Bar */}
       <div className="bg-white/50 backdrop-blur-sm rounded-lg p-3 sm:p-4 border border-sepia/10 mb-4 sm:mb-6">
         <div className="flex justify-between text-xs sm:text-sm text-sepia/70 mb-2">
-          <span>Question {currentQuestion + 1} of {chapter.questions.length}</span>
+          <span>
+            Question {currentQuestion + 1} of {chapter.questions.length}
+          </span>
           <div className="flex items-center gap-3">
             {/* Save Status Indicator */}
             {saveStatus === 'saving' && (
@@ -273,7 +353,7 @@ export default function Chapter() {
       <QuestionCard
         question={question}
         answer={answers[question.id]?.answer || ''}
-        onAnswerChange={(answer) => saveAnswer(question.id, answer)}
+        onAnswerChange={answer => saveAnswer(question.id, answer)}
         onAskAI={() => openAIAssistant(question, answers[question.id]?.answer || '')}
         chapterId={chapterId}
         storyId={answers[question.id]?.id}
@@ -293,7 +373,12 @@ export default function Chapter() {
           }`}
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+            />
           </svg>
           {showMemoryTriggers ? 'Hide Tips' : 'Need Ideas?'}
         </button>
@@ -312,7 +397,12 @@ export default function Chapter() {
           >
             <span>Skip for now</span>
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 5l7 7-7 7M5 5l7 7-7 7"
+              />
             </svg>
           </button>
         )}
@@ -362,7 +452,9 @@ export default function Chapter() {
           )
         ) : (
           <button
-            onClick={() => setCurrentQuestion(prev => Math.min(chapter.questions.length - 1, prev + 1))}
+            onClick={() =>
+              setCurrentQuestion(prev => Math.min(chapter.questions.length - 1, prev + 1))
+            }
             className="flex-1 sm:flex-none px-5 py-3 sm:py-2 text-sepia/70 hover:text-sepia transition flex items-center justify-center gap-2 rounded border border-sepia/20 hover:border-sepia/40 hover:bg-white/50 tap-bounce"
           >
             <span>Next</span>

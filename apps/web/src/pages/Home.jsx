@@ -157,6 +157,8 @@ export default function Home() {
   const [showTour, setShowTour] = useState(false)
   const [lightboxImage, setLightboxImage] = useState(null) // { imageUrl, title }
   const prevChapterImagesRef = useRef({})
+  const showTourRef = useRef(false)
+  const pendingUnlockRef = useRef(null)
   const [editingTitle, setEditingTitle] = useState(false)
   const [editName, setEditName] = useState(user?.name || '')
   const [savingName, setSavingName] = useState(false)
@@ -164,6 +166,11 @@ export default function Home() {
 
   // Get first name for title
   const firstName = user?.name?.split(' ')[0] || 'Your'
+
+  // Keep tour ref in sync so polling callback has current value
+  useEffect(() => {
+    showTourRef.current = showTour
+  }, [showTour])
 
   useEffect(() => {
     fetchProgress()
@@ -210,12 +217,17 @@ export default function Home() {
           if (prevStatus === 'generating' && newStatus === 'completed' && imgData?.imageUrl) {
             const chapter = chapters.find(c => c.id === chapterId)
             if (chapter) {
-              // Queue the unlock animation
-              setUnlockAnimation({
+              const animData = {
                 chapterId,
                 imageUrl: imgData.imageUrl.replace(/^"|"$/g, ''),
                 chapterTitle: chapter.title
-              })
+              }
+              // Defer award animation until after tour finishes
+              if (showTourRef.current) {
+                pendingUnlockRef.current = animData
+              } else {
+                setUnlockAnimation(animData)
+              }
             }
           }
         }
@@ -692,8 +704,10 @@ export default function Home() {
 
       {showOnboarding && (
         <OnboardingModal
-          onClose={options => {
+          onClose={async options => {
             setShowOnboarding(false)
+            // Refresh user data to pick up name from onboarding
+            await refreshUser()
             // Refresh chapter images after onboarding - image generation started
             fetchChapterImages()
             // Show tour if user requested it
@@ -706,7 +720,27 @@ export default function Home() {
 
       {/* Interactive Tour */}
       {showTour && (
-        <TourOverlay onComplete={() => setShowTour(false)} onSkip={() => setShowTour(false)} />
+        <TourOverlay
+          onComplete={() => {
+            setShowTour(false)
+            // Show chapter 1 award if it completed during the tour
+            if (pendingUnlockRef.current) {
+              setTimeout(() => {
+                setUnlockAnimation(pendingUnlockRef.current)
+                pendingUnlockRef.current = null
+              }, 600)
+            }
+          }}
+          onSkip={() => {
+            setShowTour(false)
+            if (pendingUnlockRef.current) {
+              setTimeout(() => {
+                setUnlockAnimation(pendingUnlockRef.current)
+                pendingUnlockRef.current = null
+              }, 600)
+            }
+          }}
+        />
       )}
 
       {/* Chapter Image Unlock Animation */}

@@ -25,13 +25,23 @@ export default function HelpChatbot() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const messagesEndRef = useRef(null)
+  const abortControllerRef = useRef(null)
+
+  // Abort in-flight requests on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+    }
+  }, [])
 
   // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  const sendMessage = async (text) => {
+  const sendMessage = async text => {
     if (!text.trim() || loading) return
 
     const userMessage = { role: 'user', content: text }
@@ -40,6 +50,12 @@ export default function HelpChatbot() {
     setLoading(true)
 
     try {
+      // Abort any previous in-flight request
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+      abortControllerRef.current = new AbortController()
+
       const res = await fetch('/api/support/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -48,7 +64,8 @@ export default function HelpChatbot() {
           userEmail: user?.email,
           userName: user?.name,
           conversationHistory: messages.slice(-6) // Last 6 messages for context
-        })
+        }),
+        signal: abortControllerRef.current.signal
       })
 
       const data = await res.json()
@@ -67,7 +84,8 @@ export default function HelpChatbot() {
         ...prev,
         {
           role: 'assistant',
-          content: "Sorry, I'm having trouble connecting. Please try again or email us at support@easymemoir.co.uk"
+          content:
+            "Sorry, I'm having trouble connecting. Please try again or email us at support@easymemoir.co.uk"
         }
       ])
     } finally {
@@ -75,19 +93,19 @@ export default function HelpChatbot() {
     }
   }
 
-  const handleQuickTopic = (topic) => {
+  const handleQuickTopic = topic => {
     const questions = {
       login: "I'm having trouble logging in",
-      export: "How do I export my memoir as a book?",
-      cover: "How do I design my book cover?",
-      voice: "How do I use the voice feature?",
-      pricing: "What are the book pricing options?",
-      order: "Where is my order?"
+      export: 'How do I export my memoir as a book?',
+      cover: 'How do I design my book cover?',
+      voice: 'How do I use the voice feature?',
+      pricing: 'What are the book pricing options?',
+      order: 'Where is my order?'
     }
     sendMessage(questions[topic] || topic)
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = e => {
     e.preventDefault()
     sendMessage(input)
   }

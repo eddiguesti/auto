@@ -145,6 +145,8 @@ router.post(
     }
 
     // Create ephemeral token via xAI API
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 15000)
     const response = await fetch('https://api.x.ai/v1/realtime/client_secrets', {
       method: 'POST',
       headers: {
@@ -153,8 +155,10 @@ router.post(
       },
       body: JSON.stringify({
         expires_after: { seconds: 600 } // 10 minute token for onboarding
-      })
+      }),
+      signal: controller.signal
     })
+    clearTimeout(timeoutId)
 
     if (!response.ok) {
       const error = await response.text()

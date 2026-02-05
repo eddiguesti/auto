@@ -307,6 +307,10 @@ export async function initDatabase() {
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_payments_stripe_session ON payments(stripe_session_id)
     `)
+    // Ensure idempotent payment processing
+    await client.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_payments_stripe_session_unique ON payments(stripe_session_id)
+    `)
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_voice_models_user ON voice_models(user_id)
     `)

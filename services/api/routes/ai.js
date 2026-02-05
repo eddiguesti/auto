@@ -7,21 +7,54 @@ import { asyncHandler } from '../middleware/asyncHandler.js'
 const router = Router()
 
 // Interview endpoint - asks follow-up questions to gather content
-router.post('/interview', asyncHandler(async (req, res) => {
-  const { question, prompt, existingAnswer, gatheredContent = [], lastResponse, history = [], action } = req.body
-  const db = req.app.locals.db
-  const userId = req.user.id
+router.post(
+  '/interview',
+  asyncHandler(async (req, res) => {
+    const {
+      question,
+      prompt,
+      existingAnswer,
+      gatheredContent = [],
+      lastResponse,
+      history = [],
+      action
+    } = req.body
+    const db = req.app.locals.db
+    const userId = req.user.id
 
-  // Rate limiting
-  const rateCheck = checkRateLimit(userId)
-  if (!rateCheck.allowed) {
-    return res.status(429).json({
-      error: 'Too many requests',
-      message: `Please wait ${Math.ceil(rateCheck.resetIn / 1000)} seconds before trying again.`
-    })
-  }
+    // Rate limiting
+    const rateCheck = checkRateLimit(userId)
+    if (!rateCheck.allowed) {
+      return res.status(429).json({
+        error: 'Too many requests',
+        message: `Please wait ${Math.ceil(rateCheck.resetIn / 1000)} seconds before trying again.`
+      })
+    }
 
-  const memoryContext = await getMemoryContext(db, userId)
+    const memoryContext = await getMemoryContext(db, userId)
+
+    // Fetch onboarding data to avoid re-asking questions already answered during signup
+    let onboardingContext = ''
+    if (db) {
+      try {
+        const obResult = await db.query(
+          'SELECT birth_place, birth_country, birth_year FROM user_onboarding WHERE user_id = $1 AND onboarding_completed = true',
+          [userId]
+        )
+        if (obResult.rows.length > 0) {
+          const ob = obResult.rows[0]
+          const parts = []
+          if (ob.birth_place) parts.push(`born in ${ob.birth_place}`)
+          if (ob.birth_country) parts.push(ob.birth_country)
+          if (ob.birth_year) parts.push(`in ${ob.birth_year}`)
+          if (parts.length > 0) {
+            onboardingContext = `\nALREADY KNOWN (from signup - do NOT re-ask these): The user is ${parts.join(', ')}. Skip basic "where were you born" or "what year" questions — go straight to deeper follow-ups like stories, sensory details, emotions.`
+          }
+        }
+      } catch (err) {
+        // Non-critical, continue without onboarding context
+      }
+    }
 
     // Sanitize all user inputs to prevent prompt injection
     const safeQuestion = sanitizeForPrompt(question, 500)
@@ -48,15 +81,18 @@ router.post('/interview', asyncHandler(async (req, res) => {
 
 The question they're answering: ${safeQuestion}
 Context: ${safePrompt}
-${memoryContext ? `\nWhat you know about their story so far:${memoryContext}` : ''}
+${memoryContext ? `\nWhat you know about their story so far:${memoryContext}` : ''}${onboardingContext}
 
-${safeExistingAnswer ? `They wrote: ${safeExistingAnswer.substring(0, 500)}
+${
+  safeExistingAnswer
+    ? `They wrote: ${safeExistingAnswer.substring(0, 500)}
 
 Just ask 1-2 quick follow-up questions to get more details. Things like:
 - What did it look/sound/smell like?
 - What happened next?
-- Who else was there?` :
-`Quick intro - you're here to help them capture this memory. Ask one simple question to get them started.`}
+- Who else was there?`
+    : `Quick intro - you're here to help them capture this memory. Ask one simple question to get them started.`
+}
 
 IMPORTANT TONE RULES:
 - Be casual and brief. No gushing or over-enthusiasm
@@ -70,7 +106,7 @@ IMPORTANT TONE RULES:
 
 Question they're answering: ${safeQuestion}
 Context: ${safePrompt}
-${memoryContext ? `\nWhat you know about their story so far:${memoryContext}` : ''}
+${memoryContext ? `\nWhat you know about their story so far:${memoryContext}` : ''}${onboardingContext}
 
 ${safeExistingAnswer ? `Their original notes: ${safeExistingAnswer.substring(0, 300)}...` : ''}
 
@@ -79,13 +115,15 @@ ${safeGatheredContent.map((g, i) => `${i + 1}. ${g.content.substring(0, 200)}...
 
 Their latest response: ${safeLastResponse}
 
-${hasEnoughContent ?
-`Got enough to work with now. Just let them know they can add more if they want, or hit "Write My Story" when ready. Keep it brief.` :
-`Need more detail. Ask 1-2 quick follow-up questions about:
+${
+  hasEnoughContent
+    ? `Got enough to work with now. Just let them know they can add more if they want, or hit "Write My Story" when ready. Keep it brief.`
+    : `Need more detail. Ask 1-2 quick follow-up questions about:
 - What things looked/sounded/felt like
 - What people said
 - What happened before or after
-- How they felt`}
+- How they felt`
+}
 
 TONE RULES:
 - Casual and direct. No gushing ("what a lovely memory!", "how special!")
@@ -95,9 +133,7 @@ TONE RULES:
 - Don't repeat questions you've already asked`
     }
 
-    const messages = [
-      { role: 'system', content: systemPrompt }
-    ]
+    const messages = [{ role: 'system', content: systemPrompt }]
 
     // Add conversation history (filter out any empty content, sanitize user messages)
     if (history.length > 0) {
@@ -132,28 +168,37 @@ TONE RULES:
 
     const response = result.content || "That's wonderful! Can you tell me more about that moment?"
 
-  res.json({
-    response,
-    readyToWrite: hasEnoughContent
+    res.json({
+      response,
+      readyToWrite: hasEnoughContent
+    })
   })
-}))
+)
 
 // Write the polished story from gathered content
-router.post('/write-story', asyncHandler(async (req, res) => {
-  const { question, prompt, existingAnswer, gatheredContent = [], conversationHistory = [] } = req.body
-  const db = req.app.locals.db
-  const userId = req.user.id
+router.post(
+  '/write-story',
+  asyncHandler(async (req, res) => {
+    const {
+      question,
+      prompt,
+      existingAnswer,
+      gatheredContent = [],
+      conversationHistory = []
+    } = req.body
+    const db = req.app.locals.db
+    const userId = req.user.id
 
-  // Rate limiting
-  const rateCheck = checkRateLimit(userId)
-  if (!rateCheck.allowed) {
-    return res.status(429).json({
-      error: 'Too many requests',
-      message: `Please wait ${Math.ceil(rateCheck.resetIn / 1000)} seconds before trying again.`
-    })
-  }
+    // Rate limiting
+    const rateCheck = checkRateLimit(userId)
+    if (!rateCheck.allowed) {
+      return res.status(429).json({
+        error: 'Too many requests',
+        message: `Please wait ${Math.ceil(rateCheck.resetIn / 1000)} seconds before trying again.`
+      })
+    }
 
-  const memoryContext = await getMemoryContext(db, userId)
+    const memoryContext = await getMemoryContext(db, userId)
 
     // Sanitize all user inputs
     const safeQuestion = sanitizeForPrompt(question, 500)
@@ -226,26 +271,29 @@ Now write a tidied-up, flowing version of their story IN THEIR VOICE AND STYLE. 
       temperature: 0.7
     })
 
-  const story = result.content || "I couldn't generate the story. Please try again."
+    const story = result.content || "I couldn't generate the story. Please try again."
 
-  res.json({ story })
-}))
+    res.json({ story })
+  })
+)
 
 // Original chat endpoint (kept for backward compatibility)
-router.post('/chat', asyncHandler(async (req, res) => {
-  const { mode, question, prompt, answer, userMessage, history = [] } = req.body
-  const userId = req.user?.id
+router.post(
+  '/chat',
+  asyncHandler(async (req, res) => {
+    const { mode, question, prompt, answer, userMessage, history = [] } = req.body
+    const userId = req.user?.id
 
-  // Rate limiting (if authenticated)
-  if (userId) {
-    const rateCheck = checkRateLimit(userId)
-    if (!rateCheck.allowed) {
-      return res.status(429).json({
-        error: 'Too many requests',
-        message: `Please wait ${Math.ceil(rateCheck.resetIn / 1000)} seconds before trying again.`
-      })
+    // Rate limiting (if authenticated)
+    if (userId) {
+      const rateCheck = checkRateLimit(userId)
+      if (!rateCheck.allowed) {
+        return res.status(429).json({
+          error: 'Too many requests',
+          message: `Please wait ${Math.ceil(rateCheck.resetIn / 1000)} seconds before trying again.`
+        })
+      }
     }
-  }
 
     // Sanitize all user inputs
     const safeQuestion = sanitizeForPrompt(question, 500)
@@ -279,28 +327,31 @@ ${safeAnswer ? `Their answer so far: ${safeAnswer}` : '(No answer yet)'}`
       history: chatHistory
     })
 
-  const response = result.content || 'I had trouble generating a response.'
-  res.json({ response })
-}))
+    const response = result.content || 'I had trouble generating a response.'
+    res.json({ response })
+  })
+)
 
 // Generate illustration prompt for a chapter based on stories
-router.post('/generate-illustration', asyncHandler(async (req, res) => {
-  const { chapterId, stories } = req.body
-  const userId = req.user.id
+router.post(
+  '/generate-illustration',
+  asyncHandler(async (req, res) => {
+    const { chapterId, stories } = req.body
+    const userId = req.user.id
 
-  // Rate limiting
-  const rateCheck = checkRateLimit(userId)
-  if (!rateCheck.allowed) {
-    return res.status(429).json({
-      error: 'Too many requests',
-      message: `Please wait ${Math.ceil(rateCheck.resetIn / 1000)} seconds before trying again.`
-    })
-  }
+    // Rate limiting
+    const rateCheck = checkRateLimit(userId)
+    if (!rateCheck.allowed) {
+      return res.status(429).json({
+        error: 'Too many requests',
+        message: `Please wait ${Math.ceil(rateCheck.resetIn / 1000)} seconds before trying again.`
+      })
+    }
 
-  // Sanitize story content
-  const safeStories = (stories || []).map(s => sanitizeForPrompt(s, 500)).join('\n\n')
+    // Sanitize story content
+    const safeStories = (stories || []).map(s => sanitizeForPrompt(s, 500)).join('\n\n')
 
-  const systemPrompt = `You are an art director creating illustration prompts for a memoir book. Based on the user's stories, create a single illustration prompt that would capture the essence of their memories.
+    const systemPrompt = `You are an art director creating illustration prompts for a memoir book. Based on the user's stories, create a single illustration prompt that would capture the essence of their memories.
 
 GUIDELINES:
 - Create a warm, nostalgic illustration in a gentle watercolor or soft pencil sketch style
@@ -316,22 +367,24 @@ ${safeStories || 'No stories provided yet - create a placeholder scene for this 
 
 Respond with ONLY the illustration prompt, no explanations. Keep it under 100 words.`
 
-  const result = await grokChat({
-    systemPrompt,
-    userPrompt: 'Generate an illustration prompt for these memories.',
-    maxTokens: 200,
-    temperature: 0.7
-  })
+    const result = await grokChat({
+      systemPrompt,
+      userPrompt: 'Generate an illustration prompt for these memories.',
+      maxTokens: 200,
+      temperature: 0.7
+    })
 
-  const illustrationPrompt = result.content || 'A warm, nostalgic scene with gentle watercolor tones.'
+    const illustrationPrompt =
+      result.content || 'A warm, nostalgic scene with gentle watercolor tones.'
 
-  // For now, return the prompt - actual image generation would need integration with DALL-E, Midjourney, or similar
-  res.json({
-    prompt: illustrationPrompt,
-    // Placeholder URL - replace with actual generated image when integrated
-    placeholderUrl: null,
-    note: 'Image generation coming soon'
+    // For now, return the prompt - actual image generation would need integration with DALL-E, Midjourney, or similar
+    res.json({
+      prompt: illustrationPrompt,
+      // Placeholder URL - replace with actual generated image when integrated
+      placeholderUrl: null,
+      note: 'Image generation coming soon'
+    })
   })
-}))
+)
 
 export default router

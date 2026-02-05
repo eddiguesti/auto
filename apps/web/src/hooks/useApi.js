@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 
 /**
@@ -26,43 +26,52 @@ export function useApi() {
 
   const clearError = useCallback(() => setError(null), [])
 
-  const request = useCallback(async (url, options = {}) => {
-    setLoading(true)
-    setError(null)
+  const request = useCallback(
+    async (url, options = {}) => {
+      setLoading(true)
+      setError(null)
 
-    try {
-      // Handle body serialization
-      const fetchOptions = { ...options }
-      if (options.body && typeof options.body === 'object' && !(options.body instanceof FormData)) {
-        fetchOptions.body = JSON.stringify(options.body)
+      try {
+        // Handle body serialization
+        const fetchOptions = { ...options }
+        if (
+          options.body &&
+          typeof options.body === 'object' &&
+          !(options.body instanceof FormData)
+        ) {
+          fetchOptions.body = JSON.stringify(options.body)
+        }
+
+        const res = await authFetch(url, fetchOptions)
+
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}))
+          throw new Error(
+            errorData.error || errorData.message || `Request failed with status ${res.status}`
+          )
+        }
+
+        // Check content type for response parsing
+        const contentType = res.headers.get('content-type')
+        if (contentType?.includes('application/json')) {
+          return await res.json()
+        }
+
+        // Return blob for file downloads
+        if (contentType?.includes('application/epub') || contentType?.includes('audio/')) {
+          return await res.blob()
+        }
+
+        return await res.text()
+      } catch (err) {
+        setError(err.message || 'An error occurred')
+        throw err
+      } finally {
+        setLoading(false)
       }
-
-      const res = await authFetch(url, fetchOptions)
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}))
-        throw new Error(errorData.error || errorData.message || `Request failed with status ${res.status}`)
-      }
-
-      // Check content type for response parsing
-      const contentType = res.headers.get('content-type')
-      if (contentType?.includes('application/json')) {
-        return await res.json()
-      }
-
-      // Return blob for file downloads
-      if (contentType?.includes('application/epub') || contentType?.includes('audio/')) {
-        return await res.blob()
-      }
-
-      return await res.text()
-    } catch (err) {
-      setError(err.message || 'An error occurred')
-      throw err
-    } finally {
-      setLoading(false)
-    }
-  }, [authFetch])
+    },
+    [authFetch]
+  )
 
   return { loading, error, request, clearError }
 }
@@ -104,11 +113,11 @@ export function useFetch(url, { skip = false, initialData = null } = {}) {
   }, [authFetch, url])
 
   // Fetch on mount if not skipped
-  useState(() => {
+  useEffect(() => {
     if (!skip) {
       fetchData()
     }
-  })
+  }, [skip, fetchData])
 
   return { data, loading, error, refetch: fetchData, setData }
 }

@@ -1,4 +1,4 @@
-import { useState, useRef, memo } from 'react'
+import { useState, useRef, useEffect, memo } from 'react'
 import { useAuth } from '../context/AuthContext'
 
 export default memo(function QuestionCard({
@@ -22,6 +22,15 @@ export default memo(function QuestionCard({
   const fileInputRef = useRef(null)
   const saveTimeoutRef = useRef(null)
   const textareaRef = useRef(null)
+
+  // Clear saveTimeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current)
+      }
+    }
+  }, [])
 
   const handleAnswerChange = e => {
     onAnswerChange(e.target.value)

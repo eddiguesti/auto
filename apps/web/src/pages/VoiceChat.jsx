@@ -28,6 +28,7 @@ export default function VoiceChat() {
   const [isSpeaking, setIsSpeaking] = useState(false)
   const [error, setError] = useState(null)
   const [conversationHistory, setConversationHistory] = useState([])
+  const [onboardingContext, setOnboardingContext] = useState(null)
 
   const wsRef = useRef(null)
   const recordingContextRef = useRef(null)
@@ -38,10 +39,29 @@ export default function VoiceChat() {
   const isPlayingRef = useRef(false)
   const currentAiTranscriptRef = useRef('')
   const hasStartedRef = useRef(false)
+  const mountedRef = useRef(true)
+  const currentSourceRef = useRef(null)
+  const greetingTimeoutRef = useRef(null)
 
   // Get current chapter and question
   const chapter = chapters.find(c => c.id === chapterId) || chapters[0]
   const question = chapter?.questions[questionIndex] || chapter?.questions[0]
+
+  // Fetch onboarding context to avoid repeating questions already answered
+  useEffect(() => {
+    authFetch('/api/onboarding/status')
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => {
+        if (data?.completed) {
+          setOnboardingContext({
+            birthPlace: data.birthPlace,
+            birthCountry: data.birthCountry,
+            birthYear: data.birthYear
+          })
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   // Convert base64 to ArrayBuffer
   const base64ToArrayBuffer = base64 => {
@@ -96,18 +116,21 @@ export default function VoiceChat() {
         const source = playbackContextRef.current.createBufferSource()
         source.buffer = audioBuffer
         source.connect(playbackContextRef.current.destination)
+        currentSourceRef.current = source
 
         await new Promise(resolve => {
           source.onended = resolve
           source.start()
         })
+        currentSourceRef.current = null
       } catch (err) {
         console.error('Audio playback error:', err)
       }
     }
 
     isPlayingRef.current = false
-    setIsSpeaking(false)
+    currentSourceRef.current = null
+    if (mountedRef.current) setIsSpeaking(false)
   }, [])
 
   // Initialize WebSocket connection
@@ -154,6 +177,13 @@ YOUR PERSONALITY:
 
 The topic to explore: "${question?.question}"
 ${question?.prompt ? `Some context: ${question?.prompt}` : ''}
+${
+  onboardingContext?.birthPlace || onboardingContext?.birthYear
+    ? `
+IMPORTANT — ALREADY KNOWN FROM SIGNUP:
+The user already told you during signup that they were born${onboardingContext.birthPlace ? ` in ${onboardingContext.birthPlace}` : ''}${onboardingContext.birthCountry ? `, ${onboardingContext.birthCountry}` : ''}${onboardingContext.birthYear ? ` in ${onboardingContext.birthYear}` : ''}. DO NOT ask them where they were born or what year — they've already answered that. Instead, acknowledge what you know and go deeper: ask about stories from the day they were born, what the hospital was like, what their parents told them about that day, etc.`
+    : ''
+}
 
 HOW TO BEHAVE:
 - Talk like a real person. No fake enthusiasm. Don't say "Oh how wonderful!" or "That's amazing!" — it sounds insincere.
@@ -200,7 +230,8 @@ Start by saying hi casually and asking something simple to get them talking.`,
         )
 
         // Request initial greeting from AI
-        setTimeout(() => {
+        greetingTimeoutRef.current = setTimeout(() => {
+          if (!mountedRef.current) return
           ws.send(
             JSON.stringify({
               type: 'response.create'
@@ -210,6 +241,7 @@ Start by saying hi casually and asking something simple to get them talking.`,
       }
 
       ws.onmessage = event => {
+        if (!mountedRef.current) return
         const data = JSON.parse(event.data)
 
         switch (data.type) {
@@ -280,11 +312,13 @@ Start by saying hi casually and asking something simple to get them talking.`,
       }
 
       ws.onerror = () => {
+        if (!mountedRef.current) return
         setError('Connection error')
         setPhase('ready')
       }
 
       ws.onclose = event => {
+        if (!mountedRef.current) return
         setIsRecording(false)
         if (event.code === 1008) {
           setError('Authentication failed')
@@ -369,6 +403,23 @@ Start by saying hi casually and asking something simple to get them talking.`,
   // Disconnect and cleanup
   const disconnect = () => {
     stopMicrophone()
+    // Clear pending greeting timeout
+    if (greetingTimeoutRef.current) {
+      clearTimeout(greetingTimeoutRef.current)
+      greetingTimeoutRef.current = null
+    }
+    // Stop any current audio source
+    if (currentSourceRef.current) {
+      try {
+        currentSourceRef.current.stop()
+      } catch (e) {
+        /* already stopped */
+      }
+      currentSourceRef.current = null
+    }
+    // Clear pending audio queue
+    audioQueueRef.current = []
+    isPlayingRef.current = false
     if (wsRef.current) {
       wsRef.current.close()
       wsRef.current = null
@@ -423,7 +474,9 @@ Start by saying hi casually and asking something simple to get them talking.`,
 
   // Cleanup on unmount
   useEffect(() => {
+    mountedRef.current = true
     return () => {
+      mountedRef.current = false
       disconnect()
     }
   }, [])

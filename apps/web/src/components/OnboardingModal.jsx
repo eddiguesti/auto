@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import PreferenceSelector from './onboarding/PreferenceSelector'
 import OnboardingVoiceInterview from './onboarding/OnboardingVoiceInterview'
@@ -20,10 +20,16 @@ export default function OnboardingModal({ onClose }) {
   const [isVisible, setIsVisible] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
   const [extractedContext, setExtractedContext] = useState(null)
+  const rafIdRef = useRef(null)
 
   // Animate in on mount
   useEffect(() => {
-    requestAnimationFrame(() => setIsVisible(true))
+    rafIdRef.current = requestAnimationFrame(() => setIsVisible(true))
+    return () => {
+      if (rafIdRef.current) {
+        cancelAnimationFrame(rafIdRef.current)
+      }
+    }
   }, [])
 
   // Handle close with animation

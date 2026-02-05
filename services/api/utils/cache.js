@@ -6,6 +6,7 @@
 class MemoryCache {
   constructor() {
     this.cache = new Map()
+    this.pending = new Map()
     this.stats = { hits: 0, misses: 0 }
   }
 
@@ -40,7 +41,7 @@ class MemoryCache {
   set(key, value, ttlSeconds = 300) {
     this.cache.set(key, {
       value,
-      expiresAt: Date.now() + (ttlSeconds * 1000),
+      expiresAt: Date.now() + ttlSeconds * 1000,
       createdAt: Date.now()
     })
   }
@@ -76,9 +77,10 @@ class MemoryCache {
    * Get cache statistics
    */
   getStats() {
-    const hitRate = this.stats.hits + this.stats.misses > 0
-      ? (this.stats.hits / (this.stats.hits + this.stats.misses) * 100).toFixed(1)
-      : 0
+    const hitRate =
+      this.stats.hits + this.stats.misses > 0
+        ? ((this.stats.hits / (this.stats.hits + this.stats.misses)) * 100).toFixed(1)
+        : 0
     return {
       ...this.stats,
       size: this.cache.size,
@@ -98,9 +100,25 @@ class MemoryCache {
       return cached
     }
 
-    const value = await fetchFn()
-    this.set(key, value, ttlSeconds)
-    return value
+    // Prevent cache stampede: if a fetch is already in flight for this key,
+    // wait on the same promise instead of firing another DB query
+    if (this.pending.has(key)) {
+      return this.pending.get(key)
+    }
+
+    const promise = fetchFn()
+      .then(value => {
+        this.set(key, value, ttlSeconds)
+        this.pending.delete(key)
+        return value
+      })
+      .catch(err => {
+        this.pending.delete(key)
+        throw err
+      })
+
+    this.pending.set(key, promise)
+    return promise
   }
 }
 
@@ -109,10 +127,10 @@ const cache = new MemoryCache()
 
 // Cache key builders for consistency
 export const cacheKeys = {
-  userGameState: (userId) => `game:state:${userId}`,
-  userCollections: (userId) => `collections:${userId}`,
-  userMemoryContext: (userId) => `memory:context:${userId}`,
-  userProgress: (userId) => `progress:${userId}`,
+  userGameState: userId => `game:state:${userId}`,
+  userCollections: userId => `collections:${userId}`,
+  userMemoryContext: userId => `memory:context:${userId}`,
+  userProgress: userId => `progress:${userId}`,
   chapters: () => 'static:chapters',
   prompts: () => 'static:prompts'
 }

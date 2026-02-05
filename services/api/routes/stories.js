@@ -299,7 +299,13 @@ router.post(
     invalidateUserCache(userId)
 
     // Extract entities asynchronously (don't wait for it)
-    extractEntitiesAsync(db, userId, answer, chapter_id, question_id, storyId)
+    extractEntitiesAsync(db, userId, answer, chapter_id, question_id, storyId).catch(err => {
+      logger.error('Background entity extraction error', {
+        storyId,
+        chapterId: chapter_id,
+        error: err.message
+      })
+    })
 
     // Check if chapter is now complete and generate personalized artwork (don't wait)
     const totalQuestions = total_questions || 5 // Default assumption

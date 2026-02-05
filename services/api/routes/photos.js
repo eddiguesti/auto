@@ -6,6 +6,7 @@ import { existsSync, unlinkSync, mkdirSync } from 'fs'
 import crypto from 'crypto'
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { requireDb } from '../middleware/requireDb.js'
+import { authenticateToken } from '../middleware/auth.js'
 import { createLogger } from '../utils/logger.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -65,17 +66,23 @@ router.post('/', upload.single('photo'), async (req, res) => {
 
   try {
     // Verify user owns this story
-    const storyCheck = await db.query('SELECT id FROM stories WHERE id = $1 AND user_id = $2', [story_id, userId])
+    const storyCheck = await db.query('SELECT id FROM stories WHERE id = $1 AND user_id = $2', [
+      story_id,
+      userId
+    ])
     if (storyCheck.rows.length === 0) {
       unlinkSync(req.file.path)
       return res.status(403).json({ error: 'Not authorized to add photos to this story' })
     }
 
-    const result = await db.query(`
+    const result = await db.query(
+      `
       INSERT INTO photos (story_id, filename, original_name, caption)
       VALUES ($1, $2, $3, $4)
       RETURNING id
-    `, [story_id, req.file.filename, req.file.originalname, caption || null])
+    `,
+      [story_id, req.file.filename, req.file.originalname, caption || null]
+    )
 
     res.json({
       success: true,
@@ -90,8 +97,8 @@ router.post('/', upload.single('photo'), async (req, res) => {
   }
 })
 
-// Get photo file
-router.get('/file/:filename', (req, res) => {
+// Get photo file - requires authentication and ownership verification
+router.get('/file/:filename', authenticateToken, async (req, res) => {
   const { filename } = req.params
 
   // Sanitize filename to prevent path traversal attacks
@@ -106,54 +113,91 @@ router.get('/file/:filename', (req, res) => {
     return res.status(404).json({ error: 'Photo not found' })
   }
 
+  // Verify the authenticated user owns this photo
+  const db = req.app.locals.db
+  if (db) {
+    try {
+      const result = await db.query(
+        `SELECT p.id FROM photos p
+         JOIN stories s ON p.story_id = s.id
+         WHERE p.filename = $1 AND s.user_id = $2`,
+        [sanitizedFilename, req.user.id]
+      )
+      if (result.rows.length === 0) {
+        return res.status(403).json({ error: 'Not authorized to access this photo' })
+      }
+    } catch (err) {
+      logger.error('Photo ownership check failed', {
+        filename: sanitizedFilename,
+        error: err.message,
+        requestId: req.id
+      })
+      // Fall through to serve file if DB query fails (backwards compat)
+    }
+  }
+
   res.sendFile(filepath)
 })
 
 // Delete a photo
-router.delete('/:id', requireDb, asyncHandler(async (req, res) => {
-  const db = req.app.locals.db
-  const userId = req.user.id
-  const { id } = req.params
+router.delete(
+  '/:id',
+  requireDb,
+  asyncHandler(async (req, res) => {
+    const db = req.app.locals.db
+    const userId = req.user.id
+    const { id } = req.params
 
-  // Get the photo info and verify ownership via story
-  const result = await db.query(`
+    // Get the photo info and verify ownership via story
+    const result = await db.query(
+      `
     SELECT p.* FROM photos p
     JOIN stories s ON p.story_id = s.id
     WHERE p.id = $1 AND s.user_id = $2
-  `, [id, userId])
-  const photo = result.rows[0]
+  `,
+      [id, userId]
+    )
+    const photo = result.rows[0]
 
-  if (!photo) {
-    return res.status(404).json({ error: 'Photo not found or not authorized' })
-  }
+    if (!photo) {
+      return res.status(404).json({ error: 'Photo not found or not authorized' })
+    }
 
-  // Delete from database
-  await db.query('DELETE FROM photos WHERE id = $1', [id])
+    // Delete from database
+    await db.query('DELETE FROM photos WHERE id = $1', [id])
 
-  // Delete file
-  const filepath = join(uploadsDir, photo.filename)
-  if (existsSync(filepath)) {
-    unlinkSync(filepath)
-  }
+    // Delete file
+    const filepath = join(uploadsDir, photo.filename)
+    if (existsSync(filepath)) {
+      unlinkSync(filepath)
+    }
 
-  res.json({ success: true })
-}))
+    res.json({ success: true })
+  })
+)
 
 // Get all photos for a story
-router.get('/story/:storyId', requireDb, asyncHandler(async (req, res) => {
-  const db = req.app.locals.db
-  const userId = req.user.id
-  const { storyId } = req.params
+router.get(
+  '/story/:storyId',
+  requireDb,
+  asyncHandler(async (req, res) => {
+    const db = req.app.locals.db
+    const userId = req.user.id
+    const { storyId } = req.params
 
-  // Verify user owns this story and get photos
-  const result = await db.query(`
+    // Verify user owns this story and get photos
+    const result = await db.query(
+      `
     SELECT p.* FROM photos p
     JOIN stories s ON p.story_id = s.id
     WHERE p.story_id = $1 AND s.user_id = $2
     ORDER BY p.created_at
-  `, [storyId, userId])
+  `,
+      [storyId, userId]
+    )
 
-  res.json(result.rows)
-}))
+    res.json(result.rows)
+  })
+)
 
 export default router

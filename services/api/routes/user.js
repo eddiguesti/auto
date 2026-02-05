@@ -31,77 +31,73 @@ router.get(
 
     const user = userResult.rows[0]
 
-    // Fetch all stories/answers
-    const storiesResult = await db.query(
-      `SELECT chapter_id, question_id, answer, original_answer, style_applied, created_at, updated_at
-       FROM stories WHERE user_id = $1
-       ORDER BY chapter_id, question_id`,
-      [userId]
-    )
-
-    // Fetch chapter images
-    const imagesResult = await db.query(
-      `SELECT chapter_id, image_url, prompt_used, generation_status, created_at
-       FROM chapter_images WHERE user_id = $1`,
-      [userId]
-    )
-
-    // Fetch game state
-    const gameResult = await db.query(
-      `SELECT current_streak, longest_streak, total_memories, daily_prompt_completed_today,
-              game_mode_enabled, created_at, updated_at
-       FROM user_game_state WHERE user_id = $1`,
-      [userId]
-    )
-
-    // Fetch photos via stories
-    const photosResult = await db.query(
-      `SELECT p.filename, p.original_name, p.caption, s.chapter_id, p.created_at
-       FROM photos p
-       JOIN stories s ON p.story_id = s.id
-       WHERE s.user_id = $1`,
-      [userId]
-    )
-
-    // Fetch onboarding data
-    const onboardingResult = await db.query(
-      `SELECT input_preference, birth_place, birth_country, birth_year,
-              additional_context, onboarding_completed, created_at
-       FROM user_onboarding WHERE user_id = $1`,
-      [userId]
-    )
-
-    // Fetch style preferences
-    const styleResult = await db.query(
-      `SELECT tones, narrative, author_style, applied_at, created_at
-       FROM user_style_preferences WHERE user_id = $1`,
-      [userId]
-    )
-
-    // Fetch cover data
-    const coverResult = await db.query(
-      `SELECT template_id, title, author, front_cover_url, back_cover_url,
-              color_scheme, created_at
-       FROM book_covers WHERE user_id = $1`,
-      [userId]
-    )
-
-    // Fetch achievements
-    const achievementsResult = await db.query(
-      `SELECT achievement_type, achievement_key, achievement_name,
-              achievement_description, earned_at
-       FROM achievements WHERE user_id = $1
-       ORDER BY earned_at DESC`,
-      [userId]
-    )
-
-    // Fetch memory entities (people, places, events mentioned)
-    const entitiesResult = await db.query(
-      `SELECT entity_type, name, description, first_mentioned_chapter, mention_count
-       FROM memory_entities WHERE user_id = $1
-       ORDER BY mention_count DESC`,
-      [userId]
-    )
+    // Fetch all data in parallel with LIMIT caps
+    const [
+      storiesResult,
+      imagesResult,
+      gameResult,
+      photosResult,
+      onboardingResult,
+      styleResult,
+      coverResult,
+      achievementsResult,
+      entitiesResult
+    ] = await Promise.all([
+      db.query(
+        `SELECT chapter_id, question_id, answer, original_answer, style_applied, created_at, updated_at
+         FROM stories WHERE user_id = $1
+         ORDER BY chapter_id, question_id LIMIT 10000`,
+        [userId]
+      ),
+      db.query(
+        `SELECT chapter_id, image_url, prompt_used, generation_status, created_at
+         FROM chapter_images WHERE user_id = $1 LIMIT 1000`,
+        [userId]
+      ),
+      db.query(
+        `SELECT current_streak, longest_streak, total_memories, daily_prompt_completed_today,
+                game_mode_enabled, created_at, updated_at
+         FROM user_game_state WHERE user_id = $1`,
+        [userId]
+      ),
+      db.query(
+        `SELECT p.filename, p.original_name, p.caption, s.chapter_id, p.created_at
+         FROM photos p
+         JOIN stories s ON p.story_id = s.id
+         WHERE s.user_id = $1 LIMIT 5000`,
+        [userId]
+      ),
+      db.query(
+        `SELECT input_preference, birth_place, birth_country, birth_year,
+                additional_context, onboarding_completed, created_at
+         FROM user_onboarding WHERE user_id = $1`,
+        [userId]
+      ),
+      db.query(
+        `SELECT tones, narrative, author_style, applied_at, created_at
+         FROM user_style_preferences WHERE user_id = $1`,
+        [userId]
+      ),
+      db.query(
+        `SELECT template_id, title, author, front_cover_url, back_cover_url,
+                color_scheme, created_at
+         FROM book_covers WHERE user_id = $1`,
+        [userId]
+      ),
+      db.query(
+        `SELECT achievement_type, achievement_key, achievement_name,
+                achievement_description, earned_at
+         FROM achievements WHERE user_id = $1
+         ORDER BY earned_at DESC LIMIT 1000`,
+        [userId]
+      ),
+      db.query(
+        `SELECT entity_type, name, description, first_mentioned_chapter, mention_count
+         FROM memory_entities WHERE user_id = $1
+         ORDER BY mention_count DESC LIMIT 5000`,
+        [userId]
+      )
+    ])
 
     const exportData = {
       exportDate: new Date().toISOString(),

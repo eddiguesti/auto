@@ -97,7 +97,6 @@ app.use(
         scriptSrc: [
           "'self'",
           "'unsafe-inline'",
-          "'unsafe-eval'",
           'https://accounts.google.com',
           'https://apis.google.com'
         ],
@@ -177,6 +176,8 @@ app.post('/api/landing-voice/session', async (req, res) => {
     }
 
     // Create ephemeral token via xAI API
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 15000)
     const response = await fetch('https://api.x.ai/v1/realtime/client_secrets', {
       method: 'POST',
       headers: {
@@ -185,8 +186,10 @@ app.post('/api/landing-voice/session', async (req, res) => {
       },
       body: JSON.stringify({
         expires_after: { seconds: 300 } // 5 minute token
-      })
+      }),
+      signal: controller.signal
     })
+    clearTimeout(timeoutId)
 
     if (!response.ok) {
       const error = await response.text()

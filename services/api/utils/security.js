@@ -27,6 +27,7 @@ export function sanitizeForPrompt(input, maxLength = 5000) {
   }
 
   // Remove null bytes and other control characters (except newlines and tabs)
+  // eslint-disable-next-line no-control-regex
   sanitized = sanitized.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
 
   // Escape patterns that could be used for prompt injection
@@ -49,7 +50,7 @@ export function sanitizeForPrompt(input, maxLength = 5000) {
     // Delimiter escapes
     /```\s*(system|assistant|user)/gi,
     /<\|im_(start|end)\|>/gi,
-    /<\|(system|user|assistant)\|>/gi,
+    /<\|(system|user|assistant)\|>/gi
   ]
 
   for (const pattern of injectionPatterns) {
@@ -98,6 +99,17 @@ export function validateLength(input, maxLength = 50000) {
 const requestCounts = new Map()
 const RATE_LIMIT_WINDOW = 60 * 1000 // 1 minute
 const MAX_REQUESTS = 30 // Max AI requests per minute per user
+const MAX_CACHE_SIZE = 10000 // Prevent unbounded memory growth
+
+// Clean up expired entries every 2 minutes
+setInterval(() => {
+  const now = Date.now()
+  for (const [key, data] of requestCounts.entries()) {
+    if (now - data.windowStart > RATE_LIMIT_WINDOW * 2) {
+      requestCounts.delete(key)
+    }
+  }
+}, RATE_LIMIT_WINDOW * 2)
 
 export function checkRateLimit(userId) {
   const now = Date.now()
@@ -114,12 +126,12 @@ export function checkRateLimit(userId) {
   userData.count++
   requestCounts.set(userKey, userData)
 
-  // Clean up old entries periodically
-  if (Math.random() < 0.01) {
-    for (const [key, data] of requestCounts.entries()) {
-      if (now - data.windowStart > RATE_LIMIT_WINDOW * 2) {
-        requestCounts.delete(key)
-      }
+  // Hard cap on cache size to prevent memory exhaustion
+  if (requestCounts.size > MAX_CACHE_SIZE) {
+    const toDelete = requestCounts.size - MAX_CACHE_SIZE
+    const iter = requestCounts.keys()
+    for (let i = 0; i < toDelete; i++) {
+      requestCounts.delete(iter.next().value)
     }
   }
 
