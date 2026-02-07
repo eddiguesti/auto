@@ -221,6 +221,11 @@ router.post(
         imageUrl = output
       }
 
+      // Clean up JSON-stringified URLs (Replicate sometimes wraps in quotes)
+      if (typeof imageUrl === 'string') {
+        imageUrl = imageUrl.replace(/^"|"$/g, '')
+      }
+
       if (imageUrl) {
         await db.query(
           `

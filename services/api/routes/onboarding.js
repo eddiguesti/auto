@@ -416,6 +416,11 @@ async function generateChapterImagesAsync(db, userId, context) {
       imageUrl = output
     }
 
+    // Clean up JSON-stringified URLs (Replicate sometimes wraps in quotes)
+    if (typeof imageUrl === 'string') {
+      imageUrl = imageUrl.replace(/^"|"$/g, '')
+    }
+
     if (!imageUrl) {
       throw new Error('No image URL returned from Replicate')
     }

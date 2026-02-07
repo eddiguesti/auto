@@ -180,7 +180,8 @@ export default function Chapter() {
           body: JSON.stringify({
             chapter_id: chapterId,
             question_id: questionId,
-            answer
+            answer,
+            total_questions: chapter.questions.length
           }),
           signal: controller.signal
         })

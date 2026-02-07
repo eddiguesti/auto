@@ -47,13 +47,6 @@ async function checkAndGenerateChapterImage(db, userId, chapterId, totalQuestion
   const replicateToken = process.env.REPLICATE_API_TOKEN
   if (!replicateToken) return
 
-  // Check if image already exists
-  const existing = await db.query(
-    'SELECT id FROM chapter_images WHERE user_id = $1 AND chapter_id = $2',
-    [userId, chapterId]
-  )
-  if (existing.rows.length > 0) return // Already has image
-
   // Count answered questions for this chapter
   const countResult = await db.query(
     `SELECT COUNT(*) as count FROM stories WHERE user_id = $1 AND chapter_id = $2 AND answer IS NOT NULL AND answer != ''`,
@@ -91,13 +84,17 @@ async function checkAndGenerateChapterImage(db, userId, chapterId, totalQuestion
   const context = ctxResult.rows[0] || {}
 
   try {
-    await db.query(
+    const insertResult = await db.query(
       `
       INSERT INTO chapter_images (user_id, chapter_id, generation_status, created_at, updated_at)
       VALUES ($1, $2, 'generating', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      ON CONFLICT (user_id, chapter_id) DO NOTHING
     `,
       [userId, chapterId]
     )
+
+    // Another request already started generation
+    if (insertResult.rowCount === 0) return
 
     // Use Grok to create a personalized image prompt based on their actual stories
     let personalizedPrompt = ''
@@ -142,6 +139,11 @@ Create an image prompt:`,
       imageUrl = typeof output[0].url === 'function' ? output[0].url() : output[0]
     } else if (typeof output === 'string') {
       imageUrl = output
+    }
+
+    // Clean up JSON-stringified URLs (Replicate sometimes wraps in quotes)
+    if (typeof imageUrl === 'string') {
+      imageUrl = imageUrl.replace(/^"|"$/g, '')
     }
 
     if (imageUrl) {
