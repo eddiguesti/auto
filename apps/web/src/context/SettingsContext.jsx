@@ -2,17 +2,17 @@ import { createContext, useContext, useState, useEffect } from 'react'
 
 const SettingsContext = createContext(null)
 
-// Voice options (xAI voices)
+// Voice options (xAI voices) - British-sounding voices preferred for UK audience
 export const VOICE_OPTIONS = {
   female: {
     label: 'Female',
-    voice: 'Alloy',
-    description: 'Warm, friendly female voice'
+    voice: 'Sage',
+    description: 'Warm, gentle British female voice'
   },
   male: {
     label: 'Male',
-    voice: 'Echo',
-    description: 'Clear, calm male voice'
+    voice: 'Ash',
+    description: 'Calm, thoughtful British male voice'
   }
 }
 
