@@ -9,6 +9,7 @@ import { storySchemas } from '../schemas/index.js'
 import Replicate from 'replicate'
 import cache, { cacheKeys, invalidateUserCache } from '../utils/cache.js'
 import { createLogger } from '../utils/logger.js'
+import { scheduleUpgradeDrip } from '../utils/notifications.js'
 
 const logger = createLogger('stories')
 
@@ -62,6 +63,13 @@ async function checkAndGenerateChapterImage(db, userId, chapterId, totalQuestion
 
   // Only generate if chapter is 100% complete
   if (answeredCount < totalQuestions) return
+
+  // Schedule upgrade drip emails when free chapter is completed
+  if (chapterId === 'earliest-memories') {
+    scheduleUpgradeDrip(userId).catch(err => {
+      logger.error('Failed to schedule upgrade drip', { userId, error: err.message })
+    })
+  }
 
   logger.info('Chapter completed, generating artwork', { chapterId, userId })
 
@@ -250,6 +258,14 @@ router.post(
   })
 )
 
+// Check if user has premium access (for chapter gating)
+async function requirePremiumForChapter(db, userId, chapterId) {
+  if (chapterId === 'earliest-memories') return true
+  const result = await db.query('SELECT premium_until FROM users WHERE id = $1', [userId])
+  const premiumUntil = result.rows[0]?.premium_until
+  return premiumUntil && new Date(premiumUntil) > new Date()
+}
+
 // Get all stories for a chapter
 router.get(
   '/:chapterId',
@@ -259,6 +275,11 @@ router.get(
     const db = req.app.locals.db
     const userId = req.user.id
     const { chapterId } = req.validatedParams
+
+    const hasPremium = await requirePremiumForChapter(db, userId, chapterId)
+    if (!hasPremium) {
+      return res.status(403).json({ error: 'Premium required', code: 'PREMIUM_REQUIRED' })
+    }
 
     const stories = await getChapterStoriesWithPhotos(db, userId, chapterId)
     res.json(stories)
@@ -274,6 +295,11 @@ router.post(
     const db = req.app.locals.db
     const userId = req.user.id
     const { chapter_id, question_id, answer, total_questions } = req.validatedBody
+
+    const hasPremium = await requirePremiumForChapter(db, userId, chapter_id)
+    if (!hasPremium) {
+      return res.status(403).json({ error: 'Premium required', code: 'PREMIUM_REQUIRED' })
+    }
 
     await db.query(
       `

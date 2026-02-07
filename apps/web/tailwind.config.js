@@ -56,12 +56,12 @@ export default {
         }
       },
       fontFamily: {
-        // Cormorant - elegant serif for headings and display text
-        display: ['Cormorant', 'Georgia', 'serif'],
-        // Literata - optimized reading font for body text
-        serif: ['Literata', 'Georgia', 'serif'],
-        // System sans-serif for UI elements
-        sans: ['Inter', 'system-ui', 'sans-serif']
+        // Boska - elegant serif for headings and display text (Fontshare)
+        display: ['Boska', 'Georgia', 'serif'],
+        // Lora - warm readable serif for memoir body text
+        serif: ['Lora', 'Georgia', 'serif'],
+        // General Sans - modern sans-serif for UI elements (Fontshare)
+        sans: ['General Sans', 'system-ui', 'sans-serif']
       },
       animation: {
         shimmer: 'shimmer 2s ease-in-out infinite',

@@ -1,19 +1,24 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { chapters } from '../data/chapters'
 import QuestionCard from '../components/QuestionCard'
 import AIAssistant from '../components/AIAssistant'
 import MemoryTriggers from '../components/MemoryTriggers'
 import ChapterIllustration from '../components/ChapterIllustration'
 import { useAuth } from '../context/AuthContext'
+import { usePremium } from '../hooks/usePremium'
+import UpgradeModal from '../components/UpgradeModal'
 
 export default function Chapter() {
   const { chapterId } = useParams()
+  const navigate = useNavigate()
   const { authFetch } = useAuth()
+  const { isChapterLocked, isPremium } = usePremium()
   const [answers, setAnswers] = useState({})
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [showAI, setShowAI] = useState(false)
   const [aiContext, setAiContext] = useState(null)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const saveTimeoutRef = useRef({})
   const abortControllersRef = useRef({})
   const [pendingSaves, setPendingSaves] = useState({}) // Track unsaved changes
@@ -24,6 +29,13 @@ export default function Chapter() {
   const [showIllustration, setShowIllustration] = useState(false)
 
   const chapter = useMemo(() => chapters.find(c => c.id === chapterId), [chapterId])
+
+  // Redirect locked chapters to home
+  useEffect(() => {
+    if (chapter && isChapterLocked(chapterId)) {
+      navigate('/home', { replace: true })
+    }
+  }, [chapterId, chapter, isChapterLocked])
 
   // Memoize pending saves check
   const hasPendingSaves = useMemo(() => Object.values(pendingSaves).some(Boolean), [pendingSaves])
@@ -422,6 +434,22 @@ export default function Chapter() {
         </div>
       )}
 
+      {/* Chapter 1 Completion Celebration */}
+      {isLastQuestion && chapterId === 'earliest-memories' && !isPremium && answeredCount > 0 && (
+        <div className="mt-6 p-5 bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl border border-amber-200 text-center">
+          <h3 className="font-display text-lg text-ink mb-1">
+            Wonderful! Your First Chapter is Complete
+          </h3>
+          <p className="text-sepia/70 text-sm mb-2">
+            You've captured {answeredCount} precious memories. Your family is going to love reading
+            these.
+          </p>
+          <p className="text-amber-700 text-sm font-medium">
+            Ready to continue your story? Unlock all 10 chapters and get a printed book.
+          </p>
+        </div>
+      )}
+
       {/* Navigation */}
       <div className="flex justify-between mt-4 sm:mt-6 gap-4">
         <button
@@ -434,13 +462,30 @@ export default function Chapter() {
         </button>
         {isLastQuestion ? (
           nextChapter ? (
-            <Link
-              to={`/chapter/${nextChapter.id}`}
-              className="flex-1 sm:flex-none px-5 py-3 sm:py-2 bg-sepia text-white transition flex items-center justify-center gap-2 rounded hover:bg-sepia/90 tap-bounce"
-            >
-              <span>Next Chapter</span>
-              <span>→</span>
-            </Link>
+            isChapterLocked(nextChapter.id) ? (
+              <button
+                onClick={() => setShowUpgradeModal(true)}
+                className="flex-1 sm:flex-none px-5 py-3 sm:py-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white transition flex items-center justify-center gap-2 rounded hover:shadow-lg tap-bounce"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                  />
+                </svg>
+                <span>Unlock Next Chapter</span>
+              </button>
+            ) : (
+              <Link
+                to={`/chapter/${nextChapter.id}`}
+                className="flex-1 sm:flex-none px-5 py-3 sm:py-2 bg-sepia text-white transition flex items-center justify-center gap-2 rounded hover:bg-sepia/90 tap-bounce"
+              >
+                <span>Next Chapter</span>
+                <span>→</span>
+              </Link>
+            )
           ) : (
             <Link
               to="/home"
@@ -480,6 +525,11 @@ export default function Chapter() {
             setShowAI(false)
           }}
         />
+      )}
+
+      {/* Upgrade Modal */}
+      {showUpgradeModal && (
+        <UpgradeModal onClose={() => setShowUpgradeModal(false)} memoriesCount={answeredCount} />
       )}
     </div>
   )

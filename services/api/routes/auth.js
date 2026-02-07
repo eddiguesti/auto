@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
 import { OAuth2Client } from 'google-auth-library'
 import { generateToken, authenticateToken } from '../middleware/auth.js'
@@ -8,6 +9,7 @@ import { initializeGameState } from '../utils/gameStateManager.js'
 import validate from '../middleware/validate.js'
 import { authSchemas } from '../schemas/index.js'
 import { authLogger } from '../utils/logger.js'
+import { sendEmail, passwordResetEmailTemplate } from '../services/emailService.js'
 
 const router = Router()
 
@@ -31,8 +33,36 @@ router.post(
   requireDb,
   validate(authSchemas.register),
   asyncHandler(async (req, res) => {
-    const { email, password, name, birthYear } = req.validatedBody
+    const { email, password, name, birthYear, _hp, _ts } = req.validatedBody
     const db = req.app.locals.db
+
+    // Bot protection: reject if honeypot field is filled
+    if (_hp && _hp.length > 0) {
+      authLogger.warn('Registration rejected - honeypot filled', { email, requestId: req.id })
+      return res.status(400).json({ error: 'Registration failed' })
+    }
+
+    // Bot protection: reject if form submitted too quickly (< 2 seconds)
+    if (_ts) {
+      const timeOnPage = Date.now() - _ts
+      if (timeOnPage < 2000) {
+        authLogger.warn('Registration rejected - too fast', {
+          email,
+          timeOnPage,
+          requestId: req.id
+        })
+        return res.status(400).json({ error: 'Please take your time filling out the form' })
+      }
+      // Also reject if timestamp is from the future or too old (> 1 hour)
+      if (timeOnPage < 0 || timeOnPage > 3600000) {
+        authLogger.warn('Registration rejected - invalid timestamp', {
+          email,
+          timeOnPage,
+          requestId: req.id
+        })
+        return res.status(400).json({ error: 'Registration failed' })
+      }
+    }
 
     try {
       // Check if email exists
@@ -231,7 +261,7 @@ router.get(
     const db = req.app.locals.db
 
     const result = await db.query(
-      'SELECT id, email, name, birth_year, avatar_url FROM users WHERE id = $1',
+      'SELECT id, email, name, birth_year, avatar_url, premium_until FROM users WHERE id = $1',
       [req.user.id]
     )
 
@@ -239,7 +269,9 @@ router.get(
       return res.status(404).json({ error: 'User not found' })
     }
 
-    res.json({ user: result.rows[0] })
+    const user = result.rows[0]
+    user.isPremium = user.premium_until && new Date(user.premium_until) > new Date()
+    res.json({ user })
   })
 )
 
@@ -293,6 +325,241 @@ router.put(
         requestId: req.id
       })
       res.status(500).json({ error: 'Failed to update profile' })
+    }
+  })
+)
+
+// ============================================================================
+// PASSWORD RESET FLOW
+// ============================================================================
+
+/**
+ * POST /forgot-password
+ * Request a password reset email
+ */
+router.post(
+  '/forgot-password',
+  requireDb,
+  asyncHandler(async (req, res) => {
+    const { email } = req.body
+    const db = req.app.locals.db
+
+    // Validate email
+    if (!email || typeof email !== 'string') {
+      return res.status(400).json({ error: 'Email is required' })
+    }
+
+    const normalizedEmail = email.trim().toLowerCase()
+
+    // Always return success to prevent email enumeration attacks
+    const successResponse = {
+      success: true,
+      message:
+        'If an account exists with that email, you will receive a password reset link shortly.'
+    }
+
+    try {
+      // Find user by email
+      const userResult = await db.query(
+        'SELECT id, name, email, password_hash FROM users WHERE email = $1',
+        [normalizedEmail]
+      )
+
+      if (userResult.rows.length === 0) {
+        // User not found - still return success to prevent enumeration
+        authLogger.info('Password reset requested for non-existent email', {
+          email: normalizedEmail,
+          requestId: req.id
+        })
+        return res.json(successResponse)
+      }
+
+      const user = userResult.rows[0]
+
+      // Check if user has a password (not Google-only account)
+      if (!user.password_hash) {
+        // Google-only account - send different message but still generic response
+        authLogger.info('Password reset requested for Google-only account', {
+          email: normalizedEmail,
+          requestId: req.id
+        })
+        return res.json(successResponse)
+      }
+
+      // Invalidate any existing unused tokens for this user
+      await db.query(
+        `UPDATE password_reset_tokens
+         SET used_at = CURRENT_TIMESTAMP
+         WHERE user_id = $1 AND used_at IS NULL`,
+        [user.id]
+      )
+
+      // Generate secure token
+      const token = crypto.randomBytes(32).toString('hex')
+      const tokenHash = crypto.createHash('sha256').update(token).digest('hex')
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
+
+      // Store token hash (never store raw token)
+      await db.query(
+        `INSERT INTO password_reset_tokens (user_id, token_hash, expires_at)
+         VALUES ($1, $2, $3)`,
+        [user.id, tokenHash, expiresAt]
+      )
+
+      // Generate reset URL
+      const appUrl = process.env.APP_URL || 'https://easymemoir.co.uk'
+      const resetUrl = `${appUrl}/reset-password?token=${token}`
+
+      // Send email
+      const emailHtml = passwordResetEmailTemplate({
+        name: user.name,
+        resetUrl
+      })
+
+      await sendEmail({
+        to: user.email,
+        subject: 'Reset Your Password - Easy Memoir',
+        html: emailHtml
+      })
+
+      authLogger.info('Password reset email sent', {
+        userId: user.id,
+        email: normalizedEmail,
+        requestId: req.id
+      })
+      res.json(successResponse)
+    } catch (err) {
+      authLogger.error('Password reset request failed', {
+        error: err.message,
+        email: normalizedEmail,
+        requestId: req.id
+      })
+      // Still return success to prevent timing attacks
+      res.json(successResponse)
+    }
+  })
+)
+
+/**
+ * POST /reset-password
+ * Reset password using token
+ */
+router.post(
+  '/reset-password',
+  requireDb,
+  asyncHandler(async (req, res) => {
+    const { token, password } = req.body
+    const db = req.app.locals.db
+
+    // Validate input
+    if (!token || typeof token !== 'string') {
+      return res.status(400).json({ error: 'Reset token is required' })
+    }
+
+    if (!password || typeof password !== 'string') {
+      return res.status(400).json({ error: 'New password is required' })
+    }
+
+    // Validate password strength
+    if (password.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters' })
+    }
+    if (!/[a-z]/.test(password)) {
+      return res.status(400).json({ error: 'Password must contain a lowercase letter' })
+    }
+    if (!/[A-Z]/.test(password)) {
+      return res.status(400).json({ error: 'Password must contain an uppercase letter' })
+    }
+    if (!/[0-9]/.test(password)) {
+      return res.status(400).json({ error: 'Password must contain a number' })
+    }
+
+    try {
+      // Hash the provided token to compare with stored hash
+      const tokenHash = crypto.createHash('sha256').update(token).digest('hex')
+
+      // Find valid token
+      const tokenResult = await db.query(
+        `SELECT prt.id, prt.user_id, prt.expires_at, u.email
+         FROM password_reset_tokens prt
+         JOIN users u ON prt.user_id = u.id
+         WHERE prt.token_hash = $1
+           AND prt.used_at IS NULL
+           AND prt.expires_at > NOW()`,
+        [tokenHash]
+      )
+
+      if (tokenResult.rows.length === 0) {
+        authLogger.warn('Invalid or expired password reset token used', { requestId: req.id })
+        return res
+          .status(400)
+          .json({ error: 'Invalid or expired reset link. Please request a new one.' })
+      }
+
+      const resetToken = tokenResult.rows[0]
+
+      // Hash new password
+      const passwordHash = await bcrypt.hash(password, 12)
+
+      // Update user password
+      await db.query(
+        `UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`,
+        [passwordHash, resetToken.user_id]
+      )
+
+      // Mark token as used
+      await db.query(`UPDATE password_reset_tokens SET used_at = CURRENT_TIMESTAMP WHERE id = $1`, [
+        resetToken.id
+      ])
+
+      authLogger.info('Password reset successful', {
+        userId: resetToken.user_id,
+        email: resetToken.email,
+        requestId: req.id
+      })
+
+      res.json({
+        success: true,
+        message:
+          'Your password has been reset successfully. You can now sign in with your new password.'
+      })
+    } catch (err) {
+      authLogger.error('Password reset failed', { error: err.message, requestId: req.id })
+      res.status(500).json({ error: 'Failed to reset password. Please try again.' })
+    }
+  })
+)
+
+/**
+ * GET /verify-reset-token
+ * Verify if a reset token is valid (for frontend to check before showing form)
+ */
+router.get(
+  '/verify-reset-token',
+  requireDb,
+  asyncHandler(async (req, res) => {
+    const { token } = req.query
+    const db = req.app.locals.db
+
+    if (!token || typeof token !== 'string') {
+      return res.status(400).json({ valid: false, error: 'Token is required' })
+    }
+
+    try {
+      const tokenHash = crypto.createHash('sha256').update(token).digest('hex')
+
+      const result = await db.query(
+        `SELECT id FROM password_reset_tokens
+         WHERE token_hash = $1
+           AND used_at IS NULL
+           AND expires_at > NOW()`,
+        [tokenHash]
+      )
+
+      res.json({ valid: result.rows.length > 0 })
+    } catch (err) {
+      authLogger.error('Token verification failed', { error: err.message, requestId: req.id })
+      res.json({ valid: false })
     }
   })
 )

@@ -1,5 +1,6 @@
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import HowItWorksCarousel from '../components/HowItWorksCarousel'
 
 /**
  * DESIGN 1: "Warm Heritage"
@@ -71,7 +72,7 @@ export default function LandingDesign1() {
                   onClick={() => navigate('/register')}
                   className="font-sans text-sm bg-heritage-cta text-white px-5 py-2.5 rounded-full hover:bg-heritage-cta-hover transition-colors shadow-md shadow-heritage-cta/20"
                 >
-                  Get Started
+                  Start Free
                 </button>
               </>
             )}
@@ -95,7 +96,7 @@ export default function LandingDesign1() {
                 <span className="italic text-heritage-sepia">beautifully told</span>
               </h1>
 
-              <p className="font-serif text-lg sm:text-xl text-heritage-text leading-relaxed mb-10 max-w-xl mx-auto lg:mx-0">
+              <p className="font-sans text-lg sm:text-xl text-heritage-text leading-relaxed mb-10 max-w-xl mx-auto lg:mx-0">
                 Just talk about your memories. Clio listens, asks thoughtful questions, and
                 transforms your stories into a beautifully written autobiography your family will
                 treasure forever.
@@ -107,7 +108,7 @@ export default function LandingDesign1() {
                   onClick={handleGetStarted}
                   className="group font-sans bg-heritage-cta text-white px-8 py-4 rounded-full text-base sm:text-lg font-medium hover:bg-heritage-cta-hover transition-all shadow-lg shadow-heritage-cta/25 hover:shadow-xl hover:shadow-heritage-cta/30 w-full sm:w-auto"
                 >
-                  {user ? 'Continue Your Story' : 'Start Your Memoir'}
+                  {user ? 'Continue My Story' : 'Write My First Chapter — Free'}
                   <span className="inline-block ml-2 group-hover:translate-x-1 transition-transform">
                     →
                   </span>
@@ -222,101 +223,8 @@ export default function LandingDesign1() {
         </div>
       </section>
 
-      {/* How It Works */}
-      <section id="how-it-works" className="py-20 sm:py-28 px-4 sm:px-6">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-16 sm:mb-20">
-            <p className="font-sans text-heritage-sepia uppercase tracking-[0.25em] text-xs sm:text-sm mb-4 font-medium">
-              How It Works
-            </p>
-            <h2 className="font-display text-3xl sm:text-4xl md:text-5xl text-heritage-ink mb-6">
-              Three simple steps to your memoir
-            </h2>
-            <p className="font-serif text-lg sm:text-xl text-heritage-text max-w-2xl mx-auto">
-              No writing skills needed. Just share your memories naturally, and we'll handle the
-              rest.
-            </p>
-          </div>
-
-          <div className="grid sm:grid-cols-3 gap-8 sm:gap-12">
-            {/* Step 1 */}
-            <div className="text-center">
-              <div className="w-20 h-20 rounded-full bg-heritage-sepia-light/40 flex items-center justify-center mx-auto mb-6 border-2 border-heritage-sepia-light">
-                <svg
-                  className="w-9 h-9 text-heritage-sepia"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5z" />
-                  <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
-                </svg>
-              </div>
-              <p className="font-sans text-heritage-cta text-sm uppercase tracking-wider mb-3 font-semibold">
-                Step 1
-              </p>
-              <h3 className="font-display text-2xl text-heritage-ink mb-4">Just Talk</h3>
-              <p className="font-serif text-heritage-text leading-relaxed text-base">
-                Clio, your personal interviewer, asks thoughtful questions about your life. Answer
-                naturally, just like talking to a friend.
-              </p>
-            </div>
-
-            {/* Step 2 */}
-            <div className="text-center">
-              <div className="w-20 h-20 rounded-full bg-heritage-sepia-light/40 flex items-center justify-center mx-auto mb-6 border-2 border-heritage-sepia-light">
-                <svg
-                  className="w-9 h-9 text-heritage-sepia"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                  />
-                </svg>
-              </div>
-              <p className="font-sans text-heritage-cta text-sm uppercase tracking-wider mb-3 font-semibold">
-                Step 2
-              </p>
-              <h3 className="font-display text-2xl text-heritage-ink mb-4">We Write</h3>
-              <p className="font-serif text-heritage-text leading-relaxed text-base">
-                Clio transforms your spoken words into beautifully written prose. Your voice, your
-                stories—polished and preserved.
-              </p>
-            </div>
-
-            {/* Step 3 */}
-            <div className="text-center">
-              <div className="w-20 h-20 rounded-full bg-heritage-sepia-light/40 flex items-center justify-center mx-auto mb-6 border-2 border-heritage-sepia-light">
-                <svg
-                  className="w-9 h-9 text-heritage-sepia"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                  />
-                </svg>
-              </div>
-              <p className="font-sans text-heritage-cta text-sm uppercase tracking-wider mb-3 font-semibold">
-                Step 3
-              </p>
-              <h3 className="font-display text-2xl text-heritage-ink mb-4">Share Forever</h3>
-              <p className="font-serif text-heritage-text leading-relaxed text-base">
-                Download your memoir as a beautiful PDF or order a printed book. A gift your family
-                will treasure for generations.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* How It Works Carousel */}
+      <HowItWorksCarousel />
 
       {/* Features Section */}
       <section className="py-20 sm:py-28 px-4 sm:px-6 bg-heritage-card">
@@ -916,7 +824,7 @@ export default function LandingDesign1() {
                 onClick={handleGetStarted}
                 className="w-full font-sans bg-heritage-cta text-white px-6 py-4 rounded-full text-base font-medium hover:bg-heritage-cta-hover transition-all shadow-lg shadow-heritage-cta/25"
               >
-                Start Free, Upgrade Anytime
+                Write My First Chapter — Free
               </button>
               <p className="font-sans text-heritage-text/60 text-sm text-center mt-3">
                 VAT included
@@ -1158,7 +1066,7 @@ export default function LandingDesign1() {
                     to="/register"
                     className="text-heritage-text hover:text-heritage-cta transition-colors"
                   >
-                    Get Started
+                    Start Free
                   </Link>
                 </li>
               </ul>

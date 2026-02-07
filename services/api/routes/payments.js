@@ -61,6 +61,13 @@ const PRODUCTS = {
     currency: 'gbp',
     type: 'subscription',
     interval: 'year'
+  },
+  premium_bundle: {
+    name: 'Premium Bundle — Full Memoir + Printed Book',
+    description: '12 months access to all chapters + printed colour hardcover book',
+    price: 14900, // £149
+    currency: 'gbp',
+    type: 'premium_bundle'
   }
 }
 
@@ -159,6 +166,17 @@ export async function handleStripeWebhook(req, res, db) {
         `,
           [userId, session.id, productId, productType, session.amount_total]
         )
+
+        // Activate premium access for premium_bundle purchases
+        if (productType === 'premium_bundle') {
+          await db.query(
+            `UPDATE users SET premium_until = CURRENT_TIMESTAMP + INTERVAL '12 months',
+             premium_activated_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+             WHERE id = $1`,
+            [userId]
+          )
+          logger.info('Premium activated', { userId, productId })
+        }
 
         logger.info('Payment completed', { userId, productId })
       } catch (err) {

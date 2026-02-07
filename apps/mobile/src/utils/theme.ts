@@ -1,28 +1,30 @@
 /**
- * Theme System
- * Premium memoir aesthetic with elegant typography
+ * Theme System - EasyMemoir Mobile
  *
- * Design: Luxurious, literary, warm, sophisticated
- * Typography: Cormorant (headings) + Literata (body)
- * Inspired by: Luxury publishing, hardcover books, The New Yorker
+ * Design: Warm heritage aesthetic, optimized for seniors & gift-buyers
+ * Typography: Lora (display/body) + System Sans (UI)
+ * Colors: Heritage palette (warm cream, terracotta, sepia)
+ *
+ * Matches web style guide: STYLE_GUIDE.md
  */
 
 import { Platform } from 'react-native';
 
-// Premium font families
+// Font families - Lora for elegance, system sans for UI
 export const fonts = {
-  // Cormorant - elegant serif for headings and display text
-  display: 'Cormorant_700Bold',
-  displayMedium: 'Cormorant_600SemiBold',
-  displayRegular: 'Cormorant_500Medium',
+  // Lora - elegant serif for headings and display text
+  display: 'Lora_700Bold',
+  displayMedium: 'Lora_600SemiBold',
+  displayRegular: 'Lora_500Medium',
 
-  // Literata - optimized reading font for body text
-  body: 'Literata_400Regular',
-  bodyMedium: 'Literata_500Medium',
-  bodySemiBold: 'Literata_600SemiBold',
-  bodyBold: 'Literata_700Bold',
+  // Lora - warm readable serif for body/memoir text
+  body: 'Lora_400Regular',
+  bodyMedium: 'Lora_500Medium',
+  bodySemiBold: 'Lora_600SemiBold',
+  bodyBold: 'Lora_700Bold',
+  bodyItalic: 'Lora_400Regular_Italic',
 
-  // System sans-serif for UI elements
+  // System sans-serif for UI elements (matches General Sans on web)
   sans: Platform.select({
     ios: 'System',
     android: 'Roboto',
@@ -38,74 +40,87 @@ export const fonts = {
 
   // Fallbacks for web
   serifFallback: Platform.select({
-    web: 'Cormorant, Georgia, serif',
-    default: 'Cormorant_400Regular',
+    web: 'Lora, Georgia, serif',
+    default: 'Lora_400Regular',
   }) as string,
 };
 
-// Memoir-inspired color palette
+// Heritage color palette - optimized for seniors
+// Warm tones are easier for aging eyes to perceive
 export const colors = {
-  // Primary - Warm, muted olive/forest green (literary)
-  primary: '#4A7C59',
-  primaryLight: '#6B9B7A',
-  primaryDark: '#3A6147',
-  primaryMuted: '#E8F0EA',
+  // Heritage backgrounds - warm cream tones
+  background: '#FBF7F2',      // heritage-cream
+  backgroundAlt: '#FFFCF9',   // heritage-card
+  backgroundWarm: '#FBF8F3',
+  surface: '#FFFFFF',
+  surfaceHover: '#FAF8F5',
 
-  // Accent - Warm burgundy/wine for highlights
-  accent: '#8B4557',
-  accentLight: '#A85D6F',
-  accentMuted: '#F5EAEC',
+  // Heritage text - warm charcoal for high contrast
+  text: '#3D3833',            // heritage-ink
+  textSecondary: '#6B6560',   // heritage-text
+  textMuted: '#8A857D',
+  textOnPrimary: '#FFFFFF',
+
+  // Heritage sepia accents - nostalgic, trustworthy
+  sepia: '#9C7B5C',           // heritage-sepia
+  sepiaLight: '#D4C4B0',      // heritage-sepia-light
+  sepiaDark: '#7A6248',       // heritage-sepia-dark
+
+  // CTA - Terracotta (warm, visible to seniors, high conversion)
+  cta: '#D97853',             // heritage-cta
+  ctaHover: '#C4613D',        // heritage-cta-hover
+  ctaLight: '#E8946F',        // heritage-cta-light
+
+  // Primary actions (use CTA for main buttons)
+  primary: '#D97853',
+  primaryLight: '#E8946F',
+  primaryDark: '#C4613D',
+  primaryMuted: '#FDF5F2',
+
+  // Success - Sage green
+  success: '#7A9B76',         // heritage-sage
+  successLight: '#A8C4A4',    // heritage-sage-light
+
+  // Accent - Sepia for secondary elements
+  accent: '#9C7B5C',
+  accentLight: '#D4C4B0',
+  accentMuted: '#F5F0EA',
 
   // Secondary - Soft gold for achievements
   secondary: '#C4A35A',
   secondaryLight: '#D4B86A',
   secondaryMuted: '#FCF8EF',
 
-  // Backgrounds - Warm, paper-like tones
-  background: '#FDFBF7',
-  backgroundAlt: '#F7F4EF',
-  backgroundWarm: '#FBF8F3',
-  surface: '#FFFFFF',
-  surfaceHover: '#FAF8F5',
-
-  // Text - Warm, readable ink colors
-  text: '#2D2A26',
-  textSecondary: '#5A5651',
-  textMuted: '#8A857D',
-  textOnPrimary: '#FFFFFF',
-
-  // Semantic
-  success: '#4A7C59',
+  // Semantic colors
   warning: '#C4A35A',
   error: '#B54B4B',
   info: '#5B7B8C',
 
-  // Gamification (subtle, not garish)
+  // Gamification (subtle, heritage-aligned)
   streak: '#C4A35A',
-  xp: '#5B7B8C',
+  xp: '#9C7B5C',
   gold: '#C4A35A',
-  heart: '#8B4557',
+  heart: '#D97853',
 
   // UI Elements
-  border: '#E5E1DA',
-  borderLight: '#F0EDE8',
+  border: '#D4C4B0',          // heritage-sepia-light
+  borderLight: '#E8E2DA',
   divider: '#EAE6E0',
-  overlay: 'rgba(45, 42, 38, 0.5)',
+  overlay: 'rgba(61, 56, 51, 0.5)',
 
-  // Legacy (for compatibility)
-  parchment: '#FDFBF7',
-  cream: '#F7F4EF',
-  sepia: '#5A5651',
-  ink: '#2D2A26',
+  // Legacy compatibility
+  parchment: '#FBF7F2',
+  cream: '#FFFCF9',
+  ink: '#3D3833',
   amber: '#C4A35A',
   white: '#FFFFFF',
   black: '#1A1917',
   gray: '#8A857D',
   lightGray: '#F0EDE8',
-  green: '#4A7C59',
+  green: '#7A9B76',
   red: '#B54B4B',
-  recording: '#B54B4B',
-  waveform: '#4A7C59',
+  recording: '#D97853',
+  waveform: '#9C7B5C',
 };
 
 export const spacing = {
@@ -123,45 +138,45 @@ export const borderRadius = {
   md: 8,
   lg: 12,
   xl: 16,
-  xxl: 20,
+  xxl: 24,
   full: 9999,
 };
 
-// Elegant, subtle shadows
+// Elegant, subtle shadows with warm tones
 export const shadows = {
   sm: {
-    shadowColor: '#2D2A26',
+    shadowColor: '#3D3833',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06,
     shadowRadius: 3,
     elevation: 1,
   },
   md: {
-    shadowColor: '#2D2A26',
+    shadowColor: '#3D3833',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 6,
     elevation: 2,
   },
   lg: {
-    shadowColor: '#2D2A26',
+    shadowColor: '#3D3833',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 12,
     elevation: 4,
   },
   button: {
-    shadowColor: '#4A7C59',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 0,
-    elevation: 3,
+    shadowColor: '#D97853',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
   },
 };
 
-// Premium typography with Cormorant + Literata
+// Typography system - Lora for heritage feel
 export const typography = {
-  // Display headings - elegant Cormorant
+  // Display headings - elegant Lora
   display: {
     fontSize: 38,
     fontFamily: fonts.display,
@@ -189,7 +204,7 @@ export const typography = {
     color: colors.text,
   },
 
-  // Body text - Literata for readability
+  // Body text - Lora for warmth and readability
   bodySerif: {
     fontSize: 18,
     fontFamily: fonts.body,
@@ -216,7 +231,7 @@ export const typography = {
     color: colors.text,
   },
 
-  // UI text - clean sans-serif
+  // UI text - clean system sans-serif
   caption: {
     fontSize: 14,
     fontFamily: fonts.sans,
@@ -236,9 +251,9 @@ export const typography = {
     fontFamily: fonts.sans,
     fontWeight: '600' as const,
     lineHeight: 14,
-    letterSpacing: 0.8,
+    letterSpacing: 1.5,
     textTransform: 'uppercase' as const,
-    color: colors.textMuted,
+    color: colors.sepia,
   },
 
   // Button text
@@ -278,14 +293,13 @@ export const typography = {
   // Quote/memoir text
   quote: {
     fontSize: 20,
-    fontFamily: fonts.body,
-    fontStyle: 'italic' as const,
+    fontFamily: fonts.bodyItalic,
     lineHeight: 32,
     color: colors.textSecondary,
   },
 };
 
-// Elegant microcopy for memoir context
+// Heritage-themed microcopy
 export const microcopy = {
   greeting: [
     "What story will you tell today?",

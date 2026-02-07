@@ -4,39 +4,33 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import {
   useFonts,
-  Cormorant_400Regular,
-  Cormorant_500Medium,
-  Cormorant_600SemiBold,
-  Cormorant_700Bold,
-} from '@expo-google-fonts/cormorant';
-import {
-  Literata_400Regular,
-  Literata_500Medium,
-  Literata_600SemiBold,
-  Literata_700Bold,
-} from '@expo-google-fonts/literata';
+  Lora_400Regular,
+  Lora_500Medium,
+  Lora_600SemiBold,
+  Lora_700Bold,
+  Lora_400Regular_Italic,
+  Lora_500Medium_Italic,
+} from '@expo-google-fonts/lora';
 import { AuthProvider } from './src/context/AuthContext';
 import { GameProvider } from './src/context/GameContext';
 import AppNavigator from './src/navigation/AppNavigator';
 
 export default function App() {
   const [fontsLoaded] = useFonts({
-    // Cormorant - elegant display font for headings
-    Cormorant_400Regular,
-    Cormorant_500Medium,
-    Cormorant_600SemiBold,
-    Cormorant_700Bold,
-    // Literata - optimized reading font for body text
-    Literata_400Regular,
-    Literata_500Medium,
-    Literata_600SemiBold,
-    Literata_700Bold,
+    // Lora - elegant serif for both display and body text
+    // Matches web style guide (warm, readable, heritage feel)
+    Lora_400Regular,
+    Lora_500Medium,
+    Lora_600SemiBold,
+    Lora_700Bold,
+    Lora_400Regular_Italic,
+    Lora_500Medium_Italic,
   });
 
   if (!fontsLoaded) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4A7C59" />
+        <ActivityIndicator size="large" color="#D97853" />
       </View>
     );
   }

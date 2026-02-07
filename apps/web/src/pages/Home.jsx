@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { chapters } from '../data/chapters'
 import { useAuth } from '../context/AuthContext'
+import { usePremium } from '../hooks/usePremium'
 import ExportModal from '../components/ExportModal'
 import ProgressCard from '../components/ProgressCard'
 import BookPreview from '../components/BookPreview'
@@ -10,6 +11,7 @@ import TelegramLinkModal from '../components/TelegramLinkModal'
 import OnboardingModal from '../components/OnboardingModal'
 import ImageUnlockAnimation from '../components/ImageUnlockAnimation'
 import TourOverlay from '../components/TourOverlay'
+import UpgradeModal from '../components/UpgradeModal'
 
 // Memoized chapter card to prevent re-renders when other chapters update
 const ChapterCard = memo(function ChapterCard({
@@ -18,7 +20,10 @@ const ChapterCard = memo(function ChapterCard({
   chapterImage,
   isImageRevealed,
   isAnimatingThis,
-  onImageClick
+  onImageClick,
+  isLocked,
+  isFreeChapter,
+  onUpgradeClick
 }) {
   const isComplete = chapterProgress === 100
   const hasStarted = chapterProgress > 0
@@ -31,12 +36,18 @@ const ChapterCard = memo(function ChapterCard({
   return (
     <div
       className={`relative overflow-hidden rounded-xl border transition-all hover:shadow-lg hover:-translate-y-1 stagger-item group ${
-        isComplete ? 'border-green-300' : hasStarted ? 'border-sepia/30' : 'border-sepia/20'
+        isLocked
+          ? 'border-stone-200'
+          : isComplete
+            ? 'border-green-300'
+            : hasStarted
+              ? 'border-sepia/30'
+              : 'border-sepia/20'
       }`}
     >
       {/* Image Section */}
       <div className="relative h-40 sm:h-48 overflow-hidden">
-        {imageUrl ? (
+        {imageUrl && !isLocked ? (
           <img
             src={imageUrl}
             alt={chapter.title}
@@ -49,9 +60,15 @@ const ChapterCard = memo(function ChapterCard({
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 cursor-zoom-in"
           />
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-stone-100 to-stone-200 flex flex-col items-center justify-center">
-            <span className="text-4xl mb-2 grayscale opacity-50">{chapter.icon}</span>
-            {!isComplete && !isImageGenerating && (
+          <div
+            className={`w-full h-full flex flex-col items-center justify-center ${isLocked ? 'bg-gradient-to-br from-stone-100 to-stone-200' : 'bg-gradient-to-br from-stone-100 to-stone-200'}`}
+          >
+            <span
+              className={`text-4xl mb-2 ${isLocked ? 'grayscale opacity-30' : 'grayscale opacity-50'}`}
+            >
+              {chapter.icon}
+            </span>
+            {!isComplete && !isImageGenerating && !isLocked && (
               <span className="text-stone-400 text-xs text-center px-4">
                 Complete this chapter to unlock your personalized artwork
               </span>
@@ -59,32 +76,61 @@ const ChapterCard = memo(function ChapterCard({
           </div>
         )}
 
+        {/* Lock overlay for locked chapters */}
+        {isLocked && (
+          <div className="absolute inset-0 bg-stone-900/30 backdrop-blur-[1px] flex flex-col items-center justify-center z-[5]">
+            <svg
+              className="w-7 h-7 text-white/80 mb-1.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+              />
+            </svg>
+            <span className="text-white/90 text-xs font-medium">Premium</span>
+          </div>
+        )}
+
         {/* Shimmer for generating images */}
-        {isImageGenerating && (
+        {isImageGenerating && !isLocked && (
           <div className="absolute inset-0 bg-gradient-to-r from-sepia/10 via-sepia/30 to-sepia/10 animate-pulse flex flex-col items-center justify-center">
             <div className="w-8 h-8 border-2 border-sepia/30 border-t-sepia rounded-full animate-spin mb-2" />
             <span className="text-sepia/60 text-sm">Creating your artwork...</span>
           </div>
         )}
 
+        {/* FREE badge on first chapter */}
+        {isFreeChapter && (
+          <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-500 text-white z-10 shadow-sm">
+            FREE
+          </div>
+        )}
+
         {/* Progress badge */}
-        <div
-          className={`absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs font-medium ${
-            isComplete
-              ? 'bg-green-500 text-white'
-              : hasStarted
-                ? 'bg-white/90 text-sepia'
-                : 'bg-white/80 text-sepia/60'
-          }`}
-        >
-          {isComplete ? '✓ Complete' : `${chapterProgress}%`}
-        </div>
+        {!isLocked && (
+          <div
+            className={`absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs font-medium ${
+              isComplete
+                ? 'bg-green-500 text-white'
+                : hasStarted
+                  ? 'bg-white/90 text-sepia'
+                  : 'bg-white/80 text-sepia/60'
+            }`}
+          >
+            {isComplete ? '✓ Complete' : `${chapterProgress}%`}
+          </div>
+        )}
 
         {/* Gradient overlay at bottom */}
         <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/50 to-transparent" />
 
         {/* Chapter title overlay */}
-        <div className="absolute bottom-3 left-3 right-3">
+        <div className="absolute bottom-3 left-3 right-3 z-[6]">
           <h3 className="text-white font-display text-lg leading-tight drop-shadow-lg">
             {chapter.title}
           </h3>
@@ -93,47 +139,68 @@ const ChapterCard = memo(function ChapterCard({
 
       {/* Content Section */}
       <div className="p-4 bg-white">
-        <p className="text-sepia/60 text-sm mb-3 line-clamp-2">{chapter.subtitle}</p>
+        <p className={`text-sm mb-3 line-clamp-2 ${isLocked ? 'text-stone-400' : 'text-sepia/60'}`}>
+          {chapter.subtitle}
+        </p>
 
         {/* Progress bar */}
-        <div className="w-full h-1.5 bg-sepia/10 rounded-full mb-4 overflow-hidden">
+        <div
+          className={`w-full h-1.5 rounded-full mb-4 overflow-hidden ${isLocked ? 'bg-stone-100' : 'bg-sepia/10'}`}
+        >
           <div
-            className={`h-full transition-all ${isComplete ? 'bg-green-400' : 'bg-sepia/50'}`}
-            style={{ width: `${chapterProgress}%` }}
+            className={`h-full transition-all ${isLocked ? 'bg-stone-200' : isComplete ? 'bg-green-400' : 'bg-sepia/50'}`}
+            style={{ width: isLocked ? '0%' : `${chapterProgress}%` }}
           />
         </div>
 
         {/* Action buttons */}
-        <div className="flex gap-2">
-          <Link
-            to={`/chapter/${chapter.id}`}
-            className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-sepia/10 hover:bg-sepia/20 text-sepia rounded-lg transition text-sm font-medium"
+        {isLocked ? (
+          <button
+            onClick={onUpgradeClick}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg transition text-sm font-medium hover:shadow-md hover:-translate-y-0.5"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={2}
-                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
               />
             </svg>
-            Write
-          </Link>
-          <Link
-            to={`/voice?chapter=${chapter.id}`}
-            className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-sepia hover:bg-ink text-white rounded-lg transition text-sm font-medium"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
-              />
-            </svg>
-            Talk
-          </Link>
-        </div>
+            Unlock This Chapter
+          </button>
+        ) : (
+          <div className="flex gap-2">
+            <Link
+              to={`/chapter/${chapter.id}`}
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-sepia/10 hover:bg-sepia/20 text-sepia rounded-lg transition text-sm font-medium"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                />
+              </svg>
+              Write
+            </Link>
+            <Link
+              to={`/voice?chapter=${chapter.id}`}
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-sepia hover:bg-ink text-white rounded-lg transition text-sm font-medium"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+                />
+              </svg>
+              Talk
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -141,6 +208,7 @@ const ChapterCard = memo(function ChapterCard({
 
 export default function Home() {
   const { user, authFetch, refreshUser } = useAuth()
+  const { isPremium, isChapterLocked } = usePremium()
   const [searchParams, setSearchParams] = useSearchParams()
   const [progress, setProgress] = useState({})
   const [loading, setLoading] = useState(true)
@@ -150,12 +218,15 @@ export default function Home() {
   const [showCertificate, setShowCertificate] = useState(false)
   const [showTelegramLink, setShowTelegramLink] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(false)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [upgradeVariant, setUpgradeVariant] = useState('default')
   const [chapterImages, setChapterImages] = useState({})
   const [lastWorkedOn, setLastWorkedOn] = useState(null)
   const [unlockAnimation, setUnlockAnimation] = useState(null) // { chapterId, imageUrl, chapterTitle }
   const [revealedImages, setRevealedImages] = useState(new Set()) // Track images that have been revealed via animation
   const [showTour, setShowTour] = useState(false)
   const [lightboxImage, setLightboxImage] = useState(null) // { imageUrl, title }
+  const [showPremiumCelebration, setShowPremiumCelebration] = useState(false)
   const prevChapterImagesRef = useRef({})
   const showTourRef = useRef(false)
   const pendingUnlockRef = useRef(null)
@@ -180,7 +251,20 @@ export default function Home() {
     // Check for onboarding param
     if (searchParams.get('onboarding') === 'true') {
       setShowOnboarding(true)
-      // Clear the param from URL
+      setSearchParams({})
+    }
+
+    // Check for premium activation (returning from Stripe)
+    if (searchParams.get('premium_activated') === 'true') {
+      refreshUser()
+      setShowPremiumCelebration(true)
+      setSearchParams({})
+    }
+
+    // Check for upgrade dismissed (cancelled Stripe checkout)
+    if (searchParams.get('upgrade_dismissed') === 'true') {
+      setUpgradeVariant('cancelled')
+      setShowUpgradeModal(true)
       setSearchParams({})
     }
   }, [])
@@ -323,6 +407,12 @@ export default function Home() {
     setLightboxImage({ imageUrl, title })
   }, [])
 
+  // Memoize upgrade click handler
+  const handleUpgradeClick = useCallback(() => {
+    setUpgradeVariant('default')
+    setShowUpgradeModal(true)
+  }, [])
+
   // Inline title edit
   const handleTitleEdit = () => {
     setEditName(user?.name || '')
@@ -441,8 +531,41 @@ export default function Home() {
         />
       </div>
 
+      {/* Upgrade Nudge Banner (shown after completing chapter 1 but not premium) */}
+      {!isPremium && chapterProgressMap['earliest-memories'] === 100 && (
+        <div className="mb-8 p-4 bg-gradient-to-r from-amber-50/60 to-orange-50/40 rounded-xl border border-amber-200/40 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <svg
+                className="w-5 h-5 text-amber-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                />
+              </svg>
+            </div>
+            <div>
+              <p className="text-ink font-medium text-sm">Your story is just getting started</p>
+              <p className="text-sepia/60 text-xs">Unlock all chapters + get a printed book</p>
+            </div>
+          </div>
+          <button
+            onClick={handleUpgradeClick}
+            className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 transition whitespace-nowrap"
+          >
+            See Offer
+          </button>
+        </div>
+      )}
+
       {/* Continue Where You Left Off */}
-      {lastWorkedOn && (
+      {lastWorkedOn && !isChapterLocked(lastWorkedOn.chapterId) && (
         <div className="mb-8 p-4 bg-gradient-to-r from-sepia/5 to-amber-50/50 rounded-xl border border-sepia/10">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -580,6 +703,9 @@ export default function Home() {
               isImageRevealed={revealedImages.has(chapter.id)}
               isAnimatingThis={unlockAnimation?.chapterId === chapter.id}
               onImageClick={handleImageClick}
+              isLocked={isChapterLocked(chapter.id)}
+              isFreeChapter={!isPremium && chapter.id === 'earliest-memories'}
+              onUpgradeClick={handleUpgradeClick}
             />
           ))}
         </div>
@@ -701,6 +827,54 @@ export default function Home() {
       )}
 
       {showTelegramLink && <TelegramLinkModal onClose={() => setShowTelegramLink(false)} />}
+
+      {showUpgradeModal && (
+        <UpgradeModal
+          onClose={() => setShowUpgradeModal(false)}
+          memoriesCount={progress['earliest-memories'] || 0}
+          variant={upgradeVariant}
+        />
+      )}
+
+      {/* Premium Activation Celebration */}
+      {showPremiumCelebration && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          onClick={() => setShowPremiumCelebration(false)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-8 text-center"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-5 shadow-lg">
+              <svg
+                className="w-8 h-8 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            </div>
+            <h3 className="text-xl font-display text-ink mb-2">Welcome to Premium!</h3>
+            <p className="text-sepia/70 text-sm mb-5">
+              All chapters are now unlocked. Your printed book is included when you complete your
+              story.
+            </p>
+            <button
+              onClick={() => setShowPremiumCelebration(false)}
+              className="px-6 py-3 bg-ink text-white rounded-xl font-medium hover:bg-ink/90 transition"
+            >
+              Start Writing
+            </button>
+          </div>
+        </div>
+      )}
 
       {showOnboarding && (
         <OnboardingModal

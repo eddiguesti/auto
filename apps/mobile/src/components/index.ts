@@ -65,6 +65,15 @@ export {
   IconArchive,
   IconLeaf,
   IconTree,
+  IconPhoto,
+  IconMusic,
+  IconLocation,
+  IconExternalLink,
+  IconChevronDown,
+  IconChevronUp,
+  IconX,
+  IconMessageCircle,
+  IconLightbulb,
 } from './Icons';
 
 // Loading states

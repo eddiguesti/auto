@@ -44,6 +44,8 @@ import chapterImagesRouter from './routes/chapter-images.js'
 import gameRouter from './routes/game.js'
 import notificationRoutes from './routes/notifications.js'
 import userRouter from './routes/user.js'
+import newsletterRouter from './routes/newsletter.js'
+import memosRouter from './routes/memos.js'
 import { initializeCronJobs } from './cron/index.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -167,6 +169,9 @@ app.use('/api/auth', authRouter)
 // Support chat (public - so users can get help even when logged out)
 app.use('/api/support', supportRouter)
 
+// Newsletter subscription (public - with built-in rate limiting)
+app.use('/api/newsletter', newsletterRouter)
+
 // Public voice session endpoint for landing page (uses xAI Realtime API)
 app.post('/api/landing-voice/session', async (req, res) => {
   try {
@@ -247,6 +252,9 @@ app.use('/api/notifications', notificationRoutes)
 
 // User routes (protected - data export, account deletion)
 app.use('/api/user', userRouter)
+
+// Quick memos routes (protected - free-form voice memos)
+app.use('/api/memos', authenticateToken, memosRouter)
 
 // Stripe webhook (needs raw body, no auth)
 app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), (req, res) =>

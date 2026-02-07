@@ -1,5 +1,6 @@
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import HowItWorksCarousel from '../components/HowItWorksCarousel'
 
 export default function Landing() {
   const { user } = useAuth()
@@ -175,88 +176,8 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* How It Works */}
-      <section id="how-it-works" className="how-it-works py-16 sm:py-24 px-4 sm:px-6">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12 sm:mb-20">
-            <p className="font-sans text-sepia uppercase tracking-[0.2em] sm:tracking-[0.3em] text-[10px] sm:text-xs mb-3 sm:mb-4">
-              How It Works
-            </p>
-            <h2 className="font-display text-3xl sm:text-4xl md:text-5xl text-ink mb-4 sm:mb-6">
-              Three simple steps to your memoir
-            </h2>
-            <p className="font-serif text-base sm:text-lg text-warmgray max-w-2xl mx-auto">
-              No writing skills needed. Just share your memories naturally, and we'll handle the
-              rest.
-            </p>
-          </div>
-
-          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-8 sm:gap-12">
-            <div className="text-center group">
-              <div className="w-20 h-20 rounded-full bg-sepia/10 flex items-center justify-center mx-auto mb-6 group-hover:bg-sepia/20 transition">
-                <svg className="w-8 h-8 text-sepia" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5z" />
-                  <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
-                </svg>
-              </div>
-              <p className="font-sans text-sepia text-sm uppercase tracking-wider mb-2">Step 1</p>
-              <h3 className="font-display text-2xl text-ink mb-3 italic">Just Talk</h3>
-              <p className="font-serif text-warmgray leading-relaxed">
-                Clio, your personal interviewer, asks thoughtful questions about your life. Answer
-                naturally, just like talking to a friend.
-              </p>
-            </div>
-
-            <div className="text-center group">
-              <div className="w-20 h-20 rounded-full bg-sepia/10 flex items-center justify-center mx-auto mb-6 group-hover:bg-sepia/20 transition">
-                <svg
-                  className="w-8 h-8 text-sepia"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                  />
-                </svg>
-              </div>
-              <p className="font-sans text-sepia text-sm uppercase tracking-wider mb-2">Step 2</p>
-              <h3 className="font-display text-2xl text-ink mb-3 italic">We Write</h3>
-              <p className="font-serif text-warmgray leading-relaxed">
-                Clio transforms your spoken words into beautifully written prose. Your voice, your
-                stories—polished and preserved.
-              </p>
-            </div>
-
-            <div className="text-center group">
-              <div className="w-20 h-20 rounded-full bg-sepia/10 flex items-center justify-center mx-auto mb-6 group-hover:bg-sepia/20 transition">
-                <svg
-                  className="w-8 h-8 text-sepia"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                  />
-                </svg>
-              </div>
-              <p className="font-sans text-sepia text-sm uppercase tracking-wider mb-2">Step 3</p>
-              <h3 className="font-display text-2xl text-ink mb-3 italic">Share Forever</h3>
-              <p className="font-serif text-warmgray leading-relaxed">
-                Download your memoir as a beautiful PDF or order a printed book. A gift your family
-                will treasure for generations.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* How It Works - Interactive Carousel */}
+      <HowItWorksCarousel />
 
       {/* Features Section */}
       <section className="py-16 sm:py-24 px-4 sm:px-6 bg-white">

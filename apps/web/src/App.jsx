@@ -59,6 +59,8 @@ const LandingDesign1 = lazy(() => import('./pages/LandingDesign1'))
 const FacebookLanding = lazy(() => import('./pages/FacebookLanding'))
 const Login = lazy(() => import('./pages/Login'))
 const Register = lazy(() => import('./pages/Register'))
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'))
+const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 const Terms = lazy(() => import('./pages/Terms'))
 const Privacy = lazy(() => import('./pages/Privacy'))
 const Cookies = lazy(() => import('./pages/Cookies'))
@@ -66,6 +68,11 @@ const HowItWorks = lazy(() => import('./pages/HowItWorks'))
 const Blog = lazy(() => import('./pages/Blog'))
 const BlogPost = lazy(() => import('./pages/BlogPost'))
 const PreviewStyle = lazy(() => import('./pages/PreviewStyle'))
+const Pricing = lazy(() => import('./pages/Pricing'))
+const Gift = lazy(() => import('./pages/Gift'))
+const FAQ = lazy(() => import('./pages/FAQ'))
+const About = lazy(() => import('./pages/About'))
+const SampleMemoir = lazy(() => import('./pages/SampleMemoir'))
 
 // Minimal loading fallback - keeps UI feel consistent
 const PageLoader = () => (
@@ -89,10 +96,17 @@ function App() {
                   <Route path="/welcome" element={<FacebookLanding />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="/terms" element={<Terms />} />
                   <Route path="/privacy" element={<Privacy />} />
                   <Route path="/cookies" element={<Cookies />} />
                   <Route path="/how-it-works" element={<HowItWorks />} />
+                  <Route path="/pricing" element={<Pricing />} />
+                  <Route path="/gift" element={<Gift />} />
+                  <Route path="/faq" element={<FAQ />} />
+                  <Route path="/about" element={<About />} />
+                  <Route path="/sample" element={<SampleMemoir />} />
                   <Route path="/blog" element={<Blog />} />
                   <Route path="/blog/:slug" element={<BlogPost />} />
 

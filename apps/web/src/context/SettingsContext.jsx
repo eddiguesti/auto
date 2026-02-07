@@ -16,28 +16,28 @@ export const VOICE_OPTIONS = {
   }
 }
 
-// Speaking pace presets - generous silence durations to let people think
+// Speaking pace presets - very generous silence durations to let people finish their thoughts
 export const SPEAKING_PACE = {
   slow: {
     label: 'Slow',
-    description: 'Plenty of time to think and respond',
-    silence_duration_ms: 12000,
-    threshold: 0.85,
-    prefix_padding_ms: 1200
+    description: 'Maximum time to think and share your story fully',
+    silence_duration_ms: 25000,
+    threshold: 0.92,
+    prefix_padding_ms: 2000
   },
   normal: {
     label: 'Normal',
-    description: 'Balanced conversation pace',
-    silence_duration_ms: 8000,
-    threshold: 0.75,
-    prefix_padding_ms: 900
+    description: 'Plenty of time to speak without interruption',
+    silence_duration_ms: 18000,
+    threshold: 0.88,
+    prefix_padding_ms: 1500
   },
   fast: {
     label: 'Fast',
-    description: 'Quick back-and-forth dialogue',
-    silence_duration_ms: 5000,
-    threshold: 0.65,
-    prefix_padding_ms: 600
+    description: 'Quicker responses but still patient',
+    silence_duration_ms: 10000,
+    threshold: 0.8,
+    prefix_padding_ms: 1000
   }
 }
 
@@ -78,11 +78,7 @@ export function SettingsProvider({ children }) {
     VOICE_OPTIONS
   }
 
-  return (
-    <SettingsContext.Provider value={value}>
-      {children}
-    </SettingsContext.Provider>
-  )
+  return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>
 }
 
 export function useSettings() {

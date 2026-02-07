@@ -104,6 +104,14 @@ export async function initDatabase() {
       ALTER TABLE users ADD COLUMN IF NOT EXISTS birth_year INTEGER
     `)
 
+    // Migration: Add premium access columns
+    await client.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS premium_until TIMESTAMP
+    `)
+    await client.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS premium_activated_at TIMESTAMP
+    `)
+
     // Migration: Drop old tables without user_id and recreate
     // Check if stories table has user_id column
     const checkColumn = await client.query(`
@@ -455,6 +463,48 @@ export async function initDatabase() {
       CREATE INDEX IF NOT EXISTS idx_book_covers_user ON book_covers(user_id)
     `)
 
+    // ==================== VOICE SESSION TABLES ====================
+
+    // Voice sessions - tracks multi-question interview sessions
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS voice_sessions (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        chapter_id TEXT NOT NULL,
+        session_status TEXT DEFAULT 'active',  -- 'active', 'compiling', 'completed'
+        questions_answered TEXT[] DEFAULT '{}',
+        current_question_id TEXT,
+        questions_since_compile INTEGER DEFAULT 0,
+        session_transcripts JSONB DEFAULT '[]',
+        started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        ended_at TIMESTAMP,
+        last_compile_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `)
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_voice_sessions_user ON voice_sessions(user_id)
+    `)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_voice_sessions_user_chapter ON voice_sessions(user_id, chapter_id)
+    `)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_voice_sessions_active ON voice_sessions(user_id, chapter_id, session_status)
+    `)
+
+    // Migration: Add voice session columns to stories table
+    await client.query(`
+      ALTER TABLE stories ADD COLUMN IF NOT EXISTS compiled_content TEXT
+    `)
+    await client.query(`
+      ALTER TABLE stories ADD COLUMN IF NOT EXISTS compiled_at TIMESTAMP
+    `)
+    await client.query(`
+      ALTER TABLE stories ADD COLUMN IF NOT EXISTS voice_session_id INTEGER REFERENCES voice_sessions(id)
+    `)
+
     // ==================== MEMORY QUEST TABLES ====================
 
     // User gamification state
@@ -802,6 +852,60 @@ export async function initDatabase() {
     `)
 
     // ==================== END MEMORY QUEST TABLES ====================
+
+    // Newsletter subscribers
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS newsletter_subscribers (
+        id SERIAL PRIMARY KEY,
+        email TEXT UNIQUE NOT NULL,
+        subscribed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        unsubscribed_at TIMESTAMP,
+        source TEXT DEFAULT 'blog',
+        ip_address TEXT,
+        user_agent TEXT
+      )
+    `)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_newsletter_email ON newsletter_subscribers(email)
+    `)
+
+    // Password reset tokens
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS password_reset_tokens (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        token_hash TEXT NOT NULL,
+        expires_at TIMESTAMP NOT NULL,
+        used_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_password_reset_user ON password_reset_tokens(user_id)
+    `)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_password_reset_expires ON password_reset_tokens(expires_at) WHERE used_at IS NULL
+    `)
+
+    // Quick voice memos - free-form voice recordings
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS memos (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        title TEXT,
+        audio_url TEXT NOT NULL,
+        transcript TEXT,
+        duration INTEGER,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_memos_user ON memos(user_id)
+    `)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_memos_created ON memos(user_id, created_at DESC)
+    `)
 
     // Seed collections data
     await seedCollections(pool)

@@ -220,6 +220,96 @@ class ApiService {
     const data = await response.json();
     return data.data;
   }
+
+  // ============ Quick Memos ============
+  async getMemos(limit = 50, offset = 0) {
+    return this.request<{ success: boolean; data: Memo[] }>(
+      `/memos?limit=${limit}&offset=${offset}`
+    );
+  }
+
+  async getMemo(id: number) {
+    return this.request<{ success: boolean; data: Memo }>(`/memos/${id}`);
+  }
+
+  async createMemo(data: { audio_url: string; transcript?: string; title?: string; duration?: number }) {
+    return this.request<{ success: boolean; data: Memo }>('/memos', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateMemo(id: number, data: { title?: string }) {
+    return this.request<{ success: boolean; data: Memo }>(`/memos/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteMemo(id: number) {
+    return this.request<{ success: boolean }>(`/memos/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // ============ Stories (Chapter-based) ============
+  async getChapterStories(chapterId: string) {
+    return this.request<any[]>(`/stories/${chapterId}`);
+  }
+
+  async saveStory(data: { chapter_id: string; question_id: string; answer: string; total_questions?: number }) {
+    return this.request<{ success: boolean; id: number }>('/stories', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getAllStories() {
+    return this.request<any[]>('/stories/all');
+  }
+
+  // ============ AI Assistant ============
+  async aiInterview(data: {
+    question: string;
+    prompt: string;
+    existingAnswer?: string;
+    gatheredContent?: Array<{ type: string; content: string }>;
+    lastResponse?: string;
+    history?: Array<{ role: string; content: string }>;
+    action: 'start' | 'continue';
+  }) {
+    return this.request<{ response: string; readyToWrite: boolean }>(
+      '/ai/interview',
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }
+    );
+  }
+
+  async aiWriteStory(data: {
+    question: string;
+    prompt: string;
+    existingAnswer?: string;
+    gatheredContent: Array<{ type: string; content: string }>;
+    conversationHistory: Array<{ role: string; content: string }>;
+  }) {
+    return this.request<{ story: string }>('/ai/write-story', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+}
+
+// Types
+export interface Memo {
+  id: number;
+  title: string | null;
+  audio_url: string;
+  transcript: string | null;
+  duration: number | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export default new ApiService();

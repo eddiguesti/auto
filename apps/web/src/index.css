@@ -4,7 +4,7 @@
 
 /* Paper background with subtle grain */
 body {
-  font-family: 'Merriweather', serif;
+  font-family: 'Lora', Georgia, serif;
   background: linear-gradient(135deg, #faf8f5 0%, #f5f0e8 100%);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
@@ -37,9 +37,30 @@ body::before {
   padding-bottom: env(safe-area-inset-bottom, 0);
 }
 
-/* All text uses serif */
-h1, h2, h3, h4, h5, h6, p, span, div, label, button, a, input, textarea {
-  font-family: 'Merriweather', serif;
+/* Typography hierarchy */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: 'Boska', Georgia, serif;
+}
+
+p,
+blockquote {
+  font-family: 'Lora', Georgia, serif;
+}
+
+/* UI elements use sans-serif */
+button,
+a,
+input,
+textarea,
+label,
+span,
+div {
+  font-family: 'General Sans', system-ui, sans-serif;
 }
 
 /* Smooth page transitions */
@@ -63,13 +84,27 @@ h1, h2, h3, h4, h5, h6, p, span, div, label, button, a, input, textarea {
   animation: slideUp 0.5s ease-out both;
 }
 
-.stagger-item:nth-child(1) { animation-delay: 0.05s; }
-.stagger-item:nth-child(2) { animation-delay: 0.1s; }
-.stagger-item:nth-child(3) { animation-delay: 0.15s; }
-.stagger-item:nth-child(4) { animation-delay: 0.2s; }
-.stagger-item:nth-child(5) { animation-delay: 0.25s; }
-.stagger-item:nth-child(6) { animation-delay: 0.3s; }
-.stagger-item:nth-child(7) { animation-delay: 0.35s; }
+.stagger-item:nth-child(1) {
+  animation-delay: 0.05s;
+}
+.stagger-item:nth-child(2) {
+  animation-delay: 0.1s;
+}
+.stagger-item:nth-child(3) {
+  animation-delay: 0.15s;
+}
+.stagger-item:nth-child(4) {
+  animation-delay: 0.2s;
+}
+.stagger-item:nth-child(5) {
+  animation-delay: 0.25s;
+}
+.stagger-item:nth-child(6) {
+  animation-delay: 0.3s;
+}
+.stagger-item:nth-child(7) {
+  animation-delay: 0.35s;
+}
 
 @keyframes slideUp {
   from {
@@ -88,7 +123,8 @@ h1, h2, h3, h4, h5, h6, p, span, div, label, button, a, input, textarea {
 }
 
 @keyframes pulseGlow {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 4px 15px rgba(139, 115, 85, 0.2);
   }
   50% {
@@ -102,8 +138,13 @@ h1, h2, h3, h4, h5, h6, p, span, div, label, button, a, input, textarea {
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
 }
 
 /* Card hover lift */
@@ -151,7 +192,10 @@ h1, h2, h3, h4, h5, h6, p, span, div, label, button, a, input, textarea {
 }
 
 /* Smooth transitions */
-button, a, input, textarea {
+button,
+a,
+input,
+textarea {
   transition: all 0.2s ease;
 }
 
@@ -189,20 +233,34 @@ button, a, input, textarea {
 }
 
 @keyframes shine {
-  0% { transform: translateX(-100%) rotate(30deg); }
-  100% { transform: translateX(100%) rotate(30deg); }
+  0% {
+    transform: translateX(-100%) rotate(30deg);
+  }
+  100% {
+    transform: translateX(100%) rotate(30deg);
+  }
 }
 
 /* Modal shimmer effect */
 @keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  50%, 100% { transform: translateX(200%); }
+  0% {
+    transform: translateX(-100%);
+  }
+  50%,
+  100% {
+    transform: translateX(200%);
+  }
 }
 
 /* Gentle pulse for icons */
 @keyframes pulse-soft {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
 }
 
 .pulse-soft {

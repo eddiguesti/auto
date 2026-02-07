@@ -17,11 +17,14 @@ export default function Login() {
     setError('')
     setLoading(true)
 
+    // Normalize email
+    const normalizedEmail = email.trim().toLowerCase()
+
     try {
       const res = await fetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email: normalizedEmail, password })
       })
 
       const data = await res.json()
@@ -140,10 +143,16 @@ export default function Login() {
                 className="w-full px-4 py-3 rounded-lg border border-sepia/30 bg-white focus:outline-none focus:ring-2 focus:ring-sepia/30 focus:border-sepia"
                 placeholder="you@example.com"
                 required
+                autoComplete="email"
               />
             </div>
             <div>
-              <label className="block text-sm text-sepia/70 mb-1">Password</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm text-sepia/70">Password</label>
+                <Link to="/forgot-password" className="text-xs text-sepia hover:underline">
+                  Forgot password?
+                </Link>
+              </div>
               <input
                 type="password"
                 value={password}
@@ -151,6 +160,7 @@ export default function Login() {
                 className="w-full px-4 py-3 rounded-lg border border-sepia/30 bg-white focus:outline-none focus:ring-2 focus:ring-sepia/30 focus:border-sepia"
                 placeholder="Your password"
                 required
+                autoComplete="current-password"
               />
             </div>
             <button

@@ -14,7 +14,7 @@ export const authSchemas = {
         required: true,
         minLength: 8,
         maxLength: 128,
-        validate: (v) => {
+        validate: v => {
           if (!/[a-z]/.test(v)) return 'must contain a lowercase letter'
           if (!/[A-Z]/.test(v)) return 'must contain an uppercase letter'
           if (!/[0-9]/.test(v)) return 'must contain a number'
@@ -22,7 +22,10 @@ export const authSchemas = {
         }
       },
       name: { type: 'string', required: true, minLength: 1, maxLength: 100 },
-      birthYear: { type: 'integer', min: 1900, max: new Date().getFullYear() }
+      birthYear: { type: 'integer', min: 1900, max: new Date().getFullYear() },
+      // Bot protection fields
+      _hp: { type: 'string', maxLength: 500 }, // honeypot - should be empty
+      _ts: { type: 'integer' } // form load timestamp
     }
   },
 
@@ -288,7 +291,11 @@ export const notificationSchemas = {
 export const styleSchemas = {
   savePreferences: {
     body: {
-      tone: { type: 'string', enum: ['formal', 'casual', 'storytelling', 'reflective'], maxLength: 50 },
+      tone: {
+        type: 'string',
+        enum: ['formal', 'casual', 'storytelling', 'reflective'],
+        maxLength: 50
+      },
       perspective: { type: 'string', enum: ['first', 'third'], maxLength: 20 },
       detail_level: { type: 'string', enum: ['brief', 'moderate', 'detailed'], maxLength: 20 }
     }

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { GoogleLogin } from '@react-oauth/google'
 import { useAuth } from '../context/AuthContext'
@@ -13,22 +13,69 @@ export default function Register() {
   const { login } = useAuth()
   const navigate = useNavigate()
 
+  // Bot protection: honeypot field and form load timestamp
+  const [website, setWebsite] = useState('') // honeypot - bots fill this
+  const formLoadTime = useRef(Date.now())
+
+  // Password validation helper
+  const validatePassword = pwd => {
+    const errors = []
+    if (pwd.length < 8) errors.push('at least 8 characters')
+    if (!/[a-z]/.test(pwd)) errors.push('a lowercase letter')
+    if (!/[A-Z]/.test(pwd)) errors.push('an uppercase letter')
+    if (!/[0-9]/.test(pwd)) errors.push('a number')
+    return errors
+  }
+
+  const passwordErrors = password ? validatePassword(password) : []
+  const isPasswordValid = password && passwordErrors.length === 0
+
   const handleEmailRegister = async e => {
     e.preventDefault()
     setError('')
 
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters')
+    // Bot protection: reject if honeypot is filled
+    if (website) {
+      setError('Registration failed')
+      return
+    }
+
+    // Bot protection: reject if form submitted too quickly (< 3 seconds)
+    const timeOnPage = Date.now() - formLoadTime.current
+    if (timeOnPage < 3000) {
+      setError('Please take your time filling out the form')
+      return
+    }
+
+    // Validate name
+    const trimmedName = name.trim()
+    if (!trimmedName || trimmedName.length < 1) {
+      setError('Please enter your name')
+      return
+    }
+
+    // Validate password
+    if (passwordErrors.length > 0) {
+      setError(`Password must contain ${passwordErrors.join(', ')}`)
       return
     }
 
     setLoading(true)
 
+    // Normalize email
+    const normalizedEmail = email.trim().toLowerCase()
+
     try {
       const res = await fetch(`${API_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password })
+        body: JSON.stringify({
+          name: trimmedName,
+          email: normalizedEmail,
+          password,
+          _hp: website, // honeypot for backend validation
+          _ts: formLoadTime.current // timestamp for backend validation
+        })
       })
 
       const data = await res.json()
@@ -124,6 +171,20 @@ export default function Register() {
 
           {/* Email/Password Form */}
           <form onSubmit={handleEmailRegister} className="space-y-4">
+            {/* Honeypot field - hidden from users, bots will fill it */}
+            <div className="absolute -left-[9999px]" aria-hidden="true">
+              <label htmlFor="website">Website</label>
+              <input
+                type="text"
+                id="website"
+                name="website"
+                value={website}
+                onChange={e => setWebsite(e.target.value)}
+                tabIndex={-1}
+                autoComplete="off"
+              />
+            </div>
+
             <div>
               <label className="block text-sm text-sepia/70 mb-1">Your Name</label>
               <input
@@ -133,6 +194,8 @@ export default function Register() {
                 className="w-full px-4 py-3 rounded-lg border border-sepia/30 bg-white focus:outline-none focus:ring-2 focus:ring-sepia/30 focus:border-sepia"
                 placeholder="First name"
                 required
+                autoComplete="name"
+                maxLength={100}
               />
             </div>
             <div>
@@ -144,6 +207,8 @@ export default function Register() {
                 className="w-full px-4 py-3 rounded-lg border border-sepia/30 bg-white focus:outline-none focus:ring-2 focus:ring-sepia/30 focus:border-sepia"
                 placeholder="you@example.com"
                 required
+                autoComplete="email"
+                maxLength={255}
               />
             </div>
             <div>
@@ -152,11 +217,26 @@ export default function Register() {
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-sepia/30 bg-white focus:outline-none focus:ring-2 focus:ring-sepia/30 focus:border-sepia"
+                className={`w-full px-4 py-3 rounded-lg border bg-white focus:outline-none focus:ring-2 ${
+                  password && !isPasswordValid
+                    ? 'border-red-300 focus:ring-red-200 focus:border-red-400'
+                    : password && isPasswordValid
+                      ? 'border-green-300 focus:ring-green-200 focus:border-green-400'
+                      : 'border-sepia/30 focus:ring-sepia/30 focus:border-sepia'
+                }`}
                 placeholder="At least 8 characters"
                 required
                 minLength={8}
+                autoComplete="new-password"
               />
+              {password && passwordErrors.length > 0 && (
+                <p className="mt-1 text-xs text-red-600">
+                  Must include: {passwordErrors.join(', ')}
+                </p>
+              )}
+              {password && isPasswordValid && (
+                <p className="mt-1 text-xs text-green-600">Password meets requirements</p>
+              )}
             </div>
             <button
               type="submit"

@@ -37,6 +37,7 @@ import {
   IconStar,
   IconGem,
   IconCheck,
+  IconMic,
 } from '../components';
 
 const { width, height } = Dimensions.get('window');
@@ -204,6 +205,11 @@ export default function HomeScreen({ navigation }: any) {
     navigation.navigate('HistoryTab');
   };
 
+  const handleQuickMemoPress = () => {
+    haptics.lightTap();
+    navigation.navigate('QuickMemo');
+  };
+
   const promptCompleted = prompt?.status === 'completed' || gameState.dailyPromptCompleted;
 
   if (isLoading) {
@@ -343,6 +349,31 @@ export default function HomeScreen({ navigation }: any) {
             <IconGem size={14} color={colors.xp} />
             <Text style={styles.statText}>{gameState.totalXp} XP</Text>
           </View>
+        </Animated.View>
+
+        {/* Quick Actions */}
+        <Animated.View
+          style={[
+            styles.quickActionsSection,
+            {
+              opacity: statsOpacity,
+              transform: [{ translateY: statsTranslateY }],
+            },
+          ]}
+        >
+          <TouchableOpacity
+            style={styles.quickMemoButton}
+            onPress={handleQuickMemoPress}
+            activeOpacity={0.7}
+          >
+            <View style={styles.quickMemoIcon}>
+              <IconMic size={20} color={colors.background} />
+            </View>
+            <View style={styles.quickMemoText}>
+              <Text style={styles.quickMemoTitle}>Quick Memo</Text>
+              <Text style={styles.quickMemoSubtitle}>Record a free-form thought</Text>
+            </View>
+          </TouchableOpacity>
         </Animated.View>
 
         {/* Memoir Progress Card */}
@@ -619,6 +650,44 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 26,
+  },
+
+  // Quick Actions
+  quickActionsSection: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+  },
+  quickMemoButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  quickMemoIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.md,
+  },
+  quickMemoText: {
+    flex: 1,
+  },
+  quickMemoTitle: {
+    fontSize: 16,
+    fontFamily: fonts.displayMedium,
+    color: colors.text,
+    marginBottom: 2,
+  },
+  quickMemoSubtitle: {
+    fontSize: 13,
+    fontFamily: fonts.body,
+    color: colors.textSecondary,
   },
 
   // Memoir Progress

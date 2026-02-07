@@ -235,3 +235,40 @@ export function IconLeaf({ size = 24, color = colors.primary }: IconProps) {
 export function IconTree({ size = 24, color = colors.primary }: IconProps) {
   return <MaterialCommunityIcons name="tree" size={size} color={color} />;
 }
+
+// Additional icons for Memory Triggers and AI Assistant
+export function IconPhoto({ size = 24, color = colors.text }: IconProps) {
+  return <Feather name="image" size={size} color={color} />;
+}
+
+export function IconMusic({ size = 24, color = colors.text }: IconProps) {
+  return <Feather name="music" size={size} color={color} />;
+}
+
+export function IconLocation({ size = 24, color = colors.text }: IconProps) {
+  return <Feather name="map-pin" size={size} color={color} />;
+}
+
+export function IconExternalLink({ size = 24, color = colors.text }: IconProps) {
+  return <Feather name="external-link" size={size} color={color} />;
+}
+
+export function IconChevronDown({ size = 24, color = colors.text }: IconProps) {
+  return <Feather name="chevron-down" size={size} color={color} />;
+}
+
+export function IconChevronUp({ size = 24, color = colors.text }: IconProps) {
+  return <Feather name="chevron-up" size={size} color={color} />;
+}
+
+export function IconX({ size = 24, color = colors.text }: IconProps) {
+  return <Feather name="x" size={size} color={color} />;
+}
+
+export function IconMessageCircle({ size = 24, color = colors.text }: IconProps) {
+  return <Feather name="message-circle" size={size} color={color} />;
+}
+
+export function IconLightbulb({ size = 24, color = colors.warning }: IconProps) {
+  return <MaterialCommunityIcons name="lightbulb-outline" size={size} color={color} />;
+}

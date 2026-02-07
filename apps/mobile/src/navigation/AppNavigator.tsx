@@ -11,7 +11,7 @@ import { View, StyleSheet, Platform } from 'react-native';
 
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../utils/theme';
-import { IconHome, IconExplore, IconBook, IconUser } from '../components/Icons';
+import { IconHome, IconExplore, IconBook, IconUser, IconFeather } from '../components/Icons';
 
 // Screens
 import HomeScreen from '../screens/HomeScreen';
@@ -23,6 +23,12 @@ import LoginScreen from '../screens/LoginScreen';
 import CollectionsScreen from '../screens/CollectionsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import HistoryScreen from '../screens/HistoryScreen';
+import QuickMemoScreen from '../screens/QuickMemoScreen';
+import MemoReviewScreen from '../screens/MemoReviewScreen';
+import MemosListScreen from '../screens/MemosListScreen';
+import ChaptersDashboardScreen from '../screens/ChaptersDashboardScreen';
+import ChapterScreen from '../screens/ChapterScreen';
+import AIAssistantScreen from '../screens/AIAssistantScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -65,13 +71,13 @@ function MainTabs() {
         }}
       />
       <Tab.Screen
-        name="CollectionsTab"
-        component={CollectionsScreen}
+        name="MemoirTab"
+        component={ChaptersDashboardScreen}
         options={{
-          tabBarLabel: 'Explore',
+          tabBarLabel: 'Memoir',
           tabBarIcon: ({ focused, color }) => (
             <View style={[styles.tabIconWrapper, focused && styles.tabIconFocused]}>
-              <IconExplore size={22} color={color} />
+              <IconFeather size={22} color={color} />
             </View>
           ),
         }}
@@ -149,6 +155,46 @@ function MainStack() {
       <Stack.Screen
         name="TextInput"
         component={TextInputScreen}
+        options={{
+          presentation: 'fullScreenModal',
+          animation: 'slide_from_bottom',
+        }}
+      />
+      <Stack.Screen
+        name="QuickMemo"
+        component={QuickMemoScreen}
+        options={{
+          presentation: 'fullScreenModal',
+          animation: 'slide_from_bottom',
+        }}
+      />
+      <Stack.Screen
+        name="MemoReview"
+        component={MemoReviewScreen}
+        options={{
+          presentation: 'card',
+          animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen
+        name="MemosList"
+        component={MemosListScreen}
+        options={{
+          presentation: 'card',
+          animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen
+        name="Chapter"
+        component={ChapterScreen}
+        options={{
+          presentation: 'card',
+          animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen
+        name="AIAssistant"
+        component={AIAssistantScreen}
         options={{
           presentation: 'fullScreenModal',
           animation: 'slide_from_bottom',
