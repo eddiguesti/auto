@@ -4,7 +4,7 @@ import { asyncHandler } from '../middleware/asyncHandler.js'
 import { createLogger } from '../utils/logger.js'
 import { grokChat } from '../services/grokService.js'
 import { sanitizeForPrompt } from '../utils/security.js'
-import { extractEntitiesAsync } from '../services/entityExtractionService.js'
+import { extractAndStoreEntities } from '../services/entityExtractionService.js'
 
 const router = Router()
 const logger = createLogger('voice')
@@ -373,9 +373,14 @@ router.post(
     }
 
     // Extract entities async (existing pattern)
-    extractEntitiesAsync(db, userId, safeTranscript, chapter_id, question_id, storyId).catch(err =>
-      logger.error('Entity extraction failed', { storyId, error: err.message })
-    )
+    extractAndStoreEntities({
+      db,
+      userId,
+      text: safeTranscript,
+      chapterId: chapter_id,
+      questionId: question_id,
+      storyId
+    }).catch(err => logger.error('Entity extraction failed', { storyId, error: err.message }))
 
     res.json({
       success: true,
