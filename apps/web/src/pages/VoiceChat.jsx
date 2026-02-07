@@ -235,7 +235,14 @@ export default function VoiceChat() {
         )
       }
     }
-  }, [saveCurrentTranscript, sessionQuestionIndex, chapter, questionsAnsweredThisSession])
+  }, [
+    saveCurrentTranscript,
+    sessionQuestionIndex,
+    chapter,
+    questionsAnsweredThisSession,
+    compiledSummary,
+    onboardingContext
+  ])
 
   // Build AI instructions
   const buildInstructions = (currentQuestion, answeredQuestions) => {

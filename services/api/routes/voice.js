@@ -305,6 +305,15 @@ router.post(
       return res.status(400).json({ error: 'Missing required fields' })
     }
 
+    // Verify session belongs to user
+    const sessionCheck = await db.query(
+      `SELECT id FROM voice_sessions WHERE id = $1 AND user_id = $2`,
+      [session_id, userId]
+    )
+    if (sessionCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Session not found' })
+    }
+
     const safeTranscript = sanitizeForPrompt(user_transcript, 10000)
 
     // Upsert story with raw transcript
@@ -322,10 +331,10 @@ router.post(
     // Update session
     await db.query(
       `UPDATE voice_sessions
-       SET questions_answered = array_append(
-         CASE WHEN $2 = ANY(questions_answered) THEN questions_answered ELSE questions_answered END,
-         CASE WHEN $2 = ANY(questions_answered) THEN NULL ELSE $2 END
-       ),
+       SET questions_answered = CASE
+         WHEN $2 = ANY(questions_answered) THEN questions_answered
+         ELSE array_append(questions_answered, $2)
+       END,
        questions_since_compile = questions_since_compile + 1,
        current_question_id = $2,
        session_transcripts = session_transcripts || $3::jsonb,

@@ -239,11 +239,12 @@ router.get(
 // Save settings
 router.post(
   '/settings',
+  validate(storySchemas.saveSettings),
   requireDb,
   asyncHandler(async (req, res) => {
     const db = req.app.locals.db
     const userId = req.user.id
-    const { name } = req.body
+    const { name } = req.validatedBody
 
     await db.query(
       `
