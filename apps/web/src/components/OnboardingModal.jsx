@@ -109,7 +109,7 @@ export default function OnboardingModal({ onClose, initialStep }) {
     setStep(pref === 'voice' ? STEPS.VOICE_INTERVIEW : STEPS.TYPE_FORM)
   }
 
-  // Handle voice interview completion — channels are already selected inline
+  // Handle voice interview completion
   const handleVoiceComplete = async (transcripts, selectedChannels) => {
     setStep(STEPS.PROCESSING)
 
@@ -124,18 +124,21 @@ export default function OnboardingModal({ onClose, initialStep }) {
 
       if (data.userName) await refreshUser()
 
+      // If channels were selected during voice interview, save them and go to tour
       if (selectedChannels?.length > 0) {
         await authFetch('/api/onboarding/channel-preferences', {
           method: 'POST',
           body: JSON.stringify({ channels: selectedChannels })
         })
+        await authFetch('/api/onboarding/complete', { method: 'POST' })
+        setStep(STEPS.TOUR_OFFER)
+      } else {
+        // No channels selected yet — show channel selection step first
+        setStep(STEPS.CHANNEL_SELECTION)
       }
-
-      await authFetch('/api/onboarding/complete', { method: 'POST' })
-      setStep(STEPS.TOUR_OFFER)
     } catch (err) {
       console.error('Failed to complete onboarding:', err)
-      setStep(STEPS.TOUR_OFFER)
+      setStep(STEPS.CHANNEL_SELECTION)
     }
   }
 
