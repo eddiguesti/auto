@@ -5,8 +5,8 @@ import { useAuth } from '../../context/AuthContext'
 const FEATURES = [
   'All 10 chapters — 91 guided questions for your whole life story',
   'Unlimited voice calls with Clio, your personal interviewer',
-  'AI writing companion & voice-to-text transcription',
-  '10 unique AI-generated chapter illustrations',
+  'Personal writing companion & voice-to-text transcription',
+  '10 unique personalised chapter illustrations',
   'Professional audiobook narration of your memoir',
   'Full-colour hardcover book, delivered to your door',
   '12 months of unlimited access — write at your own pace'
