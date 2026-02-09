@@ -3,10 +3,13 @@ import { motion } from 'framer-motion'
 import { useAuth } from '../../context/AuthContext'
 
 const FEATURES = [
-  'All 10 chapters with 91 guided questions',
-  'AI writing companion & voice transcription',
-  '10 personalised chapter illustrations',
-  'Hardcover book delivered to your door'
+  'All 10 chapters — 91 guided questions for your whole life story',
+  'Unlimited voice calls with Clio, your personal interviewer',
+  'AI writing companion & voice-to-text transcription',
+  '10 unique AI-generated chapter illustrations',
+  'Professional audiobook narration of your memoir',
+  'Full-colour hardcover book, delivered to your door',
+  '12 months of unlimited access — write at your own pace'
 ]
 
 // Apple-style: gentle opacity fade with minimal vertical shift
