@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext'
 import PreferenceSelector from './onboarding/PreferenceSelector'
 import OnboardingVoiceInterview from './onboarding/OnboardingVoiceInterview'
 import OnboardingTypeForm from './onboarding/OnboardingTypeForm'
+import ChannelSelector from './onboarding/ChannelSelector'
 
 // Onboarding steps
 const STEPS = {
@@ -10,6 +11,7 @@ const STEPS = {
   PREFERENCE: 'preference',
   VOICE_INTERVIEW: 'voice_interview',
   TYPE_FORM: 'type_form',
+  CHANNEL_SELECTION: 'channel_selection',
   PROCESSING: 'processing'
 }
 
@@ -58,14 +60,11 @@ export default function OnboardingModal({ onClose }) {
     }
   }
 
-  // Handle voice interview completion
+  // Handle voice interview completion — save context, then move to channel selection
   const handleVoiceComplete = async transcripts => {
     setStep(STEPS.PROCESSING)
 
-    let wantsTour = false
-
     try {
-      // Send transcripts for AI extraction
       const res = await authFetch('/api/onboarding/context', {
         method: 'POST',
         body: JSON.stringify({ transcripts })
@@ -73,33 +72,23 @@ export default function OnboardingModal({ onClose }) {
 
       const data = await res.json()
       setExtractedContext(data.extracted)
-      wantsTour = data.extracted?.wants_tour || false
 
-      // Refresh user data if name was updated
       if (data.userName) {
         await refreshUser()
       }
 
-      // Complete onboarding
-      await authFetch('/api/onboarding/complete', {
-        method: 'POST'
-      })
-
-      // Go straight to dashboard, with optional tour
-      handleClose({ showTour: wantsTour })
+      setStep(STEPS.CHANNEL_SELECTION)
     } catch (err) {
-      console.error('Failed to complete onboarding:', err)
-      // Still close and go to dashboard even if errors
-      handleClose({ showTour: false })
+      console.error('Failed to save interview context:', err)
+      setStep(STEPS.CHANNEL_SELECTION)
     }
   }
 
-  // Handle type form submission
+  // Handle type form submission — save context, then move to channel selection
   const handleTypeFormSubmit = async formData => {
     setStep(STEPS.PROCESSING)
 
     try {
-      // Save form data directly
       const res = await authFetch('/api/onboarding/context-form', {
         method: 'POST',
         body: JSON.stringify(formData)
@@ -113,18 +102,33 @@ export default function OnboardingModal({ onClose }) {
         birth_year: formData.birthYear
       })
 
-      // Refresh user data if name was updated
       if (data.userName) {
         await refreshUser()
       }
 
-      // Complete onboarding
+      setStep(STEPS.CHANNEL_SELECTION)
+    } catch (err) {
+      console.error('Failed to save form context:', err)
+      setStep(STEPS.CHANNEL_SELECTION)
+    }
+  }
+
+  // Handle channel selection completion — save preferences, finish onboarding
+  const handleChannelSelectionComplete = async selectedChannels => {
+    setStep(STEPS.PROCESSING)
+
+    try {
+      await authFetch('/api/onboarding/channel-preferences', {
+        method: 'POST',
+        body: JSON.stringify({ channels: selectedChannels })
+      })
+
       await authFetch('/api/onboarding/complete', {
         method: 'POST'
       })
 
-      // Go straight to dashboard (no tour for type form users)
-      handleClose({ showTour: false })
+      const wantsTour = extractedContext?.wants_tour || false
+      handleClose({ showTour: wantsTour })
     } catch (err) {
       console.error('Failed to complete onboarding:', err)
       handleClose({ showTour: false })
@@ -141,7 +145,7 @@ export default function OnboardingModal({ onClose }) {
       }`}
     >
       <div
-        className={`relative w-full max-w-lg mx-4 bg-gradient-to-b from-cream to-amber-50 rounded-2xl shadow-2xl overflow-hidden transition-all duration-300 ${
+        className={`relative w-full ${step === STEPS.CHANNEL_SELECTION ? 'max-w-2xl' : 'max-w-lg'} mx-4 bg-gradient-to-b from-cream to-amber-50 rounded-2xl shadow-2xl overflow-hidden transition-all duration-300 ${
           isVisible && !isClosing
             ? 'opacity-100 scale-100 translate-y-0'
             : 'opacity-0 scale-95 translate-y-4'
@@ -196,6 +200,11 @@ export default function OnboardingModal({ onClose }) {
             />
           )}
 
+          {/* Channel Selection Step */}
+          {step === STEPS.CHANNEL_SELECTION && (
+            <ChannelSelector firstName={firstName} onComplete={handleChannelSelectionComplete} />
+          )}
+
           {/* Processing Step */}
           {step === STEPS.PROCESSING && (
             <div className="text-center py-8">
@@ -210,11 +219,15 @@ export default function OnboardingModal({ onClose }) {
         </div>
 
         {/* Step indicator (for multi-step flow) */}
-        {[STEPS.WELCOME, STEPS.PREFERENCE, STEPS.VOICE_INTERVIEW, STEPS.TYPE_FORM].includes(
-          step
-        ) && (
+        {[
+          STEPS.WELCOME,
+          STEPS.PREFERENCE,
+          STEPS.VOICE_INTERVIEW,
+          STEPS.TYPE_FORM,
+          STEPS.CHANNEL_SELECTION
+        ].includes(step) && (
           <div className="pb-6 flex justify-center gap-2">
-            {[STEPS.WELCOME, STEPS.PREFERENCE, 'interview'].map((s, i) => (
+            {[STEPS.WELCOME, STEPS.PREFERENCE, 'interview', STEPS.CHANNEL_SELECTION].map((s, i) => (
               <div
                 key={i}
                 className={`w-2 h-2 rounded-full transition-colors ${

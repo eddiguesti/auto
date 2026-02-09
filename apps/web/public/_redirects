@@ -1,1 +1,5 @@
+# Proxy API requests to the backend server
+/api/* https://easymemoir.co.uk/api/:splat 200
+
+# SPA fallback - serve index.html for all other routes
 /* /index.html 200

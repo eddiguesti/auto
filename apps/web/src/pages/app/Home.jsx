@@ -12,6 +12,7 @@ import OnboardingModal from '../../components/OnboardingModal'
 import ImageUnlockAnimation from '../../components/ImageUnlockAnimation'
 import TourOverlay from '../../components/TourOverlay'
 import UpgradeModal from '../../components/UpgradeModal'
+import EmailVerificationBanner from '../../components/EmailVerificationBanner'
 
 // Memoized chapter card to prevent re-renders when other chapters update
 const ChapterCard = memo(function ChapterCard({
@@ -443,135 +444,63 @@ export default function Home() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12 page-enter">
-      {/* Header */}
-      <header className="text-center mb-8 sm:mb-10 relative pt-2">
-        {/* Settings link - positioned with better hitbox */}
-        <Link
-          to="/settings"
-          className="absolute -top-2 -right-2 z-10 flex items-center gap-2 px-4 py-3 rounded-xl bg-sepia/10 hover:bg-sepia/20 text-sepia transition active:scale-95"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.5}
-              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-            />
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.5}
-              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-            />
-          </svg>
-          <span className="text-sm font-medium hidden sm:inline">Settings</span>
-        </Link>
-        {/* Decorative flourish */}
-        <div className="text-sepia/40 text-2xl mb-4 tracking-[0.5em] float">❧</div>
-
-        {editingTitle ? (
-          <div className="mb-3">
-            <input
-              ref={titleInputRef}
-              type="text"
-              value={editName}
-              onChange={e => setEditName(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter') handleTitleSave()
-                if (e.key === 'Escape') setEditingTitle(false)
-              }}
-              onBlur={handleTitleSave}
-              className="text-4xl sm:text-5xl md:text-6xl font-light text-ink tracking-wide text-center bg-transparent border-b-2 border-sepia/40 focus:border-sepia focus:outline-none w-full max-w-md mx-auto"
-              placeholder="Your name"
-              disabled={savingName}
-            />
-            <p className="text-sm text-sepia/50 mt-2">Press Enter to save, Escape to cancel</p>
-          </div>
-        ) : (
-          <h1
-            onClick={handleTitleEdit}
-            className="text-4xl sm:text-5xl md:text-6xl font-light text-ink mb-3 tracking-wide cursor-pointer group"
-            title="Click to edit your name"
+    <>
+      <EmailVerificationBanner />
+      <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12 page-enter">
+        {/* Header */}
+        <header className="text-center mb-8 sm:mb-10 relative pt-2">
+          {/* Settings link - positioned with better hitbox */}
+          <Link
+            to="/settings"
+            className="absolute -top-2 -right-2 z-10 flex items-center gap-2 px-4 py-3 rounded-xl bg-sepia/10 hover:bg-sepia/20 text-sepia transition active:scale-95"
           >
-            {firstName}'s Life
-            <span className="inline-block ml-2 opacity-0 group-hover:opacity-60 transition text-sepia text-xl align-middle">
-              <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                />
-              </svg>
-            </span>
-          </h1>
-        )}
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+            </svg>
+            <span className="text-sm font-medium hidden sm:inline">Settings</span>
+          </Link>
+          {/* Decorative flourish */}
+          <div className="text-sepia/40 text-2xl mb-4 tracking-[0.5em] float">❧</div>
 
-        <div className="w-24 h-px bg-sepia/30 mx-auto mb-4" />
-        <p className="text-lg sm:text-xl text-sepia/80 italic">
-          The Autobiography of {user?.name || 'You'}
-        </p>
-      </header>
-
-      {/* Error Message */}
-      {error && (
-        <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-lg text-sm text-center">
-          {error}
-        </div>
-      )}
-
-      {/* Progress Card */}
-      <div id="progress-card">
-        <ProgressCard
-          totalProgress={totalProgress}
-          totalQuestions={totalQuestions}
-          totalAnswered={totalAnswered}
-          onViewBook={() => setShowBookPreview(true)}
-        />
-      </div>
-
-      {/* Upgrade Nudge Banner (shown after completing chapter 1 but not premium) */}
-      {!isPremium && chapterProgressMap['earliest-memories'] === 100 && (
-        <div className="mb-8 p-4 bg-gradient-to-r from-amber-50/60 to-orange-50/40 rounded-xl border border-amber-200/40 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
-              <svg
-                className="w-5 h-5 text-amber-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                />
-              </svg>
+          {editingTitle ? (
+            <div className="mb-3">
+              <input
+                ref={titleInputRef}
+                type="text"
+                value={editName}
+                onChange={e => setEditName(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') handleTitleSave()
+                  if (e.key === 'Escape') setEditingTitle(false)
+                }}
+                onBlur={handleTitleSave}
+                className="text-4xl sm:text-5xl md:text-6xl font-light text-ink tracking-wide text-center bg-transparent border-b-2 border-sepia/40 focus:border-sepia focus:outline-none w-full max-w-md mx-auto"
+                placeholder="Your name"
+                disabled={savingName}
+              />
+              <p className="text-sm text-sepia/50 mt-2">Press Enter to save, Escape to cancel</p>
             </div>
-            <div>
-              <p className="text-ink font-medium text-sm">Your story is just getting started</p>
-              <p className="text-sepia/60 text-xs">Unlock all chapters + get a printed book</p>
-            </div>
-          </div>
-          <button
-            onClick={handleUpgradeClick}
-            className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 transition whitespace-nowrap"
-          >
-            See Offer
-          </button>
-        </div>
-      )}
-
-      {/* Continue Where You Left Off */}
-      {lastWorkedOn && !isChapterLocked(lastWorkedOn.chapterId) && (
-        <div className="mb-8 p-4 bg-gradient-to-r from-sepia/5 to-amber-50/50 rounded-xl border border-sepia/10">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-sepia/10 rounded-full flex items-center justify-center">
+          ) : (
+            <h1
+              onClick={handleTitleEdit}
+              className="text-4xl sm:text-5xl md:text-6xl font-light text-ink mb-3 tracking-wide cursor-pointer group"
+              title="Click to edit your name"
+            >
+              {firstName}'s Life
+              <span className="inline-block ml-2 opacity-0 group-hover:opacity-60 transition text-sepia text-xl align-middle">
                 <svg
-                  className="w-5 h-5 text-sepia"
+                  className="w-5 h-5 inline"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -580,179 +509,187 @@ export default function Home() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={1.5}
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                  />
+                </svg>
+              </span>
+            </h1>
+          )}
+
+          <div className="w-24 h-px bg-sepia/30 mx-auto mb-4" />
+          <p className="text-lg sm:text-xl text-sepia/80 italic">
+            The Autobiography of {user?.name || 'You'}
+          </p>
+        </header>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-lg text-sm text-center">
+            {error}
+          </div>
+        )}
+
+        {/* Progress Card */}
+        <div id="progress-card">
+          <ProgressCard
+            totalProgress={totalProgress}
+            totalQuestions={totalQuestions}
+            totalAnswered={totalAnswered}
+            onViewBook={() => setShowBookPreview(true)}
+          />
+        </div>
+
+        {/* Upgrade Nudge Banner (shown after completing chapter 1 but not premium) */}
+        {!isPremium && chapterProgressMap['earliest-memories'] === 100 && (
+          <div className="mb-8 p-4 bg-gradient-to-r from-amber-50/60 to-orange-50/40 rounded-xl border border-amber-200/40 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <svg
+                  className="w-5 h-5 text-amber-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
                   />
                 </svg>
               </div>
               <div>
-                <p className="text-ink font-medium">Continue where you left off</p>
-                <p className="text-sepia/70 text-sm">
-                  {chapters.find(c => c.id === lastWorkedOn.chapterId)?.title || 'Your memoir'}
-                </p>
+                <p className="text-ink font-medium text-sm">Your story is just getting started</p>
+                <p className="text-sepia/60 text-xs">Unlock all chapters + get a printed book</p>
               </div>
             </div>
-            <Link
-              to={`/chapter/${lastWorkedOn.chapterId}`}
-              className="flex items-center gap-2 px-5 py-2.5 bg-sepia text-white rounded-lg hover:bg-sepia/90 transition text-sm font-medium"
+            <button
+              onClick={handleUpgradeClick}
+              className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 transition whitespace-nowrap"
             >
-              Continue
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              See Offer
+            </button>
+          </div>
+        )}
+
+        {/* Continue Where You Left Off */}
+        {lastWorkedOn && !isChapterLocked(lastWorkedOn.chapterId) && (
+          <div className="mb-8 p-4 bg-gradient-to-r from-sepia/5 to-amber-50/50 rounded-xl border border-sepia/10">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-sepia/10 rounded-full flex items-center justify-center">
+                  <svg
+                    className="w-5 h-5 text-sepia"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-ink font-medium">Continue where you left off</p>
+                  <p className="text-sepia/70 text-sm">
+                    {chapters.find(c => c.id === lastWorkedOn.chapterId)?.title || 'Your memoir'}
+                  </p>
+                </div>
+              </div>
+              <Link
+                to={`/chapter/${lastWorkedOn.chapterId}`}
+                className="flex items-center gap-2 px-5 py-2.5 bg-sepia text-white rounded-lg hover:bg-sepia/90 transition text-sm font-medium"
+              >
+                Continue
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* Quick Actions */}
+        <div id="quick-actions" className="grid grid-cols-3 gap-3 mb-10">
+          <Link
+            to={`/chapter/${nextChapter.id}`}
+            className="flex items-center gap-3 p-4 bg-white rounded-xl border border-sepia/10 hover:border-sepia/30 hover:shadow-md transition"
+          >
+            <div className="w-10 h-10 bg-sepia/10 rounded-lg flex items-center justify-center">
+              <svg
+                className="w-5 h-5 text-sepia"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
+                  strokeWidth={1.5}
+                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
                 />
               </svg>
-            </Link>
-          </div>
-        </div>
-      )}
+            </div>
+            <div>
+              <p className="text-ink font-medium">Write</p>
+              <p className="text-sepia/60 text-xs">Type stories</p>
+            </div>
+          </Link>
 
-      {/* Quick Actions */}
-      <div id="quick-actions" className="grid grid-cols-3 gap-3 mb-10">
-        <Link
-          to={`/chapter/${nextChapter.id}`}
-          className="flex items-center gap-3 p-4 bg-white rounded-xl border border-sepia/10 hover:border-sepia/30 hover:shadow-md transition"
-        >
-          <div className="w-10 h-10 bg-sepia/10 rounded-lg flex items-center justify-center">
-            <svg
-              className="w-5 h-5 text-sepia"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-              />
-            </svg>
-          </div>
-          <div>
-            <p className="text-ink font-medium">Write</p>
-            <p className="text-sepia/60 text-xs">Type stories</p>
-          </div>
-        </Link>
-
-        <Link
-          to={`/voice?chapter=${nextChapter.id}`}
-          className="flex items-center gap-3 p-4 bg-gradient-to-br from-sepia to-amber-700 text-white rounded-xl hover:shadow-lg transition"
-        >
-          <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
-              />
-            </svg>
-          </div>
-          <div>
-            <p className="font-medium">Talk</p>
-            <p className="text-white/80 text-xs">Voice mode</p>
-          </div>
-        </Link>
-
-        <button
-          onClick={() => setShowTelegramLink(true)}
-          className="flex items-center gap-3 p-4 bg-[#0088cc]/10 rounded-xl border border-[#0088cc]/20 hover:border-[#0088cc]/40 hover:bg-[#0088cc]/15 transition"
-        >
-          <div className="w-10 h-10 bg-[#0088cc]/20 rounded-lg flex items-center justify-center">
-            <svg className="w-5 h-5 text-[#0088cc]" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z" />
-            </svg>
-          </div>
-          <div>
-            <p className="text-[#0088cc] font-medium">Telegram</p>
-            <p className="text-[#0088cc]/60 text-xs">On the go</p>
-          </div>
-        </button>
-      </div>
-
-      {/* Chapters - Table of Contents */}
-      <div className="mb-10 sm:mb-12">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-sepia/60 text-sm uppercase tracking-[0.2em]">Table of Contents</h2>
-          <button
-            id="export-button"
-            onClick={() => setShowExportModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-stone-800 text-white rounded-lg hover:bg-stone-700 transition text-sm"
+          <Link
+            to={`/voice?chapter=${nextChapter.id}`}
+            className="flex items-center gap-3 p-4 bg-gradient-to-br from-sepia to-amber-700 text-white rounded-xl hover:shadow-lg transition"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-              />
-            </svg>
-            Export Book
+            <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+                />
+              </svg>
+            </div>
+            <div>
+              <p className="font-medium">Talk</p>
+              <p className="text-white/80 text-xs">Voice mode</p>
+            </div>
+          </Link>
+
+          <button
+            onClick={() => setShowTelegramLink(true)}
+            className="flex items-center gap-3 p-4 bg-[#0088cc]/10 rounded-xl border border-[#0088cc]/20 hover:border-[#0088cc]/40 hover:bg-[#0088cc]/15 transition"
+          >
+            <div className="w-10 h-10 bg-[#0088cc]/20 rounded-lg flex items-center justify-center">
+              <svg className="w-5 h-5 text-[#0088cc]" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-[#0088cc] font-medium">Telegram</p>
+              <p className="text-[#0088cc]/60 text-xs">On the go</p>
+            </div>
           </button>
         </div>
 
-        <div id="chapter-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {chapters.map(chapter => (
-            <ChapterCard
-              key={chapter.id}
-              chapter={chapter}
-              chapterProgress={chapterProgressMap[chapter.id]}
-              chapterImage={chapterImages[chapter.id]}
-              isImageRevealed={revealedImages.has(chapter.id)}
-              isAnimatingThis={unlockAnimation?.chapterId === chapter.id}
-              onImageClick={handleImageClick}
-              isLocked={isChapterLocked(chapter.id)}
-              isFreeChapter={!isPremium && chapter.id === 'earliest-memories'}
-              onUpgradeClick={handleUpgradeClick}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Completion Celebration - 100% */}
-      {totalProgress === 100 && (
-        <div className="mb-10 p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border border-green-200/50 text-center">
-          <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <svg
-              className="w-10 h-10 text-white"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-          </div>
-          <h3 className="font-display text-2xl text-ink mb-2">Congratulations!</h3>
-          <p className="text-green-800/70 mb-4">
-            You've completed your memoir. {totalAnswered} stories preserved for future generations.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+        {/* Chapters - Table of Contents */}
+        <div className="mb-10 sm:mb-12">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-sepia/60 text-sm uppercase tracking-[0.2em]">Table of Contents</h2>
             <button
-              onClick={() => setShowCertificate(true)}
-              className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-medium hover:shadow-lg transition flex items-center justify-center gap-2"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"
-                />
-              </svg>
-              View Certificate
-            </button>
-            <button
+              id="export-button"
               onClick={() => setShowExportModal(true)}
-              className="px-6 py-3 bg-stone-800 text-white rounded-xl font-medium hover:bg-stone-700 transition flex items-center justify-center gap-2"
+              className="flex items-center gap-2 px-4 py-2 bg-stone-800 text-white rounded-lg hover:bg-stone-700 transition text-sm"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -760,95 +697,34 @@ export default function Home() {
                   d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
                 />
               </svg>
-              Order Your Book
+              Export Book
             </button>
           </div>
-        </div>
-      )}
 
-      {/* Completion Prompt - 80-99% */}
-      {totalProgress >= 80 && totalProgress < 100 && (
-        <div className="mb-10 p-6 bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl border border-amber-200/50 text-center">
-          <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg
-              className="w-8 h-8 text-amber-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+          <div id="chapter-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {chapters.map(chapter => (
+              <ChapterCard
+                key={chapter.id}
+                chapter={chapter}
+                chapterProgress={chapterProgressMap[chapter.id]}
+                chapterImage={chapterImages[chapter.id]}
+                isImageRevealed={revealedImages.has(chapter.id)}
+                isAnimatingThis={unlockAnimation?.chapterId === chapter.id}
+                onImageClick={handleImageClick}
+                isLocked={isChapterLocked(chapter.id)}
+                isFreeChapter={!isPremium && chapter.id === 'earliest-memories'}
+                onUpgradeClick={handleUpgradeClick}
               />
-            </svg>
+            ))}
           </div>
-          <h3 className="font-display text-xl text-ink mb-2">Your memoir is almost ready!</h3>
-          <p className="text-amber-800/70 mb-4">
-            Just {totalQuestions - totalAnswered} more{' '}
-            {totalQuestions - totalAnswered === 1 ? 'question' : 'questions'} to complete your life
-            story.
-          </p>
-          <button
-            onClick={() => setShowExportModal(true)}
-            className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-medium hover:shadow-lg transition"
-          >
-            Preview & Order Your Book
-          </button>
         </div>
-      )}
 
-      {/* Decorative End */}
-      <div className="text-center">
-        <div className="text-sepia/30 text-lg float">✦</div>
-      </div>
-
-      {/* Modals */}
-      {showExportModal && (
-        <ExportModal onClose={() => setShowExportModal(false)} userName={user?.name || 'Your'} />
-      )}
-
-      {showBookPreview && (
-        <BookPreview
-          userName={user?.name}
-          totalProgress={totalProgress}
-          onClose={() => setShowBookPreview(false)}
-        />
-      )}
-
-      {showCertificate && (
-        <CompletionCertificate
-          userName={user?.name}
-          completionDate={new Date()}
-          totalStories={totalAnswered}
-          onClose={() => setShowCertificate(false)}
-        />
-      )}
-
-      {showTelegramLink && <TelegramLinkModal onClose={() => setShowTelegramLink(false)} />}
-
-      {showUpgradeModal && (
-        <UpgradeModal
-          onClose={() => setShowUpgradeModal(false)}
-          memoriesCount={progress['earliest-memories'] || 0}
-          variant={upgradeVariant}
-        />
-      )}
-
-      {/* Premium Activation Celebration */}
-      {showPremiumCelebration && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-          onClick={() => setShowPremiumCelebration(false)}
-        >
-          <div
-            className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-8 text-center"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-5 shadow-lg">
+        {/* Completion Celebration - 100% */}
+        {totalProgress === 100 && (
+          <div className="mb-10 p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border border-green-200/50 text-center">
+            <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
               <svg
-                className="w-8 h-8 text-white"
+                className="w-10 h-10 text-white"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -861,114 +737,248 @@ export default function Home() {
                 />
               </svg>
             </div>
-            <h3 className="text-xl font-display text-ink mb-2">Welcome to Premium!</h3>
-            <p className="text-sepia/70 text-sm mb-5">
-              All chapters are now unlocked. Your printed book is included when you complete your
-              story.
+            <h3 className="font-display text-2xl text-ink mb-2">Congratulations!</h3>
+            <p className="text-green-800/70 mb-4">
+              You've completed your memoir. {totalAnswered} stories preserved for future
+              generations.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <button
+                onClick={() => setShowCertificate(true)}
+                className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-medium hover:shadow-lg transition flex items-center justify-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"
+                  />
+                </svg>
+                View Certificate
+              </button>
+              <button
+                onClick={() => setShowExportModal(true)}
+                className="px-6 py-3 bg-stone-800 text-white rounded-xl font-medium hover:bg-stone-700 transition flex items-center justify-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                  />
+                </svg>
+                Order Your Book
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Completion Prompt - 80-99% */}
+        {totalProgress >= 80 && totalProgress < 100 && (
+          <div className="mb-10 p-6 bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl border border-amber-200/50 text-center">
+            <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg
+                className="w-8 h-8 text-amber-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                />
+              </svg>
+            </div>
+            <h3 className="font-display text-xl text-ink mb-2">Your memoir is almost ready!</h3>
+            <p className="text-amber-800/70 mb-4">
+              Just {totalQuestions - totalAnswered} more{' '}
+              {totalQuestions - totalAnswered === 1 ? 'question' : 'questions'} to complete your
+              life story.
             </p>
             <button
-              onClick={() => setShowPremiumCelebration(false)}
-              className="px-6 py-3 bg-ink text-white rounded-xl font-medium hover:bg-ink/90 transition"
+              onClick={() => setShowExportModal(true)}
+              className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-medium hover:shadow-lg transition"
             >
-              Start Writing
+              Preview & Order Your Book
             </button>
           </div>
+        )}
+
+        {/* Decorative End */}
+        <div className="text-center">
+          <div className="text-sepia/30 text-lg float">✦</div>
         </div>
-      )}
 
-      {showOnboarding && (
-        <OnboardingModal
-          onClose={async options => {
-            setShowOnboarding(false)
-            // Refresh user data to pick up name from onboarding
-            await refreshUser()
-            // Refresh chapter images after onboarding - image generation started
-            fetchChapterImages()
-            // Show tour if user requested it
-            if (options?.showTour) {
-              setTimeout(() => setShowTour(true), 500)
-            }
-          }}
-        />
-      )}
+        {/* Modals */}
+        {showExportModal && (
+          <ExportModal onClose={() => setShowExportModal(false)} userName={user?.name || 'Your'} />
+        )}
 
-      {/* Interactive Tour */}
-      {showTour && (
-        <TourOverlay
-          onComplete={() => {
-            setShowTour(false)
-            // Show chapter 1 award if it completed during the tour
-            if (pendingUnlockRef.current) {
-              setTimeout(() => {
-                setUnlockAnimation(pendingUnlockRef.current)
-                pendingUnlockRef.current = null
-              }, 600)
-            }
-          }}
-          onSkip={() => {
-            setShowTour(false)
-            if (pendingUnlockRef.current) {
-              setTimeout(() => {
-                setUnlockAnimation(pendingUnlockRef.current)
-                pendingUnlockRef.current = null
-              }, 600)
-            }
-          }}
-        />
-      )}
+        {showBookPreview && (
+          <BookPreview
+            userName={user?.name}
+            totalProgress={totalProgress}
+            onClose={() => setShowBookPreview(false)}
+          />
+        )}
 
-      {/* Chapter Image Unlock Animation */}
-      {unlockAnimation && (
-        <ImageUnlockAnimation
-          imageUrl={unlockAnimation.imageUrl}
-          chapterTitle={unlockAnimation.chapterTitle}
-          onComplete={() => {
-            // Mark this image as revealed so it shows in the chapter card
-            setRevealedImages(prev => new Set([...prev, unlockAnimation.chapterId]))
-            setUnlockAnimation(null)
-          }}
-        />
-      )}
+        {showCertificate && (
+          <CompletionCertificate
+            userName={user?.name}
+            completionDate={new Date()}
+            totalStories={totalAnswered}
+            onClose={() => setShowCertificate(false)}
+          />
+        )}
 
-      {/* Full-screen Image Lightbox */}
-      {lightboxImage && (
-        <div
-          className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center cursor-pointer"
-          onClick={() => setLightboxImage(null)}
-        >
-          {/* Close button */}
-          <button
-            onClick={() => setLightboxImage(null)}
-            className="absolute top-4 right-4 text-white/70 hover:text-white transition p-2"
+        {showTelegramLink && <TelegramLinkModal onClose={() => setShowTelegramLink(false)} />}
+
+        {showUpgradeModal && (
+          <UpgradeModal
+            onClose={() => setShowUpgradeModal(false)}
+            memoriesCount={progress['earliest-memories'] || 0}
+            variant={upgradeVariant}
+          />
+        )}
+
+        {/* Premium Activation Celebration */}
+        {showPremiumCelebration && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowPremiumCelebration(false)}
           >
-            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
+            <div
+              className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-8 text-center"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-5 shadow-lg">
+                <svg
+                  className="w-8 h-8 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-xl font-display text-ink mb-2">Welcome to Premium!</h3>
+              <p className="text-sepia/70 text-sm mb-5">
+                All chapters are now unlocked. Your printed book is included when you complete your
+                story.
+              </p>
+              <button
+                onClick={() => setShowPremiumCelebration(false)}
+                className="px-6 py-3 bg-ink text-white rounded-xl font-medium hover:bg-ink/90 transition"
+              >
+                Start Writing
+              </button>
+            </div>
+          </div>
+        )}
 
-          {/* Image */}
-          <div className="max-w-[90vw] max-h-[90vh] relative" onClick={e => e.stopPropagation()}>
-            <img
-              src={lightboxImage.imageUrl}
-              alt={lightboxImage.title}
-              className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
-            />
-            <p className="text-white/80 text-center mt-4 text-lg font-display">
-              {lightboxImage.title}
+        {showOnboarding && (
+          <OnboardingModal
+            onClose={async options => {
+              setShowOnboarding(false)
+              // Refresh user data to pick up name from onboarding
+              await refreshUser()
+              // Refresh chapter images after onboarding - image generation started
+              fetchChapterImages()
+              // Show tour if user requested it
+              if (options?.showTour) {
+                setTimeout(() => setShowTour(true), 500)
+              }
+            }}
+          />
+        )}
+
+        {/* Interactive Tour */}
+        {showTour && (
+          <TourOverlay
+            onComplete={() => {
+              setShowTour(false)
+              // Show chapter 1 award if it completed during the tour
+              if (pendingUnlockRef.current) {
+                setTimeout(() => {
+                  setUnlockAnimation(pendingUnlockRef.current)
+                  pendingUnlockRef.current = null
+                }, 600)
+              }
+            }}
+            onSkip={() => {
+              setShowTour(false)
+              if (pendingUnlockRef.current) {
+                setTimeout(() => {
+                  setUnlockAnimation(pendingUnlockRef.current)
+                  pendingUnlockRef.current = null
+                }, 600)
+              }
+            }}
+          />
+        )}
+
+        {/* Chapter Image Unlock Animation */}
+        {unlockAnimation && (
+          <ImageUnlockAnimation
+            imageUrl={unlockAnimation.imageUrl}
+            chapterTitle={unlockAnimation.chapterTitle}
+            onComplete={() => {
+              // Mark this image as revealed so it shows in the chapter card
+              setRevealedImages(prev => new Set([...prev, unlockAnimation.chapterId]))
+              setUnlockAnimation(null)
+            }}
+          />
+        )}
+
+        {/* Full-screen Image Lightbox */}
+        {lightboxImage && (
+          <div
+            className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center cursor-pointer"
+            onClick={() => setLightboxImage(null)}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setLightboxImage(null)}
+              className="absolute top-4 right-4 text-white/70 hover:text-white transition p-2"
+            >
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+
+            {/* Image */}
+            <div className="max-w-[90vw] max-h-[90vh] relative" onClick={e => e.stopPropagation()}>
+              <img
+                src={lightboxImage.imageUrl}
+                alt={lightboxImage.title}
+                className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
+              />
+              <p className="text-white/80 text-center mt-4 text-lg font-display">
+                {lightboxImage.title}
+              </p>
+            </div>
+
+            {/* Hint */}
+            <p className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/40 text-sm">
+              Click anywhere to close
             </p>
           </div>
-
-          {/* Hint */}
-          <p className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/40 text-sm">
-            Click anywhere to close
-          </p>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </>
   )
 }

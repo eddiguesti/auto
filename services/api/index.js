@@ -66,6 +66,21 @@ initSentry(app)
 // This is required for rate limiting to work correctly with X-Forwarded-For headers
 app.set('trust proxy', 1)
 
+// Redirect www to non-www and enforce HTTPS (canonical URL: https://easymemoir.co.uk)
+app.use((req, res, next) => {
+  const host = req.hostname || req.headers.host
+  // www → non-www redirect
+  if (host && host.startsWith('www.')) {
+    const newHost = host.replace(/^www\./, '')
+    return res.redirect(301, `https://${newHost}${req.originalUrl}`)
+  }
+  // HTTP → HTTPS redirect (when behind proxy, check X-Forwarded-Proto)
+  if (req.headers['x-forwarded-proto'] === 'http') {
+    return res.redirect(301, `https://${host}${req.originalUrl}`)
+  }
+  next()
+})
+
 // Wrap pool with query timing and make available to routes
 const timedPool = wrapPoolWithTiming(pool)
 app.locals.db = timedPool
@@ -371,11 +386,37 @@ if (existsSync(clientBuildPath)) {
 
   // Handle client-side routing - serve index.html for all non-API routes
   // index.html should not be cached so users always get latest version
-  app.get('*', (req, res) => {
-    if (!req.path.startsWith('/api')) {
-      res.set('Cache-Control', 'no-cache, must-revalidate')
-      res.sendFile(join(clientBuildPath, 'index.html'))
-    }
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) return next()
+    res.set('Cache-Control', 'no-cache, must-revalidate')
+    res.sendFile(join(clientBuildPath, 'index.html'))
+  })
+} else {
+  // Fallback when frontend build is not available (deploy in progress, build failed, etc.)
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) return next()
+    res.status(200).send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Easy Memoir</title>
+  <style>
+    body { font-family: Georgia, serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #FAF6F1; color: #5C4033; }
+    .container { text-align: center; padding: 2rem; max-width: 500px; }
+    h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+    p { color: #8B7355; line-height: 1.6; }
+    a { color: #5C4033; text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Easy Memoir</h1>
+    <p>We're getting things ready. Please refresh in a moment.</p>
+    <p><a href="/">Try again</a></p>
+  </div>
+</body>
+</html>`)
   })
 }
 

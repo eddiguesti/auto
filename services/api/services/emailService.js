@@ -213,6 +213,65 @@ export function welcomeEmailTemplate({ name }) {
 }
 
 /**
+ * Email verification template
+ */
+export function emailVerificationTemplate({ name, verifyUrl }) {
+  const content = `
+    <!-- Decorative flourish -->
+    <div style="text-align: center; margin-bottom: 24px;">
+      <span style="font-size: 24px; color: ${BRAND.sepia}; opacity: 0.4;">&#10087;</span>
+    </div>
+
+    <!-- Greeting -->
+    <h1 style="font-family: 'Playfair Display', Georgia, serif; font-size: 26px; color: ${BRAND.ink}; text-align: center; margin: 0 0 24px 0; font-weight: 500;">
+      Verify Your Email
+    </h1>
+
+    <p style="font-family: Georgia, serif; font-size: 16px; color: ${BRAND.warmgray}; line-height: 1.7; margin: 0 0 20px 0; text-align: center;">
+      Hello${name ? ` ${name}` : ''},
+    </p>
+
+    <p style="font-family: Georgia, serif; font-size: 16px; color: ${BRAND.warmgray}; line-height: 1.7; margin: 0 0 28px 0; text-align: center;">
+      Welcome to Easy Memoir! Please verify your email address to complete your account setup.
+    </p>
+
+    <!-- CTA Button -->
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+      <tr>
+        <td style="text-align: center; padding: 8px 0 28px 0;">
+          <a href="${verifyUrl}" style="display: inline-block; background: linear-gradient(135deg, ${BRAND.amber} 0%, ${BRAND.amberDark} 100%); color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 15px; font-weight: 600; text-decoration: none; padding: 14px 32px; border-radius: 50px; box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);">
+            Verify Email Address
+          </a>
+        </td>
+      </tr>
+    </table>
+
+    <p style="font-family: Georgia, serif; font-size: 14px; color: #999; line-height: 1.6; margin: 0 0 20px 0; text-align: center;">
+      This link will expire in 24 hours for your security.
+    </p>
+
+    <!-- Divider -->
+    <div style="border-top: 1px solid #eee; margin: 24px 0;"></div>
+
+    <p style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; color: #999; line-height: 1.6; margin: 0; text-align: center;">
+      If you didn't create an account with Easy Memoir, you can safely ignore this email.
+    </p>
+
+    <!-- Alternative link -->
+    <p style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 12px; color: #bbb; line-height: 1.6; margin: 20px 0 0 0; text-align: center; word-break: break-all;">
+      Or copy this link: ${verifyUrl}
+    </p>
+  `
+
+  return baseEmailTemplate({
+    title: 'Verify Your Email - Easy Memoir',
+    preheader: 'Verify your email address to complete your Easy Memoir account setup',
+    content,
+    footerText: 'You received this email because an account was created with this email address.'
+  })
+}
+
+/**
  * Newsletter subscription confirmation template
  */
 export function newsletterWelcomeTemplate({ email }) {
@@ -411,6 +470,7 @@ export default {
   sendEmail,
   passwordResetEmailTemplate,
   welcomeEmailTemplate,
+  emailVerificationTemplate,
   newsletterWelcomeTemplate,
   weeklyTopicEmailTemplate
 }

@@ -17,6 +17,10 @@ export default function Settings() {
   const [profileSuccess, setProfileSuccess] = useState(false)
   const [hasProfileChanges, setHasProfileChanges] = useState(false)
 
+  // Email verification state
+  const [resendingVerification, setResendingVerification] = useState(false)
+  const [verificationMessage, setVerificationMessage] = useState('')
+
   // Delete account state
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
@@ -226,6 +230,62 @@ export default function Settings() {
                       disabled
                       className="w-full px-4 py-3 border border-sepia/10 rounded-lg bg-sepia/5 text-warmgray cursor-not-allowed"
                     />
+                    {/* Email verification status */}
+                    <div className="mt-2">
+                      {user?.email_verified ? (
+                        <span className="inline-flex items-center gap-1.5 text-sm text-green-700">
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
+                          </svg>
+                          Email verified
+                        </span>
+                      ) : !user?.google_id ? (
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm text-amber-700">Email not verified</span>
+                          <button
+                            onClick={async () => {
+                              setResendingVerification(true)
+                              setVerificationMessage('')
+                              try {
+                                const res = await authFetch('/api/auth/resend-verification', {
+                                  method: 'POST'
+                                })
+                                const data = await res.json()
+                                setVerificationMessage(
+                                  res.ok ? 'Verification email sent!' : data.error || 'Failed'
+                                )
+                                if (res.ok) setTimeout(() => refreshUser(), 2000)
+                              } catch {
+                                setVerificationMessage('Failed to send email')
+                              } finally {
+                                setResendingVerification(false)
+                              }
+                            }}
+                            disabled={resendingVerification}
+                            className="text-sm text-sepia hover:text-ink underline disabled:opacity-50"
+                          >
+                            {resendingVerification ? 'Sending...' : 'Resend verification'}
+                          </button>
+                          {verificationMessage && (
+                            <span
+                              className={`text-xs ${verificationMessage.includes('sent') ? 'text-green-700' : 'text-red-600'}`}
+                            >
+                              {verificationMessage}
+                            </span>
+                          )}
+                        </div>
+                      ) : null}
+                    </div>
                   </div>
 
                   {/* Save button - only shows when changes are made */}

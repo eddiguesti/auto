@@ -416,6 +416,20 @@ export async function initDatabase() {
       )
     `)
 
+    // Channel preferences - which channels the user wants to use for their memoir
+    // Stores a JSONB array like ["phone", "email", "telegram", "app", "webapp"]
+    // Query with: channel_preferences ? 'phone' (JSONB contains check)
+    //
+    // DECISION TREE (for future devs):
+    //   "phone"    -> Collect phone number, schedule Clio's first call
+    //   "email"    -> Add to weekly topic email list (cron already handles this)
+    //   "telegram" -> Prompt Telegram bot linking (TelegramLinkModal)
+    //   "app"      -> Show app download / deep link
+    //   "webapp"   -> No extra action (user is already here)
+    await client.query(`
+      ALTER TABLE user_onboarding ADD COLUMN IF NOT EXISTS channel_preferences JSONB DEFAULT '[]'
+    `)
+
     // Chapter images - AI-generated personalized images for each chapter
     await client.query(`
       CREATE TABLE IF NOT EXISTS chapter_images (
@@ -929,6 +943,32 @@ export async function initDatabase() {
     `)
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_email_session_tokens_expires ON email_session_tokens(expires_at) WHERE used_at IS NULL
+    `)
+
+    // Email verification tokens
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS email_verification_tokens (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        token_hash TEXT NOT NULL,
+        expires_at TIMESTAMP NOT NULL,
+        used_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_email_verification_user ON email_verification_tokens(user_id)
+    `)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_email_verification_expires ON email_verification_tokens(expires_at) WHERE used_at IS NULL
+    `)
+
+    // Migration: Add email verification columns to users table
+    await client.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT false
+    `)
+    await client.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMP
     `)
 
     // Migration: Add phone call columns to users table

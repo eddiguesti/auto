@@ -294,6 +294,56 @@ router.post(
   })
 )
 
+// ============================================================
+// Save channel preferences (which channels user wants to use)
+// Called from the CHANNEL_SELECTION onboarding step.
+//
+// FUTURE DEVS: This is where decision trees branch.
+// Based on what channels the user selects here, downstream
+// flows should activate:
+//   "phone"    -> Collect phone number, schedule first call (Telnyx)
+//   "email"    -> Add to weekly topic email list (cron already handles this)
+//   "telegram" -> Prompt Telegram bot linking (TelegramLinkModal)
+//   "app"      -> Show app store download links / deep link
+//   "webapp"   -> No extra action needed (they're already here)
+//
+// The channel_preferences column is a JSONB array on user_onboarding.
+// Query with: channel_preferences ? 'phone' (contains check)
+// ============================================================
+router.post(
+  '/channel-preferences',
+  requireDb,
+  asyncHandler(async (req, res) => {
+    const db = req.app.locals.db
+    const userId = req.user.id
+    const { channels } = req.body
+
+    const validChannels = ['phone', 'email', 'telegram', 'app', 'webapp']
+
+    if (!channels || !Array.isArray(channels) || channels.length === 0) {
+      return res.status(400).json({ error: 'At least one channel must be selected' })
+    }
+
+    const invalid = channels.filter(c => !validChannels.includes(c))
+    if (invalid.length > 0) {
+      return res.status(400).json({
+        error: `Invalid channels: ${invalid.join(', ')}. Valid: ${validChannels.join(', ')}`
+      })
+    }
+
+    const uniqueChannels = [...new Set(channels)]
+
+    await db.query(
+      `UPDATE user_onboarding
+       SET channel_preferences = $1, updated_at = CURRENT_TIMESTAMP
+       WHERE user_id = $2`,
+      [JSON.stringify(uniqueChannels), userId]
+    )
+
+    res.json({ success: true, channels: uniqueChannels })
+  })
+)
+
 // Reset onboarding (for testing)
 router.delete(
   '/reset',

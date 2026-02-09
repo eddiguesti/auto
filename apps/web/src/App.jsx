@@ -57,6 +57,7 @@ const Login = lazy(() => import('./pages/auth/Login'))
 const Register = lazy(() => import('./pages/auth/Register'))
 const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword'))
 const ResetPassword = lazy(() => import('./pages/auth/ResetPassword'))
+const VerifyEmail = lazy(() => import('./pages/auth/VerifyEmail'))
 
 // Marketing pages - public-facing landing & info pages
 const Landing = lazy(() => import('./pages/marketing/Landing'))
@@ -109,6 +110,7 @@ function App() {
                   <Route path="/register" element={<Register />} />
                   <Route path="/forgot-password" element={<ForgotPassword />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
+                  <Route path="/verify-email" element={<VerifyEmail />} />
                   <Route path="/terms" element={<Terms />} />
                   <Route path="/privacy" element={<Privacy />} />
                   <Route path="/cookies" element={<Cookies />} />
@@ -171,6 +173,9 @@ function App() {
                       </ProtectedRoute>
                     }
                   />
+
+                  {/* Catch-all: unknown routes show landing page */}
+                  <Route path="*" element={<LandingDesign1 />} />
                 </Routes>
               </Suspense>
 

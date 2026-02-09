@@ -9,7 +9,11 @@ import { initializeGameState } from '../utils/gameStateManager.js'
 import validate from '../middleware/validate.js'
 import { authSchemas } from '../schemas/index.js'
 import { authLogger } from '../utils/logger.js'
-import { sendEmail, passwordResetEmailTemplate } from '../services/emailService.js'
+import {
+  sendEmail,
+  passwordResetEmailTemplate,
+  emailVerificationTemplate
+} from '../services/emailService.js'
 
 const router = Router()
 
@@ -90,6 +94,41 @@ router.post(
       await initializeGameState(user.id)
 
       const token = generateToken(user)
+
+      // Send verification email (non-blocking — don't fail registration if email fails)
+      try {
+        const verifyToken = crypto.randomBytes(32).toString('hex')
+        const tokenHash = crypto.createHash('sha256').update(verifyToken).digest('hex')
+        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+
+        await db.query(
+          `INSERT INTO email_verification_tokens (user_id, token_hash, expires_at)
+           VALUES ($1, $2, $3)`,
+          [user.id, tokenHash, expiresAt]
+        )
+
+        const appUrl = process.env.APP_URL || 'https://easymemoir.co.uk'
+        const verifyUrl = `${appUrl}/verify-email?token=${verifyToken}`
+
+        const emailHtml = emailVerificationTemplate({
+          name: user.name,
+          verifyUrl
+        })
+
+        await sendEmail({
+          to: user.email,
+          subject: 'Verify Your Email - Easy Memoir',
+          html: emailHtml
+        })
+
+        authLogger.info('Verification email sent', { userId: user.id, requestId: req.id })
+      } catch (emailErr) {
+        authLogger.error('Failed to send verification email', {
+          error: emailErr.message,
+          userId: user.id,
+          requestId: req.id
+        })
+      }
 
       res.status(201).json({ user, token })
     } catch (err) {
@@ -209,7 +248,7 @@ router.post(
         // Link Google to existing email account — safe because Google verified the email
         user = emailResult.rows[0]
         await db.query(
-          `UPDATE users SET google_id = $1, avatar_url = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3`,
+          `UPDATE users SET google_id = $1, avatar_url = $2, email_verified = true, email_verified_at = COALESCE(email_verified_at, CURRENT_TIMESTAMP), updated_at = CURRENT_TIMESTAMP WHERE id = $3`,
           [googleId, picture, user.id]
         )
         user.avatar_url = picture
@@ -219,10 +258,10 @@ router.post(
           .status(409)
           .json({ error: 'This email is already linked to a different Google account' })
       } else {
-        // Create new user
+        // Create new user — Google verified the email
         result = await db.query(
-          `INSERT INTO users (email, google_id, name, avatar_url)
-           VALUES ($1, $2, $3, $4)
+          `INSERT INTO users (email, google_id, name, avatar_url, email_verified, email_verified_at)
+           VALUES ($1, $2, $3, $4, true, CURRENT_TIMESTAMP)
            RETURNING id, email, name, avatar_url`,
           [email, googleId, name, picture]
         )
@@ -261,7 +300,7 @@ router.get(
     const db = req.app.locals.db
 
     const result = await db.query(
-      'SELECT id, email, name, birth_year, avatar_url, premium_until FROM users WHERE id = $1',
+      'SELECT id, email, name, birth_year, avatar_url, premium_until, email_verified, google_id FROM users WHERE id = $1',
       [req.user.id]
     )
 
@@ -561,6 +600,141 @@ router.get(
       authLogger.error('Token verification failed', { error: err.message, requestId: req.id })
       res.json({ valid: false })
     }
+  })
+)
+
+// ============================================================================
+// EMAIL VERIFICATION FLOW
+// ============================================================================
+
+/**
+ * POST /verify-email
+ * Verify email using token from email link
+ */
+router.post(
+  '/verify-email',
+  requireDb,
+  asyncHandler(async (req, res) => {
+    const { token } = req.body
+    const db = req.app.locals.db
+
+    if (!token || typeof token !== 'string') {
+      return res.status(400).json({ error: 'Verification token is required' })
+    }
+
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex')
+
+    const tokenResult = await db.query(
+      `SELECT evt.id, evt.user_id, u.email
+       FROM email_verification_tokens evt
+       JOIN users u ON evt.user_id = u.id
+       WHERE evt.token_hash = $1
+         AND evt.used_at IS NULL
+         AND evt.expires_at > NOW()`,
+      [tokenHash]
+    )
+
+    if (tokenResult.rows.length === 0) {
+      return res.status(400).json({
+        error: 'Invalid or expired verification link. Please request a new one.'
+      })
+    }
+
+    const verifyToken = tokenResult.rows[0]
+
+    // Update user as verified
+    await db.query(
+      `UPDATE users
+       SET email_verified = true, email_verified_at = COALESCE(email_verified_at, CURRENT_TIMESTAMP), updated_at = CURRENT_TIMESTAMP
+       WHERE id = $1`,
+      [verifyToken.user_id]
+    )
+
+    // Mark token as used
+    await db.query(
+      `UPDATE email_verification_tokens SET used_at = CURRENT_TIMESTAMP WHERE id = $1`,
+      [verifyToken.id]
+    )
+
+    authLogger.info('Email verified successfully', {
+      userId: verifyToken.user_id,
+      email: verifyToken.email,
+      requestId: req.id
+    })
+
+    res.json({ success: true, message: 'Email verified successfully' })
+  })
+)
+
+/**
+ * POST /resend-verification
+ * Resend verification email to authenticated user
+ */
+router.post(
+  '/resend-verification',
+  authenticateToken,
+  requireDb,
+  asyncHandler(async (req, res) => {
+    const db = req.app.locals.db
+
+    const userResult = await db.query(
+      'SELECT id, email, name, email_verified, google_id FROM users WHERE id = $1',
+      [req.user.id]
+    )
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' })
+    }
+
+    const user = userResult.rows[0]
+
+    if (user.email_verified) {
+      return res.json({ success: true, message: 'Email already verified' })
+    }
+
+    if (user.google_id) {
+      return res.json({ success: true, message: 'Google accounts are already verified' })
+    }
+
+    // Invalidate existing unused tokens
+    await db.query(
+      `UPDATE email_verification_tokens
+       SET used_at = CURRENT_TIMESTAMP
+       WHERE user_id = $1 AND used_at IS NULL`,
+      [user.id]
+    )
+
+    // Generate new token
+    const verifyToken = crypto.randomBytes(32).toString('hex')
+    const tokenHash = crypto.createHash('sha256').update(verifyToken).digest('hex')
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+
+    await db.query(
+      `INSERT INTO email_verification_tokens (user_id, token_hash, expires_at)
+       VALUES ($1, $2, $3)`,
+      [user.id, tokenHash, expiresAt]
+    )
+
+    const appUrl = process.env.APP_URL || 'https://easymemoir.co.uk'
+    const verifyUrl = `${appUrl}/verify-email?token=${verifyToken}`
+
+    const emailHtml = emailVerificationTemplate({
+      name: user.name,
+      verifyUrl
+    })
+
+    await sendEmail({
+      to: user.email,
+      subject: 'Verify Your Email - Easy Memoir',
+      html: emailHtml
+    })
+
+    authLogger.info('Verification email resent', {
+      userId: user.id,
+      requestId: req.id
+    })
+
+    res.json({ success: true, message: 'Verification email sent. Please check your inbox.' })
   })
 )
 
