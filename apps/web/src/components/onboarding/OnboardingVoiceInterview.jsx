@@ -598,7 +598,7 @@ SAFETY — NON-NEGOTIABLE:
   const handleContinue = useCallback(() => {
     cleanup()
     // Pass transcripts — channels will be selected in the next step
-    onComplete(conversationRef.current, [])
+    onComplete(conversationRef.current)
   }, [cleanup, onComplete])
 
   const handleRetry = useCallback(() => {

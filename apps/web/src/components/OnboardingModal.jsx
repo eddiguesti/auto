@@ -109,33 +109,21 @@ export default function OnboardingModal({ onClose, initialStep }) {
     setStep(pref === 'voice' ? STEPS.VOICE_INTERVIEW : STEPS.TYPE_FORM)
   }
 
-  // Handle voice interview completion
-  const handleVoiceComplete = async (transcripts, selectedChannels) => {
-    setStep(STEPS.PROCESSING)
-
-    // Use AbortController to timeout after 12s — context extraction is nice-to-have
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 12000)
-
-    try {
-      const res = await authFetch('/api/onboarding/context', {
-        method: 'POST',
-        body: JSON.stringify({ transcripts }),
-        signal: controller.signal
-      })
-
-      const data = await res.json()
-      setExtractedContext(data.extracted)
-
-      if (data.userName) await refreshUser()
-    } catch (err) {
-      console.error('Context extraction failed (continuing):', err)
-    } finally {
-      clearTimeout(timeout)
-    }
-
-    // Always advance to channel selection after voice interview
+  // Handle voice interview completion — go straight to channels, extract context in background
+  const handleVoiceComplete = transcripts => {
     setStep(STEPS.CHANNEL_SELECTION)
+
+    // Extract context in the background — don't block the UI
+    authFetch('/api/onboarding/context', {
+      method: 'POST',
+      body: JSON.stringify({ transcripts })
+    })
+      .then(res => res.json())
+      .then(data => {
+        setExtractedContext(data.extracted)
+        if (data.userName) refreshUser()
+      })
+      .catch(err => console.error('Context extraction failed:', err))
   }
 
   // Handle type form submission — save context, then move to channel selection
