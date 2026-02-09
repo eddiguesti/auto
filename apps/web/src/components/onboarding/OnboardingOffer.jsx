@@ -7,6 +7,7 @@ const FEATURES = [
   'Unlimited voice calls with Clio, your personal interviewer',
   'Personal writing companion & voice-to-text transcription',
   '10 unique personalised chapter illustrations',
+  'Choose your writing style — literary, conversational, or inspired by famous authors',
   'Professional audiobook narration of your memoir',
   'Full-colour hardcover book, delivered to your door',
   '12 months of unlimited access — write at your own pace'
@@ -88,9 +89,11 @@ export default function OnboardingOffer({ firstName, onTryFree }) {
         {...fade(0.18)}
         className="mx-auto mb-6 px-5 py-3.5 rounded-xl bg-white/80 ring-1 ring-black/[0.04]"
       >
-        <p className="text-[13px] text-ink/70 text-center leading-relaxed italic">
-          "95% of early users rated their memoir as good as or better than professionally written
-          autobiographies."
+        <p className="text-[13px] text-ink/70 text-center leading-relaxed">
+          Hiring a professional biographer typically starts at{' '}
+          <span className="font-semibold text-ink/80">£10,000</span>. In early testing, 95% of users
+          rated their finished memoir as good as or better than professionally written
+          autobiographies.
         </p>
       </motion.div>
 
