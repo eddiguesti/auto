@@ -28,6 +28,25 @@ export function AuthProvider({ children }) {
     }
   }, [])
 
+  const logout = useCallback(async () => {
+    // Notify server of logout (for audit trail)
+    const currentToken = token
+    if (currentToken && currentToken !== 'dev-token') {
+      try {
+        await fetch(`${API_URL}/api/auth/logout`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${currentToken}` }
+        })
+      } catch (err) {
+        // Continue with client-side logout even if server call fails
+        console.warn('Server logout notification failed:', err)
+      }
+    }
+    localStorage.removeItem('token')
+    setToken(null)
+    setUser(null)
+  }, [token])
+
   const fetchUser = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/api/auth/me`, {
@@ -67,25 +86,6 @@ export function AuthProvider({ children }) {
     setToken(authToken)
     setUser(userData)
   }, [])
-
-  const logout = useCallback(async () => {
-    // Notify server of logout (for audit trail)
-    const currentToken = token
-    if (currentToken && currentToken !== 'dev-token') {
-      try {
-        await fetch(`${API_URL}/api/auth/logout`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${currentToken}` }
-        })
-      } catch (err) {
-        // Continue with client-side logout even if server call fails
-        console.warn('Server logout notification failed:', err)
-      }
-    }
-    localStorage.removeItem('token')
-    setToken(null)
-    setUser(null)
-  }, [token])
 
   // Helper for authenticated fetch requests
   const authFetch = useCallback(
