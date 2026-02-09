@@ -89,11 +89,10 @@ export default function OnboardingModal({ onClose, initialStep }) {
       // Complete onboarding
       await authFetch('/api/onboarding/complete', { method: 'POST' })
 
-      const wantsTour = data.extracted?.wants_tour || false
-      handleClose({ showTour: wantsTour })
+      handleClose()
     } catch (err) {
       console.error('Failed to complete onboarding:', err)
-      handleClose({ showTour: false })
+      handleClose()
     }
   }
 
@@ -140,11 +139,10 @@ export default function OnboardingModal({ onClose, initialStep }) {
         method: 'POST'
       })
 
-      const wantsTour = extractedContext?.wants_tour || false
-      handleClose({ showTour: wantsTour })
+      handleClose()
     } catch (err) {
       console.error('Failed to complete onboarding:', err)
-      handleClose({ showTour: false })
+      handleClose()
     }
   }
 

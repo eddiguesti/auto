@@ -62,29 +62,29 @@ const INTRO_TEXT =
 // --- Framer Motion Variants ---
 
 const checkmarkVariants = {
-  hidden: { scale: 0, rotate: -90 },
+  hidden: { scale: 0, opacity: 0 },
   visible: {
     scale: 1,
-    rotate: 0,
-    transition: { type: 'spring', stiffness: 500, damping: 15 }
+    opacity: 1,
+    transition: { type: 'spring', stiffness: 400, damping: 20 }
   },
   exit: {
     scale: 0,
-    rotate: 90,
-    transition: { duration: 0.2 }
+    opacity: 0,
+    transition: { duration: 0.15 }
   }
 }
 
 const buttonVariants = {
-  hidden: { opacity: 0, y: 20 },
+  hidden: { opacity: 0, y: 12 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { type: 'spring', stiffness: 300, damping: 25 }
+    transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }
   },
   exit: {
     opacity: 0,
-    y: 10,
+    y: 8,
     transition: { duration: 0.2 }
   }
 }
@@ -152,52 +152,37 @@ function ChannelIcon({ type }) {
 
 // --- Channel Card ---
 
-/**
- * Individual channel option card.
- *
- * Animation lifecycle:
- *   1. Spring entrance via Framer Motion (staggered by index)
- *   2. CSS float animation after entrance completes (via onAnimationComplete)
- *   3. Selection: colored border + glow + checkmark badge
- */
 function ChannelCard({ channel, index, isSelected, isSelectable, onToggle, entranceDelay }) {
-  const [hasLanded, setHasLanded] = useState(false)
-
   const colorStyles = {
     emerald: {
-      border: 'border-emerald-400',
-      bg: 'bg-emerald-50',
-      ring: 'ring-emerald-300/50',
-      iconBg: 'bg-emerald-100',
-      glow: '0 0 20px rgba(16, 185, 129, 0.15)'
+      border: 'border-emerald-400/70',
+      bg: 'bg-emerald-50/50',
+      iconBg: 'bg-emerald-100/80',
+      glow: '0 0 24px rgba(16, 185, 129, 0.12)'
     },
     blue: {
-      border: 'border-blue-400',
-      bg: 'bg-blue-50',
-      ring: 'ring-blue-300/50',
-      iconBg: 'bg-blue-100',
-      glow: '0 0 20px rgba(59, 130, 246, 0.15)'
+      border: 'border-blue-400/70',
+      bg: 'bg-blue-50/50',
+      iconBg: 'bg-blue-100/80',
+      glow: '0 0 24px rgba(59, 130, 246, 0.12)'
     },
     sky: {
-      border: 'border-sky-400',
-      bg: 'bg-sky-50',
-      ring: 'ring-sky-300/50',
-      iconBg: 'bg-sky-100',
-      glow: '0 0 20px rgba(14, 165, 233, 0.15)'
+      border: 'border-sky-400/70',
+      bg: 'bg-sky-50/50',
+      iconBg: 'bg-sky-100/80',
+      glow: '0 0 24px rgba(14, 165, 233, 0.12)'
     },
     violet: {
-      border: 'border-violet-400',
-      bg: 'bg-violet-50',
-      ring: 'ring-violet-300/50',
-      iconBg: 'bg-violet-100',
-      glow: '0 0 20px rgba(139, 92, 246, 0.15)'
+      border: 'border-violet-400/70',
+      bg: 'bg-violet-50/50',
+      iconBg: 'bg-violet-100/80',
+      glow: '0 0 24px rgba(139, 92, 246, 0.12)'
     },
     amber: {
-      border: 'border-amber-400',
-      bg: 'bg-amber-50',
-      ring: 'ring-amber-300/50',
-      iconBg: 'bg-amber-100',
-      glow: '0 0 20px rgba(245, 158, 11, 0.15)'
+      border: 'border-amber-400/70',
+      bg: 'bg-amber-50/50',
+      iconBg: 'bg-amber-100/80',
+      glow: '0 0 24px rgba(245, 158, 11, 0.12)'
     }
   }
 
@@ -208,36 +193,31 @@ function ChannelCard({ channel, index, isSelected, isSelectable, onToggle, entra
       onClick={onToggle}
       disabled={!isSelectable}
       className={`
-        relative p-4 rounded-xl border-2 text-left transition-colors duration-200
+        relative p-4 rounded-xl border text-left transition-all duration-300
         ${
           isSelected
-            ? `${colors.border} ${colors.bg} ring-2 ${colors.ring}`
-            : 'border-sepia/15 bg-white hover:border-sepia/30'
+            ? `${colors.border} ${colors.bg}`
+            : 'border-sepia/10 bg-white/80 hover:border-sepia/25 hover:bg-white'
         }
         ${isSelectable ? 'cursor-pointer' : 'cursor-default'}
-        ${hasLanded ? 'channel-card-float' : ''}
       `}
       style={{
-        ...(isSelected ? { boxShadow: colors.glow } : {}),
-        // Stagger the CSS float animation per card
-        animationDelay: hasLanded ? `${index * 0.4}s` : undefined
+        boxShadow: isSelected ? colors.glow : 'none'
       }}
-      initial={{ opacity: 0, y: 40, scale: 0.9 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
       transition={{
-        type: 'spring',
-        stiffness: 300,
-        damping: 24,
+        duration: 0.5,
+        ease: [0.25, 0.46, 0.45, 0.94],
         delay: entranceDelay
       }}
-      onAnimationComplete={() => setHasLanded(true)}
-      whileHover={isSelectable ? { y: -2, transition: { duration: 0.2 } } : {}}
+      whileHover={isSelectable ? { y: -2, transition: { duration: 0.25, ease: 'easeOut' } } : {}}
       whileTap={isSelectable ? { scale: 0.98 } : {}}
     >
       {/* Icon circle */}
       <div
-        className={`w-10 h-10 mb-3 mx-auto rounded-lg flex items-center justify-center transition-colors duration-200 ${
-          isSelected ? colors.iconBg : 'bg-sepia/10'
+        className={`w-10 h-10 mb-3 mx-auto rounded-lg flex items-center justify-center transition-colors duration-300 ${
+          isSelected ? colors.iconBg : 'bg-sepia/8'
         }`}
       >
         <ChannelIcon type={channel.icon} />
@@ -253,14 +233,14 @@ function ChannelCard({ channel, index, isSelected, isSelectable, onToggle, entra
       <AnimatePresence>
         {isSelected && (
           <motion.div
-            className="absolute -top-2 -right-2 w-6 h-6 bg-sepia rounded-full flex items-center justify-center shadow-md"
+            className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-sepia rounded-full flex items-center justify-center shadow-sm"
             variants={checkmarkVariants}
             initial="hidden"
             animate="visible"
             exit="exit"
           >
             <svg
-              className="w-3.5 h-3.5 text-white"
+              className="w-3 h-3 text-white"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -320,17 +300,6 @@ export function ChannelCards({
 
   return (
     <>
-      {/* CSS for the floating animation (avoids Framer Motion variant switching bug) */}
-      <style>{`
-        @keyframes channelCardFloat {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-4px); }
-        }
-        .channel-card-float {
-          animation: channelCardFloat 3s ease-in-out infinite;
-        }
-      `}</style>
-
       {/* Channel cards */}
       <div className="flex flex-wrap justify-center gap-3 mb-4">
         {CHANNEL_OPTIONS.map((channel, index) => (
@@ -341,7 +310,7 @@ export function ChannelCards({
               isSelected={selectedChannels.includes(channel.id)}
               isSelectable={isSelectable}
               onToggle={() => toggleChannel(channel.id)}
-              entranceDelay={entranceBase + index * 0.7}
+              entranceDelay={entranceBase + index * 0.12}
             />
           </div>
         ))}
@@ -350,10 +319,10 @@ export function ChannelCards({
       {/* Prompt */}
       {showPrompt && (
         <motion.p
-          className="text-sm text-warmgray/70 mb-4"
+          className="text-sm text-warmgray/60 mb-4 italic"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: entranceBase + 5 * 0.7 + 0.5, duration: 0.5 }}
+          transition={{ delay: entranceBase + 5 * 0.12 + 0.3, duration: 0.6 }}
         >
           Select as many as you like, then hit Continue.
         </motion.p>
@@ -365,7 +334,7 @@ export function ChannelCards({
           <motion.button
             onClick={handleContinue}
             disabled={isSubmitting}
-            className="w-full bg-sepia text-white px-8 py-4 rounded-xl text-lg font-medium hover:bg-ink transition disabled:opacity-50"
+            className="w-full bg-sepia text-white px-8 py-4 rounded-xl text-lg font-medium hover:bg-ink transition-colors duration-300 disabled:opacity-50"
             variants={buttonVariants}
             initial="hidden"
             animate="visible"
@@ -393,46 +362,39 @@ export default function ChannelSelector({ firstName, onComplete }) {
   const [phase, setPhase] = useState('presenting')
   const [selectedChannels, setSelectedChannels] = useState([])
 
-  // Auto-transition to selection phase after all cards have appeared
+  // Auto-transition to selection phase after cards have appeared
   useEffect(() => {
-    const timer = setTimeout(() => setPhase('selecting'), 5500)
+    const timer = setTimeout(() => setPhase('selecting'), 1800)
     return () => clearTimeout(timer)
   }, [])
-
-  const words = INTRO_TEXT.split(' ')
 
   return (
     <div className="text-center">
       {/* Heading */}
       <motion.h2
-        className="text-2xl font-display text-ink mb-3"
-        initial={{ opacity: 0, y: 20 }}
+        className="text-2xl font-display text-ink mb-2"
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: 'easeOut' }}
+        transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
       >
-        Now, how would you like to share your stories?
+        How would you like to share your stories?
       </motion.h2>
 
-      {/* Clio's intro — word-by-word reveal */}
-      <p className="text-warmgray mb-6 leading-relaxed">
-        {words.map((word, i) => (
-          <motion.span
-            key={i}
-            className="inline-block mr-[0.3em]"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 + i * 0.04, duration: 0.3 }}
-          >
-            {word}
-          </motion.span>
-        ))}
-      </p>
+      {/* Subtitle */}
+      <motion.p
+        className="text-warmgray mb-6 leading-relaxed"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+      >
+        {INTRO_TEXT}
+      </motion.p>
 
       <ChannelCards
         selectedChannels={selectedChannels}
         setSelectedChannels={setSelectedChannels}
         isSelectable={phase === 'selecting'}
-        entranceBase={1.5}
+        entranceBase={0.5}
         onContinue={onComplete}
         showPrompt={true}
       />

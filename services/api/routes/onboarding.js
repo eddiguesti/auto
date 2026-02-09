@@ -195,14 +195,12 @@ Extract the following and return ONLY valid JSON (no markdown, no explanation):
   "birth_place": "city or town name (or null if not mentioned)",
   "birth_country": "country name (or null if not mentioned)",
   "birth_year": 1955 (as number, or null if not mentioned),
-  "wants_tour": true or false (did the user say yes to a tour/walkthrough/show me around?),
   "additional_details": ["array of other notable facts mentioned"]
 }
 
 Be smart about extracting context. If someone says "I'm John Smith" or "My name is Mary", extract the name.
 If someone says "I was born in Manchester in 1952", extract both place and year.
-If they say "I grew up in Kent", that's additional context but birth_place might be different.
-For wants_tour: Look for responses to "would you like a tour" or similar. "yes", "sure", "show me" = true. "no", "dive in", "let's go" = false. Default to false if unclear.`
+If they say "I grew up in Kent", that's additional context but birth_place might be different.`
 
     const result = await grokChat({
       systemPrompt,
@@ -216,7 +214,6 @@ For wants_tour: Look for responses to "would you like a tour" or similar. "yes",
       birth_place: null,
       birth_country: null,
       birth_year: null,
-      wants_tour: false,
       additional_details: []
     }
 
