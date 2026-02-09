@@ -80,6 +80,14 @@ export default function OnboardingOffer({ firstName, onTryFree }) {
         Everything you need to capture, write, and hold your memoir in your hands.
       </motion.p>
 
+      {/* Urgency badge */}
+      <motion.div {...fade(0.16)} className="flex justify-center mb-5">
+        <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-50 ring-1 ring-amber-200/60 text-[13px] font-medium text-amber-800">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+          This price is only available right now
+        </span>
+      </motion.div>
+
       {/* Features */}
       <motion.div {...fade(0.2)} className="space-y-3 mb-6">
         {FEATURES.map(text => (
@@ -108,7 +116,7 @@ export default function OnboardingOffer({ firstName, onTryFree }) {
           <span className="text-warmgray/40 line-through text-lg">£300</span>
           <span className="text-4xl font-display text-ink">£99</span>
         </div>
-        <p className="text-[13px] text-sepia font-medium">Welcome price · Save £201</p>
+        <p className="text-[13px] text-sepia font-medium">One-time welcome price · Save £201</p>
       </motion.div>
 
       {/* Buy CTA */}
