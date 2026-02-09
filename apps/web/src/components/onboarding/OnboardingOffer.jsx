@@ -52,9 +52,14 @@ export default function OnboardingOffer({ firstName, onTryFree }) {
   return (
     <div>
       {/* Book icon */}
-      <motion.div {...fade(0)} className="flex justify-center mb-5">
-        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-sepia/10 to-amber-100 flex items-center justify-center">
-          <svg className="w-7 h-7 text-sepia" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <motion.div {...fade(0)} className="flex justify-center mb-6">
+        <div className="w-[52px] h-[52px] rounded-[14px] bg-gradient-to-br from-sepia/10 via-amber-50 to-amber-100/80 flex items-center justify-center shadow-sm">
+          <svg
+            className="w-6 h-6 text-sepia/80"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -68,7 +73,7 @@ export default function OnboardingOffer({ firstName, onTryFree }) {
       {/* Headline */}
       <motion.h2
         {...fade(0.06)}
-        className="text-2xl sm:text-[26px] font-display text-ink text-center mb-3 leading-tight"
+        className="text-[22px] sm:text-[25px] font-display text-ink text-center mb-2.5 leading-[1.25] tracking-[-0.01em]"
       >
         Everyone has a book in them.
         <br />
@@ -78,7 +83,7 @@ export default function OnboardingOffer({ firstName, onTryFree }) {
       {/* Exclusivity copy */}
       <motion.p
         {...fade(0.12)}
-        className="text-warmgray text-center text-[15px] leading-relaxed mb-5"
+        className="text-warmgray text-center text-[14.5px] leading-[1.6] mb-6 max-w-sm mx-auto"
       >
         A professionally crafted autobiography used to be reserved for presidents and celebrities.
         We changed that — so you can leave an eternal legacy for the people who matter most.
@@ -87,49 +92,59 @@ export default function OnboardingOffer({ firstName, onTryFree }) {
       {/* Social proof */}
       <motion.div
         {...fade(0.18)}
-        className="mx-auto mb-6 px-5 py-3.5 rounded-xl bg-white/80 ring-1 ring-black/[0.04]"
+        className="mx-auto mb-7 px-5 py-4 rounded-2xl bg-white/70 ring-1 ring-black/[0.04] shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
       >
-        <p className="text-[13px] text-ink/70 text-center leading-relaxed">
+        <p className="text-[13px] text-ink/60 text-center leading-[1.65]">
           Hiring a professional biographer typically starts at{' '}
-          <span className="font-semibold text-ink/80">£10,000</span>. In early testing, 95% of users
+          <span className="font-semibold text-ink/75">£10,000</span>. In early testing, 95% of users
           rated their finished memoir as good as or better than professionally written
           autobiographies.
         </p>
       </motion.div>
 
       {/* Features */}
-      <motion.div {...fade(0.24)} className="space-y-2.5 mb-6">
+      <motion.div {...fade(0.24)} className="space-y-3 mb-7">
         {FEATURES.map(text => (
           <div key={text} className="flex items-start gap-3">
-            <svg
-              className="w-[18px] h-[18px] text-sepia flex-shrink-0 mt-0.5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-            <p className="text-[13.5px] text-ink/80">{text}</p>
+            <div className="w-[18px] h-[18px] rounded-full bg-sepia/[0.08] flex items-center justify-center flex-shrink-0 mt-[3px]">
+              <svg
+                className="w-[10px] h-[10px] text-sepia"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={3}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            </div>
+            <p className="text-[13.5px] text-ink/75 leading-[1.45]">{text}</p>
           </div>
         ))}
       </motion.div>
 
+      {/* Divider */}
+      <motion.div
+        {...fade(0.28)}
+        className="h-px bg-gradient-to-r from-transparent via-black/[0.06] to-transparent mb-6"
+      />
+
       {/* Pricing */}
-      <motion.div {...fade(0.3)} className="text-center mb-2">
-        <div className="flex items-baseline justify-center gap-2.5 mb-1">
-          <span className="text-warmgray/40 line-through text-lg">£300</span>
-          <span className="text-4xl font-display text-ink">£99</span>
+      <motion.div {...fade(0.3)} className="text-center mb-1.5">
+        <div className="flex items-baseline justify-center gap-2 mb-1">
+          <span className="text-warmgray/35 line-through text-base">£300</span>
+          <span className="text-[38px] font-display text-ink tracking-[-0.02em]">£99</span>
         </div>
-        <p className="text-[13px] text-warmgray">One-time welcome price · Save £201</p>
+        <p className="text-[12.5px] text-warmgray/70 tracking-wide">
+          One-time welcome price · Save £201
+        </p>
       </motion.div>
 
       {/* Urgency — understated */}
-      <motion.p {...fade(0.33)} className="text-center text-[12px] text-sepia/70 mb-5">
+      <motion.p {...fade(0.33)} className="text-center text-[11.5px] text-sepia/60 mb-6">
         This price is only available during signup
       </motion.p>
 
@@ -138,7 +153,7 @@ export default function OnboardingOffer({ firstName, onTryFree }) {
         {...fade(0.36)}
         onClick={handleBuy}
         disabled={isLoading}
-        className="w-full bg-sepia text-white px-8 py-4 rounded-2xl text-[17px] font-semibold hover:bg-ink transition-colors duration-300 disabled:opacity-50 mb-3"
+        className="w-full bg-sepia text-white px-8 py-[15px] rounded-2xl text-[16px] font-semibold tracking-[-0.01em] shadow-[0_2px_12px_rgba(139,90,43,0.25)] hover:bg-ink hover:shadow-[0_2px_12px_rgba(0,0,0,0.2)] transition-all duration-300 disabled:opacity-50 mb-2.5"
       >
         {isLoading ? 'Redirecting to checkout...' : 'Start My Story — £99'}
       </motion.button>
@@ -148,13 +163,16 @@ export default function OnboardingOffer({ firstName, onTryFree }) {
         {...fade(0.39)}
         onClick={onTryFree}
         disabled={isLoading}
-        className="w-full px-8 py-3 text-warmgray hover:text-ink transition-colors duration-300 text-sm font-medium"
+        className="w-full px-8 py-2.5 text-warmgray/70 hover:text-ink transition-colors duration-300 text-[13.5px] font-medium"
       >
         Start with the free chapter
       </motion.button>
 
       {/* Trust signal */}
-      <motion.p {...fade(0.42)} className="text-center text-[11px] text-warmgray/40 mt-4">
+      <motion.p
+        {...fade(0.42)}
+        className="text-center text-[11px] text-warmgray/35 mt-5 tracking-wide"
+      >
         Secure payment via Stripe · 30-day money-back guarantee
       </motion.p>
     </div>
