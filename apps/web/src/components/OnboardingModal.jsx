@@ -12,6 +12,7 @@ const STEPS = {
   VOICE_INTERVIEW: 'voice_interview',
   TYPE_FORM: 'type_form',
   CHANNEL_SELECTION: 'channel_selection',
+  TOUR_OFFER: 'tour_offer',
   PROCESSING: 'processing'
 }
 
@@ -89,10 +90,11 @@ export default function OnboardingModal({ onClose, initialStep }) {
       // Complete onboarding
       await authFetch('/api/onboarding/complete', { method: 'POST' })
 
-      handleClose()
+      // Ask about tour
+      setStep(STEPS.TOUR_OFFER)
     } catch (err) {
       console.error('Failed to complete onboarding:', err)
-      handleClose()
+      setStep(STEPS.TOUR_OFFER)
     }
   }
 
@@ -125,7 +127,7 @@ export default function OnboardingModal({ onClose, initialStep }) {
     }
   }
 
-  // Handle channel selection completion — save preferences, finish onboarding
+  // Handle channel selection completion — save preferences, then ask about tour
   const handleChannelSelectionComplete = async selectedChannels => {
     setStep(STEPS.PROCESSING)
 
@@ -139,10 +141,11 @@ export default function OnboardingModal({ onClose, initialStep }) {
         method: 'POST'
       })
 
-      handleClose()
+      // Ask about tour
+      setStep(STEPS.TOUR_OFFER)
     } catch (err) {
       console.error('Failed to complete onboarding:', err)
-      handleClose()
+      setStep(STEPS.TOUR_OFFER)
     }
   }
 
@@ -216,6 +219,48 @@ export default function OnboardingModal({ onClose, initialStep }) {
             <ChannelSelector firstName={firstName} onComplete={handleChannelSelectionComplete} />
           )}
 
+          {/* Tour Offer Step */}
+          {step === STEPS.TOUR_OFFER && (
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto mb-5 rounded-full bg-sepia/10 flex items-center justify-center">
+                <svg
+                  className="w-8 h-8 text-sepia"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
+                  />
+                </svg>
+              </div>
+
+              <h2 className="text-2xl font-display text-ink mb-2">You're all set, {firstName}!</h2>
+
+              <p className="text-warmgray mb-8 leading-relaxed">
+                Would you like a quick tour of your memoir dashboard? It only takes a moment.
+              </p>
+
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={() => handleClose({ showTour: true })}
+                  className="w-full bg-sepia text-white px-8 py-4 rounded-xl text-lg font-medium hover:bg-ink transition"
+                >
+                  Yes, show me around
+                </button>
+                <button
+                  onClick={() => handleClose({ showTour: false })}
+                  className="w-full px-8 py-3 text-warmgray hover:text-ink transition text-sm font-medium"
+                >
+                  No thanks, I'll explore on my own
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Processing Step */}
           {step === STEPS.PROCESSING && (
             <div className="text-center py-8">
@@ -235,10 +280,17 @@ export default function OnboardingModal({ onClose, initialStep }) {
           STEPS.PREFERENCE,
           STEPS.VOICE_INTERVIEW,
           STEPS.TYPE_FORM,
-          STEPS.CHANNEL_SELECTION
+          STEPS.CHANNEL_SELECTION,
+          STEPS.TOUR_OFFER
         ].includes(step) && (
           <div className="pb-6 flex justify-center gap-2">
-            {[STEPS.WELCOME, STEPS.PREFERENCE, 'interview', STEPS.CHANNEL_SELECTION].map((s, i) => (
+            {[
+              STEPS.WELCOME,
+              STEPS.PREFERENCE,
+              'interview',
+              STEPS.CHANNEL_SELECTION,
+              STEPS.TOUR_OFFER
+            ].map((s, i) => (
               <div
                 key={i}
                 className={`w-2 h-2 rounded-full transition-colors ${
