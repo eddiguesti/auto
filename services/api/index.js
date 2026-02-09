@@ -130,9 +130,10 @@ app.use(
           "'self'",
           "'unsafe-inline'",
           'https://fonts.googleapis.com',
+          'https://api.fontshare.com',
           'https://accounts.google.com'
         ],
-        fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com', 'https://api.fontshare.com'],
         imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
         connectSrc: [
           "'self'",
@@ -376,11 +377,13 @@ const clientBuildPath = join(__dirname, '..', '..', 'apps', 'web', 'dist')
 
 if (existsSync(clientBuildPath)) {
   // Serve static files with aggressive caching (Vite uses content hashes in filenames)
+  // index: false prevents express.static from serving index.html with 1-year cache
   app.use(
     express.static(clientBuildPath, {
       maxAge: '1y',
       immutable: true,
-      etag: false
+      etag: false,
+      index: false
     })
   )
 
