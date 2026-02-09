@@ -5,6 +5,7 @@ import PreferenceSelector from './onboarding/PreferenceSelector'
 import OnboardingVoiceInterview from './onboarding/OnboardingVoiceInterview'
 import OnboardingTypeForm from './onboarding/OnboardingTypeForm'
 import ChannelSelector from './onboarding/ChannelSelector'
+import OnboardingOffer from './onboarding/OnboardingOffer'
 
 // Onboarding steps
 const STEPS = {
@@ -13,6 +14,7 @@ const STEPS = {
   VOICE_INTERVIEW: 'voice_interview',
   TYPE_FORM: 'type_form',
   CHANNEL_SELECTION: 'channel_selection',
+  OFFER: 'offer',
   TOUR_OFFER: 'tour_offer',
   PROCESSING: 'processing'
 }
@@ -27,7 +29,7 @@ const STEP_INDEX = {
   [STEPS.TOUR_OFFER]: 4
 }
 
-// Steps that show the progress indicator
+// Steps that show the progress indicator (offer step hides dots for focus)
 const INDICATOR_STEPS = new Set([
   STEPS.WELCOME,
   STEPS.PREFERENCE,
@@ -158,30 +160,20 @@ export default function OnboardingModal({ onClose, initialStep }) {
     setStep(STEPS.CHANNEL_SELECTION)
   }
 
-  // Handle channel selection completion — save preferences, then ask about tour
+  // Handle channel selection completion — save preferences in background, show offer
   const handleChannelSelectionComplete = async selectedChannels => {
-    setStep(STEPS.PROCESSING)
+    // Save channel preferences in background — don't block the UI
+    authFetch('/api/onboarding/channel-preferences', {
+      method: 'POST',
+      body: JSON.stringify({ channels: selectedChannels })
+    }).catch(err => console.error('Channel save failed:', err))
 
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 12000)
+    setStep(STEPS.OFFER)
+  }
 
-    try {
-      await authFetch('/api/onboarding/channel-preferences', {
-        method: 'POST',
-        body: JSON.stringify({ channels: selectedChannels }),
-        signal: controller.signal
-      })
-
-      await authFetch('/api/onboarding/complete', {
-        method: 'POST',
-        signal: controller.signal
-      })
-    } catch (err) {
-      console.error('Channel save failed (continuing):', err)
-    } finally {
-      clearTimeout(timeout)
-    }
-
+  // Handle "try free" from offer — mark onboarding complete, show tour
+  const handleTryFree = () => {
+    authFetch('/api/onboarding/complete', { method: 'POST' }).catch(() => {})
     setStep(STEPS.TOUR_OFFER)
   }
 
@@ -298,6 +290,19 @@ export default function OnboardingModal({ onClose, initialStep }) {
                   firstName={firstName}
                   onComplete={handleChannelSelectionComplete}
                 />
+              </motion.div>
+            )}
+
+            {/* Offer Step */}
+            {step === STEPS.OFFER && (
+              <motion.div
+                key="offer"
+                variants={stepVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+              >
+                <OnboardingOffer firstName={firstName} onTryFree={handleTryFree} />
               </motion.div>
             )}
 

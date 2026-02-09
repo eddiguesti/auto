@@ -68,6 +68,13 @@ const PRODUCTS = {
     price: 14900, // £149
     currency: 'gbp',
     type: 'premium_bundle'
+  },
+  onboarding_bundle: {
+    name: 'Welcome Bundle — Full Memoir + Printed Book',
+    description: '12 months access to all chapters + printed colour hardcover book (welcome offer)',
+    price: 9900, // £99 — onboarding welcome price
+    currency: 'gbp',
+    type: 'premium_bundle' // Same type so webhook activates premium identically
   }
 }
 

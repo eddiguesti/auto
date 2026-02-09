@@ -1,7 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useAuth } from '../../context/AuthContext'
-import { useSettings } from '../../context/SettingsContext'
 
 /**
  * CHANNEL_OPTIONS - The 5 ways users can contribute to their memoir.
@@ -51,156 +49,7 @@ export const CHANNEL_OPTIONS = [
   }
 ]
 
-// --- Clio voice intro hook ---
-
-function useClioIntro(enabled) {
-  const { authFetch } = useAuth()
-  const { getVoice } = useSettings()
-  const wsRef = useRef(null)
-  const audioCtxRef = useRef(null)
-  const audioQueueRef = useRef([])
-  const isPlayingRef = useRef(false)
-  const mountedRef = useRef(true)
-  const [isSpeaking, setIsSpeaking] = useState(false)
-
-  const base64ToArrayBuffer = useCallback(base64 => {
-    const binary = atob(base64)
-    const bytes = new Uint8Array(binary.length)
-    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
-    return bytes.buffer
-  }, [])
-
-  const processQueue = useCallback(async () => {
-    if (isPlayingRef.current || !mountedRef.current) return
-    if (audioQueueRef.current.length === 0) return
-
-    isPlayingRef.current = true
-    if (mountedRef.current) setIsSpeaking(true)
-
-    try {
-      if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
-        audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)({
-          sampleRate: 24000
-        })
-      }
-      await audioCtxRef.current.resume()
-
-      while (audioQueueRef.current.length > 0 && mountedRef.current) {
-        const chunk = audioQueueRef.current.shift()
-        const pcm16 = new Int16Array(chunk)
-        const float32 = new Float32Array(pcm16.length)
-        for (let i = 0; i < pcm16.length; i++) float32[i] = pcm16[i] / 32768
-
-        const buffer = audioCtxRef.current.createBuffer(1, float32.length, 24000)
-        buffer.getChannelData(0).set(float32)
-
-        await new Promise(resolve => {
-          const source = audioCtxRef.current.createBufferSource()
-          source.buffer = buffer
-          source.connect(audioCtxRef.current.destination)
-          source.onended = resolve
-          source.start()
-        })
-      }
-    } catch (err) {
-      console.error('[ClioIntro] Playback error:', err)
-    } finally {
-      isPlayingRef.current = false
-      if (mountedRef.current) setIsSpeaking(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (!enabled) return
-    mountedRef.current = true
-
-    const startIntro = async () => {
-      try {
-        const res = await authFetch('/api/onboarding/voice-session', { method: 'POST' })
-        if (!res.ok) return
-        const session = await res.json()
-        const token = session.client_secret?.value || session.value
-        if (!token || !mountedRef.current) return
-
-        const ws = new WebSocket('wss://api.x.ai/v1/realtime?model=grok-2-public', [
-          'realtime',
-          `openai-insecure-api-key.${token}`,
-          'openai-beta.realtime-v1'
-        ])
-        wsRef.current = ws
-
-        ws.onopen = () => {
-          ws.send(
-            JSON.stringify({
-              type: 'session.update',
-              session: {
-                modalities: ['text', 'audio'],
-                instructions:
-                  'You are Clio. Say EXACTLY this line and nothing else: "Now, there are a few different ways we can work together on your story. Have a look and pick whichever ones suit you best!"',
-                voice: getVoice(),
-                temperature: 0.3,
-                output_audio_format: 'pcm16'
-              }
-            })
-          )
-        }
-
-        ws.onmessage = event => {
-          const data = JSON.parse(event.data)
-
-          if (data.type === 'session.updated') {
-            ws.send(
-              JSON.stringify({
-                type: 'response.create',
-                response: {
-                  modalities: ['text', 'audio']
-                }
-              })
-            )
-          }
-
-          if (data.type === 'response.audio.delta' && data.delta) {
-            audioQueueRef.current.push(base64ToArrayBuffer(data.delta))
-            processQueue()
-          }
-
-          if (data.type === 'response.audio.done') {
-            // Close WebSocket after speech completes
-            setTimeout(() => {
-              if (wsRef.current) {
-                wsRef.current.close()
-                wsRef.current = null
-              }
-            }, 500)
-          }
-        }
-
-        ws.onerror = () => ws.close()
-      } catch (err) {
-        console.error('[ClioIntro] Failed:', err)
-      }
-    }
-
-    // Small delay so the UI renders first
-    const timer = setTimeout(startIntro, 300)
-
-    return () => {
-      mountedRef.current = false
-      clearTimeout(timer)
-      if (wsRef.current) {
-        wsRef.current.close()
-        wsRef.current = null
-      }
-      if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
-        audioCtxRef.current.close().catch(() => {})
-      }
-    }
-  }, [enabled, authFetch, getVoice, base64ToArrayBuffer, processQueue])
-
-  return isSpeaking
-}
-
-// --- Icon Components (refined, consistent stroke style) ---
+// --- Icon Components ---
 
 function ChannelIcon({ type, className = 'w-6 h-6' }) {
   const props = { className, fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }
@@ -254,55 +103,50 @@ function ChannelIcon({ type, className = 'w-6 h-6' }) {
   }
 }
 
-// --- Framer Motion Variants ---
+// --- Framer Motion Variants (Apple-style: subtle, purposeful) ---
 
 const cardVariants = {
-  hidden: { opacity: 0, y: 24, scale: 0.96 },
+  hidden: { opacity: 0, y: 8 },
   visible: i => ({
     opacity: 1,
     y: 0,
-    scale: 1,
     transition: {
-      duration: 0.5,
-      ease: [0.25, 0.46, 0.45, 0.94],
-      delay: 0.4 + i * 0.1
+      duration: 0.4,
+      ease: [0.25, 0.1, 0.25, 1],
+      delay: 0.1 + i * 0.06
     }
   })
 }
 
 const checkVariants = {
-  hidden: { scale: 0, opacity: 0 },
+  hidden: { scale: 0.5, opacity: 0 },
   visible: {
     scale: 1,
     opacity: 1,
-    transition: { type: 'spring', stiffness: 500, damping: 25 }
+    transition: { duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }
   },
-  exit: { scale: 0, opacity: 0, transition: { duration: 0.15 } }
+  exit: { scale: 0.5, opacity: 0, transition: { duration: 0.15 } }
 }
 
-// --- Channel Card (Premium Design) ---
+// --- Channel Card ---
 
-function ChannelCard({ channel, index, isSelected, isSelectable, onToggle }) {
+function ChannelCard({ channel, index, isSelected, onToggle }) {
   return (
     <motion.button
       onClick={onToggle}
-      disabled={!isSelectable}
       custom={index}
       variants={cardVariants}
       initial="hidden"
       animate="visible"
       className={`
         group relative w-full p-5 rounded-2xl text-left
-        transition-all duration-300 ease-out
+        transition-[background,box-shadow,ring-color] duration-300 ease-out
         ${
           isSelected
             ? 'bg-white ring-2 ring-sepia/40 shadow-lg shadow-sepia/8'
             : 'bg-white/60 ring-1 ring-black/[0.04] hover:bg-white hover:ring-black/[0.08] hover:shadow-md'
         }
-        ${isSelectable ? 'cursor-pointer' : 'cursor-default'}
       `}
-      whileHover={isSelectable ? { y: -3, transition: { duration: 0.2, ease: 'easeOut' } } : {}}
-      whileTap={isSelectable ? { scale: 0.97 } : {}}
     >
       <div className="flex items-start gap-4">
         {/* Icon */}
@@ -332,7 +176,7 @@ function ChannelCard({ channel, index, isSelected, isSelectable, onToggle }) {
         <div className="flex-shrink-0 mt-0.5">
           <div
             className={`
-              w-5.5 h-5.5 rounded-full border-2 flex items-center justify-center
+              rounded-full border-2 flex items-center justify-center
               transition-all duration-300
               ${isSelected ? 'bg-sepia border-sepia' : 'border-black/15 group-hover:border-black/25'}
             `}
@@ -371,7 +215,6 @@ function ChannelCard({ channel, index, isSelected, isSelectable, onToggle }) {
 export function ChannelCards({
   selectedChannels,
   setSelectedChannels,
-  isSelectable,
   onContinue,
   showPrompt = true
 }) {
@@ -379,12 +222,11 @@ export function ChannelCards({
 
   const toggleChannel = useCallback(
     channelId => {
-      if (!isSelectable) return
       setSelectedChannels(prev =>
         prev.includes(channelId) ? prev.filter(id => id !== channelId) : [...prev, channelId]
       )
     },
-    [isSelectable, setSelectedChannels]
+    [setSelectedChannels]
   )
 
   const handleContinue = async () => {
@@ -395,7 +237,7 @@ export function ChannelCards({
 
   return (
     <>
-      {/* Channel cards — vertical list for clarity */}
+      {/* Channel cards */}
       <div className="flex flex-col gap-2.5 mb-5">
         {CHANNEL_OPTIONS.map((channel, index) => (
           <ChannelCard
@@ -403,7 +245,6 @@ export function ChannelCards({
             channel={channel}
             index={index}
             isSelected={selectedChannels.includes(channel.id)}
-            isSelectable={isSelectable}
             onToggle={() => toggleChannel(channel.id)}
           />
         ))}
@@ -415,7 +256,7 @@ export function ChannelCards({
           className="text-[13px] text-warmgray/50 mb-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 1.2, duration: 0.6 }}
+          transition={{ delay: 0.6, duration: 0.5 }}
         >
           Select as many as you like
         </motion.p>
@@ -428,13 +269,13 @@ export function ChannelCards({
             onClick={handleContinue}
             disabled={isSubmitting}
             className="w-full bg-sepia text-white px-8 py-4 rounded-2xl text-[17px] font-semibold hover:bg-ink transition-colors duration-300 disabled:opacity-50"
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 6 }}
             animate={{
               opacity: 1,
               y: 0,
-              transition: { duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }
+              transition: { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }
             }}
-            exit={{ opacity: 0, y: 6, transition: { duration: 0.2 } }}
+            exit={{ opacity: 0, y: 4, transition: { duration: 0.2 } }}
           >
             {isSubmitting ? 'Setting things up...' : 'Continue'}
           </motion.button>
@@ -447,24 +288,16 @@ export function ChannelCards({
 // --- Main Component ---
 
 export default function ChannelSelector({ firstName, onComplete }) {
-  const [phase, setPhase] = useState('presenting')
   const [selectedChannels, setSelectedChannels] = useState([])
-  const clioIsSpeaking = useClioIntro(true)
-
-  // Enable selection after cards appear
-  useEffect(() => {
-    const timer = setTimeout(() => setPhase('selecting'), 1600)
-    return () => clearTimeout(timer)
-  }, [])
 
   return (
     <div>
       {/* Heading */}
       <motion.h2
         className="text-2xl font-display text-ink mb-1.5 text-center"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
       >
         Choose how to share your story
       </motion.h2>
@@ -474,40 +307,14 @@ export default function ChannelSelector({ firstName, onComplete }) {
         className="text-warmgray text-center mb-6 text-[15px] leading-relaxed"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.5, delay: 0.15 }}
+        transition={{ duration: 0.4, delay: 0.06 }}
       >
         Pick the ways that work best for you — you can always change later.
       </motion.p>
 
-      {/* Clio speaking indicator */}
-      <AnimatePresence>
-        {clioIsSpeaking && (
-          <motion.div
-            className="flex items-center justify-center gap-2 mb-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <div className="flex gap-1">
-              {[0, 1, 2].map(i => (
-                <motion.div
-                  key={i}
-                  className="w-1 h-1 rounded-full bg-sepia/60"
-                  animate={{ scale: [1, 1.8, 1], opacity: [0.4, 1, 0.4] }}
-                  transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.15 }}
-                />
-              ))}
-            </div>
-            <span className="text-xs text-sepia/60">Clio</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <ChannelCards
         selectedChannels={selectedChannels}
         setSelectedChannels={setSelectedChannels}
-        isSelectable={phase === 'selecting'}
         onContinue={onComplete}
         showPrompt={true}
       />
