@@ -86,6 +86,13 @@ router.post(
     const stripe = getStripe()
     const product = PRODUCTS[productId]
 
+    // Only allow redirect URLs on our own domain to prevent open redirect
+    const appUrl = process.env.APP_URL || 'https://easymemoir.co.uk'
+    const safeSuccessUrl =
+      successUrl && successUrl.startsWith(appUrl) ? successUrl : `${appUrl}/export?success=true`
+    const safeCancelUrl =
+      cancelUrl && cancelUrl.startsWith(appUrl) ? cancelUrl : `${appUrl}/export?cancelled=true`
+
     const sessionConfig = {
       customer_email: userEmail,
       metadata: {
@@ -93,8 +100,8 @@ router.post(
         productId,
         productType: product.type
       },
-      success_url: successUrl || `${process.env.APP_URL}/export?success=true`,
-      cancel_url: cancelUrl || `${process.env.APP_URL}/export?cancelled=true`
+      success_url: safeSuccessUrl,
+      cancel_url: safeCancelUrl
     }
 
     if (product.type === 'subscription') {
@@ -167,12 +174,13 @@ export async function handleStripeWebhook(req, res, db) {
           [userId, session.id, productId, productType, session.amount_total]
         )
 
-        // Activate premium access for premium_bundle purchases
+        // Activate premium access for premium_bundle purchases (idempotent - only set if not already active)
         if (productType === 'premium_bundle') {
           await db.query(
             `UPDATE users SET premium_until = CURRENT_TIMESTAMP + INTERVAL '12 months',
-             premium_activated_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
-             WHERE id = $1`,
+             premium_activated_at = COALESCE(premium_activated_at, CURRENT_TIMESTAMP),
+             updated_at = CURRENT_TIMESTAMP
+             WHERE id = $1 AND (premium_until IS NULL OR premium_until < CURRENT_TIMESTAMP)`,
             [userId]
           )
           logger.info('Premium activated', { userId, productId })

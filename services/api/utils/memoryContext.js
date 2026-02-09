@@ -12,28 +12,37 @@ export async function getMemoryContext(db, userId) {
 
   try {
     // Get top mentioned people
-    const people = await db.query(`
+    const people = await db.query(
+      `
       SELECT name, mention_count FROM memory_entities
       WHERE user_id = $1 AND entity_type = 'person'
       ORDER BY mention_count DESC LIMIT 8
-    `, [userId])
+    `,
+      [userId]
+    )
 
     // Get top mentioned places
-    const places = await db.query(`
+    const places = await db.query(
+      `
       SELECT name FROM memory_entities
       WHERE user_id = $1 AND entity_type = 'place'
       ORDER BY mention_count DESC LIMIT 8
-    `, [userId])
+    `,
+      [userId]
+    )
 
     // Get key relationships
-    const relationships = await db.query(`
+    const relationships = await db.query(
+      `
       SELECT e1.name as person1, e2.name as person2, r.relationship_type
       FROM memory_relationships r
       JOIN memory_entities e1 ON r.entity1_id = e1.id
       JOIN memory_entities e2 ON r.entity2_id = e2.id
       WHERE e1.user_id = $1 AND (e1.entity_type = 'person' OR e2.entity_type = 'person')
       LIMIT 10
-    `, [userId])
+    `,
+      [userId]
+    )
 
     let context = ''
 
@@ -46,9 +55,9 @@ export async function getMemoryContext(db, userId) {
     }
 
     if (relationships.rows.length > 0) {
-      context += `\nRelationships: ${relationships.rows.map(r =>
-        `${r.person1} - ${r.relationship_type} - ${r.person2}`
-      ).join('; ')}`
+      context += `\nRelationships: ${relationships.rows
+        .map(r => `${r.person1} - ${r.relationship_type} - ${r.person2}`)
+        .join('; ')}`
     }
 
     return context
@@ -70,17 +79,23 @@ export async function getCompactMemoryContext(db, userId) {
   if (!db || !userId) return ''
 
   try {
-    const people = await db.query(`
+    const people = await db.query(
+      `
       SELECT name FROM memory_entities
       WHERE user_id = $1 AND entity_type = 'person'
       ORDER BY mention_count DESC LIMIT 8
-    `, [userId])
+    `,
+      [userId]
+    )
 
-    const places = await db.query(`
+    const places = await db.query(
+      `
       SELECT name FROM memory_entities
       WHERE user_id = $1 AND entity_type = 'place'
       ORDER BY mention_count DESC LIMIT 6
-    `, [userId])
+    `,
+      [userId]
+    )
 
     let context = ''
     if (people.rows.length > 0) {
@@ -91,6 +106,7 @@ export async function getCompactMemoryContext(db, userId) {
     }
     return context
   } catch (err) {
+    console.error('Error fetching compact memory context:', err.message)
     return ''
   }
 }

@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import { lazy, Suspense, Component } from 'react'
+import * as Sentry from '@sentry/react'
 import { AuthProvider } from './context/AuthContext'
 import { SettingsProvider } from './context/SettingsContext'
 import { GOOGLE_CLIENT_ID } from './config'
@@ -17,6 +18,7 @@ class ErrorBoundary extends Component {
   }
   componentDidCatch(error, info) {
     console.error('App error:', error, info)
+    Sentry.captureException(error, { extra: { componentStack: info?.componentStack } })
   }
   render() {
     if (this.state.hasError) {
@@ -49,30 +51,39 @@ const CookieConsent = lazy(() => import('./components/CookieConsent'))
 const HelpChatbot = lazy(() => import('./components/HelpChatbot'))
 
 // Lazy load all page components for code splitting
-const Home = lazy(() => import('./pages/Home'))
-const Chapter = lazy(() => import('./pages/Chapter'))
-const Export = lazy(() => import('./pages/Export'))
-const VoiceChat = lazy(() => import('./pages/VoiceChat'))
-const Settings = lazy(() => import('./pages/Settings'))
-const Landing = lazy(() => import('./pages/Landing'))
-const LandingDesign1 = lazy(() => import('./pages/LandingDesign1'))
-const FacebookLanding = lazy(() => import('./pages/FacebookLanding'))
-const Login = lazy(() => import('./pages/Login'))
-const Register = lazy(() => import('./pages/Register'))
-const ForgotPassword = lazy(() => import('./pages/ForgotPassword'))
-const ResetPassword = lazy(() => import('./pages/ResetPassword'))
-const Terms = lazy(() => import('./pages/Terms'))
-const Privacy = lazy(() => import('./pages/Privacy'))
-const Cookies = lazy(() => import('./pages/Cookies'))
-const HowItWorks = lazy(() => import('./pages/HowItWorks'))
-const Blog = lazy(() => import('./pages/Blog'))
-const BlogPost = lazy(() => import('./pages/BlogPost'))
-const PreviewStyle = lazy(() => import('./pages/PreviewStyle'))
-const Pricing = lazy(() => import('./pages/Pricing'))
-const Gift = lazy(() => import('./pages/Gift'))
-const FAQ = lazy(() => import('./pages/FAQ'))
-const About = lazy(() => import('./pages/About'))
-const SampleMemoir = lazy(() => import('./pages/SampleMemoir'))
+
+// Auth pages - login, registration, password flows
+const Login = lazy(() => import('./pages/auth/Login'))
+const Register = lazy(() => import('./pages/auth/Register'))
+const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword'))
+const ResetPassword = lazy(() => import('./pages/auth/ResetPassword'))
+
+// Marketing pages - public-facing landing & info pages
+const Landing = lazy(() => import('./pages/marketing/Landing'))
+const LandingDesign1 = lazy(() => import('./pages/marketing/LandingDesign1'))
+const FacebookLanding = lazy(() => import('./pages/marketing/FacebookLanding'))
+const HowItWorks = lazy(() => import('./pages/marketing/HowItWorks'))
+const Pricing = lazy(() => import('./pages/marketing/Pricing'))
+const FAQ = lazy(() => import('./pages/marketing/FAQ'))
+const About = lazy(() => import('./pages/marketing/About'))
+const Gift = lazy(() => import('./pages/marketing/Gift'))
+const SampleMemoir = lazy(() => import('./pages/marketing/SampleMemoir'))
+const Blog = lazy(() => import('./pages/marketing/Blog'))
+const BlogPost = lazy(() => import('./pages/marketing/BlogPost'))
+
+// Legal pages - terms, privacy, cookies
+const Terms = lazy(() => import('./pages/legal/Terms'))
+const Privacy = lazy(() => import('./pages/legal/Privacy'))
+const Cookies = lazy(() => import('./pages/legal/Cookies'))
+
+// App pages - core product (protected routes)
+const Home = lazy(() => import('./pages/app/Home'))
+const Chapter = lazy(() => import('./pages/app/Chapter'))
+const Export = lazy(() => import('./pages/app/Export'))
+const VoiceChat = lazy(() => import('./pages/app/VoiceChat'))
+const Settings = lazy(() => import('./pages/app/Settings'))
+const PreviewStyle = lazy(() => import('./pages/app/PreviewStyle'))
+const Talk = lazy(() => import('./pages/app/Talk'))
 
 // Minimal loading fallback - keeps UI feel consistent
 const PageLoader = () => (
@@ -109,6 +120,7 @@ function App() {
                   <Route path="/sample" element={<SampleMemoir />} />
                   <Route path="/blog" element={<Blog />} />
                   <Route path="/blog/:slug" element={<BlogPost />} />
+                  <Route path="/talk/:token" element={<Talk />} />
 
                   {/* Protected pages */}
                   <Route

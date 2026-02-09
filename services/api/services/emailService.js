@@ -251,6 +251,69 @@ export function newsletterWelcomeTemplate({ email }) {
 }
 
 /**
+ * Weekly conversation topic email template (magic link, no-login)
+ * Senior-friendly: big text, big button, minimal content
+ */
+export function weeklyTopicEmailTemplate({ name, promptText, magicLinkUrl }) {
+  const content = `
+    <!-- Decorative flourish -->
+    <div style="text-align: center; margin-bottom: 24px;">
+      <span style="font-size: 24px; color: ${BRAND.sepia}; opacity: 0.4;">&#10087;</span>
+    </div>
+
+    <!-- Greeting -->
+    <h1 style="font-family: 'Playfair Display', Georgia, serif; font-size: 28px; color: ${BRAND.ink}; text-align: center; margin: 0 0 24px 0; font-weight: 500;">
+      This Week's Topic
+    </h1>
+
+    <p style="font-family: Georgia, serif; font-size: 18px; color: ${BRAND.warmgray}; line-height: 1.7; margin: 0 0 12px 0; text-align: center;">
+      Hello${name ? ` ${name}` : ''},
+    </p>
+
+    <p style="font-family: Georgia, serif; font-size: 17px; color: ${BRAND.warmgray}; line-height: 1.7; margin: 0 0 28px 0; text-align: center;">
+      We'd love to hear your thoughts on this week's topic. Just tap the button below and start talking — no need to log in.
+    </p>
+
+    <!-- Topic card -->
+    <div style="background-color: ${BRAND.cream}; border-radius: 16px; padding: 28px 24px; margin: 0 0 32px 0; border-left: 4px solid ${BRAND.sepia};">
+      <p style="font-family: 'Playfair Display', Georgia, serif; font-size: 22px; color: ${BRAND.ink}; line-height: 1.5; margin: 0; text-align: center; font-style: italic;">
+        "${promptText}"
+      </p>
+    </div>
+
+    <!-- Big CTA Button - extra large for seniors -->
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+      <tr>
+        <td style="text-align: center; padding: 8px 0 32px 0;">
+          <a href="${magicLinkUrl}" style="display: inline-block; background: linear-gradient(135deg, ${BRAND.amber} 0%, ${BRAND.amberDark} 100%); color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 20px; font-weight: 600; text-decoration: none; padding: 20px 48px; border-radius: 50px; box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35); letter-spacing: 0.5px;">
+            Start Talking
+          </a>
+        </td>
+      </tr>
+    </table>
+
+    <p style="font-family: Georgia, serif; font-size: 15px; color: #999; line-height: 1.6; margin: 0 0 20px 0; text-align: center;">
+      Just tap the button, then tap "Start Talking" on the page that opens. That's it!
+    </p>
+
+    <!-- Divider -->
+    <div style="border-top: 1px solid #eee; margin: 24px 0;"></div>
+
+    <p style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; color: #999; line-height: 1.6; margin: 0; text-align: center;">
+      This link expires in 7 days. You can use it on any device — phone, tablet, or computer.
+    </p>
+  `
+
+  return baseEmailTemplate({
+    title: "This Week's Topic - Easy Memoir",
+    preheader: `This week's topic: "${promptText}"`,
+    content,
+    footerText:
+      'You received this because you have an Easy Memoir account with weekly topics enabled.'
+  })
+}
+
+/**
  * Process pending notifications from the queue
  * Called by cron job
  */
@@ -311,9 +374,9 @@ export async function processNotificationQueue() {
 /**
  * Send email via Resend (or log in development)
  */
-export async function sendEmail({ to, subject, html }) {
+export async function sendEmail({ to, from: fromOverride, subject, html }) {
   const apiKey = process.env.RESEND_API_KEY
-  const from = process.env.EMAIL_FROM || 'Easy Memoir <hello@easymemoir.co.uk>'
+  const from = fromOverride || process.env.EMAIL_FROM || 'Easy Memoir <hello@easymemoir.co.uk>'
 
   if (!apiKey) {
     // Log in development when no API key configured
@@ -348,5 +411,6 @@ export default {
   sendEmail,
   passwordResetEmailTemplate,
   welcomeEmailTemplate,
-  newsletterWelcomeTemplate
+  newsletterWelcomeTemplate,
+  weeklyTopicEmailTemplate
 }

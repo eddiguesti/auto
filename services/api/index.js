@@ -46,13 +46,21 @@ import notificationRoutes from './routes/notifications.js'
 import userRouter from './routes/user.js'
 import newsletterRouter from './routes/newsletter.js'
 import memosRouter from './routes/memos.js'
+import magicLinkRouter from './routes/magicLink.js'
+import telnyxCallRouter, { handleTelnyxMediaStream } from './routes/telnyxCall.js'
+import { WebSocketServer } from 'ws'
 import { initializeCronJobs } from './cron/index.js'
+import { initSentry, captureException } from './utils/sentry.js'
+import { isRedisAvailable } from './utils/redis.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
 const app = express()
 const PORT = process.env.PORT || 3001
+
+// Initialize Sentry error tracking (no-op if SENTRY_DSN not set)
+initSentry(app)
 
 // Trust proxy when behind reverse proxy (Railway, Render, etc.)
 // This is required for rate limiting to work correctly with X-Forwarded-For headers
@@ -67,8 +75,9 @@ const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3001',
   'https://easymemoir.co.uk',
-  'https://www.easymemoir.co.uk'
-]
+  'https://www.easymemoir.co.uk',
+  process.env.FRONTEND_URL // Cloudflare Pages URL (e.g. https://easymemoir.pages.dev)
+].filter(Boolean)
 app.use(
   cors({
     origin: function (origin, callback) {
@@ -172,8 +181,43 @@ app.use('/api/support', supportRouter)
 // Newsletter subscription (public - with built-in rate limiting)
 app.use('/api/newsletter', newsletterRouter)
 
+// Magic link routes (public - for weekly topic email no-login access)
+app.use('/api/magic', magicLinkRouter)
+
+// Test email endpoint (dev only - remove before production)
+app.post('/api/test-email', authLimiter, async (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(404).json({ error: 'Not found' })
+  }
+  try {
+    const { to } = req.body
+    if (!to) return res.status(400).json({ error: 'Provide "to" email address' })
+
+    const { sendEmail, weeklyTopicEmailTemplate } = await import('./services/emailService.js')
+    const html = weeklyTopicEmailTemplate({
+      name: 'Test User',
+      promptText: 'What is your earliest childhood memory?',
+      magicLinkUrl: 'https://easymemoir.co.uk/talk/test-token-123'
+    })
+
+    await sendEmail({ to, subject: "Test: This week's topic", html })
+    res.json({ success: true, message: `Test email sent to ${to}` })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// Rate limit for landing voice sessions (prevent API key abuse)
+const voiceLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5, // 5 sessions per hour per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many voice session requests, please try again later' }
+})
+
 // Public voice session endpoint for landing page (uses xAI Realtime API)
-app.post('/api/landing-voice/session', async (req, res) => {
+app.post('/api/landing-voice/session', voiceLimiter, async (req, res) => {
   try {
     const apiKey = process.env.GROK_API_KEY
     if (!apiKey) {
@@ -245,13 +289,13 @@ app.use('/api/onboarding', authenticateToken, onboardingRouter)
 app.use('/api/chapter-images', authenticateToken, chapterImagesRouter)
 
 // Game/Memory Quest routes (protected)
-app.use('/api/game', gameRouter)
+app.use('/api/game', authenticateToken, gameRouter)
 
 // Notification routes (protected)
-app.use('/api/notifications', notificationRoutes)
+app.use('/api/notifications', authenticateToken, notificationRoutes)
 
 // User routes (protected - data export, account deletion)
-app.use('/api/user', userRouter)
+app.use('/api/user', authenticateToken, userRouter)
 
 // Quick memos routes (protected - free-form voice memos)
 app.use('/api/memos', authenticateToken, memosRouter)
@@ -263,6 +307,9 @@ app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), (req
 
 // Telegram webhook (no auth - called by Telegram servers)
 app.post('/api/webhooks/telegram', (req, res) => handleTelegramWebhook(req, res, pool))
+
+// Telnyx call routes (public - webhook + call initiation with internal secret)
+app.use('/api/telnyx', telnyxCallRouter)
 
 // Health check with comprehensive status
 app.get('/api/health', async (req, res) => {
@@ -291,8 +338,11 @@ app.get('/api/health', async (req, res) => {
     }
   } catch (err) {
     health.status = 'degraded'
-    health.database = { status: 'error', error: err.message }
+    health.database = { status: 'error' }
   }
+
+  // Redis status
+  health.redis = { status: isRedisAvailable() ? 'ok' : 'unavailable (using memory fallback)' }
 
   // Include metrics summary if requested
   if (req.query.metrics === 'true') {
@@ -371,11 +421,55 @@ async function start() {
     console.log('Environment validation passed.')
 
     await initDatabase()
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`Server running on http://localhost:${PORT}`)
       // Initialize cron jobs after server starts
       initializeCronJobs()
     })
+
+    // WebSocket server for Telnyx media streams
+    const wss = new WebSocketServer({ noServer: true })
+    server.on('upgrade', (request, socket, head) => {
+      const url = new URL(request.url, `http://${request.headers.host}`)
+      if (url.pathname === '/api/telnyx/media-stream') {
+        // Verify the WebSocket connection has a valid stream token
+        const streamToken = url.searchParams.get('token')
+        const expectedToken = process.env.INTERNAL_CRON_SECRET
+        if (!expectedToken || streamToken !== expectedToken) {
+          socket.write('HTTP/1.1 403 Forbidden\r\n\r\n')
+          socket.destroy()
+          return
+        }
+        wss.handleUpgrade(request, socket, head, ws => {
+          handleTelnyxMediaStream(ws, timedPool)
+        })
+      } else {
+        socket.destroy()
+      }
+    })
+
+    // Graceful shutdown
+    const shutdown = async signal => {
+      console.log(`\n${signal} received — shutting down gracefully...`)
+      server.close(() => {
+        console.log('HTTP server closed')
+      })
+      wss.close()
+      if (pool) {
+        try {
+          await pool.end()
+          console.log('Database pool closed')
+        } catch (err) {
+          console.error('Error closing database pool:', err.message)
+        }
+      }
+      setTimeout(() => {
+        console.error('Forced shutdown after timeout')
+        process.exit(1)
+      }, 10000)
+    }
+    process.on('SIGTERM', () => shutdown('SIGTERM'))
+    process.on('SIGINT', () => shutdown('SIGINT'))
   } catch (err) {
     console.error('Failed to start server:', err)
     process.exit(1)

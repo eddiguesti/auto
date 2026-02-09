@@ -28,7 +28,42 @@ export default function HowItWorksCarousel() {
           />
         </svg>
       ),
-      media: null
+      media: (
+        <div className="w-full max-w-sm mx-auto bg-[#f5f2ed] rounded-3xl shadow-xl overflow-hidden border border-heritage-sepia-light/30">
+          <div className="px-8 pt-10 pb-8 flex flex-col items-center text-center">
+            <p className="font-sans uppercase tracking-[0.3em] text-[10px] text-heritage-sepia/60 mb-2">
+              Earliest Memories
+            </p>
+            <h4 className="font-display text-xl text-heritage-ink mb-8">Where were you born?</h4>
+            {/* Particle circle */}
+            <div className="relative w-40 h-40 mb-8">
+              <div className="absolute inset-0 rounded-full bg-heritage-sepia-light/20" />
+              {/* Scattered dots */}
+              {[...Array(40)].map((_, i) => {
+                const angle = (i / 40) * Math.PI * 2 + (i % 3) * 0.3
+                const radius = 30 + (i % 5) * 12 + (i % 3) * 5
+                const x = 50 + ((Math.cos(angle) * radius) / 80) * 50
+                const y = 50 + ((Math.sin(angle) * radius) / 80) * 50
+                const size = 2 + (i % 3)
+                return (
+                  <div
+                    key={i}
+                    className="absolute rounded-full bg-heritage-sepia/30"
+                    style={{
+                      width: `${size}px`,
+                      height: `${size}px`,
+                      left: `${x}%`,
+                      top: `${y}%`
+                    }}
+                  />
+                )
+              })}
+            </div>
+            <p className="font-display text-lg text-heritage-sepia/70 mb-1">Say hello to begin</p>
+            <p className="font-sans text-xs text-heritage-sepia/40">Click to start</p>
+          </div>
+        </div>
+      )
     },
     {
       title: 'Just talk naturally',

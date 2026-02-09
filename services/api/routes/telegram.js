@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import crypto from 'crypto'
 import { requireDb } from '../middleware/requireDb.js'
+import { asyncHandler } from '../middleware/asyncHandler.js'
 import { createLogger } from '../utils/logger.js'
 
 const router = Router()
@@ -700,8 +701,10 @@ export async function handleTelegramWebhook(req, res, db) {
 // LINK CODE VERIFICATION (called from webapp)
 // ============================================================================
 
-router.post('/verify-link', requireDb, async (req, res) => {
-  try {
+router.post(
+  '/verify-link',
+  requireDb,
+  asyncHandler(async (req, res) => {
     const { code } = req.body
     const userId = req.user?.id
 
@@ -785,15 +788,14 @@ router.post('/verify-link', requireDb, async (req, res) => {
     )
 
     res.json({ success: true, message: 'Account linked successfully' })
-  } catch (err) {
-    logger.error('Link verification error', { error: err.message, requestId: req.id })
-    res.status(500).json({ error: 'Failed to verify link code' })
-  }
-})
+  })
+)
 
 // Get link status (check if user has telegram connected)
-router.get('/status', requireDb, async (req, res) => {
-  try {
+router.get(
+  '/status',
+  requireDb,
+  asyncHandler(async (req, res) => {
     const userId = req.user?.id
 
     if (!userId) {
@@ -817,10 +819,7 @@ router.get('/status', requireDb, async (req, res) => {
       username: telegramUser.telegram_username,
       firstName: telegramUser.telegram_first_name
     })
-  } catch (err) {
-    logger.error('Status check error', { error: err.message, requestId: req.id })
-    res.json({ connected: false })
-  }
-})
+  })
+)
 
 export default router

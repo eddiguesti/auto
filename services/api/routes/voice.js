@@ -1,10 +1,12 @@
 import { Router } from 'express'
-import { getCompactMemoryContext, getMemoryContext } from '../utils/memoryContext.js'
+import { getCompactMemoryContext } from '../utils/memoryContext.js'
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { createLogger } from '../utils/logger.js'
 import { grokChat } from '../services/grokService.js'
 import { sanitizeForPrompt } from '../utils/security.js'
 import { extractAndStoreEntities } from '../services/entityExtractionService.js'
+import { compileTranscripts } from '../services/transcriptService.js'
+import { invalidateUserCache } from '../utils/cache.js'
 
 const router = Router()
 const logger = createLogger('voice')
@@ -32,74 +34,6 @@ async function getOrCreateSession(db, userId, chapterId) {
   )
 
   return result.rows[0]
-}
-
-// Helper: Compile transcripts into polished book content
-async function compileTranscripts(db, userId, sessionId, questionIds) {
-  const memoryContext = await getMemoryContext(db, userId)
-
-  for (const questionId of questionIds) {
-    try {
-      // Get raw transcript for this question
-      const storyResult = await db.query(
-        `SELECT id, answer, chapter_id FROM stories
-         WHERE user_id = $1 AND voice_session_id = $2 AND question_id = $3
-         AND compiled_content IS NULL`,
-        [userId, sessionId, questionId]
-      )
-
-      if (!storyResult.rows[0]?.answer) continue
-
-      const story = storyResult.rows[0]
-      const safeAnswer = sanitizeForPrompt(story.answer, 5000)
-
-      // Compile using AI
-      const result = await grokChat({
-        systemPrompt: `You are helping compile voice interview transcripts into polished memoir prose.
-
-GUIDELINES:
-1. Write in FIRST PERSON (I, me, my) - this is THEIR story
-2. Keep their authentic voice and vocabulary - don't impose literary style
-3. Organize the raw transcript into flowing narrative
-4. Fill in natural transitions between thoughts
-5. Keep it genuine - don't invent facts not mentioned
-6. Aim for 150-300 words
-7. Write ONLY the story - no meta-commentary or introductions
-
-${memoryContext ? `Known context about their story: ${memoryContext}` : ''}`,
-        userPrompt: `Raw voice transcript:\n\n${safeAnswer}\n\nPlease write the polished memoir passage.`,
-        maxTokens: 600,
-        temperature: 0.7
-      })
-
-      if (result.content) {
-        // Save compiled content
-        await db.query(
-          `UPDATE stories
-           SET compiled_content = $1, compiled_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
-           WHERE id = $2`,
-          [result.content, story.id]
-        )
-
-        logger.info('Compiled transcript', { userId, sessionId, questionId })
-      }
-    } catch (err) {
-      logger.error('Failed to compile transcript', {
-        userId,
-        sessionId,
-        questionId,
-        error: err.message
-      })
-    }
-  }
-
-  // Update session
-  await db.query(
-    `UPDATE voice_sessions
-     SET questions_since_compile = 0, last_compile_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
-     WHERE id = $1`,
-    [sessionId]
-  )
 }
 
 // Generate ephemeral token for client-side WebSocket connection
@@ -242,26 +176,41 @@ router.get(
 
 HOW TO BEHAVE:
 - Talk like a normal person. No fake enthusiasm. Don't say "Oh how wonderful!" or "That's amazing!" - it sounds insincere.
-- Simple acknowledgments: "Right", "Yeah", "I see", "Okay" - then move on.
 - Give them plenty of time to think. Don't rush.
 - Keep responses SHORT. One or two sentences max.
-
-QUESTION STYLE:
-- Start simple: basic facts they don't have to think about
-- "Where did you grow up?" "What was your mum's name?" "What did your dad do?"
-- Then go deeper: "What was she like?" "Tell me about that"
 - Ask ONE question at a time. Wait for the answer.
-- Follow up naturally on what they actually say
 
-TOPIC TRANSITIONS:
-- When you have gathered 3-4 good responses on the current topic, signal you're ready to move on
-- Say something like "Lovely, that's really helpful. Let's move on to..." or "Got it, that's great. Now tell me about..."
+HOW TO INTERVIEW — CONTENT-DRIVEN DEPTH:
+Your job is to gather content that's rich enough to write a vivid chapter of a memoir. Before you even think about moving on from a topic, mentally check whether you have ALL of the following:
+
+1. THE FACTS: Who, what, where, when. (Names, places, dates, what happened.)
+2. THE SENSORY DETAIL: What did it look, sound, smell, taste, feel like? Can a reader picture the scene?
+3. THE EMOTION: How did they feel? What was the mood? Were they scared, proud, excited, sad?
+4. THE STORY: Is there a specific moment or anecdote — not just a summary? A real scene with a beginning, middle, and end.
+5. THE MEANING: Why does this matter to them? What did they learn? How did it shape who they are?
+
+Start with a simple opener to get the topic going: "Where did you grow up?" "What was your mum's name?"
+Then follow up based on what's MISSING from the checklist above:
+- If you only have facts → ask for a specific memory or scene: "Can you tell me about a particular time...?"
+- If you have the story but no sensory detail → "What did that place actually look like? Can you describe it?"
+- If you have the scene but no emotion → "How did that make you feel at the time?"
+- If you have all the detail but no meaning → "Looking back, what does that mean to you now?"
+
+Keep pulling the thread. If they mention a person, find out about the relationship AND a specific memory with that person. If they mention a place, find out what happened there AND what it looked like. If they mention an event, get the full scene — not just what happened, but what they saw, heard, felt.
+
+WHEN TO MOVE ON:
+- ONLY move on when you could hand your notes to an author and they'd have enough to write a rich, vivid passage. If you couldn't write a full paragraph of memoir from what you've gathered — you're not done yet.
+- If their answers are still opening up new threads, KEEP GOING. Don't cut short a good story.
+- If they give a short answer, that's not a signal to move on — it's a signal to ask a better follow-up.
+- When a topic truly feels explored (you have facts + detail + emotion + story), transition naturally: "That's really helpful, thank you. Now tell me about..."
 - The system will detect these transitions to save progress
 
 NEVER:
 - Be fake or gushing
 - Give long responses
-- Ask multiple questions at once`
+- Ask multiple questions at once
+- Move on because someone has answered several times — the number of responses is irrelevant, only the QUALITY and DEPTH of content matters
+- Accept a surface-level answer and move on. Always dig deeper.`
 
     let instructions = baseInstructions
     if (memoryContext) {
@@ -327,6 +276,9 @@ router.post(
     )
 
     const storyId = storyResult.rows[0].id
+
+    // Invalidate cached progress so homepage updates
+    invalidateUserCache(userId)
 
     // Update session
     await db.query(

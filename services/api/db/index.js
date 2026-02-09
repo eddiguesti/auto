@@ -907,6 +907,72 @@ export async function initDatabase() {
       CREATE INDEX IF NOT EXISTS idx_memos_created ON memos(user_id, created_at DESC)
     `)
 
+    // Magic link tokens for weekly email conversations (no-login access)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS email_session_tokens (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        token_hash TEXT NOT NULL,
+        prompt_text TEXT NOT NULL,
+        prompt_chapter_id TEXT,
+        prompt_question_id TEXT,
+        expires_at TIMESTAMP NOT NULL,
+        used_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_email_session_tokens_hash ON email_session_tokens(token_hash) WHERE used_at IS NULL
+    `)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_email_session_tokens_user ON email_session_tokens(user_id)
+    `)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_email_session_tokens_expires ON email_session_tokens(expires_at) WHERE used_at IS NULL
+    `)
+
+    // Migration: Add phone call columns to users table
+    await client.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_number TEXT
+    `)
+    await client.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_call_consent BOOLEAN DEFAULT false
+    `)
+    await client.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS contact_preference TEXT DEFAULT 'email'
+    `)
+
+    // Telnyx phone call tracking
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS telnyx_calls (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        call_control_id TEXT,
+        stream_id TEXT,
+        call_status TEXT DEFAULT 'initiated',
+        prompt_text TEXT,
+        prompt_chapter_id TEXT,
+        prompt_question_id TEXT,
+        duration_seconds INTEGER,
+        transcript_saved BOOLEAN DEFAULT false,
+        error_message TEXT,
+        started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        answered_at TIMESTAMP,
+        ended_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_telnyx_calls_user ON telnyx_calls(user_id)
+    `)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_telnyx_calls_control_id ON telnyx_calls(call_control_id)
+    `)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_telnyx_calls_status ON telnyx_calls(call_status) WHERE call_status IN ('initiated', 'ringing', 'answered', 'streaming')
+    `)
+
     // Seed collections data
     await seedCollections(pool)
 

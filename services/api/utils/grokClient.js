@@ -17,7 +17,9 @@ export function getGrokClient() {
 
   clientInstance = new OpenAI({
     apiKey,
-    baseURL: 'https://api.x.ai/v1'
+    baseURL: 'https://api.x.ai/v1',
+    timeout: 60000,
+    maxRetries: 2
   })
 
   return clientInstance

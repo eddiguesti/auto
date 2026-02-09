@@ -9,6 +9,75 @@ const router = Router()
 // All routes require authentication
 router.use(authenticateToken)
 
+// Update phone call settings
+router.put(
+  '/phone-settings',
+  requireDb,
+  asyncHandler(async (req, res) => {
+    const db = req.app.locals.db
+    const userId = req.user.id
+    const { phoneNumber, phoneCallConsent, contactPreference } = req.body
+
+    // Validate E.164 phone number format if provided
+    if (phoneNumber && !/^\+[1-9]\d{6,14}$/.test(phoneNumber)) {
+      return res.status(400).json({
+        error: 'Phone number must be in E.164 format (e.g. +447700900000)'
+      })
+    }
+
+    // Validate contact preference
+    const validPreferences = ['email', 'phone', 'both']
+    if (contactPreference && !validPreferences.includes(contactPreference)) {
+      return res.status(400).json({
+        error: 'contact_preference must be email, phone, or both'
+      })
+    }
+
+    await db.query(
+      `UPDATE users SET
+        phone_number = COALESCE($2, phone_number),
+        phone_call_consent = COALESCE($3, phone_call_consent),
+        contact_preference = COALESCE($4, contact_preference),
+        updated_at = CURRENT_TIMESTAMP
+       WHERE id = $1`,
+      [userId, phoneNumber || null, phoneCallConsent ?? null, contactPreference || null]
+    )
+
+    // Return current settings
+    const result = await db.query(
+      `SELECT phone_number, phone_call_consent, contact_preference FROM users WHERE id = $1`,
+      [userId]
+    )
+
+    res.json({
+      phone_number: result.rows[0]?.phone_number,
+      phone_call_consent: result.rows[0]?.phone_call_consent,
+      contact_preference: result.rows[0]?.contact_preference
+    })
+  })
+)
+
+// Get current phone settings
+router.get(
+  '/phone-settings',
+  requireDb,
+  asyncHandler(async (req, res) => {
+    const db = req.app.locals.db
+    const userId = req.user.id
+
+    const result = await db.query(
+      `SELECT phone_number, phone_call_consent, contact_preference FROM users WHERE id = $1`,
+      [userId]
+    )
+
+    res.json({
+      phone_number: result.rows[0]?.phone_number || null,
+      phone_call_consent: result.rows[0]?.phone_call_consent || false,
+      contact_preference: result.rows[0]?.contact_preference || 'email'
+    })
+  })
+)
+
 // Export all user data (GDPR compliant)
 router.get(
   '/export-data',

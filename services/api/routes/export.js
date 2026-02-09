@@ -21,12 +21,31 @@ function escapeHtml(text) {
 }
 
 // Generate EPUB eBook
-router.get('/epub', requireDb, asyncHandler(async (req, res) => {
-  const db = req.app.locals.db
-  const userId = req.user.id
+router.get(
+  '/epub',
+  requireDb,
+  asyncHandler(async (req, res) => {
+    const db = req.app.locals.db
+    const userId = req.user.id
 
-  // Get user settings for name
-  const settingsResult = await db.query('SELECT name FROM settings WHERE user_id = $1', [userId])
+    // Verify user has paid for export or is an early adopter
+    const paymentResult = await db.query(
+      `SELECT id FROM payments WHERE user_id = $1 AND product_type = 'export' AND status = 'completed' LIMIT 1`,
+      [userId]
+    )
+    const earlyAdopterResult = await db.query(
+      'SELECT COUNT(*) as count FROM users WHERE id <= $1',
+      [userId]
+    )
+    const isEarlyAdopter = parseInt(earlyAdopterResult.rows[0].count) <= 100
+    if (paymentResult.rows.length === 0 && !isEarlyAdopter) {
+      return res
+        .status(403)
+        .json({ error: 'Payment required for export', code: 'PAYMENT_REQUIRED' })
+    }
+
+    // Get user settings for name
+    const settingsResult = await db.query('SELECT name FROM settings WHERE user_id = $1', [userId])
     const userName = settingsResult.rows[0]?.name || 'My'
 
     // Get all stories with photos
@@ -85,7 +104,10 @@ router.get('/epub', requireDb, asyncHandler(async (req, res) => {
           .split(/\n\n+/)
           .map(p => p.trim())
           .filter(p => p)
-          .map(p => `<p style="margin-bottom: 1em; line-height: 1.6;">${escapeHtml(p).replace(/\n/g, '<br/>')}</p>`)
+          .map(
+            p =>
+              `<p style="margin-bottom: 1em; line-height: 1.6;">${escapeHtml(p).replace(/\n/g, '<br/>')}</p>`
+          )
           .join('')
 
         chapterContent += `
@@ -133,48 +155,65 @@ router.get('/epub', requireDb, asyncHandler(async (req, res) => {
     const epubBuffer = await Epub(options)
 
     // Set headers for download
-  res.setHeader('Content-Type', 'application/epub+zip')
-  res.setHeader('Content-Disposition', `attachment; filename="${userName.replace(/[^a-zA-Z0-9]/g, '_')}_Life_Story.epub"`)
-  res.send(Buffer.from(epubBuffer))
-}))
+    res.setHeader('Content-Type', 'application/epub+zip')
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${userName.replace(/[^a-zA-Z0-9]/g, '_')}_Life_Story.epub"`
+    )
+    res.send(Buffer.from(epubBuffer))
+  })
+)
 
 // Check export status/eligibility
-router.get('/status', requireDb, asyncHandler(async (req, res) => {
-  const db = req.app.locals.db
-  const userId = req.user.id
+router.get(
+  '/status',
+  requireDb,
+  asyncHandler(async (req, res) => {
+    const db = req.app.locals.db
+    const userId = req.user.id
 
-  // Check user's subscription/payment status
-  const userResult = await db.query(`
+    // Check user's subscription/payment status
+    const userResult = await db.query(
+      `
       SELECT u.*,
         (SELECT COUNT(*) FROM stories WHERE user_id = u.id AND answer IS NOT NULL AND answer != '') as story_count
       FROM users u WHERE u.id = $1
-    `, [userId])
+    `,
+      [userId]
+    )
 
     const user = userResult.rows[0]
     const storyCount = parseInt(user.story_count) || 0
 
     // Check if user has paid for export
-    const paymentResult = await db.query(`
+    const paymentResult = await db.query(
+      `
       SELECT * FROM payments
       WHERE user_id = $1 AND product_type = 'export' AND status = 'completed'
       ORDER BY created_at DESC LIMIT 1
-    `, [userId])
+    `,
+      [userId]
+    )
 
     const hasPaid = paymentResult.rows.length > 0
 
     // Early adopter check (first 100 users get free export)
-    const earlyAdopterResult = await db.query(`
+    const earlyAdopterResult = await db.query(
+      `
       SELECT COUNT(*) as count FROM users WHERE id <= $1
-    `, [userId])
+    `,
+      [userId]
+    )
     const isEarlyAdopter = parseInt(earlyAdopterResult.rows[0].count) <= 100
 
-  res.json({
-    storyCount,
-    canExport: hasPaid || isEarlyAdopter,
-    isEarlyAdopter,
-    hasPaid,
-    exportPrice: 9.99 // Price for non-early adopters
+    res.json({
+      storyCount,
+      canExport: hasPaid || isEarlyAdopter,
+      isEarlyAdopter,
+      hasPaid,
+      exportPrice: 9.99 // Price for non-early adopters
+    })
   })
-}))
+)
 
 export default router

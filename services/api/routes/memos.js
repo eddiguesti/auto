@@ -14,8 +14,8 @@ router.get(
   asyncHandler(async (req, res) => {
     const db = req.app.locals.db
     const userId = req.user.id
-    const limit = parseInt(req.query.limit) || 50
-    const offset = parseInt(req.query.offset) || 0
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || 50, 1), 100)
+    const offset = Math.max(parseInt(req.query.offset) || 0, 0)
 
     const result = await db.query(
       `

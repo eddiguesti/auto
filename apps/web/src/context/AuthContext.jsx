@@ -28,7 +28,7 @@ export function AuthProvider({ children }) {
     }
   }, [])
 
-  const fetchUser = async () => {
+  const fetchUser = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/api/auth/me`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -45,10 +45,10 @@ export function AuthProvider({ children }) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [token, logout])
 
   // Refresh user data (works in dev mode too)
-  const refreshUser = async () => {
+  const refreshUser = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/api/auth/me`, {
         headers: { Authorization: `Bearer ${token || 'dev-token'}` }
@@ -60,7 +60,7 @@ export function AuthProvider({ children }) {
     } catch (err) {
       console.error('Failed to refresh user:', err)
     }
-  }
+  }, [token])
 
   const login = useCallback((userData, authToken) => {
     localStorage.setItem('token', authToken)

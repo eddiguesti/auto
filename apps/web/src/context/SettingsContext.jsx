@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
 
 const SettingsContext = createContext(null)
 
@@ -62,21 +62,27 @@ export function SettingsProvider({ children }) {
   }, [voiceGender])
 
   // Get the current pace settings
-  const getPaceSettings = () => SPEAKING_PACE[speakingPace] || SPEAKING_PACE.normal
+  const getPaceSettings = useCallback(
+    () => SPEAKING_PACE[speakingPace] || SPEAKING_PACE.normal,
+    [speakingPace]
+  )
 
   // Get the current voice
-  const getVoice = () => VOICE_OPTIONS[voiceGender]?.voice || 'Alloy'
+  const getVoice = useCallback(() => VOICE_OPTIONS[voiceGender]?.voice || 'Alloy', [voiceGender])
 
-  const value = {
-    speakingPace,
-    setSpeakingPace,
-    getPaceSettings,
-    voiceGender,
-    setVoiceGender,
-    getVoice,
-    SPEAKING_PACE,
-    VOICE_OPTIONS
-  }
+  const value = useMemo(
+    () => ({
+      speakingPace,
+      setSpeakingPace,
+      getPaceSettings,
+      voiceGender,
+      setVoiceGender,
+      getVoice,
+      SPEAKING_PACE,
+      VOICE_OPTIONS
+    }),
+    [speakingPace, voiceGender, getPaceSettings, getVoice]
+  )
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>
 }

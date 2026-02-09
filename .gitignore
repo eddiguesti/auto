@@ -33,6 +33,7 @@ secrets/
 *.sqlite3
 dump.sql
 *.sql.gz
+backups/
 
 # Uploads (user data)
 uploads/*

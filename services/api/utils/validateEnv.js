@@ -42,8 +42,8 @@ const ENV_REQUIREMENTS = {
   },
   // Stripe payments
   payments: {
-    required: ['STRIPE_SECRET_KEY'],
-    optional: ['STRIPE_WEBHOOK_SECRET']
+    required: ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET'],
+    optional: []
   },
   // Fish.audio TTS
   audiobook: {
@@ -62,8 +62,8 @@ const ENV_REQUIREMENTS = {
   },
   // Telegram support bot
   telegram: {
-    required: ['TELEGRAM_BOT_TOKEN'],
-    optional: ['TELEGRAM_WEBHOOK_SECRET']
+    required: ['TELEGRAM_BOT_TOKEN', 'TELEGRAM_WEBHOOK_SECRET'],
+    optional: []
   }
 }
 
