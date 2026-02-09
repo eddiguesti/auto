@@ -133,6 +133,12 @@ app.use(
           'https://api.fontshare.com',
           'https://accounts.google.com'
         ],
+        styleSrcElem: [
+          "'self'",
+          "'unsafe-inline'",
+          'https://fonts.googleapis.com',
+          'https://api.fontshare.com'
+        ],
         fontSrc: ["'self'", 'https://fonts.gstatic.com', 'https://api.fontshare.com'],
         imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
         connectSrc: [
