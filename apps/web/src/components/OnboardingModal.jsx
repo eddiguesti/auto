@@ -113,43 +113,43 @@ export default function OnboardingModal({ onClose, initialStep }) {
   const handleVoiceComplete = async (transcripts, selectedChannels) => {
     setStep(STEPS.PROCESSING)
 
+    // Use AbortController to timeout after 12s — context extraction is nice-to-have
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 12000)
+
     try {
       const res = await authFetch('/api/onboarding/context', {
         method: 'POST',
-        body: JSON.stringify({ transcripts })
+        body: JSON.stringify({ transcripts }),
+        signal: controller.signal
       })
 
       const data = await res.json()
       setExtractedContext(data.extracted)
 
       if (data.userName) await refreshUser()
-
-      // If channels were selected during voice interview, save them and go to tour
-      if (selectedChannels?.length > 0) {
-        await authFetch('/api/onboarding/channel-preferences', {
-          method: 'POST',
-          body: JSON.stringify({ channels: selectedChannels })
-        })
-        await authFetch('/api/onboarding/complete', { method: 'POST' })
-        setStep(STEPS.TOUR_OFFER)
-      } else {
-        // No channels selected yet — show channel selection step first
-        setStep(STEPS.CHANNEL_SELECTION)
-      }
     } catch (err) {
-      console.error('Failed to complete onboarding:', err)
-      setStep(STEPS.CHANNEL_SELECTION)
+      console.error('Context extraction failed (continuing):', err)
+    } finally {
+      clearTimeout(timeout)
     }
+
+    // Always advance to channel selection after voice interview
+    setStep(STEPS.CHANNEL_SELECTION)
   }
 
   // Handle type form submission — save context, then move to channel selection
   const handleTypeFormSubmit = async formData => {
     setStep(STEPS.PROCESSING)
 
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 12000)
+
     try {
       const res = await authFetch('/api/onboarding/context-form', {
         method: 'POST',
-        body: JSON.stringify(formData)
+        body: JSON.stringify(formData),
+        signal: controller.signal
       })
 
       const data = await res.json()
@@ -161,31 +161,40 @@ export default function OnboardingModal({ onClose, initialStep }) {
       })
 
       if (data.userName) await refreshUser()
-
-      setStep(STEPS.CHANNEL_SELECTION)
     } catch (err) {
-      console.error('Failed to save form context:', err)
-      setStep(STEPS.CHANNEL_SELECTION)
+      console.error('Form context save failed (continuing):', err)
+    } finally {
+      clearTimeout(timeout)
     }
+
+    setStep(STEPS.CHANNEL_SELECTION)
   }
 
   // Handle channel selection completion — save preferences, then ask about tour
   const handleChannelSelectionComplete = async selectedChannels => {
     setStep(STEPS.PROCESSING)
 
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 12000)
+
     try {
       await authFetch('/api/onboarding/channel-preferences', {
         method: 'POST',
-        body: JSON.stringify({ channels: selectedChannels })
+        body: JSON.stringify({ channels: selectedChannels }),
+        signal: controller.signal
       })
 
-      await authFetch('/api/onboarding/complete', { method: 'POST' })
-
-      setStep(STEPS.TOUR_OFFER)
+      await authFetch('/api/onboarding/complete', {
+        method: 'POST',
+        signal: controller.signal
+      })
     } catch (err) {
-      console.error('Failed to complete onboarding:', err)
-      setStep(STEPS.TOUR_OFFER)
+      console.error('Channel save failed (continuing):', err)
+    } finally {
+      clearTimeout(timeout)
     }
+
+    setStep(STEPS.TOUR_OFFER)
   }
 
   // Get first name for personalization
