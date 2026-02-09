@@ -16,7 +16,7 @@ import { motion, AnimatePresence } from 'framer-motion'
  *   app      -> Show app store download links (coming soon)
  *   webapp   -> No additional action (user is already here)
  */
-const CHANNEL_OPTIONS = [
+export const CHANNEL_OPTIONS = [
   {
     id: 'phone',
     label: 'Phone Call',
@@ -60,36 +60,6 @@ const INTRO_TEXT =
   'There are a few different ways we can work together. Pick whichever ones suit you best — you can always change your mind later.'
 
 // --- Framer Motion Variants ---
-
-const cardVariants = {
-  hidden: {
-    opacity: 0,
-    y: 40,
-    scale: 0.9
-  },
-  visible: index => ({
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: {
-      type: 'spring',
-      stiffness: 300,
-      damping: 24,
-      delay: 1.5 + index * 0.7
-    }
-  }),
-  idle: index => ({
-    y: [0, -4, 0],
-    transition: {
-      y: {
-        duration: 3,
-        repeat: Infinity,
-        ease: 'easeInOut',
-        delay: index * 0.4
-      }
-    }
-  })
-}
 
 const checkmarkVariants = {
   hidden: { scale: 0, rotate: -90 },
@@ -186,12 +156,13 @@ function ChannelIcon({ type }) {
  * Individual channel option card.
  *
  * Animation lifecycle:
- *   1. hidden -> visible: Springs in from below during presentation phase
- *   2. visible -> idle: Gentle floating/breathing after landing
- *   3. Interactive: Hover lift, tap compress, selection glow + checkmark
+ *   1. Spring entrance via Framer Motion (staggered by index)
+ *   2. CSS float animation after entrance completes (via onAnimationComplete)
+ *   3. Selection: colored border + glow + checkmark badge
  */
-function ChannelCard({ channel, index, isSelected, isSelectable, hasLanded, onToggle }) {
-  // Color mapping for selected state accents
+function ChannelCard({ channel, index, isSelected, isSelectable, onToggle, entranceDelay }) {
+  const [hasLanded, setHasLanded] = useState(false)
+
   const colorStyles = {
     emerald: {
       border: 'border-emerald-400',
@@ -244,12 +215,22 @@ function ChannelCard({ channel, index, isSelected, isSelectable, hasLanded, onTo
             : 'border-sepia/15 bg-white hover:border-sepia/30'
         }
         ${isSelectable ? 'cursor-pointer' : 'cursor-default'}
+        ${hasLanded ? 'channel-card-float' : ''}
       `}
-      style={isSelected ? { boxShadow: colors.glow } : {}}
-      custom={index}
-      variants={cardVariants}
-      initial="hidden"
-      animate={hasLanded ? 'idle' : 'visible'}
+      style={{
+        ...(isSelected ? { boxShadow: colors.glow } : {}),
+        // Stagger the CSS float animation per card
+        animationDelay: hasLanded ? `${index * 0.4}s` : undefined
+      }}
+      initial={{ opacity: 0, y: 40, scale: 0.9 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{
+        type: 'spring',
+        stiffness: 300,
+        damping: 24,
+        delay: entranceDelay
+      }}
+      onAnimationComplete={() => setHasLanded(true)}
       whileHover={isSelectable ? { y: -2, transition: { duration: 0.2 } } : {}}
       whileTap={isSelectable ? { scale: 0.98 } : {}}
     >
@@ -298,67 +279,126 @@ function ChannelCard({ channel, index, isSelected, isSelectable, hasLanded, onTo
   )
 }
 
-// --- Main Component ---
+// --- Shared Cards + Selection UI (used by both standalone and inline modes) ---
 
 /**
- * ChannelSelector - Onboarding step where users pick how they want
- * to contribute to their memoir.
- *
- * Two phases:
- *   1. Presentation: Clio introduces each channel with animated text + cards
- *   2. Selection: User multi-selects preferred channels
+ * ChannelCards - The card grid + continue button, shared between
+ * standalone mode (type form path) and inline mode (voice interview).
  *
  * Props:
- *   - firstName: string - User's first name (for future personalisation)
- *   - onComplete: (channels: string[]) => void - Called with selected channel IDs
- *
- * FUTURE DEVS:
- *   The returned channel IDs drive what happens next in the user journey.
- *   See the comment block above CHANNEL_OPTIONS for the full decision tree.
+ *   - selectedChannels / setSelectedChannels: selection state
+ *   - isSelectable: whether cards can be toggled
+ *   - entranceBase: base delay in seconds before first card appears
+ *   - onContinue: called with selected channels when Continue is clicked
+ *   - showPrompt: show the "Select as many..." text
  */
-export default function ChannelSelector({ firstName, onComplete }) {
-  const [phase, setPhase] = useState('presenting') // 'presenting' | 'selecting'
-  const [selectedChannels, setSelectedChannels] = useState([])
+export function ChannelCards({
+  selectedChannels,
+  setSelectedChannels,
+  isSelectable,
+  entranceBase = 0.5,
+  onContinue,
+  showPrompt = true
+}) {
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [cardsLanded, setCardsLanded] = useState(0)
-
-  // Auto-transition to selection phase after all cards have appeared
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setPhase('selecting')
-    }, 5500) // All cards visible by ~5s, plus 500ms buffer
-    return () => clearTimeout(timer)
-  }, [])
-
-  // Track when each card's entrance animation completes (for switching to idle float)
-  useEffect(() => {
-    const timers = CHANNEL_OPTIONS.map((_, i) =>
-      setTimeout(
-        () => setCardsLanded(prev => prev + 1),
-        // Entrance delay (1.5 + i*0.7s) + spring settle time (~600ms)
-        (1.5 + i * 0.7) * 1000 + 600
-      )
-    )
-    return () => timers.forEach(clearTimeout)
-  }, [])
 
   const toggleChannel = useCallback(
     channelId => {
-      if (phase !== 'selecting') return
+      if (!isSelectable) return
       setSelectedChannels(prev =>
         prev.includes(channelId) ? prev.filter(id => id !== channelId) : [...prev, channelId]
       )
     },
-    [phase]
+    [isSelectable, setSelectedChannels]
   )
 
   const handleContinue = async () => {
     if (selectedChannels.length === 0 || isSubmitting) return
     setIsSubmitting(true)
-    await onComplete(selectedChannels)
+    await onContinue(selectedChannels)
   }
 
-  // Split intro text into words for staggered reveal
+  return (
+    <>
+      {/* CSS for the floating animation (avoids Framer Motion variant switching bug) */}
+      <style>{`
+        @keyframes channelCardFloat {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-4px); }
+        }
+        .channel-card-float {
+          animation: channelCardFloat 3s ease-in-out infinite;
+        }
+      `}</style>
+
+      {/* Channel cards */}
+      <div className="flex flex-wrap justify-center gap-3 mb-4">
+        {CHANNEL_OPTIONS.map((channel, index) => (
+          <div key={channel.id} className="w-full sm:w-[calc(33.333%-0.5rem)]">
+            <ChannelCard
+              channel={channel}
+              index={index}
+              isSelected={selectedChannels.includes(channel.id)}
+              isSelectable={isSelectable}
+              onToggle={() => toggleChannel(channel.id)}
+              entranceDelay={entranceBase + index * 0.7}
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* Prompt */}
+      {showPrompt && (
+        <motion.p
+          className="text-sm text-warmgray/70 mb-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: entranceBase + 5 * 0.7 + 0.5, duration: 0.5 }}
+        >
+          Select as many as you like, then hit Continue.
+        </motion.p>
+      )}
+
+      {/* Continue button */}
+      <AnimatePresence>
+        {selectedChannels.length > 0 && (
+          <motion.button
+            onClick={handleContinue}
+            disabled={isSubmitting}
+            className="w-full bg-sepia text-white px-8 py-4 rounded-xl text-lg font-medium hover:bg-ink transition disabled:opacity-50"
+            variants={buttonVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+          >
+            {isSubmitting ? 'Setting things up...' : 'Continue'}
+          </motion.button>
+        )}
+      </AnimatePresence>
+    </>
+  )
+}
+
+// --- Main Component (standalone mode, used by type form path) ---
+
+/**
+ * ChannelSelector - Standalone onboarding step for TYPE FORM users.
+ * Voice interview users see channel cards inline within the voice interview.
+ *
+ * Props:
+ *   - firstName: string
+ *   - onComplete: (channels: string[]) => void
+ */
+export default function ChannelSelector({ firstName, onComplete }) {
+  const [phase, setPhase] = useState('presenting')
+  const [selectedChannels, setSelectedChannels] = useState([])
+
+  // Auto-transition to selection phase after all cards have appeared
+  useEffect(() => {
+    const timer = setTimeout(() => setPhase('selecting'), 5500)
+    return () => clearTimeout(timer)
+  }, [])
+
   const words = INTRO_TEXT.split(' ')
 
   return (
@@ -388,48 +428,14 @@ export default function ChannelSelector({ firstName, onComplete }) {
         ))}
       </p>
 
-      {/* Channel cards — flex-wrap, centered, 3 per row on desktop */}
-      <div className="flex flex-wrap justify-center gap-3 mb-4">
-        {CHANNEL_OPTIONS.map((channel, index) => (
-          <div key={channel.id} className="w-full sm:w-[calc(33.333%-0.5rem)]">
-            <ChannelCard
-              channel={channel}
-              index={index}
-              isSelected={selectedChannels.includes(channel.id)}
-              isSelectable={phase === 'selecting'}
-              hasLanded={cardsLanded > index}
-              onToggle={() => toggleChannel(channel.id)}
-            />
-          </div>
-        ))}
-      </div>
-
-      {/* Prompt — fades in after all cards shown */}
-      <motion.p
-        className="text-sm text-warmgray/70 mb-4"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 5.0, duration: 0.5 }}
-      >
-        Select as many as you like, then hit Continue.
-      </motion.p>
-
-      {/* Continue button — appears when 1+ channels selected */}
-      <AnimatePresence>
-        {selectedChannels.length > 0 && (
-          <motion.button
-            onClick={handleContinue}
-            disabled={isSubmitting}
-            className="w-full bg-sepia text-white px-8 py-4 rounded-xl text-lg font-medium hover:bg-ink transition disabled:opacity-50"
-            variants={buttonVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-          >
-            {isSubmitting ? 'Setting things up...' : 'Continue'}
-          </motion.button>
-        )}
-      </AnimatePresence>
+      <ChannelCards
+        selectedChannels={selectedChannels}
+        setSelectedChannels={setSelectedChannels}
+        isSelectable={phase === 'selecting'}
+        entranceBase={1.5}
+        onContinue={onComplete}
+        showPrompt={true}
+      />
     </div>
   )
 }

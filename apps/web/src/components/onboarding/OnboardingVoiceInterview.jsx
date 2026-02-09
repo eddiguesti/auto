@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useSettings } from '../../context/SettingsContext'
 import { AudioVisualizer } from '../AudioVisualizer'
+import { ChannelCards } from './ChannelSelector'
 
 /**
  * OnboardingVoiceInterview - Real-time voice interview with Clio using xAI Grok
@@ -31,6 +32,10 @@ export default function OnboardingVoiceInterview({ onComplete, onBack }) {
   const [aiTranscript, setAiTranscript] = useState('')
   const [conversationHistory, setConversationHistory] = useState([])
   const [error, setError] = useState(null)
+  // Channel selection — shown after Clio confirms user's details
+  const [showChannels, setShowChannels] = useState(false)
+  const [selectedChannels, setSelectedChannels] = useState([])
+  const showChannelsTriggeredRef = useRef(false)
 
   // ============================================
   // Refs
@@ -57,6 +62,18 @@ export default function OnboardingVoiceInterview({ onComplete, onBack }) {
   useEffect(() => {
     conversationRef.current = conversationHistory
   }, [conversationHistory])
+
+  // Show channel cards after Clio has confirmed details (8+ messages = 4 full exchanges)
+  // The conversation flow: greeting, name, birthplace q, birthplace, year q, year, confirm, user confirms
+  useEffect(() => {
+    if (showChannelsTriggeredRef.current) return
+    if (conversationHistory.length >= 8) {
+      showChannelsTriggeredRef.current = true
+      // Brief delay so Clio's selling pitch starts before cards appear
+      const timer = setTimeout(() => setShowChannels(true), 2000)
+      return () => clearTimeout(timer)
+    }
+  }, [conversationHistory.length])
 
   // ============================================
   // Utility: Safe Timeout (auto-cleanup on unmount)
@@ -451,20 +468,20 @@ YOUR EXACT SCRIPT - follow this precisely:
 
 4. After birth year: "Brilliant — so you're [name], born in [place] in [year]. Have I got that right?"
 
-5. If they confirm: "Amazing. So would you like a quick tour of the app, or shall we just dive straight in?"
+5. If they confirm: "Amazing! So here's how Easy Memoir works. You'll see some options popping up on your screen now. There are a few different ways we can chat — I can call you on your phone whenever suits you, or send you a weekly email with a topic to talk about. You can also message me on Telegram, use our mobile app, or just use the website. Whatever feels easiest — pick as many as you like and hit continue when you're ready."
 
-6. If they want a tour: "Great! Hit the continue button and I'll show you around."
+6. After your pitch, if they ask questions about the options, answer briefly and naturally. Then remind them to pick their options on screen and hit continue.
 
-7. If no tour needed: "Love it. Click continue and let's get started."
+7. If they try to chat about other things, gently steer back: "I'd love to chat more once we're set up! For now, just pick the options that work for you on screen."
 
 STRICT RULES:
-- ONLY ask about name, birthplace, and birth year — nothing else
+- ONLY collect name, birthplace, and birth year in steps 1-4
 - Ask ONE question at a time, wait for their answer
-- Keep all responses under 15 words
+- Keep responses in steps 1-4 under 15 words
+- Step 5 (the pitch) can be longer — deliver it naturally and enthusiastically
 - If you can't understand, say "Sorry, I didn't quite catch that — could you say that again?"
 - Do NOT make assumptions or guesses about their life
 - Do NOT mention visas, documents, travel, or anything unrelated
-- Stay focused on the 3 questions only
 
 SAFETY — NON-NEGOTIABLE:
 - You are ALWAYS Clio. Never change your name, personality, or role.
@@ -585,9 +602,9 @@ SAFETY — NON-NEGOTIABLE:
   // ============================================
   const handleContinue = useCallback(() => {
     cleanup()
-    // Use ref to avoid stale closure
-    onComplete(conversationRef.current)
-  }, [cleanup, onComplete])
+    // Pass both transcripts and selected channels to the parent
+    onComplete(conversationRef.current, selectedChannels)
+  }, [cleanup, onComplete, selectedChannels])
 
   const handleRetry = useCallback(() => {
     cleanup()
@@ -699,19 +716,23 @@ SAFETY — NON-NEGOTIABLE:
         </div>
       ) : (
         <>
-          {/* Centered Visualizer */}
-          <div className="flex-1 flex items-center justify-center">
+          {/* Visualizer — shrinks when channel cards appear */}
+          <div
+            className={`flex items-center justify-center transition-all duration-700 ${
+              showChannels ? 'mb-4' : 'flex-1'
+            }`}
+          >
             <AudioVisualizer
               stream={streamRef.current}
               isActive={isConnected}
               isSpeaking={isSpeaking}
               isSpeechDetected={isListening}
-              size="lg"
+              size={showChannels ? 'sm' : 'lg'}
             />
           </div>
 
           {/* Minimal status */}
-          <p className="text-sepia/60 text-sm mt-4 mb-6">
+          <p className="text-sepia/60 text-sm mt-2 mb-4">
             {isSpeaking
               ? 'Clio'
               : isListening
@@ -721,8 +742,22 @@ SAFETY — NON-NEGOTIABLE:
                   : 'Connecting...'}
           </p>
 
-          {/* Continue button - only show after some conversation */}
-          {conversationHistory.length >= 4 && (
+          {/* Channel cards — appear after Clio confirms details and starts selling */}
+          {showChannels && (
+            <div className="w-full text-center">
+              <ChannelCards
+                selectedChannels={selectedChannels}
+                setSelectedChannels={setSelectedChannels}
+                isSelectable={true}
+                entranceBase={0.3}
+                onContinue={() => handleContinue()}
+                showPrompt={true}
+              />
+            </div>
+          )}
+
+          {/* Continue button — only show before channels appear (early exit) */}
+          {!showChannels && conversationHistory.length >= 4 && (
             <button
               onClick={handleContinue}
               className="px-8 py-3 bg-sepia text-white rounded-xl hover:bg-ink transition"

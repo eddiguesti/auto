@@ -218,7 +218,9 @@ export default function Home() {
   const [showBookPreview, setShowBookPreview] = useState(false)
   const [showCertificate, setShowCertificate] = useState(false)
   const [showTelegramLink, setShowTelegramLink] = useState(false)
-  const [showOnboarding, setShowOnboarding] = useState(false)
+  const [showOnboarding, setShowOnboarding] = useState(
+    new URLSearchParams(window.location.search).has('onboarding')
+  )
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [upgradeVariant, setUpgradeVariant] = useState('default')
   const [chapterImages, setChapterImages] = useState({})
@@ -887,6 +889,7 @@ export default function Home() {
 
         {showOnboarding && (
           <OnboardingModal
+            initialStep={new URLSearchParams(window.location.search).get('step') || undefined}
             onClose={async options => {
               setShowOnboarding(false)
               // Refresh user data to pick up name from onboarding

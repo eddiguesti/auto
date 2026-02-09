@@ -15,9 +15,9 @@ const STEPS = {
   PROCESSING: 'processing'
 }
 
-export default function OnboardingModal({ onClose }) {
+export default function OnboardingModal({ onClose, initialStep }) {
   const { authFetch, user, refreshUser } = useAuth()
-  const [step, setStep] = useState(STEPS.WELCOME)
+  const [step, setStep] = useState(initialStep || STEPS.WELCOME)
   const [preference, setPreference] = useState(null)
   const [isVisible, setIsVisible] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
@@ -60,11 +60,12 @@ export default function OnboardingModal({ onClose }) {
     }
   }
 
-  // Handle voice interview completion — save context, then move to channel selection
-  const handleVoiceComplete = async transcripts => {
+  // Handle voice interview completion — channels are already selected inline
+  const handleVoiceComplete = async (transcripts, selectedChannels) => {
     setStep(STEPS.PROCESSING)
 
     try {
+      // Save interview context
       const res = await authFetch('/api/onboarding/context', {
         method: 'POST',
         body: JSON.stringify({ transcripts })
@@ -77,10 +78,22 @@ export default function OnboardingModal({ onClose }) {
         await refreshUser()
       }
 
-      setStep(STEPS.CHANNEL_SELECTION)
+      // Save channel preferences (if user selected any during voice interview)
+      if (selectedChannels && selectedChannels.length > 0) {
+        await authFetch('/api/onboarding/channel-preferences', {
+          method: 'POST',
+          body: JSON.stringify({ channels: selectedChannels })
+        })
+      }
+
+      // Complete onboarding
+      await authFetch('/api/onboarding/complete', { method: 'POST' })
+
+      const wantsTour = data.extracted?.wants_tour || false
+      handleClose({ showTour: wantsTour })
     } catch (err) {
-      console.error('Failed to save interview context:', err)
-      setStep(STEPS.CHANNEL_SELECTION)
+      console.error('Failed to complete onboarding:', err)
+      handleClose({ showTour: false })
     }
   }
 
@@ -145,7 +158,7 @@ export default function OnboardingModal({ onClose }) {
       }`}
     >
       <div
-        className={`relative w-full ${step === STEPS.CHANNEL_SELECTION ? 'max-w-2xl' : 'max-w-lg'} mx-4 bg-gradient-to-b from-cream to-amber-50 rounded-2xl shadow-2xl overflow-hidden transition-all duration-300 ${
+        className={`relative w-full ${step === STEPS.CHANNEL_SELECTION || step === STEPS.VOICE_INTERVIEW ? 'max-w-2xl' : 'max-w-lg'} mx-4 bg-gradient-to-b from-cream to-amber-50 rounded-2xl shadow-2xl overflow-hidden transition-all duration-300 ${
           isVisible && !isClosing
             ? 'opacity-100 scale-100 translate-y-0'
             : 'opacity-0 scale-95 translate-y-4'
