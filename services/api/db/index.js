@@ -1013,6 +1013,22 @@ export async function initDatabase() {
       CREATE INDEX IF NOT EXISTS idx_telnyx_calls_status ON telnyx_calls(call_status) WHERE call_status IN ('initiated', 'ringing', 'answered', 'streaming')
     `)
 
+    // AI usage tracking (server-side quota enforcement)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS ai_usage (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        date DATE NOT NULL DEFAULT CURRENT_DATE,
+        request_count INTEGER DEFAULT 0,
+        token_count INTEGER DEFAULT 0,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, date)
+      )
+    `)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_ai_usage_user_date ON ai_usage(user_id, date)
+    `)
+
     // Seed collections data
     await seedCollections(pool)
 

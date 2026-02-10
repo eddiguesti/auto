@@ -14,12 +14,29 @@ const DEV_USER = {
 }
 
 export function AuthProvider({ children }) {
+  // Migrate old localStorage token to sessionStorage (one-time, then clear it)
+  const migratedToken = (() => {
+    if (DEV_BYPASS) return 'dev-token'
+    const session = sessionStorage.getItem('token')
+    if (session) return session
+    const legacy = localStorage.getItem('token')
+    if (legacy) {
+      sessionStorage.setItem('token', legacy)
+      localStorage.removeItem('token')
+      return legacy
+    }
+    return null
+  })()
+
   const [user, setUser] = useState(DEV_BYPASS ? DEV_USER : null)
-  const [token, setToken] = useState(DEV_BYPASS ? 'dev-token' : localStorage.getItem('token'))
+  const [token, setToken] = useState(migratedToken)
   const [loading, setLoading] = useState(!DEV_BYPASS)
 
   useEffect(() => {
     if (DEV_BYPASS) return // Skip auth check in dev bypass mode
+
+    // Always clear any lingering localStorage token on mount
+    localStorage.removeItem('token')
 
     if (token) {
       fetchUser()
@@ -42,7 +59,8 @@ export function AuthProvider({ children }) {
         console.warn('Server logout notification failed:', err)
       }
     }
-    localStorage.removeItem('token')
+    sessionStorage.removeItem('token')
+    localStorage.removeItem('token') // Clean up any legacy localStorage tokens
     setToken(null)
     setUser(null)
   }, [token])
@@ -82,7 +100,7 @@ export function AuthProvider({ children }) {
   }, [token])
 
   const login = useCallback((userData, authToken) => {
-    localStorage.setItem('token', authToken)
+    sessionStorage.setItem('token', authToken)
     setToken(authToken)
     setUser(userData)
   }, [])

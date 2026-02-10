@@ -94,31 +94,38 @@ export function validateLength(input, maxLength = 50000) {
 }
 
 /**
- * Rate limiting helper - tracks request counts per user
+ * Rate limiting helper - tracks request counts per user.
+ * Uses Redis when available (survives restarts, works across instances).
+ * Falls back to in-memory when Redis is unavailable.
  */
-const requestCounts = new Map()
-const RATE_LIMIT_WINDOW = 60 * 1000 // 1 minute
+import { redisIncr } from './redis.js'
+
+const RATE_LIMIT_WINDOW_SEC = 60 // 1 minute in seconds
 const MAX_REQUESTS = 30 // Max AI requests per minute per user
-const MAX_CACHE_SIZE = 10000 // Prevent unbounded memory growth
 
-// Clean up expired entries every 2 minutes
-setInterval(() => {
-  const now = Date.now()
-  for (const [key, data] of requestCounts.entries()) {
-    if (now - data.windowStart > RATE_LIMIT_WINDOW * 2) {
-      requestCounts.delete(key)
+// In-memory fallback for when Redis is unavailable
+const requestCounts = new Map()
+const MAX_CACHE_SIZE = 10000
+
+setInterval(
+  () => {
+    const now = Date.now()
+    for (const [key, data] of requestCounts.entries()) {
+      if (now - data.windowStart > RATE_LIMIT_WINDOW_SEC * 2 * 1000) {
+        requestCounts.delete(key)
+      }
     }
-  }
-}, RATE_LIMIT_WINDOW * 2)
+  },
+  RATE_LIMIT_WINDOW_SEC * 2 * 1000
+)
 
-export function checkRateLimit(userId) {
+function checkRateLimitMemory(userId) {
   const now = Date.now()
   const userKey = `user:${userId}`
 
   const userData = requestCounts.get(userKey) || { count: 0, windowStart: now }
 
-  // Reset window if expired
-  if (now - userData.windowStart > RATE_LIMIT_WINDOW) {
+  if (now - userData.windowStart > RATE_LIMIT_WINDOW_SEC * 1000) {
     userData.count = 0
     userData.windowStart = now
   }
@@ -126,7 +133,6 @@ export function checkRateLimit(userId) {
   userData.count++
   requestCounts.set(userKey, userData)
 
-  // Hard cap on cache size to prevent memory exhaustion
   if (requestCounts.size > MAX_CACHE_SIZE) {
     const toDelete = requestCounts.size - MAX_CACHE_SIZE
     const iter = requestCounts.keys()
@@ -138,6 +144,22 @@ export function checkRateLimit(userId) {
   return {
     allowed: userData.count <= MAX_REQUESTS,
     remaining: Math.max(0, MAX_REQUESTS - userData.count),
-    resetIn: RATE_LIMIT_WINDOW - (now - userData.windowStart)
+    resetIn: RATE_LIMIT_WINDOW_SEC * 1000 - (now - userData.windowStart)
+  }
+}
+
+export async function checkRateLimit(userId) {
+  const key = `ratelimit:ai:${userId}`
+  const count = await redisIncr(key, RATE_LIMIT_WINDOW_SEC)
+
+  if (count === null) {
+    // Redis unavailable — fall back to in-memory
+    return checkRateLimitMemory(userId)
+  }
+
+  return {
+    allowed: count <= MAX_REQUESTS,
+    remaining: Math.max(0, MAX_REQUESTS - count),
+    resetIn: RATE_LIMIT_WINDOW_SEC * 1000
   }
 }

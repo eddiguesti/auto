@@ -203,16 +203,84 @@ export async function handleStripeWebhook(req, res, db) {
 
     case 'customer.subscription.created':
     case 'customer.subscription.updated': {
-      const subscription = event.data.object
-      // Handle subscription updates
-      logger.info('Subscription event', { eventType: event.type, subscriptionId: subscription.id })
+      try {
+        const subscription = event.data.object
+        const customerId = subscription.customer
+        const customer = await stripe.customers.retrieve(customerId)
+        const customerEmail = customer.email
+
+        if (subscription.status === 'active' || subscription.status === 'trialing') {
+          const periodEnd = new Date(subscription.current_period_end * 1000)
+          await db.query(
+            `UPDATE users SET premium_until = $1,
+             premium_activated_at = COALESCE(premium_activated_at, CURRENT_TIMESTAMP),
+             updated_at = CURRENT_TIMESTAMP
+             WHERE email = $2 AND (premium_until IS NULL OR premium_until < $1)`,
+            [periodEnd, customerEmail]
+          )
+          logger.info('Premium activated via subscription', {
+            subscriptionId: subscription.id,
+            customerEmail,
+            status: subscription.status,
+            periodEnd
+          })
+        } else if (subscription.status === 'past_due' || subscription.status === 'unpaid') {
+          logger.warn('Subscription payment issue', {
+            subscriptionId: subscription.id,
+            customerEmail,
+            status: subscription.status
+          })
+        } else if (
+          subscription.status === 'canceled' ||
+          subscription.status === 'incomplete_expired'
+        ) {
+          const gracePeriod = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
+          await db.query(
+            `UPDATE users SET premium_until = LEAST(premium_until, $1),
+             updated_at = CURRENT_TIMESTAMP
+             WHERE email = $2`,
+            [gracePeriod, customerEmail]
+          )
+          logger.info('Premium set to expire (subscription status change)', {
+            subscriptionId: subscription.id,
+            customerEmail,
+            expiresAt: gracePeriod
+          })
+        }
+      } catch (err) {
+        logger.error('Failed to process subscription event', {
+          error: err.message,
+          eventId: event.id
+        })
+      }
       break
     }
 
     case 'customer.subscription.deleted': {
-      const subscription = event.data.object
-      // Handle subscription cancellation
-      logger.info('Subscription cancelled', { subscriptionId: subscription.id })
+      try {
+        const subscription = event.data.object
+        const customerId = subscription.customer
+        const customer = await stripe.customers.retrieve(customerId)
+        const customerEmail = customer.email
+
+        const gracePeriod = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
+        await db.query(
+          `UPDATE users SET premium_until = LEAST(premium_until, $1),
+           updated_at = CURRENT_TIMESTAMP
+           WHERE email = $2`,
+          [gracePeriod, customerEmail]
+        )
+        logger.info('Premium revoked (subscription cancelled)', {
+          subscriptionId: subscription.id,
+          customerEmail,
+          expiresAt: gracePeriod
+        })
+      } catch (err) {
+        logger.error('Failed to revoke premium on cancellation', {
+          error: err.message,
+          eventId: event.id
+        })
+      }
       break
     }
 

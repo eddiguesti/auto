@@ -273,8 +273,44 @@ _Sent from Easy Memoir Help Chat_`
 }
 
 // ============================================================================
+// ESCALATION FLOOD PROTECTION (in-memory, per-IP)
+// ============================================================================
+
+const escalationTracker = new Map()
+const MAX_ESCALATIONS_PER_HOUR = 3
+
+function canEscalate(ip) {
+  const now = Date.now()
+  const key = `esc:${ip}`
+  const timestamps = escalationTracker.get(key) || []
+  // Remove entries older than 1 hour
+  const recent = timestamps.filter(t => now - t < 3600000)
+  escalationTracker.set(key, recent)
+  return recent.length < MAX_ESCALATIONS_PER_HOUR
+}
+
+function recordEscalation(ip) {
+  const key = `esc:${ip}`
+  const timestamps = escalationTracker.get(key) || []
+  timestamps.push(Date.now())
+  escalationTracker.set(key, timestamps)
+}
+
+// Periodic cleanup (every 10 minutes)
+setInterval(() => {
+  const now = Date.now()
+  for (const [key, timestamps] of escalationTracker) {
+    const recent = timestamps.filter(t => now - t < 3600000)
+    if (recent.length === 0) escalationTracker.delete(key)
+    else escalationTracker.set(key, recent)
+  }
+}, 600000)
+
+// ============================================================================
 // ROUTES
 // ============================================================================
+
+const MAX_MESSAGE_LENGTH = 1000
 
 /**
  * POST /chat - Main chat endpoint
@@ -288,6 +324,12 @@ router.post(
     // Validate input
     if (!message || typeof message !== 'string' || !message.trim()) {
       return res.status(400).json({ error: MESSAGES.missingMessage })
+    }
+
+    if (message.length > MAX_MESSAGE_LENGTH) {
+      return res
+        .status(400)
+        .json({ error: `Message too long (max ${MAX_MESSAGE_LENGTH} characters)` })
     }
 
     const trimmedMessage = message.trim()
@@ -310,12 +352,27 @@ router.post(
       conversationHistory.length >= CONFIG.escalation.maxMessagesBeforeEscalation
 
     if (shouldEscalate) {
+      // Flood protection: limit escalations per IP
+      const clientIp = req.ip || req.connection?.remoteAddress || 'unknown'
+      if (!canEscalate(clientIp)) {
+        return res.json({
+          response:
+            "You've already contacted support recently. Our team will get back to you via email shortly.",
+          source: 'escalation_limited',
+          escalated: false
+        })
+      }
+
       const escalated = await sendToTelegram({
         message: trimmedMessage,
         userEmail,
         userName,
         conversationHistory
       })
+
+      if (escalated) {
+        recordEscalation(clientIp)
+      }
 
       return res.json({
         response: escalated ? MESSAGES.escalationSuccess : MESSAGES.escalationFailure,
@@ -346,6 +403,25 @@ router.post(
       return res.status(400).json({ error: 'Message or issue is required' })
     }
 
+    if (
+      (message && message.length > MAX_MESSAGE_LENGTH) ||
+      (issue && issue.length > MAX_MESSAGE_LENGTH)
+    ) {
+      return res
+        .status(400)
+        .json({ error: `Message too long (max ${MAX_MESSAGE_LENGTH} characters)` })
+    }
+
+    // Flood protection
+    const clientIp = req.ip || req.connection?.remoteAddress || 'unknown'
+    if (!canEscalate(clientIp)) {
+      return res.json({
+        success: false,
+        error:
+          "You've already contacted support recently. Our team will get back to you via email shortly."
+      })
+    }
+
     const fullMessage = issue
       ? `*Issue:* ${issue}\n\n*Details:* ${message || 'No additional details'}`
       : message
@@ -356,6 +432,10 @@ router.post(
       userName,
       conversationHistory: []
     })
+
+    if (success) {
+      recordEscalation(clientIp)
+    }
 
     return res.json({ success })
   })

@@ -1,5 +1,9 @@
 // API service connecting to existing Express backend
+import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const TOKEN_KEY = 'authToken';
+let migrationDone = false;
 
 // Development: Use your local IP or ngrok
 // Production: Your Railway URL
@@ -16,12 +20,27 @@ class ApiService {
 
   async setToken(token: string) {
     this.token = token;
-    await AsyncStorage.setItem('authToken', token);
+    await SecureStore.setItemAsync(TOKEN_KEY, token);
   }
 
   async getToken(): Promise<string | null> {
     if (!this.token) {
-      this.token = await AsyncStorage.getItem('authToken');
+      this.token = await SecureStore.getItemAsync(TOKEN_KEY);
+
+      // One-time migration: move token from AsyncStorage to SecureStore
+      if (!this.token && !migrationDone) {
+        migrationDone = true;
+        try {
+          const legacyToken = await AsyncStorage.getItem(TOKEN_KEY);
+          if (legacyToken) {
+            await SecureStore.setItemAsync(TOKEN_KEY, legacyToken);
+            await AsyncStorage.removeItem(TOKEN_KEY);
+            this.token = legacyToken;
+          }
+        } catch {
+          // Migration failed — user will need to log in again
+        }
+      }
     }
     return this.token;
   }
@@ -40,7 +59,9 @@ class ApiService {
       }
     }
     this.token = null;
-    await AsyncStorage.removeItem('authToken');
+    await SecureStore.deleteItemAsync(TOKEN_KEY);
+    // Clean up any legacy AsyncStorage token
+    try { await AsyncStorage.removeItem(TOKEN_KEY); } catch {}
   }
 
   async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {

@@ -19,6 +19,7 @@ dotenv.config({ path: join(__dirname_early, '..', '..', '.env') })
 import pool, { initDatabase } from './db/index.js'
 import { validateEnvOrExit, validateSecurityConfig, isProduction } from './utils/validateEnv.js'
 import { authenticateToken } from './middleware/auth.js'
+import { checkAIQuota } from './middleware/aiQuota.js'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js'
 import { requestId } from './middleware/requestId.js'
 import { requestTiming } from './middleware/requestTiming.js'
@@ -197,8 +198,15 @@ app.use('/api/auth/login', authLimiter)
 app.use('/api/auth/register', authLimiter)
 app.use('/api/auth', authRouter)
 
-// Support chat (public - so users can get help even when logged out)
-app.use('/api/support', supportRouter)
+// Support chat (public, rate limited to prevent abuse and Telegram flooding)
+const supportLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 20, // 20 messages per hour per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many support requests, please try again later' }
+})
+app.use('/api/support', supportLimiter, supportRouter)
 
 // Newsletter subscription (public - with built-in rate limiting)
 app.use('/api/newsletter', newsletterRouter)
@@ -279,8 +287,8 @@ app.post('/api/landing-voice/session', voiceLimiter, async (req, res) => {
 // Protected routes - require authentication
 app.use('/api/stories', authenticateToken, storiesRouter)
 app.use('/api/photos', authenticateToken, photosRouter)
-app.use('/api/ai', authenticateToken, aiRouter)
-app.use('/api/voice', authenticateToken, voiceRouter)
+app.use('/api/ai', authenticateToken, checkAIQuota, aiRouter)
+app.use('/api/voice', authenticateToken, checkAIQuota, voiceRouter)
 app.use('/api/memory', authenticateToken, memoryRouter)
 
 // Lulu routes (protected)

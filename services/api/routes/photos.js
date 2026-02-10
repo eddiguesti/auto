@@ -37,6 +37,26 @@ const upload = multer({
   }
 })
 
+// Magic byte signatures for allowed image types
+const MAGIC_BYTES = {
+  'image/jpeg': [Buffer.from([0xff, 0xd8, 0xff])],
+  'image/png': [Buffer.from([0x89, 0x50, 0x4e, 0x47])],
+  'image/gif': [Buffer.from('GIF87a'), Buffer.from('GIF89a')],
+  'image/webp': [Buffer.from('RIFF')] // RIFF header (WebP starts with RIFF....WEBP)
+}
+
+/**
+ * Verify uploaded file content matches declared MIME type
+ */
+function verifyMagicBytes(buffer, mimetype) {
+  const signatures = MAGIC_BYTES[mimetype]
+  if (!signatures) return false
+  return signatures.some(sig => {
+    if (buffer.length < sig.length) return false
+    return buffer.subarray(0, sig.length).equals(sig)
+  })
+}
+
 function generateFilename(originalname) {
   const uniqueSuffix = crypto.randomBytes(8).toString('hex')
   return `${Date.now()}-${uniqueSuffix}${extname(originalname)}`
@@ -53,6 +73,17 @@ router.post(
 
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' })
+    }
+
+    // Verify file content matches declared MIME type (prevents disguised uploads)
+    if (!verifyMagicBytes(req.file.buffer, req.file.mimetype)) {
+      logger.warn('File magic bytes mismatch', {
+        declared: req.file.mimetype,
+        originalname: req.file.originalname,
+        userId,
+        requestId: req.id
+      })
+      return res.status(400).json({ error: 'File content does not match declared type' })
     }
 
     if (!db) {

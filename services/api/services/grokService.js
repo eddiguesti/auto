@@ -4,6 +4,27 @@ import { createLogger } from '../utils/logger.js'
 
 const logger = createLogger('grok')
 
+// Patterns that should never appear in AI output (leaked secrets, prompt fragments)
+const SENSITIVE_PATTERNS = [
+  /(?:sk-|xai-|key-)[a-zA-Z0-9]{20,}/g, // API keys
+  /Bearer\s+[a-zA-Z0-9._-]{20,}/g, // Auth tokens
+  /SECURITY:.*?(?:system prompt|instructions)/gi, // Leaked security boundary
+  /process\.env\.[A-Z_]+/g, // Environment variable references
+  /-----BEGIN.*?KEY-----/g // Private keys
+]
+
+/**
+ * Strip sensitive patterns from AI output to prevent prompt leakage
+ */
+function filterSensitiveOutput(text) {
+  if (!text) return text
+  let filtered = text
+  for (const pattern of SENSITIVE_PATTERNS) {
+    filtered = filtered.replace(pattern, '[redacted]')
+  }
+  return filtered
+}
+
 /**
  * @typedef {Object} GrokChatOptions
  * @property {string} systemPrompt - System prompt for the AI
@@ -51,7 +72,10 @@ export async function grokCompletion({
     })
 
     const durationMs = Date.now() - startTime
-    const content = completion.choices[0]?.message?.content || ''
+    let content = completion.choices[0]?.message?.content || ''
+
+    // Filter out any leaked sensitive patterns from AI output
+    content = filterSensitiveOutput(content)
 
     recordGrokCall(durationMs, Boolean(content))
 

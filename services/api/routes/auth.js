@@ -398,6 +398,22 @@ router.post(
     }
 
     try {
+      // Rate limit: max 3 password reset requests per 15 minutes per email
+      const recentResets = await db.query(
+        `SELECT COUNT(*) as count FROM password_reset_tokens
+         WHERE user_id IN (SELECT id FROM users WHERE email = $1)
+         AND created_at > NOW() - INTERVAL '15 minutes'`,
+        [normalizedEmail]
+      )
+      if (parseInt(recentResets.rows[0].count) >= 3) {
+        // Still return success to prevent enumeration, but don't send email
+        authLogger.warn('Password reset rate limited', {
+          email: normalizedEmail,
+          requestId: req.id
+        })
+        return res.json(successResponse)
+      }
+
       // Find user by email
       const userResult = await db.query(
         'SELECT id, name, email, password_hash FROM users WHERE email = $1',
@@ -694,6 +710,18 @@ router.post(
 
     if (user.google_id) {
       return res.json({ success: true, message: 'Google accounts are already verified' })
+    }
+
+    // Rate limit: max 2 verification emails per 5 minutes
+    const recentSends = await db.query(
+      `SELECT COUNT(*) as count FROM email_verification_tokens
+       WHERE user_id = $1 AND created_at > NOW() - INTERVAL '5 minutes'`,
+      [user.id]
+    )
+    if (parseInt(recentSends.rows[0].count) >= 2) {
+      return res
+        .status(429)
+        .json({ error: 'Please wait a few minutes before requesting another verification email.' })
     }
 
     // Invalidate existing unused tokens

@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
 
 interface User {
@@ -49,7 +48,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const checkAuth = async () => {
     try {
-      const token = await AsyncStorage.getItem('authToken');
+      // Uses api.getToken() which handles AsyncStorage → SecureStore migration
+      const token = await api.getToken();
       if (token) {
         const { user } = await api.getMe();
         setState({
