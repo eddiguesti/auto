@@ -1,9 +1,76 @@
 export const chapters = [
   {
+    id: 'heritage-roots',
+    title: 'Heritage & Roots',
+    subtitle: 'Where Your Story Begins',
+    icon: 'I',
+    color: 'from-amber-50 to-amber-100',
+    questions: [
+      {
+        id: 'family-origins',
+        question: 'Where did your family come from?',
+        prompt:
+          'The countries, the towns, the journeys. How did your family end up where they did?',
+        aiHint:
+          'Start broad: Country and region, then narrow down. Did the family move? Immigrate? Were there stories about the old country?'
+      },
+      {
+        id: 'family-surname',
+        question: 'What do you know about your family name?',
+        prompt: 'Its origins, its meaning, any stories attached to it.',
+        aiHint:
+          'Simple start: What nationality is the name? Any nicknames? Was the name ever changed? Any famous or infamous relatives who shared it?'
+      },
+      {
+        id: 'parents-background',
+        question: 'What was life like for your parents before you were born?',
+        prompt: 'Their childhoods, how they met, what the world was like for them.',
+        aiHint:
+          'Get the story: Where did they grow up? What were their families like? How did they meet? What was happening in the world when they were young?'
+      },
+      {
+        id: 'grandparents-stories',
+        question: 'What stories were passed down about your grandparents?',
+        prompt:
+          'Tales told at the dinner table, legends of the family, things you were always told.',
+        aiHint:
+          'Family lore: What was repeated? Any favourite stories? Any characters or black sheep? Stories about hardship or triumph?'
+      },
+      {
+        id: 'family-trade',
+        question: 'What did your family do for a living through the generations?',
+        prompt: 'Farmers, miners, shopkeepers, soldiers - what work ran through the family?',
+        aiHint:
+          'Trace the line: What did grandparents do? Parents? Was there an expectation you would follow? How did it shape the family identity?'
+      },
+      {
+        id: 'family-values-heritage',
+        question: 'What values or beliefs were passed down through your family?',
+        prompt: 'The unspoken rules, the things that mattered, the way things were done.',
+        aiHint:
+          'Dig into the culture: Religion? Politics? Work ethic? Manners? What was expected? What was forbidden? Do you still carry those values?'
+      },
+      {
+        id: 'family-heirlooms',
+        question: 'Are there any family objects or heirlooms that tell a story?',
+        prompt: 'Photos, jewellery, furniture, documents - things that connect you to the past.',
+        aiHint:
+          'Pick one object: What is it? Where did it come from? Whose was it? What story does it tell? Do you still have it?'
+      },
+      {
+        id: 'world-before-you',
+        question: 'What was the world like in the years before you were born?',
+        prompt: 'The wars, the changes, the world your parents navigated before you arrived.',
+        aiHint:
+          'Set the scene: What was happening locally and globally? How did it affect your family? What echoes of that era did you grow up with?'
+      }
+    ]
+  },
+  {
     id: 'earliest-memories',
     title: 'Earliest Memories',
     subtitle: 'Ages 0-5',
-    icon: 'I',
+    icon: 'II',
     color: 'from-amber-50 to-amber-100',
     questions: [
       // Warmup - easy facts first
@@ -71,7 +138,7 @@ export const chapters = [
     id: 'childhood',
     title: 'Childhood',
     subtitle: 'Ages 6-12',
-    icon: 'II',
+    icon: 'III',
     color: 'from-stone-50 to-stone-100',
     questions: [
       // Warmup
@@ -151,7 +218,7 @@ export const chapters = [
     id: 'school-days',
     title: 'School Days',
     subtitle: 'Education Years',
-    icon: 'III',
+    icon: 'IV',
     color: 'from-amber-50 to-stone-100',
     questions: [
       // Warmup
@@ -231,7 +298,7 @@ export const chapters = [
     id: 'teenage-years',
     title: 'Teenage Years',
     subtitle: 'Coming of Age',
-    icon: 'IV',
+    icon: 'V',
     color: 'from-stone-50 to-amber-50',
     questions: [
       // Warmup
@@ -319,7 +386,7 @@ export const chapters = [
     id: 'key-people',
     title: 'Key People',
     subtitle: 'Those Who Shaped You',
-    icon: 'V',
+    icon: 'VI',
     color: 'from-amber-50 to-amber-100',
     questions: [
       {
@@ -385,7 +452,7 @@ export const chapters = [
     id: 'young-adulthood',
     title: 'Young Adulthood',
     subtitle: 'Starting Out',
-    icon: 'VI',
+    icon: 'VII',
     color: 'from-stone-50 to-stone-100',
     questions: [
       // Warmup
@@ -461,7 +528,7 @@ export const chapters = [
     id: 'love-relationships',
     title: 'Love & Relationships',
     subtitle: 'Matters of the Heart',
-    icon: 'VII',
+    icon: 'VIII',
     color: 'from-stone-50 to-amber-50',
     questions: [
       {
@@ -526,7 +593,7 @@ export const chapters = [
     id: 'family-career',
     title: 'Family & Career',
     subtitle: 'Building a Life',
-    icon: 'VIII',
+    icon: 'IX',
     color: 'from-amber-50 to-stone-50',
     questions: [
       {
@@ -603,10 +670,142 @@ export const chapters = [
     ]
   },
   {
+    id: 'home-places',
+    title: 'Home & Places',
+    subtitle: 'Where Life Happened',
+    icon: 'X',
+    color: 'from-stone-50 to-stone-100',
+    questions: [
+      {
+        id: 'first-home-own',
+        question: 'Tell me about the first home you called your own.',
+        prompt: 'Buying or renting, the excitement, the reality. What was it like?',
+        aiHint:
+          'The full story: How did you find it? What did it cost? First night there? What did you love and hate about it?'
+      },
+      {
+        id: 'homes-through-life',
+        question: 'How many homes have you lived in?',
+        prompt: 'Walk me through the houses and flats that have been yours over the years.',
+        aiHint:
+          'Each home briefly: Where was it? Why did you move there? What do you remember most? Which was your favourite?'
+      },
+      {
+        id: 'favourite-room',
+        question: 'What room in any home has meant the most to you?',
+        prompt: 'A kitchen where everyone gathered, a garden shed of peace, a bedroom with a view.',
+        aiHint:
+          'Sensory details: What did it look like? What happened there? Why was it special? Can you still picture it?'
+      },
+      {
+        id: 'neighbourhood-memories',
+        question: 'Tell me about a neighbourhood you loved.',
+        prompt: 'The shops, the people, the walks, the feeling of belonging.',
+        aiHint:
+          'Paint the picture: Who were the characters? What was the corner shop like? Where did you walk? What sounds and smells?'
+      },
+      {
+        id: 'garden-outdoors',
+        question: 'Have you had a garden or outdoor space that mattered to you?',
+        prompt:
+          'Growing things, sitting outside, children playing - the life that happened outdoors.',
+        aiHint:
+          'If yes: What did you grow? Where did you sit? What happened out there? How did it change with the seasons?'
+      },
+      {
+        id: 'moving-day',
+        question: 'Tell me about a memorable moving day.',
+        prompt:
+          'The chaos, the emotions, the excitement or sadness of leaving one place for another.',
+        aiHint:
+          'Get the story: Where were you going? What did you feel leaving? Any disasters? What was it like arriving?'
+      },
+      {
+        id: 'places-that-shaped-you',
+        question: 'What places outside the home have shaped your life?',
+        prompt: 'A church, a pub, a park bench, a workplace, a hospital - places with meaning.',
+        aiHint:
+          'Pick one place: What is it? What happened there? Why does it matter? Would you go back?'
+      },
+      {
+        id: 'sense-of-home',
+        question: 'What makes somewhere feel like home to you?',
+        prompt: 'Is it the people, the objects, the sounds, the smells? What creates that feeling?',
+        aiHint:
+          'Reflective: What do you need around you to feel at home? Has that changed over time? Where do you feel most at home right now?'
+      }
+    ]
+  },
+  {
+    id: 'traditions-celebrations',
+    title: 'Traditions & Celebrations',
+    subtitle: 'The Rituals That Bind Us',
+    icon: 'XI',
+    color: 'from-amber-50 to-stone-100',
+    questions: [
+      {
+        id: 'christmas-memories',
+        question: 'What has Christmas meant to you through the years?',
+        prompt: 'From childhood magic to creating your own traditions. How has it changed?',
+        aiHint:
+          'Through the ages: Christmas as a child vs as a parent vs now. What stayed the same? What changed? Best Christmas ever?'
+      },
+      {
+        id: 'birthday-traditions',
+        question: 'How were birthdays celebrated in your family?',
+        prompt: 'Cakes, parties, special treats. What made birthdays special?',
+        aiHint:
+          "Specific memories: A birthday that stands out? The cake? The presents? Who was there? How did you celebrate your children's birthdays?"
+      },
+      {
+        id: 'sunday-rituals',
+        question: 'What were Sundays like in your family?',
+        prompt: 'Church, roast dinners, walks, visiting relatives - the rhythm of a Sunday.',
+        aiHint:
+          'Walk through the day: Morning routine? Church? The meal? Afternoon activities? How have Sundays changed over your lifetime?'
+      },
+      {
+        id: 'wedding-funerals',
+        question: 'Tell me about a wedding or funeral that stays with you.',
+        prompt: 'The joy, the grief, the family gathered together. A day you remember clearly.',
+        aiHint:
+          'Pick one event: Whose was it? What happened? What do you remember most? How did it affect you?'
+      },
+      {
+        id: 'seasonal-traditions',
+        question: 'Were there seasonal traditions you looked forward to?',
+        prompt: 'Bonfire Night, Easter, harvest time, summer fairs - the markers of the year.',
+        aiHint:
+          'Pick one: What was the tradition? Who was involved? What did you do? Do you still keep it up?'
+      },
+      {
+        id: 'family-recipes',
+        question: 'Are there family recipes that have been passed down?',
+        prompt: 'The dishes that taste like home. Who made them? Do you still make them?',
+        aiHint:
+          'Pick one dish: What is it? Who made it best? Can you describe the taste and smell? Have you taught anyone to make it?'
+      },
+      {
+        id: 'family-sayings',
+        question: 'Were there sayings or phrases your family always used?',
+        prompt: 'The words that were uniquely yours - funny, wise, or just familiar.',
+        aiHint:
+          'Get specific: What was the saying? Who said it? When? Does anyone still say it? What did it really mean?'
+      },
+      {
+        id: 'new-traditions',
+        question: 'What traditions have you started that you hope will continue?',
+        prompt: 'Things you created for your family that became part of who you are.',
+        aiHint:
+          'Pick one: How did it start? What exactly happens? What does it mean to you? Do your children or grandchildren keep it going?'
+      }
+    ]
+  },
+  {
     id: 'world-around-you',
     title: 'The World Around You',
     subtitle: 'History & Culture',
-    icon: 'IX',
+    icon: 'XII',
     color: 'from-stone-50 to-amber-50',
     questions: [
       {
@@ -668,10 +867,76 @@ export const chapters = [
     ]
   },
   {
+    id: 'travel-adventure',
+    title: 'Travel & Adventure',
+    subtitle: 'Exploring the World',
+    icon: 'XIII',
+    color: 'from-amber-50 to-amber-100',
+    questions: [
+      {
+        id: 'first-holiday',
+        question: 'What was your first holiday away from home?',
+        prompt: 'Where did you go? How did you get there? What do you remember?',
+        aiHint:
+          'Full story: How old were you? Who took you? The journey, the arrival, the excitement. What stands out most?'
+      },
+      {
+        id: 'favourite-destination',
+        question: 'What is the most beautiful place you have ever been?',
+        prompt: 'A place that took your breath away. Describe what you saw.',
+        aiHint:
+          'Sensory details: What did you see? The colours, the light, the sounds. Why did it affect you so deeply? Would you go back?'
+      },
+      {
+        id: 'family-holidays-travel',
+        question: 'Tell me about holidays with your family.',
+        prompt: 'The car journeys, the excitement, the disasters. Where did you go?',
+        aiHint:
+          'Pick one holiday: Where did you go? How did you get there? What went wrong? What went right? A moment you all still talk about?'
+      },
+      {
+        id: 'adventure-story',
+        question: 'Have you ever had a real adventure?',
+        prompt: 'Something unexpected, thrilling, or completely out of your comfort zone.',
+        aiHint:
+          'Get the full story: What happened? Were you scared? Who was with you? How did it change you?'
+      },
+      {
+        id: 'people-met-travelling',
+        question: 'Did you ever meet someone memorable while travelling?',
+        prompt: 'A stranger who became a friend, a character you never forgot.',
+        aiHint:
+          'The encounter: Where were you? Who were they? What happened? Did you stay in touch?'
+      },
+      {
+        id: 'dream-destination',
+        question: 'Is there somewhere you always wanted to visit but never did?',
+        prompt: 'The place on your list, the trip you never took.',
+        aiHint:
+          'Why that place? What drew you to it? What stopped you going? Do you still think about it?'
+      },
+      {
+        id: 'travel-disasters',
+        question: 'Tell me about a holiday that went wrong.',
+        prompt:
+          'The funny disasters, the lost luggage, the wrong turns that became the best stories.',
+        aiHint:
+          'Get the story with humour: What happened? How bad was it at the time? How funny is it now? What did you learn?'
+      },
+      {
+        id: 'travel-lessons',
+        question: 'What has travelling taught you about life?',
+        prompt: 'How seeing different places and people has changed the way you think.',
+        aiHint:
+          'Reflective: What surprised you about other cultures? What did you learn about yourself? How did travel broaden your view?'
+      }
+    ]
+  },
+  {
     id: 'passions-beliefs',
     title: 'Passions & Beliefs',
     subtitle: 'What Matters to You',
-    icon: 'X',
+    icon: 'XIV',
     color: 'from-amber-50 to-amber-100',
     questions: [
       {
@@ -733,10 +998,76 @@ export const chapters = [
     ]
   },
   {
+    id: 'challenges-resilience',
+    title: 'Challenges & Resilience',
+    subtitle: 'What Made You Stronger',
+    icon: 'XV',
+    color: 'from-stone-50 to-amber-50',
+    questions: [
+      {
+        id: 'biggest-challenge',
+        question: 'What has been the biggest challenge of your life?',
+        prompt: 'The thing that tested you most. How did you face it?',
+        aiHint:
+          'Let them choose: What was it? How did it begin? What was the worst moment? How did you get through it? What did it teach you?'
+      },
+      {
+        id: 'health-challenges',
+        question: 'Have you faced any serious health challenges?',
+        prompt: 'Illness, injury, or health scares that changed your perspective.',
+        aiHint:
+          'Handle sensitively: What happened? How did you find out? Who supported you? How did it change the way you live?'
+      },
+      {
+        id: 'financial-hardship',
+        question: 'Were there times when money was very tight?',
+        prompt: 'Making ends meet, going without, finding ways to manage.',
+        aiHint:
+          'Real stories: What was the situation? What did you go without? How did you cope? Any resourcefulness or creativity?'
+      },
+      {
+        id: 'loss-grief',
+        question: 'How have you dealt with loss and grief?',
+        prompt: 'Losing people you loved, learning to carry on, finding a way through.',
+        aiHint:
+          'With great care: Who did you lose? How did it affect you? What helped? How do you carry their memory?'
+      },
+      {
+        id: 'failure-setback',
+        question: 'Tell me about a time things went badly wrong.',
+        prompt: 'A failure, a mistake, a setback that knocked you sideways.',
+        aiHint:
+          'The full arc: What happened? How did you feel? What did you do? How did you recover? What did you learn?'
+      },
+      {
+        id: 'resilience-source',
+        question: 'Where do you find your strength in difficult times?',
+        prompt: 'Faith, family, stubbornness, humour - what keeps you going?',
+        aiHint:
+          "Personal and honest: What do you draw on? Has it always been the same? A specific moment when you found inner strength you didn't know you had?"
+      },
+      {
+        id: 'helping-others',
+        question: 'Have you ever helped someone through a difficult time?',
+        prompt: 'Being there for someone who needed you. What did you do?',
+        aiHint:
+          'The story: Who was it? What happened? What did you do? How did it affect your relationship? What did it teach you?'
+      },
+      {
+        id: 'silver-linings',
+        question: 'Has anything good ever come from a difficult experience?',
+        prompt:
+          'Unexpected gifts from hard times - new perspectives, stronger relationships, personal growth.',
+        aiHint:
+          'Positive reflection: What was the difficulty? What good came from it? How long did it take to see the silver lining?'
+      }
+    ]
+  },
+  {
     id: 'later-life',
     title: 'Later Life',
     subtitle: 'The Golden Years',
-    icon: 'XI',
+    icon: 'XVI',
     color: 'from-amber-50 to-stone-100',
     questions: [
       {
@@ -801,7 +1132,7 @@ export const chapters = [
     id: 'wisdom-reflections',
     title: 'Wisdom & Reflections',
     subtitle: 'Looking Back',
-    icon: 'XII',
+    icon: 'XVII',
     color: 'from-stone-50 to-stone-100',
     questions: [
       {
@@ -873,6 +1204,74 @@ export const chapters = [
         prompt: "Anything we haven't covered. Anything left unsaid. Your final words for the book.",
         aiHint:
           "Open-ended finish: What matters that we haven't touched? Any last stories? Anything for specific people? This is their chance."
+      }
+    ]
+  },
+  {
+    id: 'letters-loved-ones',
+    title: 'Letters to Loved Ones',
+    subtitle: 'Words From the Heart',
+    icon: 'XVIII',
+    color: 'from-amber-50 to-amber-100',
+    questions: [
+      {
+        id: 'letter-to-partner',
+        question: 'What would you say to your partner if you could write them a letter?',
+        prompt: 'The things that are hard to say out loud. The gratitude, the love, the memories.',
+        aiHint:
+          'Deeply personal: What do you want them to know? What are you grateful for? A memory that captures your love? Words you wish you said more often?'
+      },
+      {
+        id: 'letter-to-children',
+        question: 'What do you want your children to know?',
+        prompt:
+          'The things you hope they understand about you, about life, about how much they matter.',
+        aiHint:
+          'From the heart: What are you proud of in them? What do you hope for them? What do you want them to remember about you? Any apologies or explanations?'
+      },
+      {
+        id: 'letter-to-grandchildren',
+        question: 'What message would you leave for your grandchildren?',
+        prompt:
+          'Words they might read in years to come. What should they know about you and about life?',
+        aiHint:
+          'Legacy writing: What do you want them to know about your life? About the family? Advice for their future? What you hope for them?'
+      },
+      {
+        id: 'letter-to-younger-self',
+        question: 'What would you write to your younger self?',
+        prompt: 'A letter across time. What would you tell the young you?',
+        aiHint:
+          'Honest and tender: What would you warn them about? What would you reassure them about? What would you tell them to enjoy more?'
+      },
+      {
+        id: 'letter-to-lost',
+        question: 'Is there someone no longer here that you would write to?',
+        prompt: 'A parent, a friend, a sibling - someone you wish could read your words.',
+        aiHint:
+          'Handle with great care: Who is it? What would you say? What do you wish you had told them? What do you want them to know?'
+      },
+      {
+        id: 'letter-to-friend',
+        question: 'What would you say to your oldest or dearest friend?',
+        prompt: 'The friendship that has meant the most. What do they need to hear?',
+        aiHint:
+          'Warm and personal: What has the friendship meant? A favourite memory together? What do you admire about them? What would you thank them for?'
+      },
+      {
+        id: 'letter-to-future',
+        question: 'What would you write to someone reading this book in 50 years?',
+        prompt:
+          'A message to a great-grandchild or a stranger. What should they know about your time?',
+        aiHint:
+          'Big picture: What was life like? What mattered? What do you hope the world looks like for them? What wisdom transcends the years?'
+      },
+      {
+        id: 'final-letter',
+        question: 'If this book is your legacy, what are your final words?',
+        prompt: 'The last page of your story. What do you want it to say?',
+        aiHint:
+          'The closing: This is the end of the book. What matters most? What is the one thing you want everyone to take away? Give them space and time.'
       }
     ]
   }

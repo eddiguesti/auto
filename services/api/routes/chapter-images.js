@@ -126,6 +126,11 @@ router.post(
 
     // Chapter prompt templates - Fine art quality for memoir books
     const CHAPTER_PROMPTS = {
+      'heritage-roots': ctx => {
+        const country = ctx.birth_country || 'England'
+        const year = ctx.birth_year ? ctx.birth_year - 30 : 1930
+        return `A magnificent fine art painting of family heritage and roots, circa ${year}. An old sepia-toned family photograph come to life - grandparents standing proudly outside a ${country} home, period clothing, weathered hands, dignified expressions. Old documents, immigration papers, and faded letters scattered artfully. Painted in the rich documentary style of Thomas Eakins meets August Sander - profound historical depth, warm sepia and earth tones, connecting past to present`
+      },
       'earliest-memories': ctx => {
         const place = ctx.birth_place || 'a small town'
         const year = ctx.birth_year || 1960
@@ -161,12 +166,26 @@ router.post(
         const year = ctx.birth_year ? ctx.birth_year + 35 : 1995
         return `A heartwarming fine art painting of family life, ${year}. A comfortable home filled with evidence of children - toys, drawings on the fridge, afternoon sunlight in a garden. The quiet pride of building a life. Painted in the warm domestic style of Carl Larsson meets Norman Rockwell - celebrating everyday beauty, rich in detail and emotion, golden afternoon light`
       },
+      'home-places': ctx => {
+        const country = ctx.birth_country || 'English'
+        return `A nostalgic fine art painting of home and place. A row of ${country} houses through the seasons - spring blossom, summer gardens, autumn leaves, winter frost. Washing lines, garden gates, children's bicycles, warm lights in windows. A lifetime of homes captured in one scene. Painted in the warm narrative style of L.S. Lowry meets Edward Hopper - intimate domestic beauty, golden light, the quiet poetry of everyday places`
+      },
+      'traditions-celebrations': ctx => {
+        const country = ctx.birth_country || 'British'
+        return `A joyous fine art painting of ${country} family celebrations through the decades. A Christmas table laden with food, crackers, and candles. Party hats, birthday cakes, wedding confetti, seasonal decorations. Multiple generations gathered in celebration. Painted in the festive warmth of Norman Rockwell meets Jan Steen - rich colour, abundant detail, capturing the joy and ritual of family traditions`
+      },
       'world-around-you': ctx => {
         const country = ctx.birth_country || 'British'
         return `An artistic fine art painting depicting the flow of history and change through one lifetime. A ${country} perspective on world events - newspapers, television moments, technological evolution woven together. Painted as a sophisticated visual narrative in the style of Diego Rivera's murals meets Ben Shahn - historically evocative, deeply personal yet universal, sepia and muted documentary tones`
       },
+      'travel-adventure': ctx => {
+        return `A breathtaking fine art painting of travel and adventure. A vintage suitcase covered in travel stickers, an open passport, a compass, and a world map spread on a table by a window overlooking a stunning landscape. Warm golden light, sense of wanderlust and discovery. Painted in the adventurous romantic style of Delacroix meets Winslow Homer - vivid colours, sweeping composition, capturing the thrill of exploration and the beauty of distant places`
+      },
       'passions-beliefs': ctx => {
         return `A contemplative fine art painting of personal passion and meaning. A quiet corner dedicated to what matters most - perhaps books, art supplies, garden tools, travel mementos, or musical instruments. Natural light, sense of peace and purpose. Painted in the meditative style of Vermeer meets Andrew Wyeth - profound stillness, masterful light, celebrating the quiet things that give life meaning`
+      },
+      'challenges-resilience': ctx => {
+        return `A powerful fine art painting of human resilience and strength. A lone figure standing firm against a dramatic sky, wind in their hair, hands weathered but strong. Behind them, a path through a storm-torn landscape leading to golden light on the horizon. Painted in the dramatic emotional style of Caspar David Friedrich meets Kathe Kollwitz - profound depth, contrast between darkness and light, capturing the courage of the human spirit`
       },
       'later-life': ctx => {
         const year = ctx.birth_year ? ctx.birth_year + 65 : 2025
@@ -174,6 +193,9 @@ router.post(
       },
       'wisdom-reflections': ctx => {
         return `A masterpiece painting of peaceful reflection in life's golden years. An elegant armchair by a window, sunset light streaming in golden and amber, photographs and books nearby, a cup of tea. The earned serenity of a life well-lived. Painted in the transcendent style of Rembrandt's late works meets Vilhelm Hammershøi - profound depth, luminous light, dignity and wisdom, emotionally moving`
+      },
+      'letters-loved-ones': ctx => {
+        return `A deeply moving fine art painting of handwritten letters on a writing desk. Beautiful fountain pen, cream stationery, pressed flowers, old photographs scattered nearby. Soft candlelight and golden afternoon sun. Ink still wet on the page, words of love visible. Painted in the intimate tender style of Vermeer meets Mary Cassatt - profound emotional warmth, exquisite detail, capturing the sacred act of writing words from the heart to those you love most`
       }
     }
 
