@@ -1,6 +1,7 @@
 /**
  * Chapter data for the memoir
- * 18 chapters with 147 questions total
+ * 18 core chapters + 6 optional bonus chapters = 24 total
+ * ~204 questions total (156 core + 48 optional)
  */
 
 export interface Question {
@@ -16,6 +17,7 @@ export interface Chapter {
   subtitle: string;
   icon: string;
   color: string;
+  optional?: boolean;
   questions: Question[];
 }
 
@@ -1115,6 +1117,355 @@ export const chapters: Chapter[] = [
         question: 'If this book is your legacy, what are your final words?',
         prompt: 'The last page of your story. What do you want it to say?',
         aiHint: 'The closing: This is the end of the book. What matters most? What is the one thing you want everyone to take away? Give them space and time.'
+      }
+    ]
+  },
+  // ─── OPTIONAL BONUS CHAPTERS ───────────────────────────────────────
+  {
+    id: 'bonus-working-life',
+    title: 'My Working Life',
+    subtitle: 'The Jobs That Shaped Me',
+    icon: 'XIX',
+    color: '#F5F5F4', // stone-100
+    optional: true,
+    questions: [
+      {
+        id: 'first-proper-job',
+        question: 'What was the first job you really cared about?',
+        prompt: 'Not just a Saturday job, but the first one that felt like it mattered. How did you get it?',
+        aiHint: 'Full story: How did you find it? What were you doing? First day nerves? What did it mean to you at the time?'
+      },
+      {
+        id: 'typical-working-day',
+        question: 'Describe a typical working day at the job you held longest.',
+        prompt: 'From the alarm clock to coming home. The commute, the routine, the people, the tea breaks.',
+        aiHint: 'Walk through the day: How did you get there? What did the workplace look like? Smell like? Who did you see first? What was the rhythm?'
+      },
+      {
+        id: 'workplace-characters',
+        question: 'Who were the characters you worked with?',
+        prompt: 'The boss, the joker, the one who drove you mad, the one who became a friend.',
+        aiHint: 'Pick one or two people: What were they like? A specific story involving them? What made them memorable?'
+      },
+      {
+        id: 'workplace-unforgettable',
+        question: 'Was there a moment at work you will never forget?',
+        prompt: 'Something dramatic, funny, proud, or terrible. The story you always tell.',
+        aiHint: 'Get the full story: What happened? Who was there? How did it unfold? How did it affect you?'
+      },
+      {
+        id: 'industry-changes',
+        question: 'How did your industry or trade change during your career?',
+        prompt: 'New technology, new ways of working, things that disappeared. How did you adapt?',
+        aiHint: 'Specific changes: What was it like when you started vs when you finished? What surprised you? What do you miss about the old ways?'
+      },
+      {
+        id: 'wages-money',
+        question: 'What did you earn, and what did it mean to you?',
+        prompt: 'Your first wage packet, pay rises, what things cost. How did money shape your working life?',
+        aiHint: 'Specific numbers if they remember: First weekly wage? What could you buy with it? How did earnings change over the years?'
+      },
+      {
+        id: 'work-life-balance',
+        question: 'How did you balance work and family?',
+        prompt: 'The juggling act, the sacrifices, the guilt, the pride. How did you manage?',
+        aiHint: 'Honest reflection: What did you miss? What did you prioritise? Any regrets? What would you do differently?'
+      },
+      {
+        id: 'last-day-work',
+        question: 'Tell me about leaving work for the last time.',
+        prompt: 'Retirement, redundancy, or a change of path. What was that final day like?',
+        aiHint: 'The moment: How did it feel walking out? What did colleagues say or do? Were you ready? What did you do the next morning?'
+      }
+    ]
+  },
+  {
+    id: 'bonus-food-table',
+    title: 'Food & the Table',
+    subtitle: 'What We Ate and Why It Mattered',
+    icon: 'XX',
+    color: '#FEF3C7', // amber-100
+    optional: true,
+    questions: [
+      {
+        id: 'meal-tastes-like-home',
+        question: 'What is the meal that tastes like home?',
+        prompt: 'The dish that takes you straight back. Who made it? Can you still taste it?',
+        aiHint: 'Sensory deep dive: What was it? The smell, the taste, the texture. Who was at the table? Where were you? Can you still make it?'
+      },
+      {
+        id: 'mum-dad-cooking',
+        question: 'What did your mother or father cook best?',
+        prompt: 'Their signature dish, the Sunday roast, the thing they were famous for.',
+        aiHint: 'The full picture: What was the dish? How did they make it? Was there a secret ingredient? Did they teach you? Can you still smell it?'
+      },
+      {
+        id: 'school-dinners',
+        question: 'What were school dinners like?',
+        prompt: 'The canteen, the dinner ladies, the puddings. Was it wonderful or terrible?',
+        aiHint: 'Specific memories: What was served? Favourite and worst meals? The dinner hall itself? Any rituals around lunch?'
+      },
+      {
+        id: 'food-through-decades',
+        question: 'How has the food you eat changed over your lifetime?',
+        prompt: 'From post-war simplicity to supermarkets, from meat and two veg to curry and pizza.',
+        aiHint: 'Journey through time: What did you eat as a child? When did new foods arrive? First curry? First takeaway? What changed the most?'
+      },
+      {
+        id: 'best-meal-ever',
+        question: 'What is the best meal you have ever had?',
+        prompt: 'The food, the place, the company, the occasion. Why was it perfect?',
+        aiHint: 'Every detail: Where were you? Who were you with? What did you eat? What made it special? Could it ever be repeated?'
+      },
+      {
+        id: 'kitchen-disasters',
+        question: 'Tell me about a kitchen disaster or a memorable meal gone wrong.',
+        prompt: 'The burnt turkey, the collapsed cake, the meal that became a family legend.',
+        aiHint: 'Get the funny story: What happened? Who was there? How bad was it? How does the family remember it now?'
+      },
+      {
+        id: 'family-recipe',
+        question: 'Is there a recipe you want to pass down?',
+        prompt: 'A dish that should never be lost. The ingredients, the method, and the story behind it.',
+        aiHint: 'Get the recipe AND the story: Where did it come from? Who taught you? What occasions was it made for? Who should carry it on?'
+      },
+      {
+        id: 'food-and-gathering',
+        question: 'What role has food played in bringing people together in your life?',
+        prompt: 'Sunday roasts, Christmas dinners, tea and biscuits with a neighbour. Food as connection.',
+        aiHint: 'Reflective: Pick a gathering centred around food. Who was there? What was served? What did it mean? How has that tradition carried on?'
+      }
+    ]
+  },
+  {
+    id: 'bonus-service-duty',
+    title: 'Service & Duty',
+    subtitle: 'Answering the Call',
+    icon: 'XXI',
+    color: '#F5F5F4', // stone-100
+    optional: true,
+    questions: [
+      {
+        id: 'called-to-serve',
+        question: 'Were you ever called to serve - in the military, emergency services, or another duty?',
+        prompt: 'National Service, the armed forces, the fire brigade, nursing, policing - or any form of service to others.',
+        aiHint: 'Set the scene: What was the service? When? How did you come to it? Was it a choice or an obligation? How did you feel?'
+      },
+      {
+        id: 'basic-training',
+        question: 'What was your training or early days like?',
+        prompt: 'Basic training, first shifts, learning the ropes. The shock, the discipline, the camaraderie.',
+        aiHint: 'First experiences: Where were you sent? What was the hardest part? What surprised you? Who helped you through it?'
+      },
+      {
+        id: 'people-served-with',
+        question: 'Tell me about the people you served with.',
+        prompt: 'The friends, the leaders, the characters. People you would trust with your life.',
+        aiHint: 'Pick one or two people: What were they like? Where were they from? A specific story together? Are you still in touch?'
+      },
+      {
+        id: 'moment-of-courage',
+        question: 'Was there a moment of danger, fear, or courage?',
+        prompt: 'A moment when things got real. What happened? How did you respond?',
+        aiHint: 'Handle sensitively: What was the situation? What did you feel? What did you do? How did it change you? Only share what you are comfortable with.'
+      },
+      {
+        id: 'service-changed-you',
+        question: 'How did service change you as a person?',
+        prompt: 'The discipline, the perspective, the maturity. What did you learn about yourself?',
+        aiHint: 'Deep reflection: Who were you before? Who were you after? What skills or values did you gain? How did it shape the rest of your life?'
+      },
+      {
+        id: 'coming-home-service',
+        question: 'What was it like coming home or returning to civilian life?',
+        prompt: 'The adjustment, the relief, the strange feeling of normal life again.',
+        aiHint: 'The transition: What did you feel? Was it easy or hard? Did people understand? What did you miss? What were you glad to leave behind?'
+      },
+      {
+        id: 'volunteer-service',
+        question: 'Have you volunteered or served your community in other ways?',
+        prompt: 'Scouts, Guides, St John Ambulance, charity work, church, local committees - any service to others.',
+        aiHint: 'If yes: What did you do? Why did it matter to you? Who did you help? A specific memory? How long did you do it for?'
+      },
+      {
+        id: 'service-legacy',
+        question: 'What does service mean to you, looking back?',
+        prompt: 'Duty, honour, sacrifice, community - what words sum up what service has meant in your life?',
+        aiHint: 'Final reflection: Would you do it again? What would you tell a young person about service? What did it teach you about people?'
+      }
+    ]
+  },
+  {
+    id: 'bonus-pets-companions',
+    title: 'Pets & Companions',
+    subtitle: 'The Animals Who Shared My Life',
+    icon: 'XXII',
+    color: '#FEF3C7', // amber-100
+    optional: true,
+    questions: [
+      {
+        id: 'first-pet',
+        question: 'What was your first pet?',
+        prompt: 'What was it? What was its name? How did it come into your life?',
+        aiHint: 'The full story: What animal? How old were you? Who chose it? First memory of it? What was it like?'
+      },
+      {
+        id: 'pet-meant-most',
+        question: 'Which pet has meant the most to you in your life?',
+        prompt: 'The one you think of first. Tell me everything about them.',
+        aiHint: 'Build a full picture: Name, breed, personality. How did you get them? What made them special? Their habits, their character, their quirks.'
+      },
+      {
+        id: 'funny-pet-story',
+        question: 'Tell me a funny story about one of your animals.',
+        prompt: 'The mischief, the chaos, the moments that made everyone laugh.',
+        aiHint: 'Get the full story with humour: What happened? Who was there? How did the animal react? Is it a story the family still tells?'
+      },
+      {
+        id: 'pets-and-children',
+        question: 'Did your children grow up with pets?',
+        prompt: 'The relationship between your children and their animals. What did it teach them?',
+        aiHint: 'Specific memories: Which pets? How did the children interact with them? Any special bonds? What did animals teach your family?'
+      },
+      {
+        id: 'losing-a-pet',
+        question: 'How have you coped with losing a beloved animal?',
+        prompt: 'The grief is real. Tell me about saying goodbye.',
+        aiHint: 'Handle with care: Which pet? What happened? How did it affect you? How do you remember them? It is okay to be emotional.'
+      },
+      {
+        id: 'animals-and-comfort',
+        question: 'Have animals ever been a source of comfort during difficult times?',
+        prompt: 'A faithful dog during a lonely time, a cat who seemed to know when you were sad.',
+        aiHint: 'The bond: What was the situation? How did the animal help? What did they do? How did they make things better?'
+      },
+      {
+        id: 'all-the-animals',
+        question: 'Can you name all the pets you have had through your life?',
+        prompt: 'A roll call of the animals who shared your home. Names, species, personalities.',
+        aiHint: 'Go through them all: Name each one, what they were, a one-line memory of each. Which was the most mischievous? The most loyal?'
+      },
+      {
+        id: 'what-animals-taught',
+        question: 'What have animals taught you about life?',
+        prompt: 'Loyalty, patience, unconditional love, living in the moment - what wisdom have they brought?',
+        aiHint: 'Reflective: What have you learned from animals? How have they made you a better person? What would life have been without them?'
+      }
+    ]
+  },
+  {
+    id: 'bonus-extraordinary',
+    title: 'An Extraordinary Experience',
+    subtitle: 'The Story Only You Can Tell',
+    icon: 'XXIII',
+    color: '#F5F5F4', // stone-100
+    optional: true,
+    questions: [
+      {
+        id: 'story-waiting-to-tell',
+        question: 'Is there a story you have been waiting to tell?',
+        prompt: 'Something that does not fit anywhere else. An experience, a moment, a chapter of your life that deserves its own space.',
+        aiHint: 'Completely open: Let them choose. Give them time and space. Follow wherever the story goes. This is their chapter.'
+      },
+      {
+        id: 'most-unusual-experience',
+        question: 'What is the most unusual or unexpected thing that has happened to you?',
+        prompt: 'The thing that surprises people when you tell them. The experience nobody would guess.',
+        aiHint: 'Get the full story: What happened? When? How did it come about? What was it like? How did it change you?'
+      },
+      {
+        id: 'day-changed-everything',
+        question: 'Tell me about a day that changed everything.',
+        prompt: 'A single day that split your life into before and after. What happened?',
+        aiHint: 'Walk through the day: Where were you? What happened? How did you find out? What did you feel? What changed after that day?'
+      },
+      {
+        id: 'brush-with-fame',
+        question: 'Did you ever have a brush with fame or witness something historic?',
+        prompt: 'Meeting someone famous, being at a historic event, seeing something remarkable with your own eyes.',
+        aiHint: 'The details: Who or what? Where were you? What happened? Did anyone believe you? How does it feel looking back?'
+      },
+      {
+        id: 'secret-talent',
+        question: 'Is there a hidden talent or achievement most people do not know about?',
+        prompt: 'Something you did, made, won, or accomplished that never got the recognition it deserved.',
+        aiHint: 'Encourage them: What is it? How did you develop it? What happened? Why do so few people know?'
+      },
+      {
+        id: 'against-all-odds',
+        question: 'Tell me about a time you did something against all odds.',
+        prompt: 'Something you were told you could not do, or that seemed impossible, but you did it anyway.',
+        aiHint: 'The full arc: What was the challenge? Who doubted you? What did you do? How did it feel to prove them wrong?'
+      },
+      {
+        id: 'life-chapter-title',
+        question: 'If this experience were a chapter title, what would it be called?',
+        prompt: 'Give your extraordinary story a name. What would the chapter heading say?',
+        aiHint: 'Creative and fun: Let them name it. Then ask why that title. What does it capture? This becomes part of their book.'
+      },
+      {
+        id: 'anything-else-extraordinary',
+        question: 'Is there anything else extraordinary you want to share?',
+        prompt: 'Another story, another moment, another experience that deserves a place in your book.',
+        aiHint: 'Final catch-all: This is their overflow. More stories, more detail, more of whatever makes their life unique.'
+      }
+    ]
+  },
+  {
+    id: 'bonus-own-words',
+    title: 'In My Own Words',
+    subtitle: 'Your Chapter, Your Way',
+    icon: 'XXIV',
+    color: '#FEF3C7', // amber-100
+    optional: true,
+    questions: [
+      {
+        id: 'your-topic',
+        question: 'What would you like this chapter to be about?',
+        prompt: 'This is your chapter. You choose the topic. It could be anything at all - something we have not covered, or something you want to explore more deeply.',
+        aiHint: 'Completely open: Let them define the topic. Ask what they want to talk about, then help them structure their thoughts around it.'
+      },
+      {
+        id: 'why-this-matters',
+        question: 'Why does this topic matter to you?',
+        prompt: 'What draws you to this subject? Why is it important enough for its own chapter?',
+        aiHint: 'Understand the motivation: What is it about this topic that resonates? Is it unfinished business? A passion? A memory that deserves more space?'
+      },
+      {
+        id: 'the-beginning',
+        question: 'Where does this story begin?',
+        prompt: 'Set the scene. When did this part of your life start? What was happening?',
+        aiHint: 'Anchor them in time and place: When? Where? Who was involved? What were the circumstances?'
+      },
+      {
+        id: 'the-heart-of-it',
+        question: 'What is at the heart of this story?',
+        prompt: 'The central moment, the key experience, the thing that makes this worth telling.',
+        aiHint: 'Go deep: What is the most important part? What happened at the crucial moment? What did you feel? What did you learn?'
+      },
+      {
+        id: 'the-people-involved',
+        question: 'Who are the key people in this story?',
+        prompt: 'The people who were there, who were affected, who mattered.',
+        aiHint: 'Build the cast: Who was involved? What were they like? What role did they play? How did they affect the outcome?'
+      },
+      {
+        id: 'how-it-changed-you',
+        question: 'How did this experience change you?',
+        prompt: 'What did it teach you? How are you different because of it?',
+        aiHint: 'Reflective: Before and after. What did you learn? What would you do differently? How does it shape who you are today?'
+      },
+      {
+        id: 'what-people-should-know',
+        question: 'What do you want people to understand about this?',
+        prompt: 'If someone reads this chapter in your book, what should they take away from it?',
+        aiHint: 'The message: What is the point of this story? What does it reveal about you? What truth does it contain?'
+      },
+      {
+        id: 'anything-else-own-words',
+        question: 'Is there anything else you want to add to this chapter?',
+        prompt: 'More detail, more stories, more reflections. This is your space - use it however you like.',
+        aiHint: 'Open finish: Let them add whatever they want. No restrictions. This is their voice, their story, their way.'
       }
     ]
   }

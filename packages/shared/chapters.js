@@ -3,6 +3,8 @@
  * The client has a more detailed version with questions - this is
  * the minimal version needed for server-side operations like
  * export and audiobook generation.
+ *
+ * 18 core chapters + 6 optional bonus chapters = 24 total
  */
 
 export const chapters = [
@@ -31,7 +33,44 @@ export const chapters = [
   },
   { id: 'later-life', title: 'Later Life', subtitle: 'The Golden Years' },
   { id: 'wisdom-reflections', title: 'Wisdom & Reflections', subtitle: 'Looking Back' },
-  { id: 'letters-loved-ones', title: 'Letters to Loved Ones', subtitle: 'Words From the Heart' }
+  { id: 'letters-loved-ones', title: 'Letters to Loved Ones', subtitle: 'Words From the Heart' },
+  // Optional bonus chapters
+  {
+    id: 'bonus-working-life',
+    title: 'My Working Life',
+    subtitle: 'The Jobs That Shaped Me',
+    optional: true
+  },
+  {
+    id: 'bonus-food-table',
+    title: 'Food & the Table',
+    subtitle: 'What We Ate and Why It Mattered',
+    optional: true
+  },
+  {
+    id: 'bonus-service-duty',
+    title: 'Service & Duty',
+    subtitle: 'Answering the Call',
+    optional: true
+  },
+  {
+    id: 'bonus-pets-companions',
+    title: 'Pets & Companions',
+    subtitle: 'The Animals Who Shared My Life',
+    optional: true
+  },
+  {
+    id: 'bonus-extraordinary',
+    title: 'An Extraordinary Experience',
+    subtitle: 'The Story Only You Can Tell',
+    optional: true
+  },
+  {
+    id: 'bonus-own-words',
+    title: 'In My Own Words',
+    subtitle: 'Your Chapter, Your Way',
+    optional: true
+  }
 ]
 
 export default chapters

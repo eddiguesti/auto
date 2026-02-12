@@ -196,6 +196,29 @@ router.post(
       },
       'letters-loved-ones': ctx => {
         return `A deeply moving fine art painting of handwritten letters on a writing desk. Beautiful fountain pen, cream stationery, pressed flowers, old photographs scattered nearby. Soft candlelight and golden afternoon sun. Ink still wet on the page, words of love visible. Painted in the intimate tender style of Vermeer meets Mary Cassatt - profound emotional warmth, exquisite detail, capturing the sacred act of writing words from the heart to those you love most`
+      },
+      // Optional bonus chapters
+      'bonus-working-life': ctx => {
+        const country = ctx.birth_country || 'British'
+        const year = ctx.birth_year ? ctx.birth_year + 25 : 1985
+        return `A magnificent fine art painting of ${country} working life, circa ${year}. A bustling workplace scene - factory floor, office, workshop, or shop counter - filled with the energy of honest labour. Workers in period clothing, tea mugs, lunchboxes, time clocks, morning light through industrial windows. The dignity and camaraderie of the working day. Painted in the proud documentary style of L.S. Lowry meets Ford Madox Brown - celebrating the beauty of work, warm industrial tones, rich human detail`
+      },
+      'bonus-food-table': ctx => {
+        const country = ctx.birth_country || 'British'
+        return `A sumptuous fine art still life painting of ${country} home cooking through the decades. A laden kitchen table with a golden Sunday roast, steaming vegetables, homemade pudding, a pot of tea. Vintage crockery, a well-worn recipe book, flour-dusted hands, warm oven light. Painted in the rich domestic tradition of Chardin meets Carl Larsson - celebrating the warmth and nourishment of home cooking, golden light, abundant detail, the love that goes into feeding a family`
+      },
+      'bonus-service-duty': ctx => {
+        const year = ctx.birth_year ? ctx.birth_year + 20 : 1980
+        return `A powerful fine art painting of service and duty, circa ${year}. A young person in uniform - military, nursing, emergency services - standing tall with quiet determination. Parade grounds, barracks, or station in background, morning light breaking through clouds. Comrades nearby, sense of purpose and belonging. Painted in the heroic documentary style of John Singer Sargent's war paintings meets Stanley Spencer - dignity, courage, the bonds forged through shared service`
+      },
+      'bonus-pets-companions': ctx => {
+        return `A heartwarming fine art painting of beloved pets across a lifetime. A faithful dog resting by a fireside, a cat curled on an armchair, family photos on the mantelpiece showing different pets through the years. Golden afternoon light, cosy home setting, the unconditional love between humans and animals. Painted in the tender style of Edwin Landseer meets Briton Riviere - capturing the profound bond between people and their animal companions, warm tones, emotional depth`
+      },
+      'bonus-extraordinary': ctx => {
+        return `A dramatic cinematic fine art painting of an extraordinary moment frozen in time. A figure standing at the edge of something remarkable - a mountain summit, a stage, a historic event, a moment of discovery. Dramatic golden light breaking through clouds, sense of awe and wonder, the feeling of witnessing something you will never forget. Painted in the epic romantic style of J.M.W. Turner meets Caspar David Friedrich - sublime, breathtaking, capturing the moments that make a life extraordinary`
+      },
+      'bonus-own-words': ctx => {
+        return `A contemplative fine art painting of an open blank book on a beautiful writing desk, awaiting a story. A fountain pen rests beside it, golden light streaming through a window onto the pristine pages. Around the desk, fragments of a life - photographs, pressed flowers, a cup of tea, spectacles, a handwritten note. The promise of a story yet to be told. Painted in the intimate meditative style of Vilhelm Hammershoi meets Vermeer - profound stillness, luminous light, the sacred space of personal expression`
       }
     }
 
