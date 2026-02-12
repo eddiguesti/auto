@@ -1,35 +1,251 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
-        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
-                            http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
 
-  <!-- Homepage - Highest Priority -->
+  <!-- Homepage -->
   <url>
     <loc>https://easymemoir.co.uk/</loc>
-    <lastmod>2026-01-29</lastmod>
+    <lastmod>2026-02-12</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <image:image>
       <image:loc>https://easymemoir.co.uk/og-image.jpg</image:loc>
       <image:title>Easy Memoir - Write Your Life Story with AI</image:title>
-      <image:caption>AI-powered autobiography and memoir writing platform</image:caption>
     </image:image>
   </url>
 
-  <!-- Login Page -->
+  <!-- Marketing Pages -->
   <url>
-    <loc>https://easymemoir.co.uk/login</loc>
-    <lastmod>2026-01-29</lastmod>
+    <loc>https://easymemoir.co.uk/how-it-works</loc>
+    <lastmod>2026-02-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://easymemoir.co.uk/pricing</loc>
+    <lastmod>2026-02-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://easymemoir.co.uk/about</loc>
+    <lastmod>2026-02-12</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
-
-  <!-- Register Page -->
+  <url>
+    <loc>https://easymemoir.co.uk/faq</loc>
+    <lastmod>2026-02-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://easymemoir.co.uk/gift</loc>
+    <lastmod>2026-02-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://easymemoir.co.uk/sample</loc>
+    <lastmod>2026-02-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
   <url>
     <loc>https://easymemoir.co.uk/register</loc>
+    <lastmod>2026-02-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://easymemoir.co.uk/login</loc>
+    <lastmod>2026-02-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://easymemoir.co.uk/compare</loc>
+    <lastmod>2026-02-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Legal Pages -->
+  <url>
+    <loc>https://easymemoir.co.uk/terms</loc>
+    <lastmod>2026-02-12</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://easymemoir.co.uk/privacy</loc>
+    <lastmod>2026-02-12</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://easymemoir.co.uk/cookies</loc>
+    <lastmod>2026-02-12</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.2</priority>
+  </url>
+
+  <!-- Blog Hub -->
+  <url>
+    <loc>https://easymemoir.co.uk/blog</loc>
+    <lastmod>2026-02-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Blog Posts -->
+  <url>
+    <loc>https://easymemoir.co.uk/blog/how-to-write-memoir-complete-guide</loc>
     <lastmod>2026-01-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://easymemoir.co.uk/blog/memoir-vs-autobiography-difference</loc>
+    <lastmod>2026-01-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://easymemoir.co.uk/blog/therapeutic-benefits-writing-life-story</loc>
+    <lastmod>2026-01-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://easymemoir.co.uk/blog/writing-prompts-unlock-memories</loc>
+    <lastmod>2026-01-26</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://easymemoir.co.uk/blog/interview-parents-grandparents-guide</loc>
+    <lastmod>2026-01-25</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://easymemoir.co.uk/blog/memoir-writing-seniors-guide</loc>
+    <lastmod>2026-01-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://easymemoir.co.uk/blog/common-memoir-mistakes-avoid</loc>
+    <lastmod>2026-01-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://easymemoir.co.uk/blog/memoir-structure-outline-guide</loc>
+    <lastmod>2026-01-22</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://easymemoir.co.uk/blog/finding-your-authentic-voice</loc>
+    <lastmod>2026-01-21</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://easymemoir.co.uk/blog/writing-dialogue-memoir</loc>
+    <lastmod>2026-01-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://easymemoir.co.uk/blog/best-memoirs-read-inspiration</loc>
+    <lastmod>2026-01-19</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://easymemoir.co.uk/blog/ethical-writing-about-family</loc>
+    <lastmod>2026-01-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://easymemoir.co.uk/blog/gift-memoir-parents-grandparents</loc>
+    <lastmod>2026-01-17</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://easymemoir.co.uk/blog/using-photos-memoir</loc>
+    <lastmod>2026-01-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://easymemoir.co.uk/blog/ai-memoir-writing-future</loc>
+    <lastmod>2026-01-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://easymemoir.co.uk/blog/overcoming-writers-block-memoir</loc>
+    <lastmod>2026-01-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://easymemoir.co.uk/blog/self-publishing-memoir-guide</loc>
+    <lastmod>2026-01-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://easymemoir.co.uk/blog/writing-about-trauma-responsibly</loc>
+    <lastmod>2026-01-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://easymemoir.co.uk/blog/memoir-life-chapters-approach</loc>
+    <lastmod>2026-01-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://easymemoir.co.uk/blog/preserving-family-stories</loc>
+    <lastmod>2026-01-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://easymemoir.co.uk/blog/memoir-book-design-tips</loc>
+    <lastmod>2026-01-09</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://easymemoir.co.uk/blog/short-memoir-vs-full-book</loc>
+    <lastmod>2026-01-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://easymemoir.co.uk/blog/legacy-letters-alternative-memoir</loc>
+    <lastmod>2026-01-07</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://easymemoir.co.uk/blog/memoir-questions-family-ask</loc>
+    <lastmod>2026-01-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://easymemoir.co.uk/blog/why-your-story-matters</loc>
+    <lastmod>2026-01-05</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>

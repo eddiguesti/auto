@@ -1,12 +1,15 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import SEO, { breadcrumbSchema } from '../../components/SEO'
 
 export default function Pricing() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [billingCycle, setBillingCycle] = useState('monthly')
   const [hoveredPlan, setHoveredPlan] = useState(null)
+
+  const seoJsonLd = [breadcrumbSchema([{ name: 'Home', url: '/' }, { name: 'Pricing' }])]
 
   const plans = [
     {
@@ -101,6 +104,12 @@ export default function Pricing() {
 
   return (
     <div className="min-h-screen bg-heritage-cream">
+      <SEO
+        title="Pricing — Free to Start Your Life Story"
+        description="Easy Memoir pricing plans. Start capturing your life story for free. Upgrade for unlimited chapters, AI voice interviews, and professional hardcover book printing. No credit card required."
+        path="/pricing"
+        jsonLd={seoJsonLd}
+      />
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-heritage-cream/95 backdrop-blur-sm border-b border-heritage-sepia-light/30">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">

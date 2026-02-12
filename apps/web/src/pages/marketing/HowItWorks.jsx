@@ -1,5 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import SEO, { breadcrumbSchema } from '../../components/SEO'
 
 export default function HowItWorks() {
   const { user } = useAuth()
@@ -7,6 +8,40 @@ export default function HowItWorks() {
 
   return (
     <div className="min-h-screen bg-cream">
+      <SEO
+        title="How It Works — Write Your Memoir in 3 Simple Steps"
+        description="Discover how Easy Memoir transforms your spoken memories into a beautifully written autobiography. Just talk naturally, our AI writes your story, then print a real book. No writing skills needed."
+        path="/how-it-works"
+        jsonLd={[
+          breadcrumbSchema([{ name: 'Home', url: '/' }, { name: 'How It Works' }]),
+          {
+            '@type': 'HowTo',
+            name: 'How to Write Your Autobiography with Easy Memoir',
+            description: 'Create your life story memoir in three simple steps using AI assistance',
+            totalTime: 'PT30M',
+            step: [
+              {
+                '@type': 'HowToStep',
+                position: 1,
+                name: 'Just Talk',
+                text: 'Click record and chat naturally with our AI interviewer. It asks thoughtful questions about your life.'
+              },
+              {
+                '@type': 'HowToStep',
+                position: 2,
+                name: 'We Write',
+                text: 'AI transforms your spoken words into beautifully written prose while preserving your authentic voice.'
+              },
+              {
+                '@type': 'HowToStep',
+                position: 3,
+                name: 'Share Forever',
+                text: 'Download as PDF or order a professionally printed hardcover book your family will treasure.'
+              }
+            ]
+          }
+        ]}
+      />
       {/* Header */}
       <nav className="bg-cream border-b border-sepia/10">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">

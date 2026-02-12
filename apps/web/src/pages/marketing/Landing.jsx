@@ -863,10 +863,10 @@ export default function Landing() {
                   Full Story
                 </p>
                 <div className="flex items-baseline gap-1">
-                  <span className="font-display text-5xl text-ink">£99</span>
-                  <span className="font-sans text-warmgray">/year</span>
+                  <span className="font-display text-5xl text-ink">£299</span>
+                  <span className="font-sans text-warmgray line-through text-sm ml-2">£599</span>
                 </div>
-                <p className="font-serif text-warmgray mt-2">A year of storytelling</p>
+                <p className="font-serif text-warmgray mt-1">50% off — or 3 payments of £99.67</p>
               </div>
 
               <ul className="space-y-3 mb-8">
@@ -910,7 +910,9 @@ export default function Landing() {
                       clipRule="evenodd"
                     />
                   </svg>
-                  <span className="font-serif text-warmgray">Printed hardcover book</span>
+                  <span className="font-serif text-warmgray">
+                    Colour royal hardcover book in cloth
+                  </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <svg
@@ -958,10 +960,10 @@ export default function Landing() {
                   Lifetime
                 </p>
                 <div className="flex items-baseline gap-1">
-                  <span className="font-display text-5xl text-ink">£149</span>
-                  <span className="font-sans text-warmgray">once</span>
+                  <span className="font-display text-5xl text-ink">£299</span>
+                  <span className="font-sans text-warmgray line-through text-sm ml-2">£599</span>
                 </div>
-                <p className="font-serif text-warmgray mt-2">Pay once, yours forever</p>
+                <p className="font-serif text-warmgray mt-1">50% off — or 3 payments of £99.67</p>
               </div>
 
               <ul className="space-y-3 mb-8">

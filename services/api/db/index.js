@@ -273,6 +273,22 @@ export async function initDatabase() {
       )
     `)
 
+    // Chapter reviews — polished UK English prose for completed chapters
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS chapter_reviews (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        chapter_id TEXT NOT NULL,
+        polished_text TEXT NOT NULL,
+        raw_source_text TEXT,
+        version INTEGER DEFAULT 1,
+        clio_history JSONB DEFAULT '[]',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, chapter_id)
+      )
+    `)
+
     // Migration: Add style-related columns to stories table
     await client.query(`
       ALTER TABLE stories ADD COLUMN IF NOT EXISTS original_answer TEXT
@@ -308,6 +324,12 @@ export async function initDatabase() {
     `)
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_memory_mentions_entity ON memory_mentions(entity_id)
+    `)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_chapter_reviews_user ON chapter_reviews(user_id)
+    `)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_chapter_reviews_user_chapter ON chapter_reviews(user_id, chapter_id)
     `)
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_payments_user ON payments(user_id)
@@ -1027,6 +1049,33 @@ export async function initDatabase() {
     `)
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_ai_usage_user_date ON ai_usage(user_id, date)
+    `)
+
+    // Refund requests — tracks money-back guarantee and other refund claims
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS refund_requests (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        payment_id INTEGER REFERENCES payments(id) ON DELETE CASCADE,
+        type TEXT NOT NULL, -- 'guarantee', 'cooling_off', 'faulty', 'other'
+        reason TEXT,
+        amount INTEGER, -- in pence
+        status TEXT DEFAULT 'pending', -- 'pending', 'approved', 'rejected', 'processed'
+        admin_notes TEXT,
+        resolved_at TIMESTAMP,
+        stripe_refund_id TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_refund_requests_user ON refund_requests(user_id)
+    `)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_refund_requests_payment ON refund_requests(payment_id)
+    `)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_refund_requests_status ON refund_requests(status) WHERE status = 'pending'
     `)
 
     // Seed collections data

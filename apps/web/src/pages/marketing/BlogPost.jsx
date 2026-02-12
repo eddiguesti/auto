@@ -1,5 +1,7 @@
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import SEO, { blogPostSchema, breadcrumbSchema } from '../../components/SEO'
+import { BlogImage, blogPosts } from './Blog'
 
 // All 25 blog posts with full content
 const blogPostsData = {
@@ -967,10 +969,12 @@ export default function BlogPost() {
   const { user } = useAuth()
 
   const post = blogPostsData[slug]
+  const postMeta = blogPosts.find(p => p.slug === slug)
 
   if (!post) {
     return (
       <div className="min-h-screen bg-cream flex items-center justify-center">
+        <SEO title="Article Not Found" noindex />
         <div className="text-center">
           <h1 className="font-display text-4xl text-ink mb-4">Article Not Found</h1>
           <p className="text-warmgray mb-8">The article you're looking for doesn't exist.</p>
@@ -987,162 +991,273 @@ export default function BlogPost() {
     .filter(([postSlug, p]) => p.category === post.category && postSlug !== slug)
     .slice(0, 3)
 
+  // SEO structured data
+  const articleSchema = blogPostSchema({
+    title: post.title,
+    description: post.excerpt,
+    slug,
+    date: postMeta?.isoDate || post.date,
+    author: post.author,
+    readTime: post.readTime,
+    category: post.category
+  })
+
+  const breadcrumbs = breadcrumbSchema([
+    { name: 'Home', url: '/' },
+    { name: 'Blog', url: '/blog' },
+    { name: post.title }
+  ])
+
   return (
-    <div className="min-h-screen bg-[#f8f5f0]">
-      {/* Newspaper Header */}
+    <div className="min-h-screen bg-[#faf8f5]">
+      <SEO
+        title={post.title}
+        description={post.excerpt}
+        path={`/blog/${slug}`}
+        type="article"
+        imageAlt={`${post.title} - Easy Memoir Blog`}
+        article={{
+          publishedTime: postMeta?.isoDate,
+          author: post.author || 'Easy Memoir Editorial',
+          section: post.category,
+          tags: ['memoir writing', 'autobiography', post.category.toLowerCase(), 'life story']
+        }}
+        jsonLd={[articleSchema, breadcrumbs]}
+      />
+
+      {/* Header */}
       <header className="bg-[#1a1a1a] text-white">
-        <div className="max-w-6xl mx-auto px-4">
-          {/* Top bar */}
-          <div className="flex items-center justify-between py-2 border-b border-white/10 text-xs">
-            <span className="font-sans tracking-wider uppercase">{post.date}</span>
-            <Link to="/" className="font-display text-lg">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex items-center justify-between py-3 border-b border-white/10">
+            <Link to="/" className="font-display text-lg hover:text-[#c4a77d] transition">
               Easy<span className="text-[#c4a77d]">Memoir</span>
             </Link>
-            <span className="font-sans tracking-wider uppercase">{post.category}</span>
-          </div>
-
-          {/* Main masthead */}
-          <div className="py-6 text-center border-b border-white/20">
-            <Link to="/blog">
-              <h1
-                className="font-display text-5xl sm:text-6xl tracking-wide"
-                style={{ fontFamily: 'Georgia, serif' }}
-              >
-                The Memoir Chronicle
-              </h1>
-            </Link>
-            <p className="font-sans text-xs tracking-[0.3em] uppercase mt-2 text-white/60">
-              Preserving Lives, One Story at a Time
-            </p>
-          </div>
-
-          {/* Nav */}
-          <nav className="flex items-center justify-center gap-8 py-3 text-sm">
-            <Link to="/blog" className="hover:text-[#c4a77d] transition">
-              All Articles
-            </Link>
-            <Link to="/how-it-works" className="hover:text-[#c4a77d] transition">
-              How It Works
-            </Link>
+            <nav className="hidden sm:flex items-center gap-6 text-sm">
+              <Link to="/blog" className="text-white/70 hover:text-white transition">
+                Blog
+              </Link>
+              <Link to="/how-it-works" className="text-white/70 hover:text-white transition">
+                How It Works
+              </Link>
+            </nav>
             <Link
               to={user ? '/home' : '/register'}
-              className="bg-[#c4a77d] text-[#1a1a1a] px-4 py-1.5 rounded hover:bg-[#b39669] transition"
+              className="bg-[#c4a77d] text-[#1a1a1a] px-4 py-1.5 rounded-full text-sm font-medium hover:bg-[#b39669] transition"
             >
-              {user ? 'My Stories' : 'Start Writing'}
+              {user ? 'My Stories' : 'Start Writing Free'}
             </Link>
-          </nav>
+          </div>
         </div>
       </header>
 
+      {/* Hero Image */}
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-8">
+        <BlogImage
+          slug={slug}
+          category={post.category}
+          aspect="aspect-[21/9]"
+          className="rounded-2xl"
+        />
+      </div>
+
+      {/* Breadcrumbs */}
+      <nav className="max-w-4xl mx-auto px-4 sm:px-6 pt-6" aria-label="Breadcrumb">
+        <ol className="flex items-center gap-2 text-xs text-[#999]">
+          <li>
+            <Link to="/" className="hover:text-[#8b7355] transition">
+              Home
+            </Link>
+          </li>
+          <li>
+            <svg
+              className="w-3 h-3"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </li>
+          <li>
+            <Link to="/blog" className="hover:text-[#8b7355] transition">
+              Blog
+            </Link>
+          </li>
+          <li>
+            <svg
+              className="w-3 h-3"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </li>
+          <li className="text-[#666] truncate max-w-[200px]">{post.title}</li>
+        </ol>
+      </nav>
+
       {/* Article */}
-      <article className="max-w-5xl mx-auto px-4 py-12">
-        {/* Headline Section */}
-        <header className="text-center mb-12 pb-8 border-b-2 border-[#1a1a1a]">
-          <p className="font-sans text-xs tracking-[0.2em] uppercase text-[#8b7355] mb-4">
-            {post.category}
-          </p>
-          <h1
-            className="font-display text-4xl sm:text-5xl lg:text-6xl text-[#1a1a1a] leading-tight mb-6"
-            style={{ fontFamily: 'Georgia, serif' }}
-          >
+      <article className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+        {/* Headline */}
+        <header className="mb-10">
+          <div className="flex items-center gap-3 mb-5">
+            <span className="px-3 py-1 bg-[#f0ebe3] text-[#8b7355] text-xs font-medium rounded-full">
+              {post.category}
+            </span>
+            <span className="text-sm text-[#999]">{post.readTime}</span>
+          </div>
+          <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl text-[#1a1a1a] leading-tight mb-4">
             {post.title}
           </h1>
           {post.subtitle && (
-            <p className="font-serif text-xl sm:text-2xl text-[#5a5a5a] italic max-w-3xl mx-auto">
-              {post.subtitle}
-            </p>
+            <p className="font-serif text-xl text-[#5a5a5a] italic">{post.subtitle}</p>
           )}
-          <div className="flex items-center justify-center gap-4 mt-6 text-sm text-[#888]">
-            <span>By {post.author}</span>
-            <span className="w-1 h-1 bg-[#888] rounded-full"></span>
-            <span>{post.date}</span>
-            <span className="w-1 h-1 bg-[#888] rounded-full"></span>
-            <span>{post.readTime}</span>
+          <div className="flex items-center gap-4 mt-6 pt-6 border-t border-[#e5e0d8]">
+            <div className="w-10 h-10 rounded-full bg-[#c4a77d] flex items-center justify-center text-white font-sans font-semibold text-sm">
+              EM
+            </div>
+            <div>
+              <p className="text-sm font-medium text-[#1a1a1a]">
+                {post.author || 'Easy Memoir Editorial'}
+              </p>
+              <p className="text-xs text-[#999]">
+                <time dateTime={postMeta?.isoDate}>{post.date}</time>
+              </p>
+            </div>
           </div>
         </header>
 
-        {/* Article Content - Newspaper Column Style */}
-        <div
-          className="newspaper-content prose prose-lg max-w-none"
-          style={{
-            columnCount: 2,
-            columnGap: '3rem',
-            columnRule: '1px solid #ddd'
-          }}
-        >
+        {/* Article Content */}
+        <div className="article-content">
           <style>{`
-            @media (max-width: 768px) {
-              .newspaper-content {
-                column-count: 1 !important;
-              }
-            }
-            .newspaper-content p.lead {
-              font-size: 1.25rem;
+            .article-content p.lead {
+              font-size: 1.2rem;
               font-weight: 400;
               color: #333;
-              line-height: 1.8;
-              margin-bottom: 1.5rem;
+              line-height: 1.9;
+              margin-bottom: 1.75rem;
             }
-            .newspaper-content p.lead::first-letter {
-              font-size: 4.5rem;
+            .article-content p.lead::first-letter {
+              font-size: 4rem;
               float: left;
               line-height: 0.8;
               padding-right: 0.5rem;
+              padding-top: 0.1rem;
               font-family: Georgia, serif;
               font-weight: bold;
               color: #1a1a1a;
             }
-            .newspaper-content p {
-              font-family: Georgia, serif;
+            .article-content p {
+              font-family: Georgia, 'Lora', serif;
               font-size: 1.1rem;
-              line-height: 1.9;
-              color: #333;
+              line-height: 1.85;
+              color: #3d3833;
               margin-bottom: 1.25rem;
-              text-align: justify;
-              hyphens: auto;
             }
-            .newspaper-content h2 {
-              font-family: Georgia, serif;
-              font-size: 1.5rem;
-              font-weight: bold;
+            .article-content h2 {
+              font-family: 'Boska', Georgia, serif;
+              font-size: 1.75rem;
+              font-weight: 600;
               color: #1a1a1a;
-              margin-top: 2rem;
+              margin-top: 2.5rem;
               margin-bottom: 1rem;
-              break-after: avoid;
-              border-bottom: 2px solid #c4a77d;
               padding-bottom: 0.5rem;
+              border-bottom: 2px solid #c4a77d;
             }
-            .newspaper-content strong {
+            .article-content strong {
               color: #1a1a1a;
+              font-weight: 600;
             }
-            .newspaper-content blockquote {
+            .article-content blockquote {
               border-left: 4px solid #c4a77d;
-              padding-left: 1.5rem;
+              padding: 1rem 1.5rem;
               font-style: italic;
               color: #555;
               margin: 2rem 0;
+              background: #f8f5f0;
+              border-radius: 0 8px 8px 0;
             }
           `}</style>
           <div dangerouslySetInnerHTML={{ __html: post.content }} />
         </div>
 
-        {/* CTA Section - After Article */}
-        <div className="mt-16 bg-gradient-to-br from-[#1a1a1a] to-[#2d2d2d] rounded-2xl p-8 sm:p-12 text-white text-center">
-          <div className="max-w-2xl mx-auto">
-            <h3
-              className="font-display text-3xl sm:text-4xl mb-4"
-              style={{ fontFamily: 'Georgia, serif' }}
+        {/* Internal Links - Related Reading */}
+        <div className="mt-12 p-6 bg-[#f0ebe3] rounded-2xl">
+          <h3 className="font-display text-lg text-[#1a1a1a] mb-4">Continue Reading</h3>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <Link
+              to="/how-it-works"
+              className="flex items-center gap-3 p-3 bg-white rounded-xl hover:shadow-md transition group"
             >
+              <div className="w-10 h-10 rounded-lg bg-[#c4a77d]/10 flex items-center justify-center flex-shrink-0">
+                <svg
+                  className="w-5 h-5 text-[#c4a77d]"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-[#1a1a1a] group-hover:text-[#8b7355] transition">
+                  How Easy Memoir Works
+                </p>
+                <p className="text-xs text-[#999]">See how AI helps you write</p>
+              </div>
+            </Link>
+            <Link
+              to="/sample"
+              className="flex items-center gap-3 p-3 bg-white rounded-xl hover:shadow-md transition group"
+            >
+              <div className="w-10 h-10 rounded-lg bg-[#c4a77d]/10 flex items-center justify-center flex-shrink-0">
+                <svg
+                  className="w-5 h-5 text-[#c4a77d]"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"
+                  />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-[#1a1a1a] group-hover:text-[#8b7355] transition">
+                  Read a Sample Memoir
+                </p>
+                <p className="text-xs text-[#999]">See a finished example</p>
+              </div>
+            </Link>
+          </div>
+        </div>
+
+        {/* CTA */}
+        <div className="mt-12 bg-gradient-to-br from-[#1a1a1a] via-[#2a2520] to-[#1a1a1a] rounded-2xl p-8 sm:p-12 text-white text-center relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-48 h-48 bg-[#c4a77d]/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+          <div className="max-w-2xl mx-auto relative">
+            <h3 className="font-display text-3xl sm:text-4xl mb-4">
               Ready to Write Your Own Story?
             </h3>
-            <p className="font-serif text-lg text-white/80 mb-8 leading-relaxed">
+            <p className="font-serif text-lg text-white/70 mb-8 leading-relaxed">
               Easy Memoir makes it simple. Just talk about your memories naturally, and our AI
-              transforms your words into beautifully written prose. No writing skills required.
+              transforms your words into beautifully written prose.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
                 onClick={() => navigate(user ? '/voice' : '/register')}
-                className="bg-[#c4a77d] text-[#1a1a1a] px-8 py-4 rounded-full font-sans font-medium hover:bg-[#b39669] transition-all transform hover:scale-105"
+                className="bg-[#c4a77d] text-[#1a1a1a] px-8 py-4 rounded-full font-sans font-semibold hover:bg-[#b39669] transition-all"
               >
                 {user ? 'Continue Your Memoir' : 'Start Your Free Memoir'}
               </button>
@@ -1153,35 +1268,34 @@ export default function BlogPost() {
                 Learn How It Works
               </Link>
             </div>
-            <p className="text-white/50 text-sm mt-6">Free to start. No credit card required.</p>
+            <p className="text-white/40 text-sm mt-6">Free to start. No credit card required.</p>
           </div>
         </div>
 
         {/* Related Articles */}
         {relatedPosts.length > 0 && (
-          <div className="mt-16 pt-12 border-t-2 border-[#1a1a1a]">
-            <h3
-              className="font-display text-2xl text-[#1a1a1a] mb-8 text-center"
-              style={{ fontFamily: 'Georgia, serif' }}
-            >
-              More from {post.category}
-            </h3>
-            <div className="grid md:grid-cols-3 gap-8">
+          <div className="mt-16 pt-12 border-t border-[#e5e0d8]">
+            <h3 className="font-display text-2xl text-[#1a1a1a] mb-8">More from {post.category}</h3>
+            <div className="grid md:grid-cols-3 gap-6">
               {relatedPosts.map(([postSlug, relatedPost]) => (
                 <Link key={postSlug} to={`/blog/${postSlug}`} className="group">
-                  <div className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition h-full">
-                    <p className="text-xs text-[#8b7355] uppercase tracking-wider mb-2">
-                      {relatedPost.readTime}
-                    </p>
-                    <h4
-                      className="font-display text-lg text-[#1a1a1a] group-hover:text-[#8b7355] transition mb-3"
-                      style={{ fontFamily: 'Georgia, serif' }}
-                    >
-                      {relatedPost.title}
-                    </h4>
-                    <p className="font-serif text-sm text-[#666] line-clamp-2">
-                      {relatedPost.excerpt}
-                    </p>
+                  <div className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition h-full">
+                    <BlogImage
+                      slug={postSlug}
+                      category={relatedPost.category}
+                      aspect="aspect-[16/10]"
+                    />
+                    <div className="p-5">
+                      <p className="text-xs text-[#8b7355] uppercase tracking-wider mb-2">
+                        {relatedPost.readTime}
+                      </p>
+                      <h4 className="font-display text-lg text-[#1a1a1a] group-hover:text-[#8b7355] transition mb-2 leading-snug line-clamp-2">
+                        {relatedPost.title}
+                      </h4>
+                      <p className="font-serif text-sm text-[#666] line-clamp-2">
+                        {relatedPost.excerpt}
+                      </p>
+                    </div>
                   </div>
                 </Link>
               ))}
@@ -1203,6 +1317,9 @@ export default function BlogPost() {
               </Link>
               <Link to="/how-it-works" className="hover:text-white transition">
                 How It Works
+              </Link>
+              <Link to="/pricing" className="hover:text-white transition">
+                Pricing
               </Link>
               <Link to="/privacy" className="hover:text-white transition">
                 Privacy

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import SEO, { breadcrumbSchema } from '../../components/SEO'
 
 export default function Gift() {
   const navigate = useNavigate()
@@ -13,16 +14,17 @@ export default function Gift() {
   const giftOptions = [
     {
       id: 'storyteller',
-      name: '6-Month Storyteller',
-      price: '£99',
-      savings: 'Save £15',
-      description: 'Perfect for capturing a lifetime of memories',
+      name: 'Complete Memoir Package',
+      price: '£299',
+      savings: '50% off',
+      description: 'Everything you need to capture a lifetime of memories',
       features: [
+        'Colour royal hardcover book in cloth',
+        'Professional audiobook',
+        'Talk over the phone features',
         'Unlimited voice recordings',
-        'Unlimited AI chapters',
-        'Photo integration',
-        'PDF export',
-        '6 months of access'
+        '12 months of access',
+        'Pay over 3 months available'
       ]
     },
     {
@@ -82,6 +84,12 @@ export default function Gift() {
 
   return (
     <div className="min-h-screen bg-heritage-cream overflow-hidden">
+      <SEO
+        title="Gift a Memoir — The Most Meaningful Gift for Parents & Grandparents"
+        description="Give the gift of a lifetime. Help your parents or grandparents capture their life story with Easy Memoir. Beautiful gift packages from £99. A keepsake your family will treasure for generations."
+        path="/gift"
+        jsonLd={[breadcrumbSchema([{ name: 'Home', url: '/' }, { name: 'Gift a Memoir' }])]}
+      />
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-heritage-cream/95 backdrop-blur-sm border-b border-heritage-sepia-light/30">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">

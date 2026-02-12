@@ -153,6 +153,10 @@ router.post(
         const year = ctx.birth_year ? ctx.birth_year + 22 : 1982
         return `A cinematic fine art painting of young adulthood, ${year}. A young person gazing out at a city awakening at dawn, standing at the threshold of independence and possibility. Period architecture, morning golden light breaking through, sense of optimism and adventure. Painted in the romantic realism style of Caspar David Friedrich meets Edward Hopper - epic yet intimate, capturing the courage of starting one's own journey`
       },
+      'love-relationships': ctx => {
+        const year = ctx.birth_year ? ctx.birth_year + 25 : 1985
+        return `A romantic fine art painting of love and courtship, ${year}. A couple walking together through a beautiful setting, hands intertwined, soft golden evening light. Period-accurate clothing and scenery. Flowers, a handwritten letter, a sense of tenderness and devotion. Painted in the romantic style of John William Waterhouse meets Pierre-Auguste Renoir - luminous skin tones, flowing composition, capturing the timeless beauty of falling in love`
+      },
       'family-career': ctx => {
         const year = ctx.birth_year ? ctx.birth_year + 35 : 1995
         return `A heartwarming fine art painting of family life, ${year}. A comfortable home filled with evidence of children - toys, drawings on the fridge, afternoon sunlight in a garden. The quiet pride of building a life. Painted in the warm domestic style of Carl Larsson meets Norman Rockwell - celebrating everyday beauty, rich in detail and emotion, golden afternoon light`
@@ -163,6 +167,10 @@ router.post(
       },
       'passions-beliefs': ctx => {
         return `A contemplative fine art painting of personal passion and meaning. A quiet corner dedicated to what matters most - perhaps books, art supplies, garden tools, travel mementos, or musical instruments. Natural light, sense of peace and purpose. Painted in the meditative style of Vermeer meets Andrew Wyeth - profound stillness, masterful light, celebrating the quiet things that give life meaning`
+      },
+      'later-life': ctx => {
+        const year = ctx.birth_year ? ctx.birth_year + 65 : 2025
+        return `A warm, dignified fine art painting of later life, circa ${year}. A grandparent with grandchildren in a sunlit garden, laughter and connection across generations. Comfortable home in background, well-tended flowers, a sense of earned peace and contentment. Painted in the tender style of Mary Cassatt meets Joaquín Sorolla - beautiful light, human warmth, celebrating the richness of life's later chapters`
       },
       'wisdom-reflections': ctx => {
         return `A masterpiece painting of peaceful reflection in life's golden years. An elegant armchair by a window, sunset light streaming in golden and amber, photographs and books nearby, a cup of tea. The earned serenity of a life well-lived. Painted in the transcendent style of Rembrandt's late works meets Vilhelm Hammershøi - profound depth, luminous light, dignity and wisdom, emotionally moving`

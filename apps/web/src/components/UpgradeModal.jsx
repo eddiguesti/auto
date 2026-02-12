@@ -132,9 +132,11 @@ export default function UpgradeModal({ onClose, memoriesCount = 0, variant = 'de
               { text: "Voice-to-text — speak your memories, we'll write them down", badge: null },
               { text: 'Personalised chapter artwork — 10 unique AI illustrations', badge: null },
               {
-                text: 'Full-colour printed hardcover book — delivered to your door',
-                badge: 'Worth £99'
+                text: 'Beautiful colour royal hardcover book in cloth — delivered to your door',
+                badge: 'Included'
               },
+              { text: 'Professional audiobook — narrated in your voice', badge: 'Included' },
+              { text: 'Talk over the phone — call in to record your stories', badge: 'Included' },
               { text: '12 months access — write at your own pace, no rush', badge: null }
             ].map((item, i) => (
               <li key={i} className="flex items-start gap-3">
@@ -167,13 +169,14 @@ export default function UpgradeModal({ onClose, memoriesCount = 0, variant = 'de
         {/* Section 3: Pricing */}
         <div className="mx-6 p-5 bg-gradient-to-br from-amber-50/80 to-stone-50/50 rounded-xl border border-amber-100/50">
           <div className="text-center">
-            <span className="text-stone-400 text-sm line-through">£300</span>
-            <div className="text-4xl font-bold text-ink mt-1 mb-1">£149</div>
+            <span className="text-stone-400 text-sm line-through">£599</span>
+            <div className="text-4xl font-bold text-ink mt-1 mb-1">£299</div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-50 rounded-full mb-3">
               <span className="text-green-700 text-sm font-medium">
-                Save £151 — available this {getCurrentMonthName()}
+                50% off — available this {getCurrentMonthName()}
               </span>
             </div>
+            <p className="text-xs text-stone-500 mt-1">Or 3 monthly payments of £99.67</p>
           </div>
         </div>
 

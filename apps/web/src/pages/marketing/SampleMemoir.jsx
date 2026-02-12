@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
+import SEO, { breadcrumbSchema } from '../../components/SEO'
 
 export default function SampleMemoir() {
   const [currentPage, setCurrentPage] = useState(0)
@@ -233,6 +234,12 @@ And finally, tell your stories. Don't let them die with you. Every life is a boo
 
   return (
     <div className="min-h-screen bg-heritage-ink">
+      <SEO
+        title="Sample Memoir — See What Your Book Could Look Like"
+        description="Preview a beautifully written sample memoir created with Easy Memoir. See how AI transforms spoken memories into eloquent prose. Flip through a real memoir and imagine your own life story."
+        path="/sample"
+        jsonLd={[breadcrumbSchema([{ name: 'Home', url: '/' }, { name: 'Sample Memoir' }])]}
+      />
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-heritage-ink/95 backdrop-blur-sm border-b border-white/10">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">

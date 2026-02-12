@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import SEO, { faqSchema, breadcrumbSchema } from '../../components/SEO'
 
 export default function FAQ() {
   const [openIndex, setOpenIndex] = useState(null)
@@ -72,7 +73,7 @@ export default function FAQ() {
       {
         question: 'What book options are available?',
         answer:
-          'We offer three beautiful options: Softcover (perfect-bound paperback, £29), Hardcover (cloth-bound with dust jacket, £49), and Premium (leather-look binding with gold foil stamping, £79). All use archival-quality paper that will last generations.'
+          'Our complete memoir package is £299 (50% off £599) and includes a beautiful colour royal hardcover book in cloth, a professional audiobook, and talk over the phone features. You can also pay over 3 months. All books use archival-quality paper that will last generations.'
       },
       {
         question: 'How long does printing and delivery take?',
@@ -146,10 +147,12 @@ export default function FAQ() {
       {
         question: 'Can I buy a gift that includes a printed book?',
         answer:
-          'Yes! Our Legacy (£299) and Deluxe Family (£499) packages include printed books. The recipient completes their memoir, approves the design, and we print and ship the books directly to them—or to you, if you want it as a surprise.'
+          'Yes! Our complete memoir package (£299, 50% off) includes a beautiful colour royal hardcover book in cloth, a professional audiobook, and talk over the phone features. You can pay over 3 months too. The recipient completes their memoir, approves the design, and we print and ship the books directly to them—or to you, if you want it as a surprise.'
       }
     ]
   }
+
+  const allFaqs = Object.values(faqs).flat()
 
   const toggleFAQ = index => {
     setOpenIndex(openIndex === index ? null : index)
@@ -157,6 +160,15 @@ export default function FAQ() {
 
   return (
     <div className="min-h-screen bg-heritage-cream">
+      <SEO
+        title="Frequently Asked Questions — Easy Memoir Help Centre"
+        description="Find answers to common questions about Easy Memoir. Learn about voice recording, AI memoir writing, book printing, privacy, gift vouchers, and more. Everything you need to get started."
+        path="/faq"
+        jsonLd={[
+          breadcrumbSchema([{ name: 'Home', url: '/' }, { name: 'FAQ' }]),
+          faqSchema(allFaqs.map(f => ({ question: f.question, answer: f.answer })))
+        ]}
+      />
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-heritage-cream/95 backdrop-blur-sm border-b border-heritage-sepia-light/30">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">

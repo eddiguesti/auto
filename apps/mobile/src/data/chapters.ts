@@ -1,6 +1,6 @@
 /**
  * Chapter data for the memoir
- * 10 chapters with 83 questions total
+ * 12 chapters with 99 questions total
  */
 
 export interface Question {
@@ -379,22 +379,16 @@ export const chapters: Chapter[] = [
         aiHint: "Key turning points: Jobs you loved, jobs you hated, decisions that changed direction. What are you proudest of from your working years?"
       },
       {
-        id: 'meeting-partner',
-        question: "How did you meet your partner/spouse?",
-        prompt: "Tell me the whole story - where, when, what you noticed about them.",
-        aiHint: "The full romance: Where did you meet? First impression? First conversation? When did you know they were special? The proposal?"
+        id: 'independence',
+        question: "What was it like being independent for the first time?",
+        prompt: "Cooking, paying bills, making your own decisions. The freedom and the responsibility.",
+        aiHint: "Specific moments: First time you had to fend for yourself? Disasters in the kitchen? Managing money? What surprised you about adult life?"
       },
       {
-        id: 'wedding-day',
-        question: "Tell me about your wedding day.",
-        prompt: "The venue, the dress/suit, the guests, the moments that stand out.",
-        aiHint: "Walk through the day: Getting ready, the ceremony, the reception. What went wrong? What went perfectly? How did you feel?"
-      },
-      {
-        id: 'first-home-together',
-        question: "What was your first home together like?",
-        prompt: "The place where you started building a life together.",
-        aiHint: "Describe it: Size, location, what you loved and hated about it. How did you make it yours? Funny early-days stories?"
+        id: 'social-life',
+        question: "What was your social life like in your twenties?",
+        prompt: "The friends, the nights out, the adventures. How did you spend your free time?",
+        aiHint: "Paint the picture: Where did you go? Who were you with? Best night out? A friendship from this era that stands out?"
       },
       {
         id: 'life-decisions',
@@ -417,10 +411,67 @@ export const chapters: Chapter[] = [
     ]
   },
   {
+    id: 'love-relationships',
+    title: 'Love & Relationships',
+    subtitle: 'Matters of the Heart',
+    icon: 'VII',
+    color: '#F5F5F4', // stone-100
+    questions: [
+      {
+        id: 'first-love',
+        question: "Tell me about your first love.",
+        prompt: "The butterflies, the excitement, the heartbreak. What do you remember?",
+        aiHint: "Get the full story: Who were they? How did you meet? What made them special? What happened? How did it shape your view of love?"
+      },
+      {
+        id: 'meeting-partner',
+        question: "How did you meet the love of your life?",
+        prompt: "The place, the moment, the first impression. Tell me everything.",
+        aiHint: "Walk through it: Where were you? What did you notice first? What was your first conversation? When did you know this was different?"
+      },
+      {
+        id: 'courtship',
+        question: "What was your courtship like?",
+        prompt: "The dates, the letters, the phone calls. How did you win each other over?",
+        aiHint: "Romantic details: First date? How did you communicate? What did you do together? Any funny or awkward moments? When did you say 'I love you'?"
+      },
+      {
+        id: 'proposal-story',
+        question: "Tell me about the proposal.",
+        prompt: "Who asked? Where? How did it happen? What was the reaction?",
+        aiHint: "The full story: Was it planned or spontaneous? Where were you? What was said? How did you feel? Who did you tell first?"
+      },
+      {
+        id: 'wedding-day',
+        question: "Describe your wedding day.",
+        prompt: "The venue, the outfit, the guests, the moments that stand out.",
+        aiHint: "Walk through the day: Getting ready, the ceremony, the reception. What went wrong? What went perfectly? How did you feel?"
+      },
+      {
+        id: 'early-marriage',
+        question: "What were the early days of marriage like?",
+        prompt: "The adjustments, the surprises, learning to live together.",
+        aiHint: "Honest reflection: What surprised you? What was harder than expected? What was wonderful? Funny stories from early married life?"
+      },
+      {
+        id: 'relationship-strengths',
+        question: "What has held your relationship together?",
+        prompt: "The shared values, the compromises, the things that kept you strong.",
+        aiHint: "Real wisdom: What do you agree on? How do you handle disagreements? What's the secret? A moment that tested you but made you stronger?"
+      },
+      {
+        id: 'love-lessons',
+        question: "What has love taught you about yourself?",
+        prompt: "How has being loved - and loving someone - changed who you are?",
+        aiHint: "Deep reflection: What did you learn about patience, forgiveness, compromise? How are you different because of this relationship?"
+      }
+    ]
+  },
+  {
     id: 'family-career',
     title: 'Family & Career',
     subtitle: 'Building a Life',
-    icon: 'VII',
+    icon: 'VIII',
     color: '#FEF3C7', // amber-100
     questions: [
       {
@@ -489,7 +540,7 @@ export const chapters: Chapter[] = [
     id: 'world-around-you',
     title: 'The World Around You',
     subtitle: 'History & Culture',
-    icon: 'VIII',
+    icon: 'IX',
     color: '#F5F5F4', // stone-100
     questions: [
       {
@@ -546,7 +597,7 @@ export const chapters: Chapter[] = [
     id: 'passions-beliefs',
     title: 'Passions & Beliefs',
     subtitle: 'What Matters to You',
-    icon: 'IX',
+    icon: 'X',
     color: '#FEF3C7', // amber-100
     questions: [
       {
@@ -600,10 +651,67 @@ export const chapters: Chapter[] = [
     ]
   },
   {
+    id: 'later-life',
+    title: 'Later Life',
+    subtitle: 'The Golden Years',
+    icon: 'XI',
+    color: '#FEF3C7', // amber-100
+    questions: [
+      {
+        id: 'retirement',
+        question: "Tell me about retiring or slowing down.",
+        prompt: "When did it happen? How did it feel? What did you do with your new freedom?",
+        aiHint: "The transition: When did you stop working? Was it your choice? What did you do on your first day? How did you fill your time?"
+      },
+      {
+        id: 'grandchildren',
+        question: "Tell me about your grandchildren.",
+        prompt: "Their names, their personalities, what they mean to you.",
+        aiHint: "Each grandchild: Name, personality, a special memory with them. What's different about being a grandparent vs a parent?"
+      },
+      {
+        id: 'daily-life-now',
+        question: "What does a typical day look like for you now?",
+        prompt: "The rhythms, the routines, the small pleasures of your days.",
+        aiHint: "Walk through the day: When do you wake? What do you enjoy? Who do you see? What's the best part of your day?"
+      },
+      {
+        id: 'health-aging',
+        question: "How has getting older changed you?",
+        prompt: "The body, the mind, the perspective. What's different now?",
+        aiHint: "Honest but gentle: What do you notice? What frustrates you? What surprises you? What have you gained that youth didn't have?"
+      },
+      {
+        id: 'losing-friends',
+        question: "Have you lost friends or loved ones along the way?",
+        prompt: "The people who've gone but aren't forgotten. How do you carry them with you?",
+        aiHint: "Handle with care: Who do you miss? How do you remember them? What would you say to them if you could?"
+      },
+      {
+        id: 'new-discoveries',
+        question: "Have you discovered anything new in later life?",
+        prompt: "New interests, new friendships, new perspectives you didn't expect.",
+        aiHint: "Positive focus: What have you started recently? What surprised you? Is there something you wish you'd discovered sooner?"
+      },
+      {
+        id: 'home-now',
+        question: "Tell me about where you live now.",
+        prompt: "Your home, your neighbourhood, what makes it yours.",
+        aiHint: "Paint the picture: What does it look like? What do you see from your window? Favourite spot? What makes it home?"
+      },
+      {
+        id: 'what-matters-now',
+        question: "What matters most to you at this stage of life?",
+        prompt: "The priorities, the people, the things you hold closest.",
+        aiHint: "Reflective: Has what matters changed? What would you protect above all else? What brings you peace?"
+      }
+    ]
+  },
+  {
     id: 'wisdom-reflections',
     title: 'Wisdom & Reflections',
     subtitle: 'Looking Back',
-    icon: 'X',
+    icon: 'XII',
     color: '#F5F5F4', // stone-100
     questions: [
       {

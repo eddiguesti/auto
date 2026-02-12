@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
+import SEO, { breadcrumbSchema } from '../../components/SEO'
 
 export default function About() {
   const [isVisible, setIsVisible] = useState({})
@@ -104,6 +105,12 @@ export default function About() {
 
   return (
     <div className="min-h-screen bg-heritage-cream overflow-hidden">
+      <SEO
+        title="About Us — Our Mission to Preserve Life Stories"
+        description="Easy Memoir was founded to help everyone preserve their life story. Learn about our mission, our team, and why we believe every life story deserves to be told and treasured by future generations."
+        path="/about"
+        jsonLd={[breadcrumbSchema([{ name: 'Home', url: '/' }, { name: 'About' }])]}
+      />
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-heritage-cream/95 backdrop-blur-sm border-b border-heritage-sepia-light/30">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">

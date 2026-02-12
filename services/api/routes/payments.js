@@ -41,8 +41,8 @@ const PRODUCTS = {
   },
   printed_book: {
     name: 'Printed Book',
-    description: 'Beautiful hardcover book delivered to your door',
-    price: 9900, // £99
+    description: 'Beautiful colour royal hardcover book in cloth, delivered to your door',
+    price: 29900, // £299
     currency: 'gbp',
     type: 'book'
   },
@@ -63,16 +63,18 @@ const PRODUCTS = {
     interval: 'year'
   },
   premium_bundle: {
-    name: 'Premium Bundle — Full Memoir + Printed Book',
-    description: '12 months access to all chapters + printed colour hardcover book',
-    price: 14900, // £149
+    name: 'Premium Bundle — Full Memoir + Printed Book + Audiobook',
+    description:
+      '12 months access to all chapters + colour royal hardcover book in cloth + audiobook + talk over the phone features',
+    price: 29900, // £299 (50% off £599)
     currency: 'gbp',
     type: 'premium_bundle'
   },
   onboarding_bundle: {
-    name: 'Welcome Bundle — Full Memoir + Printed Book',
-    description: '12 months access to all chapters + printed colour hardcover book (welcome offer)',
-    price: 9900, // £99 — onboarding welcome price
+    name: 'Welcome Bundle — Full Memoir + Printed Book + Audiobook',
+    description:
+      '12 months access to all chapters + colour royal hardcover book in cloth + audiobook + talk over the phone features (welcome offer)',
+    price: 29900, // £299 (50% off £599) — onboarding welcome price
     currency: 'gbp',
     type: 'premium_bundle' // Same type so webhook activates premium identically
   }

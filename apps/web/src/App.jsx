@@ -71,11 +71,14 @@ const Gift = lazy(() => import('./pages/marketing/Gift'))
 const SampleMemoir = lazy(() => import('./pages/marketing/SampleMemoir'))
 const Blog = lazy(() => import('./pages/marketing/Blog'))
 const BlogPost = lazy(() => import('./pages/marketing/BlogPost'))
+const Compare = lazy(() => import('./pages/marketing/Compare'))
 
-// Legal pages - terms, privacy, cookies
+// Legal pages - terms, privacy, cookies, refund, cancellation
 const Terms = lazy(() => import('./pages/legal/Terms'))
 const Privacy = lazy(() => import('./pages/legal/Privacy'))
 const Cookies = lazy(() => import('./pages/legal/Cookies'))
+const RefundPolicy = lazy(() => import('./pages/legal/RefundPolicy'))
+const CancellationPolicy = lazy(() => import('./pages/legal/CancellationPolicy'))
 
 // App pages - core product (protected routes)
 const Home = lazy(() => import('./pages/app/Home'))
@@ -85,6 +88,7 @@ const VoiceChat = lazy(() => import('./pages/app/VoiceChat'))
 const Settings = lazy(() => import('./pages/app/Settings'))
 const PreviewStyle = lazy(() => import('./pages/app/PreviewStyle'))
 const Talk = lazy(() => import('./pages/app/Talk'))
+const ChapterReview = lazy(() => import('./pages/app/ChapterReview'))
 
 // Minimal loading fallback - keeps UI feel consistent
 const PageLoader = () => (
@@ -114,6 +118,8 @@ function App() {
                   <Route path="/terms" element={<Terms />} />
                   <Route path="/privacy" element={<Privacy />} />
                   <Route path="/cookies" element={<Cookies />} />
+                  <Route path="/refund-policy" element={<RefundPolicy />} />
+                  <Route path="/cancellation" element={<CancellationPolicy />} />
                   <Route path="/how-it-works" element={<HowItWorks />} />
                   <Route path="/pricing" element={<Pricing />} />
                   <Route path="/gift" element={<Gift />} />
@@ -122,6 +128,7 @@ function App() {
                   <Route path="/sample" element={<SampleMemoir />} />
                   <Route path="/blog" element={<Blog />} />
                   <Route path="/blog/:slug" element={<BlogPost />} />
+                  <Route path="/compare" element={<Compare />} />
                   <Route path="/talk/:token" element={<Talk />} />
 
                   {/* Protected pages */}
@@ -138,6 +145,14 @@ function App() {
                     element={
                       <ProtectedRoute>
                         <Chapter />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/chapter/:chapterId/review"
+                    element={
+                      <ProtectedRoute>
+                        <ChapterReview />
                       </ProtectedRoute>
                     }
                   />

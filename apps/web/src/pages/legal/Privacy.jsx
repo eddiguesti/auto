@@ -260,12 +260,18 @@ export default function Privacy() {
           </section>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-sepia/20 flex gap-6">
+        <div className="mt-12 pt-8 border-t border-sepia/20 flex flex-wrap gap-6">
           <Link to="/" className="text-sepia hover:underline">
             ← Back to Home
           </Link>
           <Link to="/terms" className="text-sepia hover:underline">
             Terms and Conditions
+          </Link>
+          <Link to="/refund-policy" className="text-sepia hover:underline">
+            Refund Policy
+          </Link>
+          <Link to="/cancellation" className="text-sepia hover:underline">
+            Cancellation Policy
           </Link>
           <Link to="/cookies" className="text-sepia hover:underline">
             Cookie Policy

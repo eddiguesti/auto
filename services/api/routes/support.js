@@ -88,7 +88,7 @@ const FAQ_DATABASE = {
     category: 'Orders',
     keywords: ['price', 'cost', 'how much', 'pricing', 'payment', 'pay'],
     answer:
-      'Paperback: £29, Hardcover: £49, Deluxe: £79. Order 10 books and get 40% off! Audiobook narration is £19.99 (or £11.99 with the 10-book bundle). All prices include shipping.'
+      'Our complete memoir package is £299 (50% off £599) and includes a beautiful colour royal hardcover book in cloth, a professional audiobook, and talk over the phone features. You can also pay over 3 months at £99.67/month. All prices include shipping.'
   },
   order: {
     category: 'Orders',

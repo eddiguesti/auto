@@ -85,14 +85,6 @@
           "publisher": {
             "@id": "https://easymemoir.co.uk/#organization"
           },
-          "potentialAction": {
-            "@type": "SearchAction",
-            "target": {
-              "@type": "EntryPoint",
-              "urlTemplate": "https://easymemoir.co.uk/search?q={search_term_string}"
-            },
-            "query-input": "required name=search_term_string"
-          },
           "inLanguage": "en-GB"
         },
         {
@@ -107,10 +99,51 @@
             "height": 512
           },
           "sameAs": [],
+          "foundingDate": "2025",
+          "areaServed": {
+            "@type": "Country",
+            "name": "United Kingdom"
+          },
           "contactPoint": {
             "@type": "ContactPoint",
             "contactType": "customer service",
-            "availableLanguage": "English"
+            "email": "hello@easymemoir.co.uk",
+            "availableLanguage": "English",
+            "areaServed": "GB"
+          },
+          "knowsAbout": ["memoir writing", "autobiography", "life story preservation", "AI writing assistance", "voice interviews", "oral history"]
+        },
+        {
+          "@type": "Service",
+          "@id": "https://easymemoir.co.uk/#service",
+          "serviceType": "AI Memoir Writing Service",
+          "name": "Easy Memoir — AI Voice Interview Memoir Writing",
+          "description": "Write your life story by simply talking. Our AI interviewer asks thoughtful questions, then transforms your spoken words into beautifully written prose. No writing skills needed. Free to start.",
+          "provider": { "@id": "https://easymemoir.co.uk/#organization" },
+          "areaServed": { "@type": "Country", "name": "United Kingdom" },
+          "audience": {
+            "@type": "Audience",
+            "audienceType": "Seniors and families wanting to preserve life stories"
+          },
+          "hasOfferCatalog": {
+            "@type": "OfferCatalog",
+            "name": "Memoir Writing Packages",
+            "itemListElement": [
+              {
+                "@type": "Offer",
+                "name": "Free Starter",
+                "price": "0",
+                "priceCurrency": "GBP",
+                "description": "2 free chapters with AI voice interviews — no credit card required"
+              },
+              {
+                "@type": "Offer",
+                "name": "Printed Book",
+                "priceRange": "£29 - £79",
+                "priceCurrency": "GBP",
+                "description": "Professional softcover, hardcover, or premium leather-bound memoir book"
+              }
+            ]
           }
         },
         {
@@ -173,60 +206,6 @@
               "position": 1,
               "name": "Home",
               "item": "https://easymemoir.co.uk/"
-            }
-          ]
-        },
-        {
-          "@type": "FAQPage",
-          "@id": "https://easymemoir.co.uk/#faq",
-          "mainEntity": [
-            {
-              "@type": "Question",
-              "name": "How does Easy Memoir work?",
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "Easy Memoir uses AI to help you write your autobiography in three simple steps: 1) Just talk naturally about your memories - our AI interviewer asks thoughtful questions, 2) AI transforms your spoken words into beautifully written prose while preserving your authentic voice, 3) Download as PDF or order a professionally printed hardcover book."
-              }
-            },
-            {
-              "@type": "Question",
-              "name": "Do I need to be a good writer to use Easy Memoir?",
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "No writing skills needed! You simply talk about your memories naturally, like chatting with a friend. Our AI handles all the writing, transforming your spoken stories into eloquent prose while keeping your authentic voice and personality."
-              }
-            },
-            {
-              "@type": "Question",
-              "name": "Can I get my memoir printed as a real book?",
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "Yes! Easy Memoir integrates with professional print-on-demand services. You can order beautifully bound hardcover or paperback books with various customization options including different sizes, paper types, and cover finishes."
-              }
-            },
-            {
-              "@type": "Question",
-              "name": "Is Easy Memoir free to use?",
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "Yes, Easy Memoir is free to start with no credit card required. You can begin capturing your life story immediately. Printing physical books is an optional paid service."
-              }
-            },
-            {
-              "@type": "Question",
-              "name": "How is my data and privacy protected?",
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "Your stories are private and secure. All data is encrypted and stored securely. Your personal memories are never shared or used for training AI models. You maintain full ownership of your content."
-              }
-            },
-            {
-              "@type": "Question",
-              "name": "Can I add photos to my memoir?",
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "Yes! You can upload photos to accompany your stories. Photos are integrated into your memoir and will appear in both the digital preview and printed books."
-              }
             }
           ]
         },

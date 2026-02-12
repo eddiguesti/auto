@@ -15,7 +15,7 @@ export default function Terms() {
       {/* Content */}
       <main className="max-w-4xl mx-auto px-6 py-12">
         <h1 className="font-display text-4xl text-ink mb-2">Terms and Conditions</h1>
-        <p className="text-warmgray mb-8">Last updated: January 29, 2026</p>
+        <p className="text-warmgray mb-8">Last updated: February 12, 2026</p>
 
         <div className="prose prose-sepia max-w-none space-y-8">
           <section>
@@ -113,14 +113,46 @@ export default function Terms() {
           <section>
             <h2 className="font-display text-2xl text-ink mb-4">8. Pricing and Payment</h2>
             <p className="text-warmgray leading-relaxed">
-              Easy Memoir offers free access to core features. Paid services (such as book printing)
-              are clearly marked with their prices before purchase. We reserve the right to change
-              pricing with reasonable notice.
+              Easy Memoir offers free access to core features. Paid services (such as book printing,
+              premium subscriptions, and digital exports) are clearly marked with their prices
+              before purchase. All prices are in British Pounds Sterling (GBP) and include VAT where
+              applicable. We reserve the right to change pricing with reasonable notice.
+            </p>
+            <p className="text-warmgray leading-relaxed mt-4">
+              Payments are processed securely through Stripe. We do not store your payment card
+              details on our servers.
             </p>
           </section>
 
           <section>
-            <h2 className="font-display text-2xl text-ink mb-4">9. Intellectual Property</h2>
+            <h2 className="font-display text-2xl text-ink mb-4">
+              9. Refunds, Cancellations and Money-Back Guarantee
+            </h2>
+            <p className="text-warmgray leading-relaxed">
+              We offer a <strong>30-day money-back guarantee</strong> on eligible subscription and
+              bundle purchases, subject to usage conditions. The guarantee is void if you have used
+              more than 25% of the Service's core features (as defined in our Refund Policy).
+            </p>
+            <p className="text-warmgray leading-relaxed mt-4">
+              You also have statutory cancellation rights under the Consumer Contracts (Information,
+              Cancellation and Additional Charges) Regulations 2013, including a 14-day cooling-off
+              period for distance contracts.
+            </p>
+            <p className="text-warmgray leading-relaxed mt-4">
+              For full details, please see our{' '}
+              <Link to="/refund-policy" className="text-sepia hover:underline">
+                Refund Policy &amp; Money-Back Guarantee
+              </Link>{' '}
+              and{' '}
+              <Link to="/cancellation" className="text-sepia hover:underline">
+                Cancellation Policy
+              </Link>
+              . Nothing in these policies affects your statutory rights under UK consumer law.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="font-display text-2xl text-ink mb-4">10. Intellectual Property</h2>
             <p className="text-warmgray leading-relaxed">
               The Service and its original content (excluding User Content), features, and
               functionality are owned by Easy Memoir and are protected by international copyright,
@@ -129,7 +161,7 @@ export default function Terms() {
           </section>
 
           <section>
-            <h2 className="font-display text-2xl text-ink mb-4">10. Disclaimer of Warranties</h2>
+            <h2 className="font-display text-2xl text-ink mb-4">11. Disclaimer of Warranties</h2>
             <p className="text-warmgray leading-relaxed">
               The Service is provided "as is" without warranties of any kind, either express or
               implied. We do not guarantee that the Service will be uninterrupted, secure, or
@@ -138,7 +170,7 @@ export default function Terms() {
           </section>
 
           <section>
-            <h2 className="font-display text-2xl text-ink mb-4">11. Limitation of Liability</h2>
+            <h2 className="font-display text-2xl text-ink mb-4">12. Limitation of Liability</h2>
             <p className="text-warmgray leading-relaxed">
               To the maximum extent permitted by law, Easy Memoir shall not be liable for any
               indirect, incidental, special, consequential, or punitive damages resulting from your
@@ -147,7 +179,7 @@ export default function Terms() {
           </section>
 
           <section>
-            <h2 className="font-display text-2xl text-ink mb-4">12. Termination</h2>
+            <h2 className="font-display text-2xl text-ink mb-4">13. Termination</h2>
             <p className="text-warmgray leading-relaxed">
               We may terminate or suspend your account at any time for violations of these Terms.
               You may delete your account at any time. Upon termination, your right to use the
@@ -156,7 +188,7 @@ export default function Terms() {
           </section>
 
           <section>
-            <h2 className="font-display text-2xl text-ink mb-4">13. Data Retention</h2>
+            <h2 className="font-display text-2xl text-ink mb-4">14. Data Retention</h2>
             <p className="text-warmgray leading-relaxed">
               Upon account deletion, we will delete your personal data within 30 days, except where
               we are required to retain it for legal purposes. You may request a copy of your data
@@ -165,7 +197,7 @@ export default function Terms() {
           </section>
 
           <section>
-            <h2 className="font-display text-2xl text-ink mb-4">14. Governing Law</h2>
+            <h2 className="font-display text-2xl text-ink mb-4">15. Governing Law</h2>
             <p className="text-warmgray leading-relaxed">
               These Terms are governed by the laws of England and Wales. Any disputes shall be
               resolved in the courts of England and Wales.
@@ -173,7 +205,7 @@ export default function Terms() {
           </section>
 
           <section>
-            <h2 className="font-display text-2xl text-ink mb-4">15. Changes to Terms</h2>
+            <h2 className="font-display text-2xl text-ink mb-4">16. Changes to Terms</h2>
             <p className="text-warmgray leading-relaxed">
               We reserve the right to modify these Terms at any time. We will notify users of
               significant changes via email or through the Service. Continued use after changes
@@ -182,7 +214,7 @@ export default function Terms() {
           </section>
 
           <section>
-            <h2 className="font-display text-2xl text-ink mb-4">16. Contact Us</h2>
+            <h2 className="font-display text-2xl text-ink mb-4">17. Contact Us</h2>
             <p className="text-warmgray leading-relaxed">
               If you have questions about these Terms, please contact us at:
             </p>
@@ -196,9 +228,18 @@ export default function Terms() {
           </section>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-sepia/20">
+        <div className="mt-12 pt-8 border-t border-sepia/20 flex flex-wrap gap-6">
           <Link to="/" className="text-sepia hover:underline">
             ← Back to Home
+          </Link>
+          <Link to="/refund-policy" className="text-sepia hover:underline">
+            Refund Policy
+          </Link>
+          <Link to="/cancellation" className="text-sepia hover:underline">
+            Cancellation Policy
+          </Link>
+          <Link to="/privacy" className="text-sepia hover:underline">
+            Privacy Policy
           </Link>
         </div>
       </main>

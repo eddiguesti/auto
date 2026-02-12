@@ -487,11 +487,13 @@ export default function Export() {
             </div>
             <h3 className="font-display text-xl text-ink mb-2">Printed Book</h3>
             <p className="text-sm text-warmgray mb-4">
-              A beautiful hardcover or paperback book delivered to your door. The perfect gift.
+              A beautiful colour royal hardcover book in cloth delivered to your door. Includes
+              audiobook and talk over the phone features.
             </p>
             <div className="flex items-baseline gap-2 mb-4">
-              <span className="text-2xl font-medium text-ink">£99</span>
-              <span className="text-sm text-warmgray">includes shipping</span>
+              <span className="text-2xl font-medium text-ink">£299</span>
+              <span className="text-sm text-warmgray line-through ml-1">£599</span>
+              <span className="text-xs text-sepia font-medium">50% off</span>
             </div>
             <button
               onClick={() => setShowBookOrder(true)}

@@ -1,6 +1,7 @@
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import HowItWorksCarousel from '../../components/HowItWorksCarousel'
+import SEO from '../../components/SEO'
 
 /**
  * DESIGN 1: "Warm Heritage"
@@ -41,6 +42,11 @@ export default function LandingDesign1() {
 
   return (
     <div className="min-h-screen bg-heritage-cream">
+      <SEO
+        title="Write Your Life Story with AI | Autobiography Made Simple"
+        description="Transform your memories into a beautifully written autobiography. Just talk naturally — our AI listens, asks thoughtful questions, and creates a professionally written memoir your family will treasure for generations. Free to start."
+        path="/"
+      />
       {/* Navigation */}
       <nav className="fixed top-0 w-full bg-heritage-cream/95 backdrop-blur-md z-50 border-b border-heritage-sepia-light/30">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
@@ -733,11 +739,13 @@ export default function LandingDesign1() {
                   Full Story
                 </p>
                 <div className="flex items-baseline gap-1">
-                  <span className="font-display text-5xl text-heritage-ink">£99</span>
-                  <span className="font-sans text-heritage-text text-base">/year</span>
+                  <span className="font-display text-5xl text-heritage-ink">£299</span>
+                  <span className="font-sans text-heritage-text text-base line-through ml-2">
+                    £599
+                  </span>
                 </div>
                 <p className="font-serif text-heritage-text text-base mt-2">
-                  A year of storytelling
+                  50% off — or 3 payments of £99.67
                 </p>
               </div>
 
@@ -787,7 +795,7 @@ export default function LandingDesign1() {
                     />
                   </svg>
                   <span className="font-serif text-heritage-text text-base">
-                    Printed hardcover book
+                    Colour royal hardcover book in cloth
                   </span>
                 </li>
                 <li className="flex items-start gap-3">
@@ -838,11 +846,13 @@ export default function LandingDesign1() {
                   Lifetime
                 </p>
                 <div className="flex items-baseline gap-1">
-                  <span className="font-display text-5xl text-heritage-ink">£149</span>
-                  <span className="font-sans text-heritage-text text-base">once</span>
+                  <span className="font-display text-5xl text-heritage-ink">£299</span>
+                  <span className="font-sans text-heritage-text text-base line-through ml-2">
+                    £599
+                  </span>
                 </div>
                 <p className="font-serif text-heritage-text text-base mt-2">
-                  Pay once, yours forever
+                  50% off — or 3 payments of £99.67
                 </p>
               </div>
 
@@ -1100,6 +1110,22 @@ export default function LandingDesign1() {
                     className="text-heritage-text hover:text-heritage-cta transition-colors"
                   >
                     Cookie Policy
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/refund-policy"
+                    className="text-heritage-text hover:text-heritage-cta transition-colors"
+                  >
+                    Refund Policy
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/cancellation"
+                    className="text-heritage-text hover:text-heritage-cta transition-colors"
+                  >
+                    Cancellation Policy
                   </Link>
                 </li>
               </ul>

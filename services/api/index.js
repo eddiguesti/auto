@@ -42,11 +42,14 @@ import supportRouter from './routes/support.js'
 import telegramRouter, { handleTelegramWebhook } from './routes/telegram.js'
 import onboardingRouter from './routes/onboarding.js'
 import chapterImagesRouter from './routes/chapter-images.js'
+import blogImagesRouter from './routes/blog-images.js'
 import gameRouter from './routes/game.js'
 import notificationRoutes from './routes/notifications.js'
 import userRouter from './routes/user.js'
 import newsletterRouter from './routes/newsletter.js'
+import chapterReviewRouter from './routes/chapterReview.js'
 import memosRouter from './routes/memos.js'
+import refundsRouter from './routes/refunds.js'
 import magicLinkRouter from './routes/magicLink.js'
 import telnyxCallRouter, { handleTelnyxMediaStream } from './routes/telnyxCall.js'
 import { WebSocketServer } from 'ws'
@@ -306,6 +309,9 @@ app.use('/api/audiobook', authenticateToken, audiobookRouter)
 // Style routes (protected)
 app.use('/api/style', authenticateToken, styleRouter)
 
+// Chapter review routes (protected — AI quota checked per-route inside)
+app.use('/api/chapter-review', authenticateToken, chapterReviewRouter)
+
 // Payment routes (protected)
 app.use('/api/payments', authenticateToken, paymentsRouter)
 
@@ -329,6 +335,9 @@ app.use('/api/user', authenticateToken, userRouter)
 
 // Quick memos routes (protected - free-form voice memos)
 app.use('/api/memos', authenticateToken, memosRouter)
+
+// Refund routes (protected - usage tracking, refund requests)
+app.use('/api/refunds', authenticateToken, refundsRouter)
 
 // Stripe webhook (needs raw body, no auth)
 app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), (req, res) =>
@@ -385,6 +394,9 @@ app.get('/api/health', async (req, res) => {
 
 // SEO routes (public - must be before static file serving)
 app.use(seoRouter)
+
+// Blog image generation (public API for generating blog post images)
+app.use('/api/blog-images', blogImagesRouter)
 
 // Serve built frontend in production
 const clientBuildPath = join(__dirname, '..', '..', 'apps', 'web', 'dist')

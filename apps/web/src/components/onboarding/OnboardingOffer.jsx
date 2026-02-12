@@ -71,8 +71,8 @@ export default function OnboardingOffer({ firstName, onTryFree }) {
               />
             </svg>
           </div>
-          <p className="text-[12px] font-semibold text-ink/85 leading-tight">Hardcover</p>
-          <p className="text-[12px] font-semibold text-ink/85 leading-tight">Book</p>
+          <p className="text-[12px] font-semibold text-ink/85 leading-tight">Royal Hardcover</p>
+          <p className="text-[12px] font-semibold text-ink/85 leading-tight">Book in Cloth</p>
           <p className="text-[10.5px] text-warmgray/55 mt-1">Full colour, delivered</p>
         </div>
 
@@ -142,7 +142,7 @@ export default function OnboardingOffer({ firstName, onTryFree }) {
             '10 custom illustrations',
             'Unlimited Clio calls',
             'Multiple writing styles',
-            'Voice-to-text',
+            'Talk over the phone',
             '10 full chapters'
           ].map(text => (
             <div key={text} className="flex items-center gap-2">
@@ -172,15 +172,16 @@ export default function OnboardingOffer({ firstName, onTryFree }) {
         className="text-center mb-5 py-5 mx-auto max-w-[280px] rounded-2xl bg-gradient-to-b from-white/90 to-amber-50/40 ring-1 ring-sepia/[0.08] shadow-[0_2px_8px_rgba(139,90,43,0.06)]"
       >
         <div className="flex items-center justify-center gap-2.5 mb-1.5">
-          <span className="text-warmgray/30 line-through text-sm">£300</span>
+          <span className="text-warmgray/30 line-through text-sm">£599</span>
           <span className="text-[11px] font-semibold text-sepia/80 bg-sepia/[0.08] px-2 py-0.5 rounded-full tracking-wide">
-            SAVE £201
+            50% OFF
           </span>
         </div>
         <span className="text-[46px] font-display text-ink tracking-[-0.03em] leading-none">
-          £99
+          £299
         </span>
         <p className="text-[12px] text-warmgray/50 mt-2">One payment · Everything included</p>
+        <p className="text-[11px] text-warmgray/45 mt-1">Or 3 monthly payments of £99.67</p>
         <p className="text-[11px] text-sepia/60 font-medium mt-1">
           Welcome price — only available right now
         </p>
@@ -193,7 +194,7 @@ export default function OnboardingOffer({ firstName, onTryFree }) {
         disabled={isLoading}
         className="w-full bg-sepia text-white px-8 py-[16px] rounded-2xl text-[16px] font-semibold tracking-[-0.01em] shadow-[0_2px_16px_rgba(139,90,43,0.3)] hover:bg-ink hover:shadow-[0_4px_20px_rgba(0,0,0,0.2)] active:scale-[0.98] transition-all duration-300 disabled:opacity-50 mb-2"
       >
-        {isLoading ? 'Redirecting...' : 'Get My Book — £99'}
+        {isLoading ? 'Redirecting...' : 'Get My Book — £299'}
       </motion.button>
 
       {/* Free option */}
