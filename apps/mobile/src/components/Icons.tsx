@@ -272,3 +272,7 @@ export function IconMessageCircle({ size = 24, color = colors.text }: IconProps)
 export function IconLightbulb({ size = 24, color = colors.warning }: IconProps) {
   return <MaterialCommunityIcons name="lightbulb-outline" size={size} color={color} />;
 }
+
+export function IconPhone({ size = 24, color = colors.text }: IconProps) {
+  return <Feather name="phone" size={size} color={color} />;
+}

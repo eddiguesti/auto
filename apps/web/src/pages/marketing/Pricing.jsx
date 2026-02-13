@@ -71,7 +71,7 @@ export default function Pricing() {
       price: { monthly: 39, yearly: 390 },
       features: [
         'Everything in Storyteller',
-        '1 Hardcover book included',
+        '4 Hardcover books included',
         'Premium binding options',
         'Custom cover design',
         'Archival-quality printing',

@@ -438,7 +438,7 @@ function generateUpgradeEmail2(name) {
   <p>You've told the story of your earliest years. But there's so much more your family doesn't know yet.</p>
   <p>Your school days. The friends who shaped you. Falling in love. Raising a family. The moments that changed everything.</p>
   <p>These are the stories your grandchildren will one day read to their children. They deserve to be written down — in your own words, in your own voice.</p>
-  <p>The complete memoir package includes all 10 chapters, an AI writing companion to help you find the right words, and a beautiful printed hardcover book delivered to your door.</p>
+  <p>The complete memoir package includes all 10 chapters, an AI writing companion to help you find the right words, 4 beautiful colour royal hardcover books in cloth, a professional audiobook, and talk over the phone features — all delivered to your door.</p>
   <p style="margin-top: 24px;">
     <a href="${appUrl}/home" style="display: inline-block; padding: 12px 28px; background: #6b5c4c; color: white; text-decoration: none; border-radius: 8px; font-size: 16px;">See What's Next</a>
   </p>
@@ -454,7 +454,7 @@ function generateUpgradeEmail3(name) {
   <p><em>"I thought I'd have nothing interesting to say. But the questions kept drawing out memories I'd forgotten. Suddenly I'd written 40 pages. My grandchildren were amazed."</em></p>
   <p style="color: #9c8b7a;">— Robert M., 72, Surrey</p>
   <p>Robert's story is one of thousands. Most people are surprised by how much they have to share once someone asks the right questions.</p>
-  <p>The complete memoir package is <strong>£149 this month</strong> (usually £300) — that includes all 10 chapters and a professionally printed, full-colour hardcover book. The perfect family heirloom.</p>
+  <p>The complete memoir package is <strong>£299 (50% off)</strong> — that includes all 10 chapters, 4 professionally printed colour royal hardcover books in cloth, a professional audiobook, and talk over the phone features. Or pay just £100/month for 4 months. The perfect family heirloom.</p>
   <p style="margin-top: 24px;">
     <a href="${appUrl}/home" style="display: inline-block; padding: 12px 28px; background: #6b5c4c; color: white; text-decoration: none; border-radius: 8px; font-size: 16px;">Start Your Full Memoir</a>
   </p>

@@ -1,178 +1,105 @@
 /**
  * HomeScreen
- * Premium voice-first interface for daily memory capture
- *
- * Design principles:
- * - Single primary action (voice recording)
- * - Minimal cognitive load
- * - Delightful micro-interactions
- * - Smooth, Apple-quality animations
+ * Simple hub matching web Home.jsx - greeting, progress, action cards
  */
 
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Animated,
-  Dimensions,
   RefreshControl,
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { BlurView } from 'expo-blur';
 import { useAuth } from '../context/AuthContext';
-import { useGame } from '../context/GameContext';
 import api from '../services/api';
-import { colors, spacing, borderRadius, fonts, typography } from '../utils/theme';
-import { springs, easings, durations } from '../utils/animations';
+import { colors, spacing, borderRadius, fonts, shadows } from '../utils/theme';
+import { durations, easings, springs } from '../utils/animations';
 import haptics from '../utils/haptics';
 import {
-  GlowingVoiceButton,
   StreakBadge,
-  AnimatedButton,
   SkeletonHome,
-  IconDocument,
-  IconStar,
-  IconGem,
-  IconCheck,
+  IconEdit,
+  IconPhone,
   IconMic,
+  IconBook,
+  IconFeather,
+  IconSettings,
+  IconChevronRight,
 } from '../components';
 
-const { width, height } = Dimensions.get('window');
-
-interface Prompt {
-  id: number;
-  text: string;
-  hint?: string;
-  category?: string;
-  status?: string;
-}
+// Chapter data matching web
+const TOTAL_QUESTIONS = 100; // Approximate total from chapters data
 
 export default function HomeScreen({ navigation }: any) {
   const { user } = useAuth();
-  const gameState = useGame();
 
-  const [prompt, setPrompt] = useState<Prompt | null>(null);
+  const [progress, setProgress] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Staggered entrance animations
-  const headerOpacity = useRef(new Animated.Value(0)).current;
-  const headerTranslateY = useRef(new Animated.Value(-20)).current;
-  const promptOpacity = useRef(new Animated.Value(0)).current;
-  const promptTranslateY = useRef(new Animated.Value(20)).current;
-  const buttonScale = useRef(new Animated.Value(0.8)).current;
-  const buttonOpacity = useRef(new Animated.Value(0)).current;
-  const statsOpacity = useRef(new Animated.Value(0)).current;
-  const statsTranslateY = useRef(new Animated.Value(30)).current;
+  // Entrance animation
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(20)).current;
 
-  // Ambient animations
-  const ambientGlow = useRef(new Animated.Value(0.05)).current;
+  const firstName = user?.name?.split(' ')[0] || 'Friend';
+
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  }, []);
+
+  const formattedDate = useMemo(() => {
+    return new Date().toLocaleDateString('en-GB', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+    });
+  }, []);
+
+  const { totalAnswered, totalProgress } = useMemo(() => {
+    const answered = Object.values(progress).reduce((sum, count) => sum + count, 0);
+    return {
+      totalAnswered: answered,
+      totalProgress: Math.round((answered / TOTAL_QUESTIONS) * 100),
+    };
+  }, [progress]);
 
   useEffect(() => {
-    fetchData();
+    fetchProgress();
   }, []);
 
   useEffect(() => {
     if (!isLoading) {
-      runEntranceAnimations();
-      startAmbientAnimations();
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: durations.normal,
+          easing: easings.easeOut,
+          useNativeDriver: true,
+        }),
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          ...springs.gentle,
+        }),
+      ]).start();
     }
   }, [isLoading]);
 
-  const runEntranceAnimations = () => {
-    // Staggered entrance sequence
-    Animated.stagger(100, [
-      // Header slides down
-      Animated.parallel([
-        Animated.timing(headerOpacity, {
-          toValue: 1,
-          duration: durations.normal,
-          easing: easings.easeOut,
-          useNativeDriver: true,
-        }),
-        Animated.spring(headerTranslateY, {
-          toValue: 0,
-          ...springs.gentle,
-        }),
-      ]),
-      // Prompt fades up
-      Animated.parallel([
-        Animated.timing(promptOpacity, {
-          toValue: 1,
-          duration: durations.normal,
-          easing: easings.easeOut,
-          useNativeDriver: true,
-        }),
-        Animated.spring(promptTranslateY, {
-          toValue: 0,
-          ...springs.gentle,
-        }),
-      ]),
-      // Button pops in
-      Animated.parallel([
-        Animated.spring(buttonScale, {
-          toValue: 1,
-          ...springs.bouncy,
-        }),
-        Animated.timing(buttonOpacity, {
-          toValue: 1,
-          duration: durations.fast,
-          useNativeDriver: true,
-        }),
-      ]),
-      // Stats slide up
-      Animated.parallel([
-        Animated.timing(statsOpacity, {
-          toValue: 1,
-          duration: durations.normal,
-          easing: easings.easeOut,
-          useNativeDriver: true,
-        }),
-        Animated.spring(statsTranslateY, {
-          toValue: 0,
-          ...springs.gentle,
-        }),
-      ]),
-    ]).start();
-  };
-
-  const startAmbientAnimations = () => {
-    // Subtle background glow pulse
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(ambientGlow, {
-          toValue: 0.1,
-          duration: 3000,
-          easing: easings.easeInOut,
-          useNativeDriver: true,
-        }),
-        Animated.timing(ambientGlow, {
-          toValue: 0.05,
-          duration: 3000,
-          easing: easings.easeInOut,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-  };
-
-  const fetchData = async () => {
+  const fetchProgress = async () => {
     try {
-      const [promptRes] = await Promise.all([
-        api.getTodayPrompt(),
-        gameState.refreshGameState(),
-      ]);
-      setPrompt(promptRes.data);
-    } catch (error) {
-      // Fallback prompt
-      setPrompt({
-        id: 1,
-        text: "What made you smile today?",
-        category: 'Daily Life',
-      });
+      setError(null);
+      const res = await api.getStoriesProgress();
+      setProgress(res.progress || res);
+    } catch (err) {
+      console.error('Error fetching progress:', err);
+      setError('Unable to load your progress. Pull to refresh.');
     } finally {
       setIsLoading(false);
     }
@@ -181,36 +108,9 @@ export default function HomeScreen({ navigation }: any) {
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
     haptics.lightTap();
-    await fetchData();
+    await fetchProgress();
     setIsRefreshing(false);
   }, []);
-
-  const handleVoicePress = () => {
-    haptics.mediumTap();
-    navigation.navigate('VoicePrompt', { prompt });
-  };
-
-  const handleTypePress = () => {
-    haptics.lightTap();
-    navigation.navigate('TextInput', { prompt });
-  };
-
-  const handleStreakPress = () => {
-    haptics.lightTap();
-    navigation.navigate('ProfileTab');
-  };
-
-  const handleHistoryPress = () => {
-    haptics.lightTap();
-    navigation.navigate('HistoryTab');
-  };
-
-  const handleQuickMemoPress = () => {
-    haptics.lightTap();
-    navigation.navigate('QuickMemo');
-  };
-
-  const promptCompleted = prompt?.status === 'completed' || gameState.dailyPromptCompleted;
 
   if (isLoading) {
     return (
@@ -222,14 +122,6 @@ export default function HomeScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Ambient background glow */}
-      <Animated.View
-        style={[
-          styles.ambientGlow,
-          { opacity: ambientGlow },
-        ]}
-      />
-
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -241,233 +133,141 @@ export default function HomeScreen({ navigation }: any) {
           />
         }
       >
-        {/* Header */}
         <Animated.View
-          style={[
-            styles.header,
-            {
-              opacity: headerOpacity,
-              transform: [{ translateY: headerTranslateY }],
-            },
-          ]}
+          style={{
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }],
+          }}
         >
-          {/* Greeting */}
-          <View style={styles.greeting}>
-            <Text style={styles.greetingText}>
-              {getGreeting()}, {user?.name?.split(' ')[0] || 'there'}
-            </Text>
-            <Text style={styles.dateText}>{formatDate()}</Text>
-          </View>
-
-          {/* Streak badge */}
-          <StreakBadge
-            streak={gameState.currentStreak || 0}
-            onPress={handleStreakPress}
-            size="md"
-          />
-        </Animated.View>
-
-        {/* Prompt Section */}
-        <Animated.View
-          style={[
-            styles.promptSection,
-            {
-              opacity: promptOpacity,
-              transform: [{ translateY: promptTranslateY }],
-            },
-          ]}
-        >
-          <View style={styles.promptBadge}>
-            <Text style={styles.promptBadgeText}>TODAY'S PROMPT</Text>
-          </View>
-          <Text style={styles.promptText}>{prompt?.text}</Text>
-          {prompt?.hint && (
-            <Text style={styles.promptHint}>{prompt.hint}</Text>
-          )}
-        </Animated.View>
-
-        {/* Voice Button */}
-        <Animated.View
-          style={[
-            styles.buttonSection,
-            {
-              opacity: buttonOpacity,
-              transform: [{ scale: buttonScale }],
-            },
-          ]}
-        >
-          <GlowingVoiceButton
-            isRecording={false}
-            onPressIn={handleVoicePress}
-            onPressOut={() => {}}
-            disabled={promptCompleted}
-          />
-
-          <Text style={styles.tapHint}>
-            {promptCompleted ? 'Completed for today!' : 'Tap to speak your memory'}
-          </Text>
-
-          {/* Type alternative */}
-          {!promptCompleted && (
+          {/* Header */}
+          <View style={styles.header}>
+            <View style={styles.greeting}>
+              <Text style={styles.greetingText}>
+                {greeting}, {firstName}
+              </Text>
+              <Text style={styles.dateText}>{formattedDate}</Text>
+            </View>
             <TouchableOpacity
-              style={styles.typeButton}
-              onPress={handleTypePress}
+              style={styles.settingsButton}
+              onPress={() => {
+                haptics.lightTap();
+                navigation.navigate('ProfileTab');
+              }}
               activeOpacity={0.7}
             >
-              <Text style={styles.typeButtonText}>or type instead</Text>
+              <IconSettings size={20} color={colors.textMuted} />
             </TouchableOpacity>
+          </View>
+
+          {/* Error */}
+          {error && (
+            <View style={styles.errorBanner}>
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
           )}
-        </Animated.View>
 
-        {/* Stats Section */}
-        <Animated.View
-          style={[
-            styles.statsSection,
-            {
-              opacity: statsOpacity,
-              transform: [{ translateY: statsTranslateY }],
-            },
-          ]}
-        >
-          <TouchableOpacity
-            style={styles.statPill}
-            onPress={handleHistoryPress}
-            activeOpacity={0.7}
-          >
-            <IconDocument size={14} color={colors.textSecondary} />
-            <Text style={styles.statText}>
-              {gameState.totalMemories} {gameState.totalMemories === 1 ? 'memory' : 'memories'}
+          {/* Progress */}
+          <View style={styles.progressSection}>
+            <Text style={styles.progressPercent}>{totalProgress}%</Text>
+            <Text style={styles.progressLabel}>
+              {totalAnswered} of {TOTAL_QUESTIONS} stories captured
             </Text>
-          </TouchableOpacity>
-
-          <View style={styles.statPill}>
-            <IconStar size={14} color={colors.gold} />
-            <Text style={styles.statText}>Level {gameState.currentLevel}</Text>
-          </View>
-
-          <View style={styles.statPill}>
-            <IconGem size={14} color={colors.xp} />
-            <Text style={styles.statText}>{gameState.totalXp} XP</Text>
-          </View>
-        </Animated.View>
-
-        {/* Quick Actions */}
-        <Animated.View
-          style={[
-            styles.quickActionsSection,
-            {
-              opacity: statsOpacity,
-              transform: [{ translateY: statsTranslateY }],
-            },
-          ]}
-        >
-          <TouchableOpacity
-            style={styles.quickMemoButton}
-            onPress={handleQuickMemoPress}
-            activeOpacity={0.7}
-          >
-            <View style={styles.quickMemoIcon}>
-              <IconMic size={20} color={colors.background} />
-            </View>
-            <View style={styles.quickMemoText}>
-              <Text style={styles.quickMemoTitle}>Quick Memo</Text>
-              <Text style={styles.quickMemoSubtitle}>Record a free-form thought</Text>
-            </View>
-          </TouchableOpacity>
-        </Animated.View>
-
-        {/* Memoir Progress Card */}
-        {gameState.memoirProgress && (
-          <Animated.View
-            style={[
-              styles.memoirProgressCard,
-              {
-                opacity: statsOpacity,
-                transform: [{ translateY: statsTranslateY }],
-              },
-            ]}
-          >
-            <View style={styles.memoirHeader}>
-              <Text style={styles.memoirTitle}>Your Memoir</Text>
-              <Text style={styles.memoirPercentage}>
-                {gameState.memoirProgress.overall.percentage}% complete
-              </Text>
-            </View>
-
-            {/* Progress bar */}
-            <View style={styles.memoirProgressBar}>
+            <View style={styles.progressBar}>
               <View
-                style={[
-                  styles.memoirProgressFill,
-                  { width: `${gameState.memoirProgress.overall.percentage}%` },
-                ]}
+                style={[styles.progressFill, { width: `${totalProgress}%` }]}
               />
             </View>
+          </View>
 
-            {/* Chapter summary */}
-            <View style={styles.chapterSummary}>
-              <Text style={styles.chapterSummaryText}>
-                {gameState.memoirProgress.overall.chaptersComplete} of 10 chapters complete
-              </Text>
-            </View>
-
-            {/* Current focus */}
-            {gameState.memoirProgress.suggestedGaps[0] && (
-              <View style={styles.currentFocus}>
-                <Text style={styles.currentFocusLabel}>Today's focus:</Text>
-                <Text style={styles.currentFocusText}>
-                  {gameState.memoirProgress.suggestedGaps[0].reason}
-                </Text>
+          {/* Primary Actions */}
+          <View style={styles.actionsSection}>
+            {/* Tell a Story - Primary CTA */}
+            <TouchableOpacity
+              style={styles.primaryCard}
+              onPress={() => {
+                haptics.mediumTap();
+                navigation.navigate('QuickStory');
+              }}
+              activeOpacity={0.85}
+            >
+              <View style={styles.primaryCardIcon}>
+                <IconEdit size={24} color={colors.textOnPrimary} />
               </View>
-            )}
-          </Animated.View>
-        )}
+              <View style={styles.cardText}>
+                <Text style={styles.primaryCardTitle}>Tell a Story</Text>
+                <Text style={styles.primaryCardSub}>Write whatever's on your mind</Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Call Me */}
+            <TouchableOpacity
+              style={styles.secondaryCard}
+              onPress={() => {
+                haptics.lightTap();
+                navigation.navigate('CallMe');
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.secondaryCardIcon, { backgroundColor: '#F0FDF4' }]}>
+                <IconPhone size={20} color="#16A34A" />
+              </View>
+              <View style={styles.cardText}>
+                <Text style={styles.secondaryCardTitle}>Call Me</Text>
+                <Text style={styles.secondaryCardSub}>Get a phone call to chat about your life</Text>
+              </View>
+              <IconChevronRight size={20} color={colors.textMuted} />
+            </TouchableOpacity>
+
+            {/* Talk (Voice Mode) */}
+            <TouchableOpacity
+              style={styles.secondaryCard}
+              onPress={() => {
+                haptics.lightTap();
+                navigation.navigate('VoicePrompt', { prompt: null });
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.secondaryCardIcon, { backgroundColor: '#FFFBEB' }]}>
+                <IconMic size={20} color="#D97706" />
+              </View>
+              <View style={styles.cardText}>
+                <Text style={styles.secondaryCardTitle}>Talk</Text>
+                <Text style={styles.secondaryCardSub}>Voice conversation to capture memories</Text>
+              </View>
+              <IconChevronRight size={20} color={colors.textMuted} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Secondary Actions */}
+          <View style={styles.secondaryActions}>
+            <TouchableOpacity
+              style={styles.smallCard}
+              onPress={() => {
+                haptics.lightTap();
+                navigation.navigate('HistoryTab');
+              }}
+              activeOpacity={0.7}
+            >
+              <IconBook size={20} color={colors.textMuted} />
+              <Text style={styles.smallCardText}>Preview Book</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.smallCard}
+              onPress={() => {
+                haptics.lightTap();
+                navigation.navigate('MemoirTab');
+              }}
+              activeOpacity={0.7}
+            >
+              <IconFeather size={20} color={colors.textMuted} />
+              <Text style={styles.smallCardText}>Write by Chapter</Text>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
       </ScrollView>
-
-      {/* Completed overlay */}
-      {promptCompleted && (
-        <View style={styles.completedOverlay}>
-          <BlurView intensity={95} style={styles.blurView}>
-            <View style={styles.completedCard}>
-              <View style={styles.completedIconWrapper}>
-                <IconCheck size={40} color={colors.textOnPrimary} />
-              </View>
-              <Text style={styles.completedTitle}>Done for today!</Text>
-              <Text style={styles.completedSubtitle}>
-                You're building something beautiful.{'\n'}
-                Come back tomorrow for your next prompt.
-              </Text>
-
-              <AnimatedButton
-                title="View your memories"
-                onPress={handleHistoryPress}
-                variant="primary"
-                size="lg"
-                fullWidth
-                style={{ marginTop: spacing.lg }}
-              />
-            </View>
-          </BlurView>
-        </View>
-      )}
     </SafeAreaView>
   );
-}
-
-// Helpers
-function getGreeting(): string {
-  const hour = new Date().getHours();
-  if (hour < 12) return 'Good morning';
-  if (hour < 17) return 'Good afternoon';
-  return 'Good evening';
-}
-
-function formatDate(): string {
-  return new Date().toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-  });
 }
 
 const styles = StyleSheet.create({
@@ -478,15 +278,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingBottom: spacing.xxl,
-  },
-  ambientGlow: {
-    position: 'absolute',
-    top: height * 0.3,
-    left: width * 0.5 - 150,
-    width: 300,
-    height: 300,
-    borderRadius: 150,
-    backgroundColor: colors.primary,
   },
 
   // Header
@@ -502,7 +293,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   greetingText: {
-    fontSize: 26,
+    fontSize: 28,
     fontFamily: fonts.display,
     color: colors.text,
     marginBottom: 4,
@@ -512,250 +303,152 @@ const styles = StyleSheet.create({
     fontFamily: fonts.body,
     color: colors.textMuted,
   },
-
-  // Prompt
-  promptSection: {
-    alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.xl,
-  },
-  promptBadge: {
-    backgroundColor: colors.primaryMuted,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 6,
-    borderRadius: borderRadius.full,
-    marginBottom: spacing.md,
-  },
-  promptBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.primary,
-    letterSpacing: 1,
-  },
-  promptText: {
-    fontSize: 28,
-    fontFamily: fonts.displayMedium,
-    color: colors.text,
-    textAlign: 'center',
-    lineHeight: 40,
-  },
-  promptHint: {
-    fontSize: 16,
-    fontFamily: fonts.body,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginTop: spacing.sm,
-    fontStyle: 'italic',
-  },
-
-  // Button section
-  buttonSection: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.xxl,
-    minHeight: 300,
-  },
-  tapHint: {
-    fontSize: 16,
-    fontFamily: fonts.bodyMedium,
-    color: colors.textSecondary,
-    marginTop: spacing.xl,
-  },
-  typeButton: {
-    marginTop: spacing.md,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
-  },
-  typeButtonText: {
-    fontSize: 15,
-    fontFamily: fonts.body,
-    color: colors.textMuted,
-  },
-
-  // Stats
-  statsSection: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-  },
-  statPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  settingsButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     backgroundColor: colors.backgroundAlt,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.full,
-    gap: spacing.xs,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  statText: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    fontWeight: '600',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
-  // Completed overlay
-  completedOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
+  // Error
+  errorBanner: {
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    padding: spacing.md,
+    backgroundColor: '#FEF2F2',
+    borderRadius: borderRadius.lg,
   },
-  blurView: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.xl,
+  errorText: {
+    fontSize: 14,
+    fontFamily: fonts.body,
+    color: '#DC2626',
+    textAlign: 'center',
   },
-  completedCard: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.xxl,
-    padding: spacing.xl,
+
+  // Progress
+  progressSection: {
     alignItems: 'center',
-    maxWidth: 340,
-    width: '100%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.15,
-    shadowRadius: 30,
-    elevation: 10,
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.xl,
   },
-  completedIconWrapper: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: spacing.lg,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  completedTitle: {
-    fontSize: 26,
+  progressPercent: {
+    fontSize: 48,
     fontFamily: fonts.display,
     color: colors.text,
-    marginBottom: spacing.sm,
+    marginBottom: 4,
   },
-  completedSubtitle: {
-    fontSize: 16,
+  progressLabel: {
+    fontSize: 14,
     fontFamily: fonts.body,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 26,
-  },
-
-  // Quick Actions
-  quickActionsSection: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-  },
-  quickMemoButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.backgroundAlt,
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  quickMemoIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: spacing.md,
-  },
-  quickMemoText: {
-    flex: 1,
-  },
-  quickMemoTitle: {
-    fontSize: 16,
-    fontFamily: fonts.displayMedium,
-    color: colors.text,
-    marginBottom: 2,
-  },
-  quickMemoSubtitle: {
-    fontSize: 13,
-    fontFamily: fonts.body,
-    color: colors.textSecondary,
-  },
-
-  // Memoir Progress
-  memoirProgressCard: {
-    marginHorizontal: spacing.lg,
-    marginTop: spacing.xl,
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.xl,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  memoirHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    color: colors.textMuted,
     marginBottom: spacing.md,
   },
-  memoirTitle: {
-    fontSize: 16,
-    fontFamily: fonts.displaySemiBold,
-    color: colors.text,
-  },
-  memoirPercentage: {
-    fontSize: 14,
-    fontFamily: fonts.bodySemiBold,
-    color: colors.primary,
-  },
-  memoirProgressBar: {
+  progressBar: {
+    width: '100%',
     height: 8,
     backgroundColor: colors.backgroundAlt,
     borderRadius: 4,
     overflow: 'hidden',
-    marginBottom: spacing.sm,
   },
-  memoirProgressFill: {
+  progressFill: {
     height: '100%',
     backgroundColor: colors.primary,
     borderRadius: 4,
   },
-  chapterSummary: {
-    marginBottom: spacing.sm,
+
+  // Actions
+  actionsSection: {
+    paddingHorizontal: spacing.lg,
+    gap: spacing.md,
+    marginBottom: spacing.lg,
   },
-  chapterSummaryText: {
+
+  // Primary card (Tell a Story)
+  primaryCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.xl,
+    padding: spacing.lg,
+    gap: spacing.md,
+    ...shadows.lg,
+    shadowColor: colors.primary,
+  },
+  primaryCardIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardText: {
+    flex: 1,
+  },
+  primaryCardTitle: {
+    fontSize: 18,
+    fontFamily: fonts.displayMedium,
+    color: colors.textOnPrimary,
+    marginBottom: 2,
+  },
+  primaryCardSub: {
+    fontSize: 14,
+    fontFamily: fonts.body,
+    color: 'rgba(255,255,255,0.7)',
+  },
+
+  // Secondary cards (Call Me, Talk)
+  secondaryCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.xl,
+    padding: spacing.lg - 4,
+    gap: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    ...shadows.sm,
+  },
+  secondaryCardIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  secondaryCardTitle: {
+    fontSize: 16,
+    fontFamily: fonts.displayMedium,
+    color: colors.text,
+    marginBottom: 2,
+  },
+  secondaryCardSub: {
     fontSize: 13,
     fontFamily: fonts.body,
     color: colors.textMuted,
   },
-  currentFocus: {
-    backgroundColor: colors.primaryMuted,
-    borderRadius: borderRadius.md,
-    padding: spacing.sm,
-    marginTop: spacing.xs,
+
+  // Secondary actions row
+  secondaryActions: {
+    flexDirection: 'row',
+    paddingHorizontal: spacing.lg,
+    gap: spacing.md,
   },
-  currentFocusLabel: {
-    fontSize: 11,
-    fontFamily: fonts.bodySemiBold,
-    color: colors.primary,
-    marginBottom: 2,
+  smallCard: {
+    flex: 1,
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.xl,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    gap: spacing.xs,
   },
-  currentFocusText: {
+  smallCardText: {
     fontSize: 14,
-    fontFamily: fonts.body,
+    fontFamily: fonts.bodyMedium,
     color: colors.text,
   },
 });

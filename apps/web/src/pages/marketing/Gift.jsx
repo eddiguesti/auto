@@ -19,12 +19,12 @@ export default function Gift() {
       savings: '50% off',
       description: 'Everything you need to capture a lifetime of memories',
       features: [
-        'Colour royal hardcover book in cloth',
+        '4 colour royal hardcover books in cloth',
         'Professional audiobook',
         'Talk over the phone features',
         'Unlimited voice recordings',
         '12 months of access',
-        'Pay over 3 months available'
+        'Pay over 4 months at £100/mo'
       ]
     },
     {
@@ -35,7 +35,7 @@ export default function Gift() {
       description: 'The complete package with a printed keepsake',
       features: [
         'Everything in Storyteller',
-        '1 Premium hardcover book',
+        '4 Premium hardcover books',
         'Custom cover design',
         'Family sharing',
         '12 months of access'

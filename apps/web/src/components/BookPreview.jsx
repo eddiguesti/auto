@@ -128,16 +128,6 @@ function createCoverTexture(text, subtitle, opts = {}) {
   ctx.fillRect(0, 0, TEX_W, TEX_H)
   drawPaperNoise(ctx, TEX_W, TEX_H, 14)
 
-  // Cover image if provided
-  if (opts.coverImage) {
-    ctx.save()
-    ctx.globalAlpha = 0.3
-    ctx.drawImage(opts.coverImage, 0, 0, TEX_W, TEX_H)
-    ctx.restore()
-    ctx.fillStyle = 'rgba(0,0,0,0.5)'
-    ctx.fillRect(0, 0, TEX_W, TEX_H)
-  }
-
   // Subtle radial highlight
   const rg = ctx.createRadialGradient(
     TEX_W * 0.4,
@@ -716,7 +706,7 @@ function buildBook(
   pageContents,
   title,
   author,
-  coverImageUrl,
+  _coverImageUrl,
   storyCount,
   chapterCount
 ) {
@@ -764,20 +754,8 @@ function buildBook(
   const sheetDefs = []
   const allPages = pageContents
 
-  // Handle cover image loading
-  let coverImage = null
-  const coverPromise = coverImageUrl
-    ? new Promise(resolve => {
-        const img = new Image()
-        img.crossOrigin = 'anonymous'
-        img.onload = () => {
-          coverImage = img
-          resolve()
-        }
-        img.onerror = () => resolve()
-        img.src = coverImageUrl
-      })
-    : Promise.resolve()
+  // Default cloth cover (no custom image)
+  const coverPromise = Promise.resolve()
 
   // We need pairs of pages for sheets:
   // Sheet 0: Front Cover (front) / first page content (back)
@@ -795,7 +773,7 @@ function buildBook(
 
     // Front cover + first page back (endpaper)
     sheetDefs.push({
-      frontTex: createCoverTexture(title, 'The Autobiography of', { author, coverImage }),
+      frontTex: createCoverTexture(title, 'The Autobiography of', { author }),
       backTex:
         interiorPages.length > 0 ? createPageTexture(interiorPages[0]) : createEmptyTexture(),
       hard: true

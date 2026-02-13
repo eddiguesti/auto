@@ -73,7 +73,7 @@ export default function FAQ() {
       {
         question: 'What book options are available?',
         answer:
-          'Our complete memoir package is £299 (50% off £599) and includes a beautiful colour royal hardcover book in cloth, a professional audiobook, and talk over the phone features. You can also pay over 3 months. All books use archival-quality paper that will last generations.'
+          'Our complete memoir package is £299 (50% off £599) and includes 4 beautiful colour royal hardcover books in cloth, a professional audiobook, and talk over the phone features. You can also pay over 4 months at £100/month. All books use archival-quality paper that will last generations.'
       },
       {
         question: 'How long does printing and delivery take?',
@@ -147,7 +147,7 @@ export default function FAQ() {
       {
         question: 'Can I buy a gift that includes a printed book?',
         answer:
-          'Yes! Our complete memoir package (£299, 50% off) includes a beautiful colour royal hardcover book in cloth, a professional audiobook, and talk over the phone features. You can pay over 3 months too. The recipient completes their memoir, approves the design, and we print and ship the books directly to them—or to you, if you want it as a surprise.'
+          'Yes! Our complete memoir package (£299, 50% off) includes 4 beautiful colour royal hardcover books in cloth, a professional audiobook, and talk over the phone features. You can pay over 4 months at £100/month too. The recipient completes their memoir, approves the design, and we print and ship the books directly to them—or to you, if you want it as a surprise.'
       }
     ]
   }

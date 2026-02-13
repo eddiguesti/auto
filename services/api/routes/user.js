@@ -319,6 +319,9 @@ router.delete(
       // Delete user style preferences
       await client.query('DELETE FROM user_style_preferences WHERE user_id = $1', [userId])
 
+      // Delete free stories
+      await client.query('DELETE FROM free_stories WHERE user_id = $1', [userId])
+
       // Delete book covers
       await client.query('DELETE FROM book_covers WHERE user_id = $1', [userId])
 

@@ -88,7 +88,7 @@ const FAQ_DATABASE = {
     category: 'Orders',
     keywords: ['price', 'cost', 'how much', 'pricing', 'payment', 'pay'],
     answer:
-      'Our complete memoir package is £299 (50% off £599) and includes a beautiful colour royal hardcover book in cloth, a professional audiobook, and talk over the phone features. You can also pay over 3 months at £99.67/month. All prices include shipping.'
+      'Our complete memoir package is £299 (50% off £599) and includes 4 beautiful colour royal hardcover books in cloth, a professional audiobook, and talk over the phone features. You can also pay over 4 months at £100/month. All prices include shipping.'
   },
   order: {
     category: 'Orders',

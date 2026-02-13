@@ -866,7 +866,7 @@ export default function Landing() {
                   <span className="font-display text-5xl text-ink">£299</span>
                   <span className="font-sans text-warmgray line-through text-sm ml-2">£599</span>
                 </div>
-                <p className="font-serif text-warmgray mt-1">50% off — or 3 payments of £99.67</p>
+                <p className="font-serif text-warmgray mt-1">50% off — or 4 payments of £100/mo</p>
               </div>
 
               <ul className="space-y-3 mb-8">
@@ -911,7 +911,7 @@ export default function Landing() {
                     />
                   </svg>
                   <span className="font-serif text-warmgray">
-                    Colour royal hardcover book in cloth
+                    4 colour royal hardcover books in cloth
                   </span>
                 </li>
                 <li className="flex items-start gap-3">
@@ -963,7 +963,7 @@ export default function Landing() {
                   <span className="font-display text-5xl text-ink">£299</span>
                   <span className="font-sans text-warmgray line-through text-sm ml-2">£599</span>
                 </div>
-                <p className="font-serif text-warmgray mt-1">50% off — or 3 payments of £99.67</p>
+                <p className="font-serif text-warmgray mt-1">50% off — or 4 payments of £100/mo</p>
               </div>
 
               <ul className="space-y-3 mb-8">

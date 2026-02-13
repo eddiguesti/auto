@@ -1,7 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
-import CoverEditor from './CoverEditor'
-import { IconBook, IconBookmark, IconGift, IconX, IconZoomIn, IconRefresh, IconStack2, IconHeadphones, IconDiscount2 } from '@tabler/icons-react'
+import {
+  IconBook,
+  IconBookmark,
+  IconGift,
+  IconX,
+  IconStack2,
+  IconHeadphones,
+  IconDiscount2
+} from '@tabler/icons-react'
 
 // Package options with discounts
 const PACKAGES = {
@@ -17,7 +24,7 @@ const PACKAGES = {
     id: 'bundle10',
     name: '10 Book Bundle',
     quantity: 10,
-    discount: 0.40,
+    discount: 0.4,
     description: 'Share with family - 40% OFF',
     icon: 'stack',
     popular: true
@@ -26,43 +33,12 @@ const PACKAGES = {
 
 // Audiobook pricing
 const AUDIOBOOK_PRICE = 19.99
-const AUDIOBOOK_BUNDLE_DISCOUNT = 0.40 // 40% off when bundled with books
+const AUDIOBOOK_BUNDLE_DISCOUNT = 0.4 // 40% off when bundled with books
 
-// Full image lightbox modal
-function ImageLightbox({ imageUrl, onClose }) {
-  if (!imageUrl) return null
-
-  return (
-    <div
-      className="fixed inset-0 bg-black/90 flex items-center justify-center z-[60] p-4 cursor-pointer"
-      onClick={onClose}
-    >
-      <button
-        onClick={onClose}
-        className="absolute top-4 right-4 w-12 h-12 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition"
-      >
-        <IconX size={28} stroke={2} />
-      </button>
-      <img
-        src={imageUrl}
-        alt="Full cover preview"
-        className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
-        onClick={e => e.stopPropagation()}
-      />
-      <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/60 text-sm">
-        Click anywhere to close
-      </p>
-    </div>
-  )
-}
-
-// 3D Flippable book cover preview
-// Takes a landscape full-wrap image (back | spine | front) and splits it
-function BookPreview({ coverImage, title, authorName, format, size = 'normal', allowFlip = true, onViewFull }) {
-  const [isFlipped, setIsFlipped] = useState(false)
+// Simple book cover preview - shows default cloth cover
+function BookPreview({ title, format, size = 'normal' }) {
   const isHardcover = format === 'hardcover' || format === 'deluxe'
 
-  // Size variants
   const sizes = {
     small: { width: 140, height: 210 },
     normal: { width: 200, height: 300 },
@@ -72,141 +48,37 @@ function BookPreview({ coverImage, title, authorName, format, size = 'normal', a
 
   return (
     <div className="flex flex-col items-center gap-3">
-      {/* 3D Book Container */}
       <div
-        className="relative cursor-pointer"
+        className="rounded-r-lg overflow-hidden"
         style={{
           width,
           height,
-          perspective: '1000px'
+          boxShadow: isHardcover
+            ? '4px 4px 20px rgba(0,0,0,0.4), -2px 0 10px rgba(0,0,0,0.1)'
+            : '2px 2px 12px rgba(0,0,0,0.3)'
         }}
-        onClick={() => allowFlip && coverImage && setIsFlipped(!isFlipped)}
       >
-        {/* Book wrapper for 3D transform */}
-        <div
-          className="relative w-full h-full transition-transform duration-700"
-          style={{
-            transformStyle: 'preserve-3d',
-            transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
-          }}
-        >
-          {/* Front Cover - RIGHT side of landscape image */}
-          <div
-            className="absolute inset-0 rounded-r-lg overflow-hidden"
-            style={{
-              backfaceVisibility: 'hidden',
-              boxShadow: isHardcover
-                ? '4px 4px 20px rgba(0,0,0,0.4), -2px 0 10px rgba(0,0,0,0.1)'
-                : '2px 2px 12px rgba(0,0,0,0.3)',
-            }}
-          >
-            {coverImage ? (
-              <div
-                className="w-full h-full"
-                style={{
-                  backgroundImage: `url(${coverImage})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: '100% center'
-                }}
-              />
-            ) : (
-              <div className="w-full h-full bg-gradient-to-br from-[#8b7355] via-[#6b5344] to-[#4a3728] flex flex-col justify-between p-5">
-                <div className="text-center pt-8">
-                  <h3
-                    className="font-serif text-white/60 leading-snug"
-                    style={{
-                      fontSize: size === 'large' ? '22px' : size === 'small' ? '14px' : '18px',
-                      fontWeight: 500,
-                    }}
-                  >
-                    {title}
-                  </h3>
-                </div>
-                <div className="text-center pb-4">
-                  <div className="text-white/40 text-xs">
-                    Generate cover to see preview
-                  </div>
-                </div>
-              </div>
-            )}
-            {/* Shine effect */}
-            <div
-              className="absolute inset-0 pointer-events-none"
+        <div className="w-full h-full bg-gradient-to-br from-[#8b7355] via-[#6b5344] to-[#4a3728] flex flex-col justify-center p-5 relative">
+          <div className="text-center">
+            <h3
+              className="font-serif text-amber-100/80 leading-snug"
               style={{
-                background: 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 50%)',
+                fontSize: size === 'large' ? '22px' : size === 'small' ? '14px' : '18px',
+                fontWeight: 500
               }}
-            />
+            >
+              {title}
+            </h3>
           </div>
-
-          {/* Back Cover - LEFT side of landscape image */}
+          {/* Shine effect */}
           <div
-            className="absolute inset-0 rounded-l-lg overflow-hidden"
+            className="absolute inset-0 pointer-events-none"
             style={{
-              backfaceVisibility: 'hidden',
-              transform: 'rotateY(180deg)',
-              boxShadow: isHardcover
-                ? '4px 4px 20px rgba(0,0,0,0.4), 2px 0 10px rgba(0,0,0,0.1)'
-                : '2px 2px 12px rgba(0,0,0,0.3)',
+              background: 'linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 50%)'
             }}
-          >
-            {coverImage ? (
-              <div
-                className="w-full h-full"
-                style={{
-                  backgroundImage: `url(${coverImage})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: '0% center'
-                }}
-              />
-            ) : (
-              <div className="w-full h-full bg-gradient-to-br from-[#6b5344] via-[#5a4335] to-[#4a3728] flex flex-col justify-between p-5">
-                <div className="flex-1 flex items-center justify-center">
-                  <div className="text-center text-white/50 text-sm max-w-[80%]">
-                    <p className="italic mb-4">"A heartfelt journey through memories..."</p>
-                    <p className="text-xs text-white/30">Synopsis will appear here</p>
-                  </div>
-                </div>
-                <div className="text-center pb-2">
-                  <div className="w-16 h-10 bg-white/20 mx-auto rounded text-[8px] flex items-center justify-center text-white/40">
-                    BARCODE
-                  </div>
-                </div>
-              </div>
-            )}
-            {/* Shine effect */}
-            <div
-              className="absolute inset-0 pointer-events-none"
-              style={{
-                background: 'linear-gradient(-135deg, rgba(255,255,255,0.15) 0%, transparent 50%)',
-              }}
-            />
-          </div>
+          />
         </div>
       </div>
-
-      {/* Controls */}
-      {coverImage && (
-        <div className="flex items-center gap-4">
-          {allowFlip && (
-            <button
-              onClick={() => setIsFlipped(!isFlipped)}
-              className="text-xs text-sepia/60 hover:text-sepia flex items-center gap-1 transition-colors"
-            >
-              <IconRefresh size={16} stroke={2} />
-              {isFlipped ? 'View front' : 'View back'}
-            </button>
-          )}
-          {onViewFull && (
-            <button
-              onClick={onViewFull}
-              className="text-xs text-sepia/60 hover:text-sepia flex items-center gap-1 transition-colors"
-            >
-              <IconZoomIn size={16} stroke={2} />
-              View full image
-            </button>
-          )}
-        </div>
-      )}
     </div>
   )
 }
@@ -234,7 +106,9 @@ function FormatCard({ format, selected, onClick }) {
           Most Popular
         </span>
       )}
-      <div className="flex justify-center mb-2">{formatIcons[format.icon] || formatIcons.paperback}</div>
+      <div className="flex justify-center mb-2">
+        {formatIcons[format.icon] || formatIcons.paperback}
+      </div>
       <div className="font-medium text-ink text-lg">{format.name}</div>
       <div className="text-sm text-warmgray mt-1">{format.description}</div>
       <div className="text-xl font-semibold text-sepia mt-3">{format.price}</div>
@@ -247,13 +121,11 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(true)
   const [options, setOptions] = useState(null)
-  const [showLightbox, setShowLightbox] = useState(false)
 
   // Wizard state
   const [selectedFormat, setSelectedFormat] = useState('hardcover')
   const [selectedPackage, setSelectedPackage] = useState('single')
   const [includeAudiobook, setIncludeAudiobook] = useState(false)
-  const [coverImage, setCoverImage] = useState(null)
   const [bookTitle, setBookTitle] = useState('My Life Story')
   const [authorName, setAuthorName] = useState('')
 
@@ -285,8 +157,8 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
   }
 
   const canProceedToStep2 = selectedFormat
-  const canProceedToStep3 = true // Cover editor handles its own state
-  const canProceedToStep4 = shipping.name && shipping.email && shipping.street1 && shipping.city && shipping.postcode
+  const canProceedToStep3 =
+    shipping.name && shipping.email && shipping.street1 && shipping.city && shipping.postcode
 
   // Calculate total price
   const calculateTotal = () => {
@@ -303,13 +175,19 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
     // Audiobook price (40% off when bundled with 10 books)
     let audiobookPrice = 0
     if (includeAudiobook) {
-      audiobookPrice = selectedPackage === 'bundle10'
-        ? AUDIOBOOK_PRICE * (1 - AUDIOBOOK_BUNDLE_DISCOUNT)
-        : AUDIOBOOK_PRICE
+      audiobookPrice =
+        selectedPackage === 'bundle10'
+          ? AUDIOBOOK_PRICE * (1 - AUDIOBOOK_BUNDLE_DISCOUNT)
+          : AUDIOBOOK_PRICE
     }
 
     const total = booksPrice + audiobookPrice
-    const savings = (booksFullPrice - booksPrice) + (includeAudiobook && selectedPackage === 'bundle10' ? AUDIOBOOK_PRICE * AUDIOBOOK_BUNDLE_DISCOUNT : 0)
+    const savings =
+      booksFullPrice -
+      booksPrice +
+      (includeAudiobook && selectedPackage === 'bundle10'
+        ? AUDIOBOOK_PRICE * AUDIOBOOK_BUNDLE_DISCOUNT
+        : 0)
 
     return {
       books: booksPrice,
@@ -335,9 +213,8 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
 
   const steps = [
     { num: 1, label: 'Book' },
-    { num: 2, label: 'Design' },
-    { num: 3, label: 'Shipping' },
-    { num: 4, label: 'Review' }
+    { num: 2, label: 'Shipping' },
+    { num: 3, label: 'Review' }
   ]
 
   return (
@@ -351,16 +228,25 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
             <div className="flex items-center gap-0.5 sm:gap-1 mt-2 overflow-x-auto">
               {steps.map((s, i) => (
                 <div key={s.num} className="flex items-center flex-shrink-0">
-                  <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-medium transition-colors ${
-                    step > s.num ? 'bg-green-500 text-white' :
-                    step === s.num ? 'bg-sepia text-white' : 'bg-sepia/20 text-sepia/60'
-                  }`}>
+                  <div
+                    className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-medium transition-colors ${
+                      step > s.num
+                        ? 'bg-green-500 text-white'
+                        : step === s.num
+                          ? 'bg-sepia text-white'
+                          : 'bg-sepia/20 text-sepia/60'
+                    }`}
+                  >
                     {step > s.num ? '✓' : s.num}
                   </div>
-                  <span className={`ml-1 sm:ml-1.5 text-[10px] sm:text-xs hidden xs:inline ${step === s.num ? 'text-ink font-medium' : 'text-sepia/60'}`}>
+                  <span
+                    className={`ml-1 sm:ml-1.5 text-[10px] sm:text-xs hidden xs:inline ${step === s.num ? 'text-ink font-medium' : 'text-sepia/60'}`}
+                  >
                     {s.label}
                   </span>
-                  {i < steps.length - 1 && <div className="w-3 sm:w-6 h-0.5 mx-1 sm:mx-2 bg-sepia/20" />}
+                  {i < steps.length - 1 && (
+                    <div className="w-3 sm:w-6 h-0.5 mx-1 sm:mx-2 bg-sepia/20" />
+                  )}
                 </div>
               ))}
             </div>
@@ -380,7 +266,9 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
             <div className="p-4 sm:p-6 space-y-6 sm:space-y-8">
               {/* Book Format */}
               <div>
-                <h3 className="text-base sm:text-lg font-medium text-ink mb-3 sm:mb-4">Choose your book format</h3>
+                <h3 className="text-base sm:text-lg font-medium text-ink mb-3 sm:mb-4">
+                  Choose your book format
+                </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                   {options.bookFormats.map(format => (
                     <FormatCard
@@ -395,7 +283,9 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
 
               {/* Package Selection */}
               <div>
-                <h3 className="text-base sm:text-lg font-medium text-ink mb-3 sm:mb-4">Choose your package</h3>
+                <h3 className="text-base sm:text-lg font-medium text-ink mb-3 sm:mb-4">
+                  Choose your package
+                </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   {/* Single Copy */}
                   <button
@@ -438,7 +328,16 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
                         <div className="font-medium text-ink text-lg">10 Book Bundle</div>
                         <div className="text-sm text-warmgray">Share with family & friends</div>
                         <div className="text-xs text-amber-600 font-medium mt-1">
-                          Save £{((parseFloat(options.bookFormats.find(f => f.id === selectedFormat)?.price?.replace('£', '') || 0) * 10) * 0.4).toFixed(0)}
+                          Save £
+                          {(
+                            parseFloat(
+                              options.bookFormats
+                                .find(f => f.id === selectedFormat)
+                                ?.price?.replace('£', '') || 0
+                            ) *
+                            10 *
+                            0.4
+                          ).toFixed(0)}
                         </div>
                       </div>
                     </div>
@@ -448,7 +347,9 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
 
               {/* Audiobook Add-on */}
               <div>
-                <h3 className="text-base sm:text-lg font-medium text-ink mb-3 sm:mb-4">Add audiobook narration</h3>
+                <h3 className="text-base sm:text-lg font-medium text-ink mb-3 sm:mb-4">
+                  Add audiobook narration
+                </h3>
                 <button
                   onClick={() => setIncludeAudiobook(!includeAudiobook)}
                   className={`w-full relative p-5 rounded-2xl border-2 transition-all duration-300 text-left ${
@@ -463,29 +364,51 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
                     </span>
                   )}
                   <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${includeAudiobook ? 'bg-sepia/20' : 'bg-sepia/10'}`}>
+                    <div
+                      className={`w-12 h-12 rounded-full flex items-center justify-center ${includeAudiobook ? 'bg-sepia/20' : 'bg-sepia/10'}`}
+                    >
                       <IconHeadphones size={24} className="text-sepia" stroke={1.5} />
                     </div>
                     <div className="flex-1">
                       <div className="font-medium text-ink text-lg">Professional AI Audiobook</div>
-                      <div className="text-sm text-warmgray">Your memoir read aloud with natural AI narration</div>
+                      <div className="text-sm text-warmgray">
+                        Your memoir read aloud with natural AI narration
+                      </div>
                     </div>
                     <div className="text-right">
                       {selectedPackage === 'bundle10' ? (
                         <>
-                          <div className="text-lg font-semibold text-sepia">£{(AUDIOBOOK_PRICE * (1 - AUDIOBOOK_BUNDLE_DISCOUNT)).toFixed(2)}</div>
-                          <div className="text-xs text-warmgray line-through">£{AUDIOBOOK_PRICE.toFixed(2)}</div>
+                          <div className="text-lg font-semibold text-sepia">
+                            £{(AUDIOBOOK_PRICE * (1 - AUDIOBOOK_BUNDLE_DISCOUNT)).toFixed(2)}
+                          </div>
+                          <div className="text-xs text-warmgray line-through">
+                            £{AUDIOBOOK_PRICE.toFixed(2)}
+                          </div>
                         </>
                       ) : (
-                        <div className="text-lg font-semibold text-sepia">£{AUDIOBOOK_PRICE.toFixed(2)}</div>
+                        <div className="text-lg font-semibold text-sepia">
+                          £{AUDIOBOOK_PRICE.toFixed(2)}
+                        </div>
                       )}
                     </div>
-                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
-                      includeAudiobook ? 'bg-sepia border-sepia' : 'border-sepia/30'
-                    }`}>
+                    <div
+                      className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+                        includeAudiobook ? 'bg-sepia border-sepia' : 'border-sepia/30'
+                      }`}
+                    >
                       {includeAudiobook && (
-                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        <svg
+                          className="w-4 h-4 text-white"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={3}
+                            d="M5 13l4 4L19 7"
+                          />
                         </svg>
                       )}
                     </div>
@@ -523,11 +446,16 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <IconDiscount2 size={20} className="text-amber-600" />
-                      <span className="text-amber-800 font-medium">You're saving £{pricing.savings.toFixed(2)}!</span>
+                      <span className="text-amber-800 font-medium">
+                        You're saving £{pricing.savings.toFixed(2)}!
+                      </span>
                     </div>
                     <div className="text-right">
                       <div className="text-2xl font-bold text-ink">£{pricing.total.toFixed(2)}</div>
-                      <div className="text-xs text-warmgray">{pricing.quantity} book{pricing.quantity > 1 ? 's' : ''}{includeAudiobook ? ' + audiobook' : ''}</div>
+                      <div className="text-xs text-warmgray">
+                        {pricing.quantity} book{pricing.quantity > 1 ? 's' : ''}
+                        {includeAudiobook ? ' + audiobook' : ''}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -535,22 +463,8 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
             </div>
           )}
 
-          {/* Step 2: Design Cover */}
+          {/* Step 2: Shipping Details */}
           {step === 2 && (
-            <div className="p-2 sm:p-4">
-              <CoverEditor
-                initialTitle={bookTitle}
-                initialAuthor={authorName}
-                pageCount={pageCount || 200}
-                onSave={(coverData) => {
-                  setCoverImage(coverData?.imageUrl)
-                }}
-              />
-            </div>
-          )}
-
-          {/* Step 3: Shipping Details */}
-          {step === 3 && (
             <div className="p-6">
               <div className="max-w-lg mx-auto space-y-5">
                 <div>
@@ -624,20 +538,18 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
             </div>
           )}
 
-          {/* Step 4: Review */}
-          {step === 4 && (
+          {/* Step 3: Review */}
+          {step === 3 && (
             <div className="p-6">
               <div className="max-w-2xl mx-auto">
                 <div className="grid md:grid-cols-2 gap-8">
                   {/* Book Preview */}
                   <div className="flex flex-col items-center">
                     <BookPreview
-                      coverImage={coverImage}
                       title={bookTitle}
                       authorName={authorName}
                       format={selectedFormat}
                       size="normal"
-                      onViewFull={coverImage ? () => setShowLightbox(true) : null}
                     />
                     <div className="mt-4 text-center">
                       <div className="font-medium text-ink">{bookTitle}</div>
@@ -658,12 +570,14 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
                           <dt className="text-warmgray">Quantity</dt>
                           <dd className="text-ink font-medium">
                             {pricing.quantity} book{pricing.quantity > 1 ? 's' : ''}
-                            {selectedPackage === 'bundle10' && <span className="text-amber-600 ml-1">(40% off)</span>}
+                            {selectedPackage === 'bundle10' && (
+                              <span className="text-amber-600 ml-1">(40% off)</span>
+                            )}
                           </dd>
                         </div>
                         <div className="flex justify-between">
                           <dt className="text-warmgray">Cover</dt>
-                          <dd className="text-ink font-medium">Custom Design</dd>
+                          <dd className="text-ink font-medium">Classic Cloth</dd>
                         </div>
                         <div className="flex justify-between">
                           <dt className="text-warmgray">Pages</dt>
@@ -674,7 +588,9 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
                             <dt className="text-warmgray">Audiobook</dt>
                             <dd className="text-ink font-medium">
                               AI Narration
-                              {selectedPackage === 'bundle10' && <span className="text-green-600 ml-1">(40% off)</span>}
+                              {selectedPackage === 'bundle10' && (
+                                <span className="text-green-600 ml-1">(40% off)</span>
+                              )}
                             </dd>
                           </div>
                         )}
@@ -684,8 +600,10 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
                     <div className="bg-white rounded-xl p-5 border border-sepia/10">
                       <h4 className="font-medium text-ink mb-3">Shipping To</h4>
                       <p className="text-sm text-ink">
-                        {shipping.name}<br />
-                        {shipping.street1}<br />
+                        {shipping.name}
+                        <br />
+                        {shipping.street1}
+                        <br />
                         {shipping.city}, {shipping.postcode}
                       </p>
                     </div>
@@ -730,12 +648,17 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
             <div className="hidden sm:block">
               {step === 1 && selectedFormat && (
                 <div className="text-left">
-                  <span className="text-xl font-semibold text-ink">£{pricing.total.toFixed(2)}</span>
+                  <span className="text-xl font-semibold text-ink">
+                    £{pricing.total.toFixed(2)}
+                  </span>
                   {pricing.savings > 0 && (
-                    <span className="text-sm text-green-600 ml-2">Save £{pricing.savings.toFixed(2)}</span>
+                    <span className="text-sm text-green-600 ml-2">
+                      Save £{pricing.savings.toFixed(2)}
+                    </span>
                   )}
                   <div className="text-xs text-warmgray">
-                    {pricing.quantity} book{pricing.quantity > 1 ? 's' : ''}{includeAudiobook ? ' + audiobook' : ''}
+                    {pricing.quantity} book{pricing.quantity > 1 ? 's' : ''}
+                    {includeAudiobook ? ' + audiobook' : ''}
                   </div>
                 </div>
               )}
@@ -755,7 +678,7 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
                   disabled={!canProceedToStep2}
                   className="w-full sm:w-auto px-8 py-3.5 sm:py-3 bg-sepia text-white rounded-xl hover:bg-sepia/90 disabled:opacity-40 transition font-medium text-base order-1 sm:order-2"
                 >
-                  Continue to Cover
+                  Continue to Shipping
                 </button>
               )}
               {step === 2 && (
@@ -764,19 +687,10 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
                   disabled={!canProceedToStep3}
                   className="w-full sm:w-auto px-8 py-3.5 sm:py-3 bg-sepia text-white rounded-xl hover:bg-sepia/90 disabled:opacity-40 transition font-medium text-base order-1 sm:order-2"
                 >
-                  Continue to Shipping
-                </button>
-              )}
-              {step === 3 && (
-                <button
-                  onClick={() => setStep(4)}
-                  disabled={!canProceedToStep4}
-                  className="w-full sm:w-auto px-8 py-3.5 sm:py-3 bg-sepia text-white rounded-xl hover:bg-sepia/90 disabled:opacity-40 transition font-medium text-base order-1 sm:order-2"
-                >
                   Review Order
                 </button>
               )}
-              {step === 4 && (
+              {step === 3 && (
                 <button
                   onClick={() => {
                     // TODO: Integrate with Stripe payment
@@ -791,14 +705,6 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
           </div>
         </div>
       </div>
-
-      {/* Lightbox for full image view */}
-      {showLightbox && (
-        <ImageLightbox
-          imageUrl={coverImage}
-          onClose={() => setShowLightbox(false)}
-        />
-      )}
     </div>
   )
 }

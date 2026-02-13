@@ -943,6 +943,24 @@ export async function initDatabase() {
       CREATE INDEX IF NOT EXISTS idx_memos_created ON memos(user_id, created_at DESC)
     `)
 
+    // Free-form text stories (no chapter/question required)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS free_stories (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        title TEXT,
+        content TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_free_stories_user ON free_stories(user_id)
+    `)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_free_stories_created ON free_stories(user_id, created_at DESC)
+    `)
+
     // Magic link tokens for weekly email conversations (no-login access)
     await client.query(`
       CREATE TABLE IF NOT EXISTS email_session_tokens (

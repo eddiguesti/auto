@@ -24,6 +24,8 @@ import CollectionsScreen from '../screens/CollectionsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import HistoryScreen from '../screens/HistoryScreen';
 import QuickMemoScreen from '../screens/QuickMemoScreen';
+import QuickStoryScreen from '../screens/QuickStoryScreen';
+import CallMeScreen from '../screens/CallMeScreen';
 import MemoReviewScreen from '../screens/MemoReviewScreen';
 import MemosListScreen from '../screens/MemosListScreen';
 import ChaptersDashboardScreen from '../screens/ChaptersDashboardScreen';
@@ -62,7 +64,7 @@ function MainTabs() {
         name="HomeTab"
         component={HomeScreen}
         options={{
-          tabBarLabel: 'Today',
+          tabBarLabel: 'Home',
           tabBarIcon: ({ focused, color }) => (
             <View style={[styles.tabIconWrapper, focused && styles.tabIconFocused]}>
               <IconHome size={22} color={color} />
@@ -155,6 +157,22 @@ function MainStack() {
       <Stack.Screen
         name="TextInput"
         component={TextInputScreen}
+        options={{
+          presentation: 'fullScreenModal',
+          animation: 'slide_from_bottom',
+        }}
+      />
+      <Stack.Screen
+        name="QuickStory"
+        component={QuickStoryScreen}
+        options={{
+          presentation: 'fullScreenModal',
+          animation: 'slide_from_bottom',
+        }}
+      />
+      <Stack.Screen
+        name="CallMe"
+        component={CallMeScreen}
         options={{
           presentation: 'fullScreenModal',
           animation: 'slide_from_bottom',

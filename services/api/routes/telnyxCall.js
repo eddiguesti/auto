@@ -1,9 +1,120 @@
 import { Router } from 'express'
 import { TelnyxCallBridge, getBridge } from '../services/telnyxCallBridge.js'
 import { createLogger } from '../utils/logger.js'
+import { authenticateToken } from '../middleware/auth.js'
+import { requireDb } from '../middleware/requireDb.js'
+import { asyncHandler } from '../middleware/asyncHandler.js'
 
 const router = Router()
 const logger = createLogger('telnyx-call')
+
+/**
+ * POST /api/telnyx/request-call
+ * User-initiated outbound call. Requires JWT authentication.
+ */
+router.post(
+  '/request-call',
+  authenticateToken,
+  requireDb,
+  asyncHandler(async (req, res) => {
+    const db = req.app.locals.db
+    const userId = req.user.id
+    const { phoneNumber } = req.body
+
+    if (!phoneNumber || !/^\+[1-9]\d{6,14}$/.test(phoneNumber)) {
+      return res
+        .status(400)
+        .json({ error: 'Valid phone number with country code required (e.g. +447700900000)' })
+    }
+
+    // Rate limit: max 3 calls per hour per user
+    const recentCalls = await db.query(
+      `SELECT COUNT(*) as count FROM telnyx_calls
+       WHERE user_id = $1 AND created_at > NOW() - INTERVAL '1 hour'`,
+      [userId]
+    )
+    if (parseInt(recentCalls.rows[0].count) >= 3) {
+      return res.status(429).json({ error: 'Maximum 3 calls per hour. Please try again later.' })
+    }
+
+    // Save/update phone number and consent
+    await db.query(
+      `UPDATE users SET
+         phone_number = $2,
+         phone_call_consent = true,
+         updated_at = CURRENT_TIMESTAMP
+       WHERE id = $1`,
+      [userId, phoneNumber]
+    )
+
+    const apiKey = process.env.TELNYX_API_KEY
+    const connectionId = process.env.TELNYX_CONNECTION_ID
+    const fromNumber = process.env.TELNYX_PHONE_NUMBER
+
+    if (!apiKey || !connectionId || !fromNumber) {
+      return res.status(503).json({ error: 'Calling service is not available right now' })
+    }
+
+    const appUrl = process.env.APP_URL || 'https://easymemoir.co.uk'
+    const wsUrl = appUrl.replace('https://', 'wss://').replace('http://', 'ws://')
+
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 15000)
+
+    const response = await fetch('https://api.telnyx.com/v2/calls', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        connection_id: connectionId,
+        to: phoneNumber,
+        from: fromNumber,
+        stream_url: `${wsUrl}/api/telnyx/media-stream`,
+        stream_bidirectional_mode: 'mp',
+        stream_bidirectional_codec: 'L16',
+        stream_track: 'both_tracks',
+        webhook_url: `${appUrl}/api/telnyx/webhook`,
+        client_state: Buffer.from(
+          JSON.stringify({
+            userId,
+            prompt: { text: 'Free conversation — let the user share any memory or story they like' }
+          })
+        ).toString('base64')
+      }),
+      signal: controller.signal
+    })
+    clearTimeout(timeoutId)
+
+    if (!response.ok) {
+      const error = await response.text()
+      logger.error('User call initiation failed', { userId, status: response.status, error })
+      return res.status(500).json({ error: 'Failed to initiate call. Please try again.' })
+    }
+
+    const data = await response.json()
+    const callControlId = data.data?.call_control_id
+
+    await db.query(
+      `INSERT INTO telnyx_calls (user_id, call_control_id, call_status, prompt_text)
+       VALUES ($1, $2, 'initiated', 'User-requested call')`,
+      [userId, callControlId]
+    )
+
+    logger.info('User-initiated call', {
+      userId,
+      callControlId,
+      phoneNumber: phoneNumber.substring(0, 6) + '...'
+    })
+
+    res.json({
+      success: true,
+      call_control_id: callControlId,
+      message: "We're calling you now! Pick up to start sharing your story."
+    })
+  })
+)
 
 /**
  * POST /api/telnyx/call

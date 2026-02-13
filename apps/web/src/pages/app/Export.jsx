@@ -485,9 +485,9 @@ export default function Export() {
                 />
               </svg>
             </div>
-            <h3 className="font-display text-xl text-ink mb-2">Printed Book</h3>
+            <h3 className="font-display text-xl text-ink mb-2">4 Printed Books</h3>
             <p className="text-sm text-warmgray mb-4">
-              A beautiful colour royal hardcover book in cloth delivered to your door. Includes
+              4 beautiful colour royal hardcover books in cloth delivered to your door. Includes
               audiobook and talk over the phone features.
             </p>
             <div className="flex items-baseline gap-2 mb-4">

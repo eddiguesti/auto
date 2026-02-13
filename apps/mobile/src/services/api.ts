@@ -273,6 +273,27 @@ class ApiService {
     });
   }
 
+  // ============ Stories Progress ============
+  async getStoriesProgress() {
+    return this.request<{ progress: Record<string, number> }>('/stories/progress');
+  }
+
+  // ============ Free Stories ============
+  async createFreeStory(content: string, title?: string) {
+    return this.request<{ success: boolean; data: any }>('/free-stories', {
+      method: 'POST',
+      body: JSON.stringify({ content, title }),
+    });
+  }
+
+  // ============ Call Me ============
+  async requestCall(phoneNumber: string) {
+    return this.request<{ success: boolean; message: string }>('/telnyx/request-call', {
+      method: 'POST',
+      body: JSON.stringify({ phoneNumber }),
+    });
+  }
+
   // ============ Stories (Chapter-based) ============
   async getChapterStories(chapterId: string) {
     return this.request<any[]>(`/stories/${chapterId}`);

@@ -71,8 +71,8 @@ export default function OnboardingOffer({ firstName, onTryFree }) {
               />
             </svg>
           </div>
-          <p className="text-[12px] font-semibold text-ink/85 leading-tight">Royal Hardcover</p>
-          <p className="text-[12px] font-semibold text-ink/85 leading-tight">Book in Cloth</p>
+          <p className="text-[12px] font-semibold text-ink/85 leading-tight">4 Royal Hardcover</p>
+          <p className="text-[12px] font-semibold text-ink/85 leading-tight">Books in Cloth</p>
           <p className="text-[10.5px] text-warmgray/55 mt-1">Full colour, delivered</p>
         </div>
 
@@ -181,7 +181,7 @@ export default function OnboardingOffer({ firstName, onTryFree }) {
           £299
         </span>
         <p className="text-[12px] text-warmgray/50 mt-2">One payment · Everything included</p>
-        <p className="text-[11px] text-warmgray/45 mt-1">Or 3 monthly payments of £99.67</p>
+        <p className="text-[11px] text-warmgray/45 mt-1">Or 4 monthly payments of £100</p>
         <p className="text-[11px] text-sepia/60 font-medium mt-1">
           Welcome price — only available right now
         </p>

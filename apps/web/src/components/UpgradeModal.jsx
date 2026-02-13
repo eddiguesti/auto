@@ -132,7 +132,7 @@ export default function UpgradeModal({ onClose, memoriesCount = 0, variant = 'de
               { text: "Voice-to-text — speak your memories, we'll write them down", badge: null },
               { text: 'Personalised chapter artwork — 10 unique AI illustrations', badge: null },
               {
-                text: 'Beautiful colour royal hardcover book in cloth — delivered to your door',
+                text: '4 beautiful colour royal hardcover books in cloth — delivered to your door',
                 badge: 'Included'
               },
               { text: 'Professional audiobook — narrated in your voice', badge: 'Included' },
@@ -176,7 +176,7 @@ export default function UpgradeModal({ onClose, memoriesCount = 0, variant = 'de
                 50% off — available this {getCurrentMonthName()}
               </span>
             </div>
-            <p className="text-xs text-stone-500 mt-1">Or 3 monthly payments of £99.67</p>
+            <p className="text-xs text-stone-500 mt-1">Or 4 monthly payments of £100</p>
           </div>
         </div>
 

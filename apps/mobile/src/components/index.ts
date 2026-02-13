@@ -74,6 +74,7 @@ export {
   IconX,
   IconMessageCircle,
   IconLightbulb,
+  IconPhone,
 } from './Icons';
 
 // Loading states

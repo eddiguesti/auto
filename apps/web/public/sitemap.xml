@@ -89,6 +89,18 @@
     <changefreq>yearly</changefreq>
     <priority>0.2</priority>
   </url>
+  <url>
+    <loc>https://easymemoir.co.uk/refund-policy</loc>
+    <lastmod>2026-02-12</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  <url>
+    <loc>https://easymemoir.co.uk/cancellation</loc>
+    <lastmod>2026-02-12</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.2</priority>
+  </url>
 
   <!-- Blog Hub -->
   <url>
@@ -98,156 +110,256 @@
     <priority>0.9</priority>
   </url>
 
-  <!-- Blog Posts -->
+  <!-- Blog Posts (with images for Google Image Search) -->
   <url>
     <loc>https://easymemoir.co.uk/blog/how-to-write-memoir-complete-guide</loc>
     <lastmod>2026-01-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://easymemoir.co.uk/blog-images/how-to-write-memoir-complete-guide.jpg</image:loc>
+      <image:title>How to Write a Memoir: Complete Guide for Beginners</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://easymemoir.co.uk/blog/memoir-vs-autobiography-difference</loc>
     <lastmod>2026-01-28</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://easymemoir.co.uk/blog-images/memoir-vs-autobiography-difference.jpg</image:loc>
+      <image:title>Memoir vs Autobiography: What's the Difference?</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://easymemoir.co.uk/blog/therapeutic-benefits-writing-life-story</loc>
     <lastmod>2026-01-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://easymemoir.co.uk/blog-images/therapeutic-benefits-writing-life-story.jpg</image:loc>
+      <image:title>The Therapeutic Benefits of Writing Your Life Story</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://easymemoir.co.uk/blog/writing-prompts-unlock-memories</loc>
     <lastmod>2026-01-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://easymemoir.co.uk/blog-images/writing-prompts-unlock-memories.jpg</image:loc>
+      <image:title>50+ Writing Prompts to Unlock Your Memories</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://easymemoir.co.uk/blog/interview-parents-grandparents-guide</loc>
     <lastmod>2026-01-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://easymemoir.co.uk/blog-images/interview-parents-grandparents-guide.jpg</image:loc>
+      <image:title>How to Interview Parents and Grandparents for Their Life Story</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://easymemoir.co.uk/blog/memoir-writing-seniors-guide</loc>
     <lastmod>2026-01-24</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://easymemoir.co.uk/blog-images/memoir-writing-seniors-guide.jpg</image:loc>
+      <image:title>Memoir Writing Guide for Seniors</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://easymemoir.co.uk/blog/common-memoir-mistakes-avoid</loc>
     <lastmod>2026-01-23</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://easymemoir.co.uk/blog-images/common-memoir-mistakes-avoid.jpg</image:loc>
+      <image:title>Common Memoir Writing Mistakes to Avoid</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://easymemoir.co.uk/blog/memoir-structure-outline-guide</loc>
     <lastmod>2026-01-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://easymemoir.co.uk/blog-images/memoir-structure-outline-guide.jpg</image:loc>
+      <image:title>How to Structure Your Memoir: Outline Guide</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://easymemoir.co.uk/blog/finding-your-authentic-voice</loc>
     <lastmod>2026-01-21</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://easymemoir.co.uk/blog-images/finding-your-authentic-voice.jpg</image:loc>
+      <image:title>Finding Your Authentic Voice in Memoir Writing</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://easymemoir.co.uk/blog/writing-dialogue-memoir</loc>
     <lastmod>2026-01-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://easymemoir.co.uk/blog-images/writing-dialogue-memoir.jpg</image:loc>
+      <image:title>How to Write Dialogue in Your Memoir</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://easymemoir.co.uk/blog/best-memoirs-read-inspiration</loc>
     <lastmod>2026-01-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://easymemoir.co.uk/blog-images/best-memoirs-read-inspiration.jpg</image:loc>
+      <image:title>Best Memoirs to Read for Writing Inspiration</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://easymemoir.co.uk/blog/ethical-writing-about-family</loc>
     <lastmod>2026-01-18</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://easymemoir.co.uk/blog-images/ethical-writing-about-family.jpg</image:loc>
+      <image:title>Ethical Considerations When Writing About Family</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://easymemoir.co.uk/blog/gift-memoir-parents-grandparents</loc>
     <lastmod>2026-01-17</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://easymemoir.co.uk/blog-images/gift-memoir-parents-grandparents.jpg</image:loc>
+      <image:title>Gift a Memoir to Parents and Grandparents</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://easymemoir.co.uk/blog/using-photos-memoir</loc>
     <lastmod>2026-01-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://easymemoir.co.uk/blog-images/using-photos-memoir.jpg</image:loc>
+      <image:title>Using Photos in Your Memoir</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://easymemoir.co.uk/blog/ai-memoir-writing-future</loc>
     <lastmod>2026-01-15</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://easymemoir.co.uk/blog-images/ai-memoir-writing-future.jpg</image:loc>
+      <image:title>AI and the Future of Memoir Writing</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://easymemoir.co.uk/blog/overcoming-writers-block-memoir</loc>
     <lastmod>2026-01-14</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://easymemoir.co.uk/blog-images/overcoming-writers-block-memoir.jpg</image:loc>
+      <image:title>Overcoming Writer's Block in Memoir Writing</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://easymemoir.co.uk/blog/self-publishing-memoir-guide</loc>
     <lastmod>2026-01-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://easymemoir.co.uk/blog-images/self-publishing-memoir-guide.jpg</image:loc>
+      <image:title>Self-Publishing Your Memoir: Complete Guide</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://easymemoir.co.uk/blog/writing-about-trauma-responsibly</loc>
     <lastmod>2026-01-12</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://easymemoir.co.uk/blog-images/writing-about-trauma-responsibly.jpg</image:loc>
+      <image:title>Writing About Trauma Responsibly in Your Memoir</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://easymemoir.co.uk/blog/memoir-life-chapters-approach</loc>
     <lastmod>2026-01-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://easymemoir.co.uk/blog-images/memoir-life-chapters-approach.jpg</image:loc>
+      <image:title>The Life Chapters Approach to Memoir Writing</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://easymemoir.co.uk/blog/preserving-family-stories</loc>
     <lastmod>2026-01-10</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://easymemoir.co.uk/blog-images/preserving-family-stories.jpg</image:loc>
+      <image:title>Preserving Family Stories for Future Generations</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://easymemoir.co.uk/blog/memoir-book-design-tips</loc>
     <lastmod>2026-01-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://easymemoir.co.uk/blog-images/memoir-book-design-tips.jpg</image:loc>
+      <image:title>Memoir Book Design Tips</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://easymemoir.co.uk/blog/short-memoir-vs-full-book</loc>
     <lastmod>2026-01-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://easymemoir.co.uk/blog-images/short-memoir-vs-full-book.jpg</image:loc>
+      <image:title>Short Memoir vs Full Book: Which Is Right for You?</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://easymemoir.co.uk/blog/legacy-letters-alternative-memoir</loc>
     <lastmod>2026-01-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://easymemoir.co.uk/blog-images/legacy-letters-alternative-memoir.jpg</image:loc>
+      <image:title>Legacy Letters: An Alternative to Traditional Memoir</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://easymemoir.co.uk/blog/memoir-questions-family-ask</loc>
     <lastmod>2026-01-06</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://easymemoir.co.uk/blog-images/memoir-questions-family-ask.jpg</image:loc>
+      <image:title>Essential Questions to Ask Family for Your Memoir</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://easymemoir.co.uk/blog/why-your-story-matters</loc>
     <lastmod>2026-01-05</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://easymemoir.co.uk/blog-images/why-your-story-matters.jpg</image:loc>
+      <image:title>Why Your Story Matters</image:title>
+    </image:image>
   </url>
 
 </urlset>

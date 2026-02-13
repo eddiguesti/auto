@@ -1,5 +1,4 @@
 import { Router } from 'express'
-import Replicate from 'replicate'
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { createLogger } from '../utils/logger.js'
 import { authenticateToken } from '../middleware/auth.js'
@@ -8,64 +7,7 @@ import { query } from '../db/index.js'
 const router = Router()
 const logger = createLogger('covers')
 
-// Style presets for image generation
-const COVER_STYLES = {
-  classic: {
-    id: 'classic',
-    name: 'Classic & Elegant',
-    description: 'Timeless and refined',
-    icon: 'classic',
-    styleGuide: 'elegant oil painting style, soft golden hour lighting, rich cream and gold tones',
-    colors: ['#1e3a5f', '#d4a574', '#8b6914']
-  },
-  modern: {
-    id: 'modern',
-    name: 'Modern & Clean',
-    description: 'Contemporary design',
-    icon: 'modern',
-    styleGuide:
-      'minimalist illustration, clean lines, bold shapes, modern graphic design, black white and one accent color',
-    colors: ['#2d3748', '#4a5568', '#e2e8f0']
-  },
-  nature: {
-    id: 'nature',
-    name: 'Nature & Peaceful',
-    description: 'Organic and serene',
-    icon: 'nature',
-    styleGuide:
-      'watercolor illustration, soft natural colors, botanical elements, peaceful landscape, sage green and soft blue',
-    colors: ['#4a7c59', '#87a878', '#f0e6d3']
-  },
-  family: {
-    id: 'family',
-    name: 'Family & Warmth',
-    description: 'Warm and nostalgic',
-    icon: 'family',
-    styleGuide:
-      'warm nostalgic illustration, golden sunset colors, cozy atmosphere, amber and soft orange tones',
-    colors: ['#b45309', '#f59e0b', '#fef3c7']
-  },
-  artistic: {
-    id: 'artistic',
-    name: 'Artistic & Colorful',
-    description: 'Bold and expressive',
-    icon: 'artistic',
-    styleGuide:
-      'expressive artistic illustration, vibrant colors, creative brushwork, magenta cyan purple palette',
-    colors: ['#7c3aed', '#ec4899', '#06b6d4']
-  },
-  heritage: {
-    id: 'heritage',
-    name: 'Heritage & Tradition',
-    description: 'Classic and timeless',
-    icon: 'heritage',
-    styleGuide:
-      'vintage illustration style, sepia and burgundy tones, classic engraving aesthetic, rich detailed artwork',
-    colors: ['#7c2d12', '#d4a574', '#1c1917']
-  }
-}
-
-// Book format presets - simplified from full options
+// Book format presets
 const BOOK_FORMATS = {
   paperback: {
     id: 'paperback',
@@ -114,24 +56,14 @@ const BOOK_FORMATS = {
   }
 }
 
-// Initialize Replicate client
-function getReplicateClient() {
-  const apiKey = process.env.REPLICATE_API_TOKEN
-  if (!apiKey) {
-    throw new Error('REPLICATE_API_TOKEN not set')
-  }
-  return new Replicate({ auth: apiKey })
-}
-
-// Get available cover styles and book formats
+// Get available book formats
 router.get('/options', (_req, res) => {
   res.json({
-    coverStyles: Object.values(COVER_STYLES),
     bookFormats: Object.values(BOOK_FORMATS)
   })
 })
 
-// Get user's saved book cover
+// Get user's saved book cover metadata
 router.get(
   '/saved',
   authenticateToken,
@@ -148,49 +80,35 @@ router.get(
   })
 )
 
-// Save/update user's book cover
+// Save/update user's book cover metadata (title, author)
 router.post(
   '/save',
   authenticateToken,
   asyncHandler(async (req, res) => {
     const userId = req.user.id
-    const {
-      templateId,
-      title,
-      author,
-      frontCoverUrl,
-      backCoverUrl,
-      spineText,
-      colorScheme,
-      customSettings
-    } = req.body
+    const { templateId, title, author, spineText, colorScheme, customSettings } = req.body
 
-    logger.info('Saving book cover', { userId, templateId, requestId: req.id })
+    logger.info('Saving book cover', { userId, requestId: req.id })
 
-    // Upsert - insert or update existing cover
     const result = await query(
       `INSERT INTO book_covers (
-      user_id, template_id, title, author, front_cover_url, back_cover_url,
-      spine_text, color_scheme, custom_settings, updated_at
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP)
-    ON CONFLICT (user_id) DO UPDATE SET
-      template_id = EXCLUDED.template_id,
-      title = EXCLUDED.title,
-      author = EXCLUDED.author,
-      front_cover_url = EXCLUDED.front_cover_url,
-      back_cover_url = EXCLUDED.back_cover_url,
-      spine_text = EXCLUDED.spine_text,
-      color_scheme = EXCLUDED.color_scheme,
-      custom_settings = EXCLUDED.custom_settings,
-      updated_at = CURRENT_TIMESTAMP
-    RETURNING *`,
+        user_id, template_id, title, author,
+        spine_text, color_scheme, custom_settings, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)
+      ON CONFLICT (user_id) DO UPDATE SET
+        template_id = EXCLUDED.template_id,
+        title = EXCLUDED.title,
+        author = EXCLUDED.author,
+        spine_text = EXCLUDED.spine_text,
+        color_scheme = EXCLUDED.color_scheme,
+        custom_settings = EXCLUDED.custom_settings,
+        updated_at = CURRENT_TIMESTAMP
+      RETURNING *`,
       [
         userId,
-        templateId || 'classic',
+        templateId || 'default',
         title,
         author,
-        frontCoverUrl,
-        backCoverUrl,
         spineText,
         JSON.stringify(colorScheme || {}),
         JSON.stringify(customSettings || {})
@@ -206,185 +124,5 @@ router.post(
   })
 )
 
-// Build prompt for image generation
-function buildImagePrompt(style, bookTitle) {
-  // Use the title to inspire the imagery
-  const titleInspiration = bookTitle
-    ? `Create an evocative illustration inspired by the theme "${bookTitle}". Include meaningful imagery - perhaps a path, doorway, landscape, silhouette, or symbolic scene that captures a life journey.`
-    : `Create an evocative illustration about life and memories. Include meaningful imagery - a winding path, old tree, distant horizon, or symbolic scene.`
-
-  if (bookTitle) {
-    return {
-      prompt: `${titleInspiration} Style: ${style.styleGuide}. Place the text "${bookTitle}" elegantly on the right side. Only this text, nothing else.`,
-      negative_prompt:
-        'book cover mockup, 3d render, photo frame, multiple text, subtitle, author name, ugly, blurry'
-    }
-  }
-  return {
-    prompt: `${titleInspiration} Style: ${style.styleGuide}. Beautiful composition with space on the right for text.`,
-    negative_prompt: 'book cover mockup, 3d render, photo frame, text, words, letters, ugly, blurry'
-  }
-}
-
-// Generate image
-router.post(
-  '/generate',
-  asyncHandler(async (req, res) => {
-    const { styleId, bookTitle, customPrompt } = req.body
-    logger.info('Generate request', { styleId, bookTitle, requestId: req.id })
-
-    const style = COVER_STYLES[styleId]
-    if (!style && !customPrompt) {
-      return res.status(400).json({ error: 'Invalid style or no custom prompt provided' })
-    }
-
-    const replicate = getReplicateClient()
-
-    // Build the prompt
-    const promptData = customPrompt
-      ? { prompt: customPrompt, negative_prompt: '' }
-      : buildImagePrompt(style, bookTitle)
-    logger.debug('Prompt', { prompt: promptData.prompt, requestId: req.id })
-
-    // Generate image with Ideogram
-    logger.debug('Calling Replicate API', { requestId: req.id })
-    const output = await replicate.run('ideogram-ai/ideogram-v3-turbo', {
-      input: {
-        prompt: promptData.prompt,
-        negative_prompt: promptData.negative_prompt,
-        aspect_ratio: '3:2',
-        magic_prompt_option: 'Off'
-      }
-    })
-    logger.debug('Replicate output received', { outputType: typeof output, requestId: req.id })
-
-    // Ideogram returns a FileOutput object with url() method
-    let imageUrl
-    if (output?.url && typeof output.url === 'function') {
-      imageUrl = output.url()
-    } else if (Array.isArray(output) && output[0]) {
-      imageUrl = typeof output[0].url === 'function' ? output[0].url() : output[0]
-    } else if (typeof output === 'string') {
-      imageUrl = output
-    } else {
-      logger.error('Unexpected output format', { requestId: req.id })
-      throw new Error('Unexpected response format from image generator')
-    }
-
-    logger.info('Image generated', { requestId: req.id })
-
-    res.json({
-      success: true,
-      imageUrl,
-      prompt: promptData.prompt,
-      style: style?.id || 'custom'
-    })
-  })
-)
-
-// Generate multiple variations
-router.post(
-  '/generate-variations',
-  asyncHandler(async (req, res) => {
-    const { styleId, bookTitle } = req.body
-
-    const style = COVER_STYLES[styleId]
-    if (!style) {
-      return res.status(400).json({ error: 'Invalid style' })
-    }
-
-    const replicate = getReplicateClient()
-
-    // Build prompt
-    const promptData = buildImagePrompt(style, bookTitle)
-
-    // Generate variations with different compositions
-    const variationModifiers = [
-      'centered symmetrical composition',
-      'dramatic diagonal composition with depth',
-      'soft focus background with sharp foreground element'
-    ]
-
-    const promises = variationModifiers.map(async (modifier, index) => {
-      const fullPrompt = `${promptData.prompt}, ${modifier}`
-
-      const output = await replicate.run('ideogram-ai/ideogram-v3-turbo', {
-        input: {
-          prompt: fullPrompt,
-          negative_prompt: promptData.negative_prompt,
-          aspect_ratio: '3:2',
-          magic_prompt_option: 'Off'
-        }
-      })
-
-      const imageUrl = output?.url ? output.url() : Array.isArray(output) ? output[0] : output
-
-      return {
-        imageUrl,
-        variationIndex: index
-      }
-    })
-
-    const results = await Promise.all(promises)
-
-    res.json({
-      success: true,
-      variations: results,
-      style: style.id
-    })
-  })
-)
-
-// Generate image for a specific region (template-based editor)
-router.post(
-  '/generate-region',
-  asyncHandler(async (req, res) => {
-    const { prompt, width, height, templateId } = req.body
-
-    if (!prompt) {
-      return res.status(400).json({ error: 'Prompt is required' })
-    }
-
-    const replicate = getReplicateClient()
-
-    // Determine aspect ratio based on dimensions
-    let aspectRatio = '1:1'
-    const ratio = width / height
-    if (ratio > 1.4) aspectRatio = '3:2'
-    else if (ratio > 1.1) aspectRatio = '4:3'
-    else if (ratio < 0.7) aspectRatio = '2:3'
-    else if (ratio < 0.9) aspectRatio = '3:4'
-
-    logger.debug('Generating region', { prompt, aspectRatio, templateId, requestId: req.id })
-
-    const output = await replicate.run('ideogram-ai/ideogram-v3-turbo', {
-      input: {
-        prompt: `${prompt}, high quality, detailed`,
-        negative_prompt: 'text, words, letters, watermark, ugly, blurry, low quality',
-        aspect_ratio: aspectRatio,
-        magic_prompt_option: 'Off'
-      }
-    })
-
-    // Extract URL from output
-    let imageUrl
-    if (output?.url && typeof output.url === 'function') {
-      imageUrl = output.url()
-    } else if (Array.isArray(output) && output[0]) {
-      imageUrl = typeof output[0].url === 'function' ? output[0].url() : output[0]
-    } else if (typeof output === 'string') {
-      imageUrl = output
-    } else {
-      throw new Error('Unexpected response format')
-    }
-
-    res.json({
-      success: true,
-      imageUrl,
-      prompt
-    })
-  })
-)
-
 export default router
-export { COVER_STYLES, BOOK_FORMATS }
+export { BOOK_FORMATS }

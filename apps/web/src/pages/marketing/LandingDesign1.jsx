@@ -745,7 +745,7 @@ export default function LandingDesign1() {
                   </span>
                 </div>
                 <p className="font-serif text-heritage-text text-base mt-2">
-                  50% off — or 3 payments of £99.67
+                  50% off — or 4 payments of £100/mo
                 </p>
               </div>
 
@@ -795,7 +795,7 @@ export default function LandingDesign1() {
                     />
                   </svg>
                   <span className="font-serif text-heritage-text text-base">
-                    Colour royal hardcover book in cloth
+                    4 colour royal hardcover books in cloth
                   </span>
                 </li>
                 <li className="flex items-start gap-3">
@@ -852,7 +852,7 @@ export default function LandingDesign1() {
                   </span>
                 </div>
                 <p className="font-serif text-heritage-text text-base mt-2">
-                  50% off — or 3 payments of £99.67
+                  50% off — or 4 payments of £100/mo
                 </p>
               </div>
 

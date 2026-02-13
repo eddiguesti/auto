@@ -89,6 +89,8 @@ const Settings = lazy(() => import('./pages/app/Settings'))
 const PreviewStyle = lazy(() => import('./pages/app/PreviewStyle'))
 const Talk = lazy(() => import('./pages/app/Talk'))
 const ChapterReview = lazy(() => import('./pages/app/ChapterReview'))
+const QuickStory = lazy(() => import('./pages/app/QuickStory'))
+const CallMe = lazy(() => import('./pages/app/CallMe'))
 
 // Minimal loading fallback - keeps UI feel consistent
 const PageLoader = () => (
@@ -185,6 +187,23 @@ function App() {
                     element={
                       <ProtectedRoute>
                         <Settings />
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  <Route
+                    path="/quick-story"
+                    element={
+                      <ProtectedRoute>
+                        <QuickStory />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/call-me"
+                    element={
+                      <ProtectedRoute>
+                        <CallMe />
                       </ProtectedRoute>
                     }
                   />

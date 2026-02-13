@@ -40,6 +40,8 @@ const ROUTES = [
   '/terms',
   '/privacy',
   '/cookies',
+  '/refund-policy',
+  '/cancellation',
   // Blog posts
   '/blog/how-to-write-memoir-complete-guide',
   '/blog/memoir-vs-autobiography-difference',

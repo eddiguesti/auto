@@ -49,6 +49,7 @@ import userRouter from './routes/user.js'
 import newsletterRouter from './routes/newsletter.js'
 import chapterReviewRouter from './routes/chapterReview.js'
 import memosRouter from './routes/memos.js'
+import freeStoriesRouter from './routes/freeStories.js'
 import refundsRouter from './routes/refunds.js'
 import magicLinkRouter from './routes/magicLink.js'
 import telnyxCallRouter, { handleTelnyxMediaStream } from './routes/telnyxCall.js'
@@ -335,6 +336,9 @@ app.use('/api/user', authenticateToken, userRouter)
 
 // Quick memos routes (protected - free-form voice memos)
 app.use('/api/memos', authenticateToken, memosRouter)
+
+// Free-form text stories (protected - no chapter/question required)
+app.use('/api/free-stories', authenticateToken, freeStoriesRouter)
 
 // Refund routes (protected - usage tracking, refund requests)
 app.use('/api/refunds', authenticateToken, refundsRouter)
