@@ -3,12 +3,14 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import { chapters } from '../../data/chapters'
 import { useAuth } from '../../context/AuthContext'
 import { usePremium } from '../../hooks/usePremium'
+import { useToast } from '../../components/Toast'
 
 export default function ChapterReview() {
   const { chapterId } = useParams()
   const navigate = useNavigate()
   const { authFetch } = useAuth()
   const { isChapterLocked } = usePremium()
+  const toast = useToast()
 
   const [polishedText, setPolishedText] = useState('')
   const [originalPolishedText, setOriginalPolishedText] = useState('')
@@ -105,11 +107,11 @@ export default function ChapterReview() {
         setHasChangedSincePolish(false)
       } else {
         const err = await res.json().catch(() => ({}))
-        alert(err.message || err.error || 'Failed to polish chapter. Please try again.')
+        toast.error(err.message || err.error || 'Failed to polish chapter. Please try again.')
       }
     } catch (err) {
       console.error('Rewrite failed:', err)
-      alert('Failed to polish chapter. Please try again.')
+      toast.error('Failed to polish chapter. Please try again.')
     } finally {
       setRewriting(false)
     }

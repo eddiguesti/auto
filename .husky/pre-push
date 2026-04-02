@@ -1,0 +1,72 @@
+#!/usr/bin/env sh
+# Scan files in commits about to be pushed for potential secrets.
+# Reads the push target from stdin as husky/git provides it.
+
+set -e
+
+PATTERNS=(
+  'sk_live_[a-zA-Z0-9]+'
+  'sk_test_[a-zA-Z0-9]+'
+  'AKIA[0-9A-Z]{16}'
+  'ghp_[a-zA-Z0-9]{36}'
+  'gho_[a-zA-Z0-9]{36}'
+  'github_pat_[a-zA-Z0-9_]{22,}'
+  'xox[baprs]-[a-zA-Z0-9-]+'
+  'ya29\.[a-zA-Z0-9_-]+'
+  'AIza[0-9A-Za-z_-]{35}'
+  'sq0[a-z]{3}-[a-zA-Z0-9_-]{22}'
+  'xai-[a-zA-Z0-9_-]{20,}'
+  'postgresql://[^:]+:[^@]{8,}@'
+)
+
+SKIP_EXTS='.png .jpg .gif .ico .woff .woff2 .ttf .eot .pdf package-lock.json yarn.lock'
+
+# Files that intentionally contain example/fake secret values
+SKIP_FILES='.env.example .env.sample .env.template'
+
+FOUND=0
+
+while IFS=' ' read -r local_ref local_sha remote_ref remote_sha; do
+  # New branch — compare against empty tree
+  if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
+    remote_sha=$(git hash-object -t tree /dev/null)
+  fi
+
+  FILES=$(git diff --name-only --diff-filter=ACM "$remote_sha" "$local_sha" 2>/dev/null)
+
+  for file in $FILES; do
+    # Skip binary / lock files
+    skip=0
+    for ext in $SKIP_EXTS; do
+      case "$file" in *"$ext") skip=1; break ;; esac
+    done
+    # Skip known example/template files
+    for sf in $SKIP_FILES; do
+      [ "$(basename "$file")" = "$sf" ] && skip=1 && break
+    done
+    [ "$skip" -eq 1 ] && continue
+    [ ! -f "$file" ] && continue
+
+    for pattern in "${PATTERNS[@]}"; do
+      # Extract matching lines; skip lines that contain obvious fake/test indicators
+      match=$(git show "$local_sha:$file" 2>/dev/null \
+        | grep -E "$pattern" \
+        | grep -viE 'FAKE|fake|placeholder|example|your[-_]|<your|test_db|localhost:5432/db' \
+        || true)
+      if [ -n "$match" ]; then
+        echo "BLOCKED: potential secret in $file (pattern: $pattern)"
+        FOUND=1
+      fi
+    done
+  done
+done
+
+if [ "$FOUND" -eq 1 ]; then
+  echo ""
+  echo "Push blocked — potential secrets detected in outgoing commits."
+  echo "Review the files above. To bypass (false positive): git push --no-verify"
+  exit 1
+fi
+
+echo "Secret scan passed."
+exit 0

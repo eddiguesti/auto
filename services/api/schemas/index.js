@@ -214,20 +214,17 @@ export const onboardingSchemas = {
 
   saveContext: {
     body: {
-      birth_place: { type: 'string', maxLength: 100 },
-      birth_country: { type: 'string', maxLength: 100 },
-      birth_year: { type: 'integer', min: 1900, max: new Date().getFullYear() },
-      childhood_home: { type: 'string', maxLength: 200 },
-      family_members: { type: 'string', maxLength: 1000 },
-      key_events: { type: 'string', maxLength: 2000 }
+      transcripts: { type: 'array', required: true, maxLength: 200 }
     }
   },
 
   saveContextForm: {
     body: {
-      birth_place: { type: 'string', maxLength: 100 },
-      birth_country: { type: 'string', maxLength: 100 },
-      birth_year: { type: 'integer', min: 1900, max: new Date().getFullYear() }
+      name: { type: 'string', maxLength: 100 },
+      birthPlace: { type: 'string', maxLength: 100 },
+      birthCountry: { type: 'string', maxLength: 100 },
+      birthYear: { type: 'integer', min: 1900, max: new Date().getFullYear() },
+      additionalContext: { type: 'string', maxLength: 5000 }
     }
   }
 }
@@ -270,18 +267,13 @@ export const supportSchemas = {
 export const notificationSchemas = {
   updatePreferences: {
     body: {
-      email_enabled: { type: 'boolean' },
-      push_enabled: { type: 'boolean' },
-      reminder_time: {
+      preferences: { type: 'string', maxLength: 2000 },
+      preferredPromptTime: {
         type: 'string',
         pattern: /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/,
         patternMessage: 'must be in HH:MM format'
       },
-      reminder_days: {
-        type: 'array',
-        itemType: 'integer',
-        maxLength: 7
-      }
+      timezone: { type: 'string', maxLength: 100 }
     }
   }
 }
@@ -291,26 +283,254 @@ export const notificationSchemas = {
 export const styleSchemas = {
   savePreferences: {
     body: {
-      tone: {
-        type: 'string',
-        enum: ['formal', 'casual', 'storytelling', 'reflective'],
-        maxLength: 50
-      },
-      perspective: { type: 'string', enum: ['first', 'third'], maxLength: 20 },
-      detail_level: { type: 'string', enum: ['brief', 'moderate', 'detailed'], maxLength: 20 }
+      tones: { type: 'array', maxLength: 10 },
+      narrative: { type: 'string', maxLength: 200 },
+      authorStyle: { type: 'string', maxLength: 200 }
     }
   },
 
   preview: {
     body: {
-      story_id: { type: 'integer', required: true, min: 1 },
-      style_options: { type: 'string', maxLength: 500 }
+      storyId: { type: 'integer', required: true, min: 1 },
+      tones: { type: 'array', maxLength: 10 },
+      narrative: { type: 'string', maxLength: 200 },
+      authorStyle: { type: 'string', maxLength: 200 }
+    }
+  },
+
+  applyAll: {
+    body: {
+      tones: { type: 'array', maxLength: 10 },
+      narrative: { type: 'string', maxLength: 200 },
+      authorStyle: { type: 'string', maxLength: 200 }
     }
   },
 
   revert: {
     body: {
-      story_id: { type: 'integer', required: true, min: 1 }
+      story_id: { type: 'integer', min: 1 }
+    }
+  }
+}
+
+// ============ Covers Schemas ============
+
+export const coverSchemas = {
+  save: {
+    body: {
+      templateId: { type: 'string', maxLength: 50 },
+      title: { type: 'string', maxLength: 200 },
+      author: { type: 'string', maxLength: 200 },
+      spineText: { type: 'string', maxLength: 200 },
+      colorScheme: { type: 'string', maxLength: 2000 },
+      customSettings: { type: 'string', maxLength: 5000 }
+    }
+  }
+}
+
+// ============ Memos Schemas ============
+
+export const memoSchemas = {
+  create: {
+    body: {
+      title: { type: 'string', maxLength: 500 },
+      audio_url: { type: 'url', required: true, protocols: ['https'] },
+      transcript: { type: 'string', maxLength: 100000 },
+      duration: { type: 'number', min: 0, max: 36000 }
+    }
+  },
+
+  update: {
+    body: {
+      title: { type: 'string', maxLength: 500 }
+    }
+  }
+}
+
+// ============ Refund Schemas ============
+
+export const refundSchemas = {
+  request: {
+    body: {
+      paymentId: { type: 'integer', min: 1 },
+      reason: { type: 'string', maxLength: 2000 },
+      type: {
+        type: 'string',
+        required: true,
+        enum: ['guarantee', 'cooling_off', 'faulty', 'other']
+      }
+    }
+  }
+}
+
+// ============ Chapter Review Schemas ============
+
+export const chapterReviewSchemas = {
+  getOrRewrite: {
+    params: {
+      chapterId: { type: 'slug', required: true, maxLength: 50 }
+    }
+  },
+
+  clioEdit: {
+    params: {
+      chapterId: { type: 'slug', required: true, maxLength: 50 }
+    },
+    body: {
+      instruction: { type: 'string', required: true, minLength: 1, maxLength: 2000 },
+      currentText: { type: 'string', required: true, minLength: 1, maxLength: 15000 },
+      clioHistory: { type: 'array', maxLength: 100 }
+    }
+  },
+
+  save: {
+    params: {
+      chapterId: { type: 'slug', required: true, maxLength: 50 }
+    },
+    body: {
+      polishedText: { type: 'string', required: true, minLength: 1, maxLength: 100000 }
+    }
+  }
+}
+
+// ============ Free Story Schemas ============
+
+export const freeStorySchemas = {
+  list: {
+    query: {
+      limit: { type: 'integer', min: 1, max: 100, default: 50 },
+      offset: { type: 'integer', min: 0, default: 0 }
+    }
+  },
+
+  byId: {
+    params: {
+      id: { type: 'integer', required: true, min: 1 }
+    }
+  },
+
+  create: {
+    body: {
+      content: { type: 'string', required: true, minLength: 1, maxLength: 100000 },
+      title: { type: 'string', maxLength: 200 }
+    }
+  },
+
+  update: {
+    params: {
+      id: { type: 'integer', required: true, min: 1 }
+    },
+    body: {
+      content: { type: 'string', minLength: 1, maxLength: 100000 },
+      title: { type: 'string', maxLength: 200 }
+    }
+  }
+}
+
+// ============ Admin Schemas ============
+
+export const adminSchemas = {
+  listUsers: {
+    query: {
+      page: { type: 'integer', min: 1, default: 1 },
+      limit: { type: 'integer', min: 1, max: 100, default: 20 },
+      q: { type: 'string', maxLength: 200 }
+    }
+  },
+
+  userById: {
+    params: {
+      id: { type: 'integer', required: true, min: 1 }
+    }
+  },
+
+  grantPremium: {
+    params: {
+      id: { type: 'integer', required: true, min: 1 }
+    },
+    body: {
+      months: { type: 'integer', required: true, min: 1, max: 120 }
+    }
+  },
+
+  listPayments: {
+    query: {
+      page: { type: 'integer', min: 1, default: 1 },
+      limit: { type: 'integer', min: 1, max: 100, default: 20 }
+    }
+  },
+
+  processRefund: {
+    params: {
+      paymentId: { type: 'integer', required: true, min: 1 }
+    }
+  }
+}
+
+// ============ Circle Prompt Schemas ============
+
+export const circlePromptSchemas = {
+  send: {
+    body: {
+      forUserId: { type: 'integer', required: true, min: 1 },
+      promptText: { type: 'string', required: true, minLength: 1, maxLength: 2000 },
+      promptNote: { type: 'string', maxLength: 500 }
+    }
+  },
+
+  answer: {
+    params: {
+      promptId: { type: 'integer', required: true, min: 1 }
+    },
+    body: {
+      answer: { type: 'string', required: true, minLength: 1, maxLength: 100000 }
+    }
+  },
+
+  encourage: {
+    body: {
+      forUserId: { type: 'integer', required: true, min: 1 },
+      type: { type: 'string', enum: ['heart', 'star', 'clap', 'fire'], default: 'heart' },
+      message: { type: 'string', maxLength: 500 },
+      relatedStoryId: { type: 'integer', min: 1 }
+    }
+  }
+}
+
+// ============ Telegram Schemas ============
+
+export const telegramSchemas = {
+  verifyLink: {
+    body: {
+      code: { type: 'string', required: true, minLength: 1, maxLength: 20 }
+    }
+  }
+}
+
+// ============ User Schemas ============
+
+export const userSchemas = {
+  phoneSettings: {
+    body: {
+      phoneNumber: {
+        type: 'string',
+        maxLength: 16,
+        pattern: /^\+[1-9]\d{6,14}$/,
+        patternMessage: 'must be in E.164 format (e.g. +447700900000)'
+      },
+      phoneCallConsent: { type: 'boolean' },
+      contactPreference: { type: 'string', enum: ['email', 'phone', 'both'] }
+    }
+  }
+}
+
+// ============ Audiobook Schemas ============
+
+export const audiobookUploadSchemas = {
+  voiceSample: {
+    body: {
+      audioData: { type: 'string', required: true, maxLength: 70000000 },
+      consentGiven: { type: 'boolean', required: true }
     }
   }
 }

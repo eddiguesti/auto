@@ -1,103 +1,116 @@
 // /life-story/server/routes/notifications.js
 
-import express from 'express';
-import pool from '../db/index.js';
-import { authenticateToken } from '../middleware/auth.js';
-import { asyncHandler } from '../middleware/asyncHandler.js';
+import express from 'express'
+import pool from '../db/index.js'
+import { authenticateToken } from '../middleware/auth.js'
+import { asyncHandler } from '../middleware/asyncHandler.js'
+import validate from '../middleware/validate.js'
+import { notificationSchemas } from '../schemas/index.js'
 
-const router = express.Router();
+const router = express.Router()
 
-router.use(authenticateToken);
+router.use(authenticateToken)
 
 /**
  * GET /api/notifications/preferences
  * Get user's notification preferences
  */
-router.get('/preferences', asyncHandler(async (req, res) => {
-  const userId = req.user.id;
+router.get(
+  '/preferences',
+  asyncHandler(async (req, res) => {
+    const userId = req.user.id
 
-  const result = await pool.query(
-    `SELECT notification_preferences, preferred_prompt_time, timezone
+    const result = await pool.query(
+      `SELECT notification_preferences, preferred_prompt_time, timezone
      FROM user_game_state
      WHERE user_id = $1`,
-    [userId]
-  );
+      [userId]
+    )
 
-  res.json({
-    success: true,
-    data: result.rows[0] || {
-      notification_preferences: {
-        daily_reminder: true,
-        streak_warning: true,
-        weekly_digest: true,
-        family_activity: true,
-        achievement_earned: true
-      },
-      preferred_prompt_time: '09:00',
-      timezone: 'Europe/London'
-    }
-  });
-}));
+    res.json({
+      success: true,
+      data: result.rows[0] || {
+        notification_preferences: {
+          daily_reminder: true,
+          streak_warning: true,
+          weekly_digest: true,
+          family_activity: true,
+          achievement_earned: true
+        },
+        preferred_prompt_time: '09:00',
+        timezone: 'Europe/London'
+      }
+    })
+  })
+)
 
 /**
  * PUT /api/notifications/preferences
  * Update notification preferences
  */
-router.put('/preferences', asyncHandler(async (req, res) => {
-  const userId = req.user.id;
-  const { preferences, preferredPromptTime, timezone } = req.body;
+router.put(
+  '/preferences',
+  validate(notificationSchemas.updatePreferences),
+  asyncHandler(async (req, res) => {
+    const userId = req.user.id
+    const { preferences, preferredPromptTime, timezone } = req.body
 
-  const updates = [];
-  const values = [userId];
-  let paramIndex = 2;
+    const updates = []
+    const values = [userId]
+    let paramIndex = 2
 
-  if (preferences) {
-    updates.push(`notification_preferences = $${paramIndex++}`);
-    values.push(JSON.stringify(preferences));
-  }
+    if (preferences) {
+      updates.push(`notification_preferences = $${paramIndex++}`)
+      values.push(JSON.stringify(preferences))
+    }
 
-  if (preferredPromptTime) {
-    updates.push(`preferred_prompt_time = $${paramIndex++}`);
-    values.push(preferredPromptTime);
-  }
+    if (preferredPromptTime) {
+      updates.push(`preferred_prompt_time = $${paramIndex++}`)
+      values.push(preferredPromptTime)
+    }
 
-  if (timezone) {
-    updates.push(`timezone = $${paramIndex++}`);
-    values.push(timezone);
-  }
+    if (timezone) {
+      updates.push(`timezone = $${paramIndex++}`)
+      values.push(timezone)
+    }
 
-  if (updates.length > 0) {
-    updates.push('updated_at = NOW()');
-    await pool.query(
-      `UPDATE user_game_state SET ${updates.join(', ')} WHERE user_id = $1`,
-      values
-    );
-  }
+    if (updates.length > 0) {
+      updates.push('updated_at = NOW()')
+      await pool.query(
+        `UPDATE user_game_state SET ${updates.join(', ')} WHERE user_id = $1`,
+        values
+      )
+    }
 
-  res.json({ success: true });
-}));
+    res.json({ success: true })
+  })
+)
 
 /**
  * GET /api/notifications/history
  * Get notification history
  */
-router.get('/history', asyncHandler(async (req, res) => {
-  const userId = req.user.id;
-  const { limit = 20 } = req.query;
+router.get(
+  '/history',
+  asyncHandler(async (req, res) => {
+    const userId = req.user.id
+    const rawLimit = req.query.limit
+    const limit = Math.min(Math.max(parseInt(rawLimit) || 20, 1), 100)
 
-  const notifications = await pool.query(
-    `SELECT id, notification_type, subject, scheduled_for, sent_at
+    const notifications = await pool.query(
+      `SELECT id, notification_type, subject, scheduled_for, sent_at
      FROM notification_queue
      WHERE user_id = $1
      ORDER BY scheduled_for DESC
      LIMIT $2`,
-    [userId, parseInt(limit)]
-  );
+      [userId, limit]
+    )
 
-  res.json({
-    success: true,
-    data: notifications.rows
-  });
-}));
+    res.json({
+      success: true,
+      data: notifications.rows
+    })
+  })
+)
 
-export default router;
+export default router

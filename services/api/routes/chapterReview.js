@@ -5,8 +5,11 @@ import { getMemoryContext } from '../utils/memoryContext.js'
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { requireDb } from '../middleware/requireDb.js'
 import { checkAIQuota } from '../middleware/aiQuota.js'
+import validate from '../middleware/validate.js'
+import { chapterReviewSchemas } from '../schemas/index.js'
 import { chapters } from '@easy-memoir/shared/chapters'
 import { createLogger } from '../utils/logger.js'
+import { ExternalServiceError } from '../utils/errors.js'
 
 const router = Router()
 const logger = createLogger('chapter-review')
@@ -18,13 +21,14 @@ const SECURITY_SUFFIX =
 router.get(
   '/:chapterId',
   requireDb,
+  validate(chapterReviewSchemas.getOrRewrite),
   asyncHandler(async (req, res) => {
     const db = req.app.locals.db
     const userId = req.user.id
-    const { chapterId } = req.params
+    const { chapterId } = req.validatedParams
 
     const reviewResult = await db.query(
-      'SELECT * FROM chapter_reviews WHERE user_id = $1 AND chapter_id = $2',
+      'SELECT id, user_id, chapter_id, polished_text, raw_source_text, version, clio_history, created_at, updated_at FROM chapter_reviews WHERE user_id = $1 AND chapter_id = $2',
       [userId, chapterId]
     )
 
@@ -62,10 +66,11 @@ router.post(
   '/:chapterId/rewrite',
   requireDb,
   checkAIQuota,
+  validate(chapterReviewSchemas.getOrRewrite),
   asyncHandler(async (req, res) => {
     const db = req.app.locals.db
     const userId = req.user.id
-    const { chapterId } = req.params
+    const { chapterId } = req.validatedParams
 
     const rateCheck = await checkRateLimit(userId)
     if (!rateCheck.allowed) {
@@ -152,7 +157,7 @@ Write ONLY the polished chapter text. No titles, headers, introductions, or meta
     const polishedText = result.content || ''
 
     if (!polishedText.trim()) {
-      return res.status(500).json({ error: 'Failed to generate polished text. Please try again.' })
+      throw new ExternalServiceError('Grok AI')
     }
 
     const upsertResult = await db.query(
@@ -179,11 +184,12 @@ router.post(
   '/:chapterId/clio-edit',
   requireDb,
   checkAIQuota,
+  validate(chapterReviewSchemas.clioEdit),
   asyncHandler(async (req, res) => {
     const db = req.app.locals.db
     const userId = req.user.id
-    const { chapterId } = req.params
-    const { instruction, currentText, clioHistory = [] } = req.body
+    const { chapterId } = req.validatedParams
+    const { instruction, currentText, clioHistory = [] } = req.validatedBody
 
     const rateCheck = await checkRateLimit(userId)
     if (!rateCheck.allowed) {
@@ -191,13 +197,6 @@ router.post(
         error: 'Too many requests',
         message: `Please wait ${Math.ceil(rateCheck.resetIn / 1000)} seconds before trying again.`
       })
-    }
-
-    if (!instruction?.trim()) {
-      return res.status(400).json({ error: 'Instruction is required' })
-    }
-    if (!currentText?.trim()) {
-      return res.status(400).json({ error: 'Current text is required' })
     }
 
     const safeInstruction = sanitizeForPrompt(instruction, 2000)
@@ -276,15 +275,12 @@ Return ONLY the updated chapter text. No explanations, no meta-commentary, no "H
 router.put(
   '/:chapterId/save',
   requireDb,
+  validate(chapterReviewSchemas.save),
   asyncHandler(async (req, res) => {
     const db = req.app.locals.db
     const userId = req.user.id
-    const { chapterId } = req.params
-    const { polishedText } = req.body
-
-    if (!polishedText || typeof polishedText !== 'string') {
-      return res.status(400).json({ error: 'polishedText is required' })
-    }
+    const { chapterId } = req.validatedParams
+    const { polishedText } = req.validatedBody
 
     const result = await db.query(
       `UPDATE chapter_reviews

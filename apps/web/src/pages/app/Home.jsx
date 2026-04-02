@@ -1,19 +1,27 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, lazy } from 'react'
 import { Link } from 'react-router-dom'
 import { chapters } from '../../data/chapters'
 import { useAuth } from '../../context/AuthContext'
 import { usePremium } from '../../hooks/usePremium'
-import ExportModal from '../../components/ExportModal'
-import OnboardingModal from '../../components/OnboardingModal'
-import UpgradeModal from '../../components/UpgradeModal'
+import { useDashboardProgress } from '../../features/memoir/queries/storyQueries'
 import EmailVerificationBanner from '../../components/EmailVerificationBanner'
+import HomeProgressSkeleton from '../../components/skeletons/HomeProgressSkeleton'
+
+const ExportModal = lazy(() => import('../../components/ExportModal'))
+const OnboardingModal = lazy(() => import('../../components/OnboardingModal'))
+const UpgradeModal = lazy(() => import('../../components/UpgradeModal'))
 
 export default function Home() {
   const { user, authFetch, refreshUser } = useAuth()
   const { isPremium } = usePremium()
-  const [progress, setProgress] = useState({})
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+
+  // Server state via React Query — replaces manual useEffect+setState fetch
+  const {
+    data: progress = {},
+    isLoading: loading,
+    error: progressError
+  } = useDashboardProgress(user?.id)
+  const error = progressError?.message || null
   const [showExportModal, setShowExportModal] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(
     new URLSearchParams(window.location.search).has('onboarding')
@@ -41,7 +49,6 @@ export default function Home() {
   }, [])
 
   useEffect(() => {
-    fetchProgress()
     checkOnboardingStatus()
 
     const params = new URLSearchParams(window.location.search)
@@ -69,22 +76,7 @@ export default function Home() {
         if (!data.completed) setShowOnboarding(true)
       }
     } catch (err) {
-      console.error('Error checking onboarding:', err)
-    }
-  }
-
-  const fetchProgress = async () => {
-    try {
-      setError(null)
-      const res = await authFetch('/api/stories/progress')
-      if (!res.ok) throw new Error('Failed to load progress')
-      const data = await res.json()
-      setProgress(data.progress || data)
-    } catch (err) {
-      console.error('Error fetching progress:', err)
-      setError('Unable to load your progress. Please try refreshing.')
-    } finally {
-      setLoading(false)
+      // Non-critical — onboarding check failure should not block the page
     }
   }
 
@@ -146,7 +138,9 @@ export default function Home() {
         )}
 
         {/* Progress */}
-        {!loading && (
+        {loading ? (
+          <HomeProgressSkeleton />
+        ) : (
           <div className="mb-10 text-center">
             <div className="text-5xl font-semibold text-ink mb-1">{totalProgress}%</div>
             <p className="text-sepia/60 text-sm mb-3">
@@ -332,18 +326,20 @@ export default function Home() {
         )}
       </div>
 
-      {/* Modals */}
-      {showExportModal && (
-        <ExportModal onClose={() => setShowExportModal(false)} userName={user?.name || 'Your'} />
-      )}
+      {/* Modals — lazy-loaded to reduce Home chunk size */}
+      <Suspense fallback={null}>
+        {showExportModal && (
+          <ExportModal onClose={() => setShowExportModal(false)} userName={user?.name || 'Your'} />
+        )}
 
-      {showUpgradeModal && (
-        <UpgradeModal
-          onClose={() => setShowUpgradeModal(false)}
-          memoriesCount={progress['earliest-memories'] || 0}
-          variant={upgradeVariant}
-        />
-      )}
+        {showUpgradeModal && (
+          <UpgradeModal
+            onClose={() => setShowUpgradeModal(false)}
+            memoriesCount={progress['earliest-memories'] || 0}
+            variant={upgradeVariant}
+          />
+        )}
+      </Suspense>
 
       {showPremiumCelebration && (
         <div
@@ -384,15 +380,17 @@ export default function Home() {
         </div>
       )}
 
-      {showOnboarding && (
-        <OnboardingModal
-          initialStep={new URLSearchParams(window.location.search).get('step') || undefined}
-          onClose={async () => {
-            setShowOnboarding(false)
-            await refreshUser()
-          }}
-        />
-      )}
+      <Suspense fallback={null}>
+        {showOnboarding && (
+          <OnboardingModal
+            initialStep={new URLSearchParams(window.location.search).get('step') || undefined}
+            onClose={async () => {
+              setShowOnboarding(false)
+              await refreshUser()
+            }}
+          />
+        )}
+      </Suspense>
     </>
   )
 }

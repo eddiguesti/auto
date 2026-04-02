@@ -3,6 +3,7 @@ import { asyncHandler } from '../middleware/asyncHandler.js'
 import { requireDb } from '../middleware/requireDb.js'
 import Replicate from 'replicate'
 import { createLogger } from '../utils/logger.js'
+import { ConfigurationError } from '../utils/errors.js'
 
 const router = Router()
 const logger = createLogger('chapter-images')
@@ -109,7 +110,7 @@ router.post(
 
     const replicateToken = process.env.REPLICATE_API_TOKEN
     if (!replicateToken) {
-      return res.status(500).json({ error: 'Image generation not configured' })
+      throw new ConfigurationError('REPLICATE_API_TOKEN')
     }
 
     // Get user context

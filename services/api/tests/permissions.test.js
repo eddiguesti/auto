@@ -1,23 +1,16 @@
 /**
  * Permission Tests
  * Tests that protected resources cannot be accessed without proper authorization
- *
- * Run with: node server/tests/permissions.test.js
  */
 
-import assert from 'assert'
+import { describe, it, expect } from 'vitest'
 import {
-  test,
-  describe,
-  printSummary,
   generateTestToken,
   getTestJwtSecret,
   createMockRequest,
   createMockResponse,
   createMockNext,
-  createMockDb,
-  assertStatus,
-  assertError
+  createMockDb
 } from './testUtils.js'
 
 // Set test environment
@@ -45,7 +38,7 @@ describe('Protected Routes - No Token', () => {
   ]
 
   protectedEndpoints.forEach(({ method, path }) => {
-    test(`${method} ${path} returns 401 without token`, () => {
+    it(`${method} ${path} returns 401 without token`, async () => {
       const req = createMockRequest({
         method,
         path,
@@ -54,16 +47,16 @@ describe('Protected Routes - No Token', () => {
       const res = createMockResponse()
       const next = createMockNext()
 
-      authenticateToken(req, res, next)
+      await authenticateToken(req, res, next)
 
-      assertStatus(res, 401)
-      assertError(res, 'Authentication required')
+      expect(res.statusCode).toBe(401)
+      expect(res.body.error).toBe('Authentication required')
     })
   })
 })
 
 describe('Protected Routes - Invalid Token', () => {
-  test('returns 403 with invalid token', () => {
+  it('returns 403 with invalid token', async () => {
     const req = createMockRequest({
       method: 'GET',
       path: '/api/stories/all',
@@ -72,13 +65,13 @@ describe('Protected Routes - Invalid Token', () => {
     const res = createMockResponse()
     const next = createMockNext()
 
-    authenticateToken(req, res, next)
+    await authenticateToken(req, res, next)
 
-    assertStatus(res, 403)
-    assertError(res, 'Invalid or expired token')
+    expect(res.statusCode).toBe(403)
+    expect(res.body.error).toBe('Invalid or expired token')
   })
 
-  test('returns 403 with tampered token', () => {
+  it('returns 403 with tampered token', async () => {
     // Create a valid token then modify it
     const token = generateTestToken({ id: 1, email: 'test@test.com' })
     const tamperedToken = token.slice(0, -5) + 'xxxxx'
@@ -89,14 +82,14 @@ describe('Protected Routes - Invalid Token', () => {
     const res = createMockResponse()
     const next = createMockNext()
 
-    authenticateToken(req, res, next)
+    await authenticateToken(req, res, next)
 
-    assertStatus(res, 403)
+    expect(res.statusCode).toBe(403)
   })
 })
 
 describe('Protected Routes - Valid Token', () => {
-  test('allows access with valid token', () => {
+  it('allows access with valid token', async () => {
     const token = generateTestToken({ id: 1, email: 'test@test.com' })
     const req = createMockRequest({
       headers: { authorization: `Bearer ${token}` }
@@ -104,13 +97,13 @@ describe('Protected Routes - Valid Token', () => {
     const res = createMockResponse()
     const next = createMockNext()
 
-    authenticateToken(req, res, next)
+    await authenticateToken(req, res, next)
 
-    assert.ok(next.called(), 'Should call next()')
-    assert.strictEqual(req.user.id, 1)
+    expect(next.called()).toBeTruthy()
+    expect(req.user.id).toBe(1)
   })
 
-  test('sets user on request object', () => {
+  it('sets user on request object', async () => {
     const token = generateTestToken({ id: 42, email: 'user@example.com' })
     const req = createMockRequest({
       headers: { authorization: `Bearer ${token}` }
@@ -118,17 +111,17 @@ describe('Protected Routes - Valid Token', () => {
     const res = createMockResponse()
     const next = createMockNext()
 
-    authenticateToken(req, res, next)
+    await authenticateToken(req, res, next)
 
-    assert.strictEqual(req.user.id, 42)
-    assert.strictEqual(req.user.email, 'user@example.com')
+    expect(req.user.id).toBe(42)
+    expect(req.user.email).toBe('user@example.com')
   })
 })
 
 // ============ Database Availability Tests ============
 
 describe('Database Availability (requireDb middleware)', () => {
-  test('returns 503 when database is not available', () => {
+  it('returns 503 when database is not available', () => {
     const req = createMockRequest({
       app: { locals: { db: null } }
     })
@@ -137,11 +130,11 @@ describe('Database Availability (requireDb middleware)', () => {
 
     requireDb(req, res, next)
 
-    assertStatus(res, 503)
-    assertError(res, 'Database not available')
+    expect(res.statusCode).toBe(503)
+    expect(res.body.error).toBe('Database not available')
   })
 
-  test('allows request when database is available', () => {
+  it('allows request when database is available', () => {
     const req = createMockRequest({
       app: { locals: { db: createMockDb() } }
     })
@@ -150,14 +143,14 @@ describe('Database Availability (requireDb middleware)', () => {
 
     requireDb(req, res, next)
 
-    assert.ok(next.called(), 'Should call next() when db is available')
+    expect(next.called()).toBeTruthy()
   })
 })
 
 // ============ User Isolation Tests ============
 
 describe('User Isolation', () => {
-  test('user ID from token is used for database queries', () => {
+  it('user ID from token is used for database queries', async () => {
     const token = generateTestToken({ id: 123, email: 'user123@test.com' })
     const req = createMockRequest({
       headers: { authorization: `Bearer ${token}` }
@@ -165,15 +158,15 @@ describe('User Isolation', () => {
     const res = createMockResponse()
     const next = createMockNext()
 
-    authenticateToken(req, res, next)
+    await authenticateToken(req, res, next)
 
     // The user ID should be used for all subsequent operations
-    assert.strictEqual(req.user.id, 123)
+    expect(req.user.id).toBe(123)
     // This ID should be used to filter database queries
     // Actual isolation is enforced by route handlers using req.user.id
   })
 
-  test('cannot impersonate another user by modifying token', () => {
+  it('cannot impersonate another user by modifying token', async () => {
     // Try to create a token with a different user ID
     const originalUserId = 1
     const targetUserId = 999
@@ -195,17 +188,17 @@ describe('User Isolation', () => {
     const res = createMockResponse()
     const next = createMockNext()
 
-    authenticateToken(req, res, next)
+    await authenticateToken(req, res, next)
 
-    assertStatus(res, 403)
-    assert.ok(!req.user, 'User should not be set for tampered token')
+    expect(res.statusCode).toBe(403)
+    expect(!req.user).toBeTruthy()
   })
 })
 
 // ============ Resource Ownership Tests ============
 
 describe('Resource Ownership Patterns', () => {
-  test('authenticated user ID is available for ownership checks', () => {
+  it('authenticated user ID is available for ownership checks', async () => {
     const userId = 42
     const token = generateTestToken({ id: userId, email: 'owner@test.com' })
     const req = createMockRequest({
@@ -214,19 +207,19 @@ describe('Resource Ownership Patterns', () => {
     const res = createMockResponse()
     const next = createMockNext()
 
-    authenticateToken(req, res, next)
+    await authenticateToken(req, res, next)
 
     // Route handlers can use req.user.id to verify ownership
-    assert.strictEqual(req.user.id, userId)
+    expect(req.user.id).toBe(userId)
 
     // Example ownership check pattern (as used in routes):
     const resourceOwnerId = 42
     const isOwner = req.user.id === resourceOwnerId
-    assert.ok(isOwner, 'User should own their resources')
+    expect(isOwner).toBeTruthy()
 
     const otherResourceOwnerId = 999
     const isNotOwner = req.user.id !== otherResourceOwnerId
-    assert.ok(isNotOwner, 'User should not own other resources')
+    expect(isNotOwner).toBeTruthy()
   })
 })
 
@@ -242,10 +235,10 @@ describe('Public Routes (no auth required)', () => {
   ]
 
   publicEndpoints.forEach(({ method, path }) => {
-    test(`${method} ${path} does not require authentication`, () => {
+    it(`${method} ${path} does not require authentication`, () => {
       // These routes should not use authenticateToken middleware
       // We just verify the pattern is documented
-      assert.ok(true, `${path} is a public endpoint`)
+      expect(true).toBeTruthy()
     })
   })
 })
@@ -253,7 +246,7 @@ describe('Public Routes (no auth required)', () => {
 // ============ Token Format Tests ============
 
 describe('Authorization Header Format', () => {
-  test('accepts "Bearer <token>" format', () => {
+  it('accepts "Bearer <token>" format', async () => {
     const token = generateTestToken()
     const req = createMockRequest({
       headers: { authorization: `Bearer ${token}` }
@@ -261,12 +254,12 @@ describe('Authorization Header Format', () => {
     const res = createMockResponse()
     const next = createMockNext()
 
-    authenticateToken(req, res, next)
+    await authenticateToken(req, res, next)
 
-    assert.ok(next.called())
+    expect(next.called()).toBeTruthy()
   })
 
-  test('rejects token without Bearer prefix', () => {
+  it('rejects token without Bearer prefix', async () => {
     const token = generateTestToken()
     const req = createMockRequest({
       headers: { authorization: token }
@@ -274,12 +267,12 @@ describe('Authorization Header Format', () => {
     const res = createMockResponse()
     const next = createMockNext()
 
-    authenticateToken(req, res, next)
+    await authenticateToken(req, res, next)
 
-    assertStatus(res, 401)
+    expect(res.statusCode).toBe(401)
   })
 
-  test('accepts lowercase "bearer" prefix (HTTP headers are case-insensitive)', () => {
+  it('accepts lowercase "bearer" prefix (HTTP headers are case-insensitive)', async () => {
     const token = generateTestToken()
     const req = createMockRequest({
       headers: { authorization: `bearer ${token}` }
@@ -287,14 +280,9 @@ describe('Authorization Header Format', () => {
     const res = createMockResponse()
     const next = createMockNext()
 
-    authenticateToken(req, res, next)
+    await authenticateToken(req, res, next)
 
     // The middleware splits on space, so case doesn't matter for the prefix
-    assert.ok(next.called(), 'Should accept lowercase bearer')
+    expect(next.called()).toBeTruthy()
   })
 })
-
-// ============ Run Tests ============
-
-const exitCode = printSummary()
-process.exit(exitCode)

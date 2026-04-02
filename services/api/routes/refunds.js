@@ -2,6 +2,8 @@ import { Router } from 'express'
 import Stripe from 'stripe'
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { requireDb } from '../middleware/requireDb.js'
+import validate from '../middleware/validate.js'
+import { refundSchemas } from '../schemas/index.js'
 import { createLogger } from '../utils/logger.js'
 
 const router = Router()
@@ -142,30 +144,27 @@ router.get(
 router.post(
   '/request',
   requireDb,
+  validate(refundSchemas.request),
   asyncHandler(async (req, res) => {
     const db = req.app.locals.db
     const userId = req.user.id
     const userEmail = req.user.email
-    const { paymentId, reason, type } = req.body
-
-    if (!type || !['guarantee', 'cooling_off', 'faulty', 'other'].includes(type)) {
-      return res
-        .status(400)
-        .json({ error: 'Invalid refund type. Must be: guarantee, cooling_off, faulty, or other' })
-    }
+    const { paymentId, reason, type } = req.validatedBody
 
     // Get the payment record
     let payment
     if (paymentId) {
       const paymentResult = await db.query(
-        `SELECT * FROM payments WHERE id = $1 AND user_id = $2 AND status = 'completed'`,
+        `SELECT id, user_id, stripe_session_id, stripe_subscription_id, product_id, product_type, amount, currency, status, created_at
+         FROM payments WHERE id = $1 AND user_id = $2 AND status = 'completed'`,
         [paymentId, userId]
       )
       payment = paymentResult.rows[0]
     } else {
       // Use most recent payment
       const paymentResult = await db.query(
-        `SELECT * FROM payments WHERE user_id = $1 AND status = 'completed' ORDER BY created_at DESC LIMIT 1`,
+        `SELECT id, user_id, stripe_session_id, stripe_subscription_id, product_id, product_type, amount, currency, status, created_at
+         FROM payments WHERE user_id = $1 AND status = 'completed' ORDER BY created_at DESC LIMIT 1`,
         [userId]
       )
       payment = paymentResult.rows[0]

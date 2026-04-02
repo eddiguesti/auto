@@ -15,15 +15,14 @@ import { captureException } from '../utils/sentry.js'
  * @param {boolean} isDevelopment - Development mode flag
  * @returns {Object} Error response object
  */
-function buildErrorResponse(error, message, requestId, isDevelopment) {
+function buildErrorResponse(error, message, requestId, isDevelopment, code = null) {
   const response = {
     error,
     message: sanitizeErrorMessage(message)
   }
 
-  if (requestId && !isDevelopment) {
-    response.requestId = requestId
-  }
+  if (code) response.code = code
+  if (requestId && !isDevelopment) response.requestId = requestId
 
   return response
 }
@@ -66,7 +65,9 @@ export function errorHandler(err, req, res, next) {
   if (err.name === 'ValidationError') {
     return res
       .status(400)
-      .json(buildErrorResponse('Validation failed', err.message, requestId, isDevelopment))
+      .json(
+        buildErrorResponse('Validation failed', err.message, requestId, isDevelopment, err.code)
+      )
   }
 
   if (err.name === 'UnauthorizedError' || err.statusCode === 401) {
@@ -77,7 +78,8 @@ export function errorHandler(err, req, res, next) {
           'Unauthorized',
           err.message || 'Authentication required',
           requestId,
-          isDevelopment
+          isDevelopment,
+          err.code || 'UNAUTHORIZED'
         )
       )
   }
@@ -86,7 +88,13 @@ export function errorHandler(err, req, res, next) {
     return res
       .status(403)
       .json(
-        buildErrorResponse('Forbidden', err.message || 'Access denied', requestId, isDevelopment)
+        buildErrorResponse(
+          'Forbidden',
+          err.message || 'Access denied',
+          requestId,
+          isDevelopment,
+          err.code || 'FORBIDDEN'
+        )
       )
   }
 
@@ -98,7 +106,8 @@ export function errorHandler(err, req, res, next) {
           'Not found',
           err.message || 'Resource not found',
           requestId,
-          isDevelopment
+          isDevelopment,
+          err.code || 'NOT_FOUND'
         )
       )
   }
@@ -111,7 +120,8 @@ export function errorHandler(err, req, res, next) {
           'Service unavailable',
           err.message || 'Service not available',
           requestId,
-          isDevelopment
+          isDevelopment,
+          err.code || 'SERVICE_UNAVAILABLE'
         )
       )
   }
@@ -124,7 +134,8 @@ export function errorHandler(err, req, res, next) {
           'Too many requests',
           err.message || 'Please try again later',
           requestId,
-          isDevelopment
+          isDevelopment,
+          err.code || 'RATE_LIMITED'
         )
       )
   }
@@ -133,7 +144,15 @@ export function errorHandler(err, req, res, next) {
   if (err.type === 'StripeCardError') {
     return res
       .status(400)
-      .json(buildErrorResponse('Payment failed', err.message, requestId, isDevelopment))
+      .json(
+        buildErrorResponse(
+          'Payment failed',
+          err.message,
+          requestId,
+          isDevelopment,
+          'STRIPE_CARD_ERROR'
+        )
+      )
   }
 
   // Handle configuration errors (don't leak config details)
@@ -145,7 +164,8 @@ export function errorHandler(err, req, res, next) {
           'Internal server error',
           'Server configuration error',
           requestId,
-          isDevelopment
+          isDevelopment,
+          err.code || 'CONFIG_ERROR'
         )
       )
   }
@@ -159,7 +179,8 @@ export function errorHandler(err, req, res, next) {
           'Service error',
           err.message || 'External service unavailable',
           requestId,
-          isDevelopment
+          isDevelopment,
+          err.code || 'EXTERNAL_SERVICE_ERROR'
         )
       )
   }
@@ -168,7 +189,9 @@ export function errorHandler(err, req, res, next) {
   const errorType = statusCode === 500 ? 'Internal server error' : 'Error'
   const message = isDevelopment ? err.message : 'Something went wrong'
 
-  res.status(statusCode).json(buildErrorResponse(errorType, message, requestId, isDevelopment))
+  res
+    .status(statusCode)
+    .json(buildErrorResponse(errorType, message, requestId, isDevelopment, err.code || null))
 }
 
 /**

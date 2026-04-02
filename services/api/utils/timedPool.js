@@ -3,11 +3,14 @@
  * Wraps the pg Pool to record metrics for all queries
  */
 
-import { recordDbQuery } from './metrics.js'
+import { recordDbQuery, getMetricsSummary } from './metrics.js'
 import { createLogger } from './logger.js'
 
 const logger = createLogger('db')
 const SLOW_QUERY_THRESHOLD_MS = 500
+const POOL_STATS_INTERVAL_MS = 60_000
+const POOL_WAIT_WARN_THRESHOLD = 5
+const AVG_QUERY_WARN_THRESHOLD_MS = 500
 
 /**
  * Extract operation type from SQL query
@@ -77,6 +80,35 @@ export function wrapPoolWithTiming(pool) {
       throw err
     }
   }
+
+  // Start periodic pool stats logging
+  const statsInterval = setInterval(() => {
+    const stats = {
+      total: pool.totalCount,
+      idle: pool.idleCount,
+      waiting: pool.waitingCount,
+      active: pool.totalCount - pool.idleCount
+    }
+
+    const { database } = getMetricsSummary()
+
+    if (stats.waiting > POOL_WAIT_WARN_THRESHOLD) {
+      logger.warn('DB pool pressure — high wait count', {
+        ...stats,
+        avgQueryMs: database.latency.mean
+      })
+    } else if (database.latency.mean > AVG_QUERY_WARN_THRESHOLD_MS && database.latency.count > 0) {
+      logger.warn('DB pool — average query time exceeds threshold', {
+        ...stats,
+        avgQueryMs: database.latency.mean
+      })
+    } else {
+      logger.debug('DB pool stats', { ...stats, avgQueryMs: database.latency.mean })
+    }
+  }, POOL_STATS_INTERVAL_MS)
+
+  // Don't keep the process alive just for stats logging
+  statsInterval.unref()
 
   return pool
 }

@@ -191,7 +191,7 @@ async function pickPromptForUser(userId) {
   let result
   if (recentPrompts.length > 0) {
     result = await pool.query(
-      `SELECT * FROM prompt_library
+      `SELECT id, prompt_text, prompt_type, chapter_hint, question_hint, is_active, times_used, min_streak_days, tags, personality_tags, created_at FROM prompt_library
        WHERE is_active = true
          AND prompt_text NOT IN (SELECT unnest($2::text[]))
        ORDER BY COALESCE(times_used, 0) ASC, RANDOM()
@@ -200,7 +200,7 @@ async function pickPromptForUser(userId) {
     )
   } else {
     result = await pool.query(
-      `SELECT * FROM prompt_library
+      `SELECT id, prompt_text, prompt_type, chapter_hint, question_hint, is_active, times_used, min_streak_days, tags, personality_tags, created_at FROM prompt_library
        WHERE is_active = true
        ORDER BY COALESCE(times_used, 0) ASC, RANDOM()
        LIMIT 1`
@@ -210,7 +210,7 @@ async function pickPromptForUser(userId) {
   // Fallback: if all prompts used recently, just pick a random one
   if (result.rows.length === 0) {
     result = await pool.query(
-      `SELECT * FROM prompt_library
+      `SELECT id, prompt_text, prompt_type, chapter_hint, question_hint, is_active, times_used, min_streak_days, tags, personality_tags, created_at FROM prompt_library
        WHERE is_active = true
        ORDER BY RANDOM()
        LIMIT 1`

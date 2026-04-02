@@ -1,8 +1,10 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { chapters } from '../../data/chapters'
 import BookOrderWizard from '../../components/BookOrderWizard'
+import VoiceSetupModal from '../../components/export/VoiceSetupModal'
 import { useAuth } from '../../context/AuthContext'
+import { useExport } from '../../hooks/useExport'
 import { IconSparkles } from '@tabler/icons-react'
 
 export default function Export() {
@@ -10,253 +12,54 @@ export default function Export() {
   const [searchParams] = useSearchParams()
   const [stories, setStories] = useState({})
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [loadError, setLoadError] = useState(null)
   const [showBookOrder, setShowBookOrder] = useState(false)
-  const [pageCount, setPageCount] = useState(50)
-  const [exportStatus, setExportStatus] = useState(null)
-  const [downloading, setDownloading] = useState(false)
+  const [showVoiceSetup, setShowVoiceSetup] = useState(false)
   const [paymentSuccess, setPaymentSuccess] = useState(searchParams.get('success') === 'true')
 
-  // Audiobook state
-  const [audiobookStatus, setAudiobookStatus] = useState(null)
-  const [showVoiceSetup, setShowVoiceSetup] = useState(false)
-  const [isRecording, setIsRecording] = useState(false)
-  const [voiceConsent, setVoiceConsent] = useState(false)
-  const [recordedAudio, setRecordedAudio] = useState(null)
-  const [uploadingVoice, setUploadingVoice] = useState(false)
-  const [generatingAudiobook, setGeneratingAudiobook] = useState(false)
-  const mediaRecorderRef = useRef(null)
-  const audioChunksRef = useRef([])
+  const {
+    exportStatus,
+    audiobookStatus,
+    downloading,
+    generatingAudiobook,
+    uploadingVoice,
+    voiceConsent,
+    setVoiceConsent,
+    error: exportError,
+    setError: setExportError,
+    voice,
+    handleDownloadEpub,
+    handleGenerateAudiobook,
+    uploadVoiceSample,
+    deleteVoiceModel
+  } = useExport({ userName: user?.name || 'My', successPath: '/export' })
 
   useEffect(() => {
     fetchAllStories()
-    fetchExportStatus()
-    fetchAudiobookStatus()
   }, [])
-
-  useEffect(() => {
-    // Refresh export status after successful payment
-    if (paymentSuccess) {
-      fetchExportStatus()
-    }
-  }, [paymentSuccess])
 
   const fetchAllStories = async () => {
     try {
-      setError(null)
       const storiesRes = await authFetch('/api/stories/all')
-      if (!storiesRes.ok) {
-        throw new Error('Failed to load stories')
-      }
+      if (!storiesRes.ok) throw new Error('Failed to load stories')
       const storiesData = await storiesRes.json()
-
-      // Organize by chapter and question
       const organized = {}
       storiesData.forEach(story => {
-        if (!organized[story.chapter_id]) {
-          organized[story.chapter_id] = {}
-        }
+        if (!organized[story.chapter_id]) organized[story.chapter_id] = {}
         organized[story.chapter_id][story.question_id] = story
       })
       setStories(organized)
     } catch (err) {
       console.error('Error fetching stories:', err)
-      setError('Unable to load your stories. Please try refreshing the page.')
+      setLoadError('Unable to load your stories. Please try refreshing the page.')
     } finally {
       setLoading(false)
     }
   }
 
-  const fetchExportStatus = async () => {
-    try {
-      const res = await authFetch('/api/export/status')
-      if (res.ok) {
-        const data = await res.json()
-        setExportStatus(data)
-      }
-    } catch (err) {
-      console.error('Error fetching export status:', err)
-    }
-  }
-
-  const fetchAudiobookStatus = async () => {
-    try {
-      const res = await authFetch('/api/audiobook/status')
-      if (res.ok) {
-        const data = await res.json()
-        setAudiobookStatus(data)
-      }
-    } catch (err) {
-      console.error('Error fetching audiobook status:', err)
-    }
-  }
-
-  // Voice recording functions
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      mediaRecorderRef.current = new MediaRecorder(stream)
-      audioChunksRef.current = []
-
-      mediaRecorderRef.current.ondataavailable = event => {
-        audioChunksRef.current.push(event.data)
-      }
-
-      mediaRecorderRef.current.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' })
-        setRecordedAudio(audioBlob)
-        stream.getTracks().forEach(track => track.stop())
-      }
-
-      mediaRecorderRef.current.start()
-      setIsRecording(true)
-
-      // Auto-stop after 30 seconds
-      setTimeout(() => {
-        if (mediaRecorderRef.current?.state === 'recording') {
-          stopRecording()
-        }
-      }, 30000)
-    } catch (err) {
-      console.error('Microphone access error:', err)
-      setError('Could not access microphone. Please check permissions.')
-    }
-  }
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current?.state === 'recording') {
-      mediaRecorderRef.current.stop()
-      setIsRecording(false)
-    }
-  }
-
-  const uploadVoiceSample = async () => {
-    if (!recordedAudio || !voiceConsent) return
-
-    setUploadingVoice(true)
-    try {
-      // Convert blob to base64
-      const reader = new FileReader()
-      reader.readAsDataURL(recordedAudio)
-      reader.onloadend = async () => {
-        const base64Audio = reader.result
-
-        const res = await authFetch('/api/audiobook/voice-sample', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            audioData: base64Audio,
-            consentGiven: voiceConsent
-          })
-        })
-
-        if (!res.ok) throw new Error('Upload failed')
-
-        await fetchAudiobookStatus()
-        setShowVoiceSetup(false)
-        setRecordedAudio(null)
-      }
-    } catch (err) {
-      console.error('Voice upload error:', err)
-      setError('Failed to upload voice sample. Please try again.')
-    } finally {
-      setUploadingVoice(false)
-    }
-  }
-
-  const deleteVoiceModel = async () => {
-    try {
-      const res = await authFetch('/api/audiobook/voice-sample', { method: 'DELETE' })
-      if (res.ok) {
-        await fetchAudiobookStatus()
-      }
-    } catch (err) {
-      console.error('Delete voice error:', err)
-    }
-  }
-
-  const handleGenerateAudiobook = async (useOwnVoice = false) => {
-    if (!audiobookStatus?.canGenerate) {
-      handlePayment('export_audiobook')
-      return
-    }
-
-    setGeneratingAudiobook(true)
-    try {
-      const res = await authFetch('/api/audiobook/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ useOwnVoice })
-      })
-
-      if (!res.ok) throw new Error('Generation failed')
-
-      const blob = await res.blob()
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `${user?.name || 'My'}_Life_Story_Audiobook.mp3`
-      document.body.appendChild(a)
-      a.click()
-      window.URL.revokeObjectURL(url)
-      a.remove()
-    } catch (err) {
-      console.error('Audiobook generation error:', err)
-      setError('Failed to generate audiobook. Please try again.')
-    } finally {
-      setGeneratingAudiobook(false)
-    }
-  }
-
-  const handleDownloadEpub = async () => {
-    if (!exportStatus?.canExport) {
-      // Redirect to payment
-      handlePayment('export_ebook')
-      return
-    }
-
-    setDownloading(true)
-    try {
-      const res = await authFetch('/api/export/epub')
-      if (!res.ok) throw new Error('Download failed')
-
-      const blob = await res.blob()
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `${user?.name || 'My'}_Life_Story.epub`
-      document.body.appendChild(a)
-      a.click()
-      window.URL.revokeObjectURL(url)
-      a.remove()
-    } catch (err) {
-      console.error('Download error:', err)
-      setError('Failed to download eBook. Please try again.')
-    } finally {
-      setDownloading(false)
-    }
-  }
-
-  const handlePayment = async productId => {
-    try {
-      const res = await authFetch('/api/payments/create-checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          productId,
-          successUrl: `${window.location.origin}/export?success=true`,
-          cancelUrl: `${window.location.origin}/export?cancelled=true`
-        })
-      })
-
-      if (!res.ok) throw new Error('Payment setup failed')
-
-      const { url } = await res.json()
-      window.location.href = url
-    } catch (err) {
-      console.error('Payment error:', err)
-      setError('Failed to start payment. Please try again.')
-    }
+  const handleVoiceUpload = async () => {
+    const ok = await uploadVoiceSample()
+    if (ok) setShowVoiceSetup(false)
   }
 
   if (loading) {
@@ -267,10 +70,10 @@ export default function Export() {
     )
   }
 
-  if (error) {
+  if (loadError) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="p-4 bg-red-50 text-red-700 rounded-lg text-center">{error}</div>
+        <div className="p-4 bg-red-50 text-red-700 rounded-lg text-center">{loadError}</div>
         <div className="text-center mt-4">
           <Link to="/" className="text-sepia hover:text-ink underline">
             Back to Home
@@ -284,6 +87,26 @@ export default function Export() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 page-enter">
+      {/* Action error banner */}
+      {exportError && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm flex justify-between items-center">
+          <span>{exportError}</span>
+          <button
+            onClick={() => setExportError(null)}
+            className="text-red-500 hover:text-red-700 ml-4"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+      )}
+
       {/* Success Message */}
       {paymentSuccess && (
         <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl flex items-center gap-3 print:hidden">
@@ -585,131 +408,6 @@ export default function Export() {
         </div>
       )}
 
-      {/* Voice Setup Modal */}
-      {showVoiceSetup && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl">
-            <div className="flex justify-between items-start mb-4">
-              <h3 className="font-display text-xl text-ink">Set Up Your Voice</h3>
-              <button
-                onClick={() => {
-                  setShowVoiceSetup(false)
-                  setRecordedAudio(null)
-                  setVoiceConsent(false)
-                }}
-                className="text-warmgray hover:text-ink"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
-
-            <p className="text-sm text-warmgray mb-4">
-              Record a 15-30 second voice sample. Read naturally - perhaps a paragraph from your
-              story. Our AI will learn your voice and narrate your entire memoir in your own voice.
-            </p>
-
-            {/* Consent checkbox */}
-            <label className="flex items-start gap-3 mb-6 p-3 bg-amber-50 rounded-lg border border-amber-200">
-              <input
-                type="checkbox"
-                checked={voiceConsent}
-                onChange={e => setVoiceConsent(e.target.checked)}
-                className="mt-1 w-4 h-4 text-sepia rounded"
-              />
-              <span className="text-sm text-amber-900">
-                I consent to having my voice cloned using AI technology. I understand my voice data
-                will be processed by Fish.audio and stored securely. I can delete my voice model at
-                any time.
-              </span>
-            </label>
-
-            {/* Recording UI */}
-            <div className="text-center mb-6">
-              {!recordedAudio ? (
-                <button
-                  onClick={isRecording ? stopRecording : startRecording}
-                  disabled={!voiceConsent}
-                  className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto transition ${
-                    isRecording
-                      ? 'bg-red-500 hover:bg-red-600 animate-pulse'
-                      : voiceConsent
-                        ? 'bg-purple-600 hover:bg-purple-700'
-                        : 'bg-gray-300 cursor-not-allowed'
-                  }`}
-                >
-                  {isRecording ? (
-                    <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-                      <rect x="6" y="6" width="12" height="12" rx="2" />
-                    </svg>
-                  ) : (
-                    <svg
-                      className="w-8 h-8 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
-                      />
-                    </svg>
-                  )}
-                </button>
-              ) : (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-center gap-2 text-green-600">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                    <span className="text-sm font-medium">Recording complete</span>
-                  </div>
-                  <audio controls src={URL.createObjectURL(recordedAudio)} className="mx-auto" />
-                  <button
-                    onClick={() => setRecordedAudio(null)}
-                    className="text-sm text-warmgray hover:text-ink underline"
-                  >
-                    Record again
-                  </button>
-                </div>
-              )}
-
-              <p className="text-xs text-warmgray mt-2">
-                {isRecording
-                  ? 'Recording... (max 30 seconds)'
-                  : !recordedAudio
-                    ? 'Tap to start recording'
-                    : ''}
-              </p>
-            </div>
-
-            {/* Upload button */}
-            {recordedAudio && (
-              <button
-                onClick={uploadVoiceSample}
-                disabled={uploadingVoice || !voiceConsent}
-                className="w-full py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition font-medium"
-              >
-                {uploadingVoice ? 'Processing...' : 'Save My Voice'}
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
       {!hasContent ? (
         <div className="text-center py-16 bg-white rounded-xl">
           <p className="text-sepia text-lg mb-4">No stories written yet</p>
@@ -788,11 +486,23 @@ export default function Export() {
         </div>
       )}
 
+      {/* Voice Setup Modal */}
+      {showVoiceSetup && (
+        <VoiceSetupModal
+          voice={voice}
+          consent={voiceConsent}
+          onConsentChange={setVoiceConsent}
+          onUpload={handleVoiceUpload}
+          uploading={uploadingVoice}
+          onClose={() => setShowVoiceSetup(false)}
+        />
+      )}
+
       {/* Book Order Modal */}
       {showBookOrder && (
         <BookOrderWizard
           userName={user?.name || 'My'}
-          pageCount={pageCount}
+          pageCount={50}
           onClose={() => setShowBookOrder(false)}
         />
       )}

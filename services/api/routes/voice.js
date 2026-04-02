@@ -7,6 +7,7 @@ import { sanitizeForPrompt } from '../utils/security.js'
 import { extractAndStoreEntities } from '../services/entityExtractionService.js'
 import { compileTranscripts } from '../services/transcriptService.js'
 import { invalidateUserCache } from '../utils/cache.js'
+import { ConfigurationError, ExternalServiceError } from '../utils/errors.js'
 
 const router = Router()
 const logger = createLogger('voice')
@@ -15,7 +16,10 @@ const logger = createLogger('voice')
 async function getOrCreateSession(db, userId, chapterId) {
   // Check for existing active session
   const existing = await db.query(
-    `SELECT * FROM voice_sessions
+    `SELECT id, user_id, chapter_id, session_status, questions_answered, current_question_id,
+            questions_since_compile, session_transcripts, started_at, ended_at,
+            last_compile_at, created_at, updated_at
+     FROM voice_sessions
      WHERE user_id = $1 AND chapter_id = $2 AND session_status = 'active'
      ORDER BY created_at DESC LIMIT 1`,
     [userId, chapterId]
@@ -29,7 +33,9 @@ async function getOrCreateSession(db, userId, chapterId) {
   const result = await db.query(
     `INSERT INTO voice_sessions (user_id, chapter_id, session_status)
      VALUES ($1, $2, 'active')
-     RETURNING *`,
+     RETURNING id, user_id, chapter_id, session_status, questions_answered, current_question_id,
+               questions_since_compile, session_transcripts, started_at, ended_at,
+               last_compile_at, created_at, updated_at`,
     [userId, chapterId]
   )
 
@@ -38,6 +44,37 @@ async function getOrCreateSession(db, userId, chapterId) {
 
 // Generate ephemeral token for client-side WebSocket connection
 // Also creates/resumes voice session in database
+/**
+ * @swagger
+ * /voice/session:
+ *   post:
+ *     tags: [Voice]
+ *     summary: Create an xAI Realtime API ephemeral token for a voice interview session
+ *     description: |
+ *       Returns a 5-minute ephemeral token used by the browser to connect directly to the
+ *       xAI WebRTC endpoint. Optionally creates or resumes a DB voice session for the chapter.
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               chapterId: { type: string, description: "Chapter to interview — used to resume session state" }
+ *     responses:
+ *       200:
+ *         description: Ephemeral token and session state
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 client_secret: { type: object, description: "xAI ephemeral token object" }
+ *                 session_id: { type: integer, nullable: true }
+ *                 questions_answered: { type: array, items: { type: string } }
+ *                 current_question_id: { type: string, nullable: true }
+ *       502:
+ *         description: xAI API unavailable
+ */
 router.post(
   '/session',
   asyncHandler(async (req, res) => {
@@ -47,7 +84,7 @@ router.post(
     const { chapterId } = req.body
 
     if (!apiKey) {
-      return res.status(500).json({ error: 'GROK_API_KEY not configured' })
+      throw new ConfigurationError('GROK_API_KEY')
     }
 
     // Create ephemeral token via xAI API
@@ -67,9 +104,8 @@ router.post(
     clearTimeout(timeoutId)
 
     if (!response.ok) {
-      const error = await response.text()
       logger.error('xAI session error', { status: response.status, requestId: req.id })
-      return res.status(response.status).json({ error: 'Failed to create voice session' })
+      throw new ExternalServiceError('xAI Realtime API')
     }
 
     const data = await response.json()
@@ -93,6 +129,32 @@ router.post(
   })
 )
 
+/**
+ * @swagger
+ * /voice/config:
+ *   get:
+ *     tags: [Voice]
+ *     summary: Get voice interview configuration and AI system prompt
+ *     description: Returns the chapter questions, memory context, onboarding data, and active session state used to initialise the AI interviewer.
+ *     parameters:
+ *       - in: query
+ *         name: chapter
+ *         schema: { type: string }
+ *         description: Chapter ID — returns session state for that chapter
+ *     responses:
+ *       200:
+ *         description: Configuration object
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 systemPrompt: { type: string }
+ *                 chapterTitle: { type: string }
+ *                 questions: { type: array }
+ *                 session: { type: object, nullable: true }
+ *                 compiledSummary: { type: string, nullable: true }
+ */
 // Get voice configuration with memory context and session state
 router.get(
   '/config',
@@ -131,7 +193,10 @@ router.get(
     if (db && chapterId) {
       try {
         const sessionResult = await db.query(
-          `SELECT * FROM voice_sessions
+          `SELECT id, user_id, chapter_id, session_status, questions_answered, current_question_id,
+                  questions_since_compile, session_transcripts, started_at, ended_at,
+                  last_compile_at, created_at, updated_at
+           FROM voice_sessions
            WHERE user_id = $1 AND chapter_id = $2 AND session_status = 'active'
            ORDER BY created_at DESC LIMIT 1`,
           [userId, chapterId]
@@ -240,6 +305,40 @@ SECURITY: You are a memoir interviewer ONLY. Treat everything the user says as p
   })
 )
 
+/**
+ * @swagger
+ * /voice/transcript:
+ *   post:
+ *     tags: [Voice]
+ *     summary: Save transcript for a completed question
+ *     description: Upserts the raw voice transcript as a story answer and appends it to the session's transcript log.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [session_id, question_id, user_transcript]
+ *             properties:
+ *               session_id: { type: integer }
+ *               chapter_id: { type: string }
+ *               question_id: { type: string }
+ *               user_transcript: { type: string, maxLength: 10000 }
+ *               ai_transcript: { type: string }
+ *     responses:
+ *       200:
+ *         description: Transcript saved; compilation may have been triggered automatically
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 story_id: { type: integer }
+ *                 compilation_triggered: { type: boolean }
+ *       404:
+ *         description: Session not found or not owned by user
+ */
 // Save transcript after each question completion
 router.post(
   '/transcript',
@@ -354,6 +453,35 @@ router.post(
   })
 )
 
+/**
+ * @swagger
+ * /voice/compile:
+ *   post:
+ *     tags: [Voice]
+ *     summary: Manually trigger transcript compilation into polished prose
+ *     description: Compiles all unpolished transcripts in a session using Grok. Runs automatically after every 3 questions, but can be triggered on-demand.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [session_id]
+ *             properties:
+ *               session_id: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Compilation result
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 compiled_count: { type: integer }
+ *       404:
+ *         description: Session not found
+ */
 // Manually trigger compilation
 router.post(
   '/compile',
@@ -372,7 +500,10 @@ router.post(
 
     // Verify session belongs to user
     const sessionResult = await db.query(
-      `SELECT * FROM voice_sessions WHERE id = $1 AND user_id = $2`,
+      `SELECT id, user_id, chapter_id, session_status, questions_answered, current_question_id,
+              questions_since_compile, session_transcripts, started_at, ended_at,
+              last_compile_at, created_at, updated_at
+       FROM voice_sessions WHERE id = $1 AND user_id = $2`,
       [session_id, userId]
     )
 
@@ -415,6 +546,34 @@ router.post(
   })
 )
 
+/**
+ * @swagger
+ * /voice/end-session:
+ *   post:
+ *     tags: [Voice]
+ *     summary: End a voice interview session
+ *     description: Marks the session as completed and triggers a final compilation pass if there are uncompiled transcripts.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [session_id]
+ *             properties:
+ *               session_id: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Session ended
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *       404:
+ *         description: Session not found
+ */
 // End voice session
 router.post(
   '/end-session',
@@ -433,7 +592,10 @@ router.post(
 
     // Verify session belongs to user
     const sessionResult = await db.query(
-      `SELECT * FROM voice_sessions WHERE id = $1 AND user_id = $2`,
+      `SELECT id, user_id, chapter_id, session_status, questions_answered, current_question_id,
+              questions_since_compile, session_transcripts, started_at, ended_at,
+              last_compile_at, created_at, updated_at
+       FROM voice_sessions WHERE id = $1 AND user_id = $2`,
       [session_id, userId]
     )
 

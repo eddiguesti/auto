@@ -1,6 +1,8 @@
 import { Router } from 'express'
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { requireDb } from '../middleware/requireDb.js'
+import validate from '../middleware/validate.js'
+import { freeStorySchemas } from '../schemas/index.js'
 import { createLogger } from '../utils/logger.js'
 
 const logger = createLogger('free-stories')
@@ -11,11 +13,11 @@ const router = Router()
 router.get(
   '/',
   requireDb,
+  validate(freeStorySchemas.list),
   asyncHandler(async (req, res) => {
     const db = req.app.locals.db
     const userId = req.user.id
-    const limit = Math.min(Math.max(parseInt(req.query.limit) || 50, 1), 100)
-    const offset = Math.max(parseInt(req.query.offset) || 0, 0)
+    const { limit, offset } = req.validatedQuery
 
     const result = await db.query(
       `SELECT id, title, content, created_at, updated_at
@@ -34,10 +36,11 @@ router.get(
 router.get(
   '/:id',
   requireDb,
+  validate(freeStorySchemas.byId),
   asyncHandler(async (req, res) => {
     const db = req.app.locals.db
     const userId = req.user.id
-    const storyId = parseInt(req.params.id)
+    const storyId = req.validatedParams.id
 
     const result = await db.query(
       `SELECT id, title, content, created_at, updated_at
@@ -58,30 +61,17 @@ router.get(
 router.post(
   '/',
   requireDb,
+  validate(freeStorySchemas.create),
   asyncHandler(async (req, res) => {
     const db = req.app.locals.db
     const userId = req.user.id
-    const { title, content } = req.body
-
-    if (!content || !content.trim()) {
-      return res.status(400).json({ success: false, error: 'Content is required' })
-    }
-
-    if (content.length > 100000) {
-      return res
-        .status(400)
-        .json({ success: false, error: 'Content too long (max 100,000 characters)' })
-    }
-
-    if (title && title.length > 200) {
-      return res.status(400).json({ success: false, error: 'Title too long (max 200 characters)' })
-    }
+    const { title, content } = req.validatedBody
 
     const result = await db.query(
       `INSERT INTO free_stories (user_id, title, content, created_at, updated_at)
        VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
        RETURNING id, title, content, created_at, updated_at`,
-      [userId, title?.trim() || null, content.trim()]
+      [userId, title || null, content]
     )
 
     logger.info('Created free story', { userId, storyId: result.rows[0].id })
@@ -94,11 +84,12 @@ router.post(
 router.put(
   '/:id',
   requireDb,
+  validate(freeStorySchemas.update),
   asyncHandler(async (req, res) => {
     const db = req.app.locals.db
     const userId = req.user.id
-    const storyId = parseInt(req.params.id)
-    const { title, content } = req.body
+    const storyId = req.validatedParams.id
+    const { title, content } = req.validatedBody
 
     // Check ownership
     const check = await db.query('SELECT id FROM free_stories WHERE id = $1 AND user_id = $2', [
@@ -109,27 +100,17 @@ router.put(
       return res.status(404).json({ success: false, error: 'Story not found' })
     }
 
-    if (content !== undefined && (!content || !content.trim())) {
-      return res.status(400).json({ success: false, error: 'Content cannot be empty' })
-    }
-
-    if (content && content.length > 100000) {
-      return res
-        .status(400)
-        .json({ success: false, error: 'Content too long (max 100,000 characters)' })
-    }
-
     const updates = []
     const values = []
     let paramIdx = 1
 
     if (title !== undefined) {
       updates.push(`title = $${paramIdx++}`)
-      values.push(title?.trim() || null)
+      values.push(title || null)
     }
     if (content !== undefined) {
       updates.push(`content = $${paramIdx++}`)
-      values.push(content.trim())
+      values.push(content)
     }
     updates.push(`updated_at = CURRENT_TIMESTAMP`)
 
@@ -153,10 +134,11 @@ router.put(
 router.delete(
   '/:id',
   requireDb,
+  validate(freeStorySchemas.byId),
   asyncHandler(async (req, res) => {
     const db = req.app.locals.db
     const userId = req.user.id
-    const storyId = parseInt(req.params.id)
+    const storyId = req.validatedParams.id
 
     const check = await db.query('SELECT id FROM free_stories WHERE id = $1 AND user_id = $2', [
       storyId,

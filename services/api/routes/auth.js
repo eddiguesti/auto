@@ -2,7 +2,9 @@ import { Router } from 'express'
 import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
 import { OAuth2Client } from 'google-auth-library'
+import jwt from 'jsonwebtoken'
 import { generateToken, authenticateToken } from '../middleware/auth.js'
+import { blacklistToken, blacklistAllUserTokens } from '../utils/tokenBlacklist.js'
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { requireDb } from '../middleware/requireDb.js'
 import { initializeGameState } from '../utils/gameStateManager.js'
@@ -31,6 +33,46 @@ function getGoogleClient() {
   return googleClient
 }
 
+/**
+ * @swagger
+ * /auth/register:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Register a new account
+ *     description: Creates a user account and sends a verification email. Rate limited to 5 req/15 min per IP. Honeypot fields (_hp, _ts) provide bot protection.
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, password, name]
+ *             properties:
+ *               email: { type: string, format: email }
+ *               password: { type: string, minLength: 8, maxLength: 128, description: "Must contain uppercase, lowercase, and a number" }
+ *               name: { type: string, minLength: 1, maxLength: 100 }
+ *               birthYear: { type: integer, minimum: 1900 }
+ *               _hp: { type: string, description: "Honeypot — leave empty" }
+ *               _ts: { type: integer, description: "Form load timestamp (ms)" }
+ *     responses:
+ *       201:
+ *         description: Registration successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user: { $ref: '#/components/schemas/User' }
+ *                 token: { type: string, description: JWT }
+ *       400:
+ *         description: Validation error or email already registered
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/Error' }
+ *       429:
+ *         description: Rate limit exceeded
+ */
 // Email/Password Registration
 router.post(
   '/register',
@@ -69,10 +111,12 @@ router.post(
     }
 
     try {
-      // Check if email exists
+      // Check if email exists — use generic message to prevent enumeration
       const existing = await db.query('SELECT id FROM users WHERE email = $1', [email])
       if (existing.rows.length > 0) {
-        return res.status(400).json({ error: 'Email already registered' })
+        return res
+          .status(400)
+          .json({ error: 'Registration failed. Please try again or use a different email.' })
       }
 
       // Hash password
@@ -138,6 +182,42 @@ router.post(
   })
 )
 
+/**
+ * @swagger
+ * /auth/login:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Log in with email and password
+ *     description: Returns a JWT on success. Rate limited to 5 req/15 min per IP.
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, password]
+ *             properties:
+ *               email: { type: string, format: email }
+ *               password: { type: string }
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user: { $ref: '#/components/schemas/User' }
+ *                 token: { type: string }
+ *       401:
+ *         description: Invalid credentials
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/Error' }
+ *       429:
+ *         description: Rate limit exceeded
+ */
 // Email/Password Login
 router.post(
   '/login',
@@ -180,6 +260,40 @@ router.post(
   })
 )
 
+/**
+ * @swagger
+ * /auth/google:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Sign in with Google
+ *     description: Exchanges a Google ID token for an app JWT. Creates account on first use.
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [credential]
+ *             properties:
+ *               credential: { type: string, description: "Google ID token from Google Sign-In" }
+ *     responses:
+ *       200:
+ *         description: Sign-in successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user: { $ref: '#/components/schemas/User' }
+ *                 token: { type: string }
+ *                 isNewUser: { type: boolean }
+ *       401:
+ *         description: Invalid Google credential
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/Error' }
+ */
 // Google Sign-In
 router.post(
   '/google',
@@ -280,17 +394,68 @@ router.post(
 // Logout - server-side session tracking
 // Note: JWTs are stateless, so this endpoint:
 // 1. Logs the logout event for audit trail
+/**
+ * @swagger
+ * /auth/logout:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Log out (invalidate JWT)
+ *     description: Blacklists the current token so it cannot be reused.
+ *     responses:
+ *       200:
+ *         description: Logged out
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *       401:
+ *         description: Missing or invalid token
+ */
 // 2. Returns success so client clears token
 // For full token invalidation, implement a Redis token blacklist
 router.post(
   '/logout',
   authenticateToken,
   asyncHandler(async (req, res) => {
+    // Blacklist the current token so it can't be reused
+    if (req.user.jti) {
+      await blacklistToken(req.user)
+    }
     authLogger.info('User logged out', { userId: req.user.id, requestId: req.id })
     res.json({ success: true, message: 'Logged out successfully' })
   })
 )
 
+/**
+ * @swagger
+ * /auth/me:
+ *   get:
+ *     tags: [Auth]
+ *     summary: Get current user profile
+ *     description: Returns the authenticated user's profile including premium status.
+ *     responses:
+ *       200:
+ *         description: Current user
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user:
+ *                   allOf:
+ *                     - $ref: '#/components/schemas/User'
+ *                     - type: object
+ *                       properties:
+ *                         isPremium: { type: boolean }
+ *                         premium_until: { type: string, format: date-time, nullable: true }
+ *                         email_verified: { type: boolean }
+ *       401:
+ *         description: Unauthenticated
+ *       404:
+ *         description: User not found
+ */
 // Get current user
 router.get(
   '/me',
@@ -300,7 +465,7 @@ router.get(
     const db = req.app.locals.db
 
     const result = await db.query(
-      'SELECT id, email, name, birth_year, avatar_url, premium_until, email_verified, google_id FROM users WHERE id = $1',
+      'SELECT id, email, name, birth_year, avatar_url, premium_until, email_verified, google_id, is_admin FROM users WHERE id = $1',
       [req.user.id]
     )
 
@@ -314,6 +479,34 @@ router.get(
   })
 )
 
+/**
+ * @swagger
+ * /auth/profile:
+ *   put:
+ *     tags: [Auth]
+ *     summary: Update user profile
+ *     description: Updates name and/or birth year. Commonly used to set birth year after Google sign-in.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name: { type: string, minLength: 1, maxLength: 100 }
+ *               birthYear: { type: integer, minimum: 1900 }
+ *     responses:
+ *       200:
+ *         description: Profile updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user: { $ref: '#/components/schemas/User' }
+ *       400:
+ *         description: No fields to update or validation error
+ */
 // Update profile (for adding birth year after Google sign-in)
 router.put(
   '/profile',
@@ -373,8 +566,31 @@ router.put(
 // ============================================================================
 
 /**
- * POST /forgot-password
- * Request a password reset email
+ * @swagger
+ * /auth/forgot-password:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Request a password reset email
+ *     description: Sends a reset link to the email address if an account exists. Always returns 200 to prevent email enumeration.
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email]
+ *             properties:
+ *               email: { type: string, format: email }
+ *     responses:
+ *       200:
+ *         description: Reset email sent (or silently skipped if email not found)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message: { type: string }
  */
 router.post(
   '/forgot-password',
@@ -496,8 +712,27 @@ router.post(
 )
 
 /**
- * POST /reset-password
- * Reset password using token
+ * @swagger
+ * /auth/reset-password:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Reset password using a token
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [token, password]
+ *             properties:
+ *               token: { type: string, description: "Token from the reset email link" }
+ *               password: { type: string, minLength: 8, description: "New password" }
+ *     responses:
+ *       200:
+ *         description: Password reset successful
+ *       400:
+ *         description: Invalid or expired token
  */
 router.post(
   '/reset-password',
@@ -567,6 +802,9 @@ router.post(
         resetToken.id
       ])
 
+      // Blacklist all existing JWTs for this user — old tokens should not work after password change
+      await blacklistAllUserTokens(resetToken.user_id)
+
       authLogger.info('Password reset successful', {
         userId: resetToken.user_id,
         email: resetToken.email,
@@ -586,8 +824,27 @@ router.post(
 )
 
 /**
- * GET /verify-reset-token
- * Verify if a reset token is valid (for frontend to check before showing form)
+ * @swagger
+ * /auth/verify-reset-token:
+ *   get:
+ *     tags: [Auth]
+ *     summary: Check whether a password reset token is still valid
+ *     description: Called by the frontend before showing the new password form.
+ *     security: []
+ *     parameters:
+ *       - in: query
+ *         name: token
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Token validity result
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 valid: { type: boolean }
  */
 router.get(
   '/verify-reset-token',
@@ -624,8 +881,26 @@ router.get(
 // ============================================================================
 
 /**
- * POST /verify-email
- * Verify email using token from email link
+ * @swagger
+ * /auth/verify-email:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Verify email address using the token from the email link
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [token]
+ *             properties:
+ *               token: { type: string }
+ *     responses:
+ *       200:
+ *         description: Email verified
+ *       400:
+ *         description: Invalid or expired token
  */
 router.post(
   '/verify-email',
@@ -683,8 +958,23 @@ router.post(
 )
 
 /**
- * POST /resend-verification
- * Resend verification email to authenticated user
+ * @swagger
+ * /auth/resend-verification:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Resend email verification link
+ *     description: Requires authentication. No-op if email is already verified.
+ *     responses:
+ *       200:
+ *         description: Verification email sent (or skipped if already verified)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message: { type: string }
+ *       401:
+ *         description: Unauthenticated
  */
 router.post(
   '/resend-verification',

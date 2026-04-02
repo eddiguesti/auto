@@ -1,8 +1,11 @@
 import { Router } from 'express'
 import { asyncHandler } from '../middleware/asyncHandler.js'
+import { requireDb } from '../middleware/requireDb.js'
+import validate from '../middleware/validate.js'
+import { coverSchemas } from '../schemas/index.js'
 import { createLogger } from '../utils/logger.js'
 import { authenticateToken } from '../middleware/auth.js'
-import { query } from '../db/index.js'
+import { coverRepository } from '../repositories/coverRepository.js'
 
 const router = Router()
 const logger = createLogger('covers')
@@ -67,16 +70,13 @@ router.get('/options', (_req, res) => {
 router.get(
   '/saved',
   authenticateToken,
+  requireDb,
   asyncHandler(async (req, res) => {
+    const db = req.app.locals.db
     const userId = req.user.id
 
-    const result = await query(`SELECT * FROM book_covers WHERE user_id = $1`, [userId])
-
-    if (result.rows.length === 0) {
-      return res.json({ cover: null })
-    }
-
-    res.json({ cover: result.rows[0] })
+    const cover = await coverRepository.findByUser(db, userId)
+    res.json({ cover: cover || null })
   })
 )
 
@@ -84,42 +84,29 @@ router.get(
 router.post(
   '/save',
   authenticateToken,
+  requireDb,
+  validate(coverSchemas.save),
   asyncHandler(async (req, res) => {
+    const db = req.app.locals.db
     const userId = req.user.id
     const { templateId, title, author, spineText, colorScheme, customSettings } = req.body
 
     logger.info('Saving book cover', { userId, requestId: req.id })
 
-    const result = await query(
-      `INSERT INTO book_covers (
-        user_id, template_id, title, author,
-        spine_text, color_scheme, custom_settings, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)
-      ON CONFLICT (user_id) DO UPDATE SET
-        template_id = EXCLUDED.template_id,
-        title = EXCLUDED.title,
-        author = EXCLUDED.author,
-        spine_text = EXCLUDED.spine_text,
-        color_scheme = EXCLUDED.color_scheme,
-        custom_settings = EXCLUDED.custom_settings,
-        updated_at = CURRENT_TIMESTAMP
-      RETURNING *`,
-      [
-        userId,
-        templateId || 'default',
-        title,
-        author,
-        spineText,
-        JSON.stringify(colorScheme || {}),
-        JSON.stringify(customSettings || {})
-      ]
-    )
+    const cover = await coverRepository.upsert(db, userId, {
+      templateId,
+      title,
+      author,
+      spineText,
+      colorScheme,
+      customSettings
+    })
 
-    logger.info('Book cover saved', { userId, coverId: result.rows[0].id, requestId: req.id })
+    logger.info('Book cover saved', { userId, coverId: cover.id, requestId: req.id })
 
     res.json({
       success: true,
-      cover: result.rows[0]
+      cover
     })
   })
 )

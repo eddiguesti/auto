@@ -1,8 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { useFocusTrap } from '../hooks/useFocusTrap'
 
 export default function TelegramLinkModal({ onClose }) {
   const { authFetch } = useAuth()
+  const dialogRef = useRef(null)
+  useFocusTrap(dialogRef)
   const [linkCode, setLinkCode] = useState('')
   const [status, setStatus] = useState('loading') // loading, not_connected, connected, linking, error
   const [telegramInfo, setTelegramInfo] = useState(null)
@@ -64,8 +67,15 @@ export default function TelegramLinkModal({ onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Connect Telegram"
         className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl"
         onClick={e => e.stopPropagation()}
       >
@@ -74,7 +84,7 @@ export default function TelegramLinkModal({ onClose }) {
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-[#0088cc]/10 rounded-full flex items-center justify-center">
               <svg className="w-6 h-6 text-[#0088cc]" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z" />
               </svg>
             </div>
             <div>
@@ -84,10 +94,21 @@ export default function TelegramLinkModal({ onClose }) {
           </div>
           <button
             onClick={onClose}
+            aria-label="Close"
             className="p-2 hover:bg-gray-100 rounded-full transition"
           >
-            <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="w-5 h-5 text-gray-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -102,8 +123,18 @@ export default function TelegramLinkModal({ onClose }) {
         {status === 'connected' && (
           <div className="text-center py-6">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              <svg
+                className="w-8 h-8 text-green-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
             </div>
             <h3 className="text-lg font-medium text-ink mb-2">Connected!</h3>
@@ -122,28 +153,42 @@ export default function TelegramLinkModal({ onClose }) {
               <h3 className="font-medium text-ink mb-3">How to connect:</h3>
               <ol className="space-y-3 text-sm text-sepia/80">
                 <li className="flex gap-3">
-                  <span className="w-6 h-6 bg-[#0088cc]/10 rounded-full flex items-center justify-center flex-shrink-0 text-[#0088cc] font-medium text-xs">1</span>
-                  <span>Open Telegram and search for <strong>@EasyMemoirBot</strong></span>
+                  <span className="w-6 h-6 bg-[#0088cc]/10 rounded-full flex items-center justify-center flex-shrink-0 text-[#0088cc] font-medium text-xs">
+                    1
+                  </span>
+                  <span>
+                    Open Telegram and search for <strong>@EasyMemoirBot</strong>
+                  </span>
                 </li>
                 <li className="flex gap-3">
-                  <span className="w-6 h-6 bg-[#0088cc]/10 rounded-full flex items-center justify-center flex-shrink-0 text-[#0088cc] font-medium text-xs">2</span>
-                  <span>Send <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">/start</code> to the bot</span>
+                  <span className="w-6 h-6 bg-[#0088cc]/10 rounded-full flex items-center justify-center flex-shrink-0 text-[#0088cc] font-medium text-xs">
+                    2
+                  </span>
+                  <span>
+                    Send <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">/start</code>{' '}
+                    to the bot
+                  </span>
                 </li>
                 <li className="flex gap-3">
-                  <span className="w-6 h-6 bg-[#0088cc]/10 rounded-full flex items-center justify-center flex-shrink-0 text-[#0088cc] font-medium text-xs">3</span>
-                  <span>Type <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">/link</code> to get a code</span>
+                  <span className="w-6 h-6 bg-[#0088cc]/10 rounded-full flex items-center justify-center flex-shrink-0 text-[#0088cc] font-medium text-xs">
+                    3
+                  </span>
+                  <span>
+                    Type <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">/link</code> to
+                    get a code
+                  </span>
                 </li>
                 <li className="flex gap-3">
-                  <span className="w-6 h-6 bg-[#0088cc]/10 rounded-full flex items-center justify-center flex-shrink-0 text-[#0088cc] font-medium text-xs">4</span>
+                  <span className="w-6 h-6 bg-[#0088cc]/10 rounded-full flex items-center justify-center flex-shrink-0 text-[#0088cc] font-medium text-xs">
+                    4
+                  </span>
                   <span>Enter the code below</span>
                 </li>
               </ol>
             </div>
 
             {error && (
-              <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm">
-                {error}
-              </div>
+              <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>
             )}
 
             <div className="space-y-4">
@@ -152,7 +197,7 @@ export default function TelegramLinkModal({ onClose }) {
                 <input
                   type="text"
                   value={linkCode}
-                  onChange={(e) => setLinkCode(e.target.value.toUpperCase())}
+                  onChange={e => setLinkCode(e.target.value.toUpperCase())}
                   placeholder="Enter 8-character code"
                   className="w-full px-4 py-3 border border-sepia/20 rounded-lg focus:border-[#0088cc] focus:ring-1 focus:ring-[#0088cc]/30 outline-none transition text-center text-lg tracking-widest font-mono"
                   maxLength={8}
@@ -169,7 +214,8 @@ export default function TelegramLinkModal({ onClose }) {
 
             <div className="mt-6 pt-4 border-t border-gray-100">
               <p className="text-center text-sepia/60 text-sm">
-                With Telegram, you can answer memoir questions anytime, anywhere - even without internet on the web.
+                With Telegram, you can answer memoir questions anytime, anywhere - even without
+                internet on the web.
               </p>
             </div>
           </>

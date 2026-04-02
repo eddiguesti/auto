@@ -2,6 +2,8 @@ import { Router } from 'express'
 import crypto from 'crypto'
 import { requireDb } from '../middleware/requireDb.js'
 import { asyncHandler } from '../middleware/asyncHandler.js'
+import validate from '../middleware/validate.js'
+import { telegramSchemas } from '../schemas/index.js'
 import { createLogger } from '../utils/logger.js'
 
 const router = Router()
@@ -159,9 +161,13 @@ async function getOrCreateTelegramUser(db, telegramData) {
   const { chat_id, username, first_name, last_name } = telegramData
 
   // Check if user exists
-  let result = await db.query('SELECT * FROM telegram_users WHERE telegram_chat_id = $1', [
-    chat_id.toString()
-  ])
+  let result = await db.query(
+    `SELECT id, telegram_chat_id, telegram_username, telegram_first_name, telegram_last_name,
+            user_id, guest_name, guest_email, is_registered, link_code, link_code_expires,
+            created_at, updated_at
+     FROM telegram_users WHERE telegram_chat_id = $1`,
+    [chat_id.toString()]
+  )
 
   if (result.rows.length > 0) {
     return result.rows[0]
@@ -184,9 +190,12 @@ async function getOrCreateTelegramUser(db, telegramData) {
  * Get or create session for user
  */
 async function getOrCreateSession(db, telegramUserId) {
-  let result = await db.query('SELECT * FROM telegram_sessions WHERE telegram_user_id = $1', [
-    telegramUserId
-  ])
+  let result = await db.query(
+    `SELECT id, telegram_user_id, session_state, current_chapter_id, current_question_id,
+            context, created_at, updated_at
+     FROM telegram_sessions WHERE telegram_user_id = $1`,
+    [telegramUserId]
+  )
 
   if (result.rows.length > 0) {
     return result.rows[0]
@@ -704,16 +713,13 @@ export async function handleTelegramWebhook(req, res, db) {
 router.post(
   '/verify-link',
   requireDb,
+  validate(telegramSchemas.verifyLink),
   asyncHandler(async (req, res) => {
-    const { code } = req.body
+    const { code } = req.validatedBody
     const userId = req.user?.id
 
     if (!userId) {
       return res.status(401).json({ error: 'Authentication required' })
-    }
-
-    if (!code) {
-      return res.status(400).json({ error: 'Link code required' })
     }
 
     const db = req.app.locals.db
@@ -721,7 +727,10 @@ router.post(
     // Find telegram user with this code
     const result = await db.query(
       `
-      SELECT * FROM telegram_users
+      SELECT id, telegram_chat_id, telegram_username, telegram_first_name, telegram_last_name,
+             user_id, guest_name, guest_email, is_registered, link_code, link_code_expires,
+             created_at, updated_at
+      FROM telegram_users
       WHERE link_code = $1 AND link_code_expires > CURRENT_TIMESTAMP
     `,
       [code.toUpperCase()]

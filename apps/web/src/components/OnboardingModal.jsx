@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useFocusTrap } from '../hooks/useFocusTrap'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import PreferenceSelector from './onboarding/PreferenceSelector'
@@ -80,6 +81,8 @@ export default function OnboardingModal({ onClose, initialStep }) {
   const [isClosing, setIsClosing] = useState(false)
   const [extractedContext, setExtractedContext] = useState(null)
   const rafIdRef = useRef(null)
+  const dialogRef = useRef(null)
+  useFocusTrap(dialogRef)
 
   // Animate in on mount
   useEffect(() => {
@@ -188,6 +191,10 @@ export default function OnboardingModal({ onClose, initialStep }) {
       }`}
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Welcome to Easy Memoir"
         className={`relative w-full ${WIDE_STEPS.has(step) ? 'max-w-2xl' : 'max-w-lg'} mx-4 bg-gradient-to-b from-cream to-amber-50 rounded-2xl shadow-2xl overflow-hidden transition-all duration-500 ease-out ${
           isVisible && !isClosing
             ? 'opacity-100 scale-100 translate-y-0'

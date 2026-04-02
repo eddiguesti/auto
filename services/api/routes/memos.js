@@ -1,6 +1,8 @@
 import { Router } from 'express'
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { requireDb } from '../middleware/requireDb.js'
+import validate from '../middleware/validate.js'
+import { memoSchemas } from '../schemas/index.js'
 import { createLogger } from '../utils/logger.js'
 
 const logger = createLogger('memos')
@@ -62,14 +64,11 @@ router.get(
 router.post(
   '/',
   requireDb,
+  validate(memoSchemas.create),
   asyncHandler(async (req, res) => {
     const db = req.app.locals.db
     const userId = req.user.id
-    const { title, audio_url, transcript, duration } = req.body
-
-    if (!audio_url) {
-      return res.status(400).json({ success: false, error: 'audio_url is required' })
-    }
+    const { title, audio_url, transcript, duration } = req.validatedBody
 
     const result = await db.query(
       `
@@ -90,11 +89,12 @@ router.post(
 router.put(
   '/:id',
   requireDb,
+  validate(memoSchemas.update),
   asyncHandler(async (req, res) => {
     const db = req.app.locals.db
     const userId = req.user.id
     const memoId = parseInt(req.params.id)
-    const { title } = req.body
+    const { title } = req.validatedBody
 
     // Check ownership
     const check = await db.query('SELECT id FROM memos WHERE id = $1 AND user_id = $2', [

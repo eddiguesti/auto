@@ -7,17 +7,36 @@ import MemoryTriggers from '../../components/MemoryTriggers'
 import ChapterIllustration from '../../components/ChapterIllustration'
 import { useAuth } from '../../context/AuthContext'
 import { usePremium } from '../../hooks/usePremium'
+import { useChapterStories } from '../../features/memoir/queries/storyQueries'
+import { useChapterAI } from '../../features/memoir/hooks/useChapterAI'
 import UpgradeModal from '../../components/UpgradeModal'
+import QuestionCardSkeleton from '../../components/skeletons/QuestionCardSkeleton'
 
 export default function Chapter() {
   const { chapterId } = useParams()
   const navigate = useNavigate()
   const { authFetch } = useAuth()
   const { isChapterLocked, isPremium } = usePremium()
+
+  // Server state via React Query — replaces manual useEffect+setState fetch
+  const {
+    data: rawStories,
+    isLoading: answersLoading,
+    refetch: refetchStories
+  } = useChapterStories(chapterId)
+
+  // Convert API array to local keyed map: { questionId: { answer, id, photos } }
   const [answers, setAnswers] = useState({})
+  useEffect(() => {
+    if (!rawStories) return
+    const map = {}
+    rawStories.forEach(story => {
+      map[story.question_id] = { answer: story.answer, id: story.id, photos: story.photos || [] }
+    })
+    setAnswers(map)
+  }, [rawStories])
   const [currentQuestion, setCurrentQuestion] = useState(0)
-  const [showAI, setShowAI] = useState(false)
-  const [aiContext, setAiContext] = useState(null)
+  const { showAI, aiContext, openAIAssistant, closeAIAssistant } = useChapterAI()
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const saveTimeoutRef = useRef({})
   const abortControllersRef = useRef({})
@@ -59,13 +78,8 @@ export default function Chapter() {
   }, [handleBeforeUnload])
 
   useEffect(() => {
-    if (chapter) {
-      fetchAnswers().then(() => {
-        // For earliest-memories chapter, pre-fill birth-details from onboarding if not already answered
-        if (chapterId === 'earliest-memories') {
-          prefillFromOnboarding()
-        }
-      })
+    if (chapter && chapterId === 'earliest-memories' && !answersLoading) {
+      prefillFromOnboarding()
     }
 
     // Cleanup timeouts and abort in-flight saves on unmount
@@ -127,27 +141,6 @@ export default function Chapter() {
     }
   }
 
-  const fetchAnswers = async () => {
-    try {
-      const res = await authFetch(`/api/stories/${chapterId}`)
-      if (!res.ok) {
-        throw new Error('Failed to fetch answers')
-      }
-      const data = await res.json()
-      const answersMap = {}
-      data.forEach(story => {
-        answersMap[story.question_id] = {
-          answer: story.answer,
-          id: story.id,
-          photos: story.photos || []
-        }
-      })
-      setAnswers(answersMap)
-    } catch (err) {
-      console.error('Error fetching answers:', err)
-    }
-  }
-
   const saveAnswer = async (questionId, answer) => {
     // Clear existing timeout for this question
     if (saveTimeoutRef.current[questionId]) {
@@ -201,11 +194,6 @@ export default function Chapter() {
         // Keep pending flag so user is warned before leaving
       }
     }, 1000)
-  }
-
-  const openAIAssistant = (question, answer) => {
-    setAiContext({ question, answer, chapterId })
-    setShowAI(true)
   }
 
   // Memoize derived values (must be before early return to satisfy rules of hooks)
@@ -363,16 +351,20 @@ export default function Chapter() {
       </div>
 
       {/* Question Card */}
-      <QuestionCard
-        question={question}
-        answer={answers[question.id]?.answer || ''}
-        onAnswerChange={answer => saveAnswer(question.id, answer)}
-        onAskAI={() => openAIAssistant(question, answers[question.id]?.answer || '')}
-        chapterId={chapterId}
-        storyId={answers[question.id]?.id}
-        photos={answers[question.id]?.photos || []}
-        onPhotosChange={fetchAnswers}
-      />
+      {answersLoading ? (
+        <QuestionCardSkeleton />
+      ) : (
+        <QuestionCard
+          question={question}
+          answer={answers[question.id]?.answer || ''}
+          onAnswerChange={answer => saveAnswer(question.id, answer)}
+          onAskAI={() => openAIAssistant(question, answers[question.id]?.answer || '', chapterId)}
+          chapterId={chapterId}
+          storyId={answers[question.id]?.id}
+          photos={answers[question.id]?.photos || []}
+          onPhotosChange={() => refetchStories()}
+        />
+      )}
 
       {/* Quick Actions Row */}
       <div className="flex items-center justify-between mt-4 gap-3">
@@ -540,7 +532,7 @@ export default function Chapter() {
       {showAI && (
         <AIAssistant
           context={aiContext}
-          onClose={() => setShowAI(false)}
+          onClose={closeAIAssistant}
           onInsertText={(text, replace = false) => {
             if (replace) {
               // Replace entire answer with polished story
@@ -550,7 +542,7 @@ export default function Chapter() {
               const currentAnswer = answers[question.id]?.answer || ''
               saveAnswer(question.id, currentAnswer + '\n\n' + text)
             }
-            setShowAI(false)
+            closeAIAssistant()
           }}
         />
       )}

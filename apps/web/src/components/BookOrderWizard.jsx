@@ -694,7 +694,7 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
                 <button
                   onClick={() => {
                     // TODO: Integrate with Stripe payment
-                    alert('Payment integration coming soon!')
+                    // TODO: Integrate Stripe payment flow
                   }}
                   className="w-full sm:w-auto px-8 py-3.5 sm:py-3 bg-ink text-white rounded-xl hover:bg-ink/90 transition font-medium text-base order-1 sm:order-2"
                 >

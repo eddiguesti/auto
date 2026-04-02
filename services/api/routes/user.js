@@ -1,7 +1,10 @@
 import { Router } from 'express'
 import { authenticateToken } from '../middleware/auth.js'
+import { blacklistToken } from '../utils/tokenBlacklist.js'
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { requireDb } from '../middleware/requireDb.js'
+import validate from '../middleware/validate.js'
+import { userSchemas } from '../schemas/index.js'
 import { authLogger } from '../utils/logger.js'
 
 const router = Router()
@@ -13,25 +16,11 @@ router.use(authenticateToken)
 router.put(
   '/phone-settings',
   requireDb,
+  validate(userSchemas.phoneSettings),
   asyncHandler(async (req, res) => {
     const db = req.app.locals.db
     const userId = req.user.id
-    const { phoneNumber, phoneCallConsent, contactPreference } = req.body
-
-    // Validate E.164 phone number format if provided
-    if (phoneNumber && !/^\+[1-9]\d{6,14}$/.test(phoneNumber)) {
-      return res.status(400).json({
-        error: 'Phone number must be in E.164 format (e.g. +447700900000)'
-      })
-    }
-
-    // Validate contact preference
-    const validPreferences = ['email', 'phone', 'both']
-    if (contactPreference && !validPreferences.includes(contactPreference)) {
-      return res.status(400).json({
-        error: 'contact_preference must be email, phone, or both'
-      })
-    }
+    const { phoneNumber, phoneCallConsent, contactPreference } = req.validatedBody
 
     await db.query(
       `UPDATE users SET
@@ -334,6 +323,9 @@ router.delete(
       // Delete payments
       await client.query('DELETE FROM payments WHERE user_id = $1', [userId])
 
+      // Delete lulu order tracking
+      await client.query('DELETE FROM lulu_orders WHERE user_id = $1', [userId])
+
       // Delete notification queue
       await client.query('DELETE FROM notification_queue WHERE user_id = $1', [userId])
 
@@ -359,6 +351,11 @@ router.delete(
       await client.query('DELETE FROM users WHERE id = $1', [userId])
 
       await client.query('COMMIT')
+
+      // Blacklist the current token so it can't be used after deletion
+      if (req.user.jti) {
+        await blacklistToken(req.user)
+      }
 
       authLogger.info('Account deleted successfully', { userId, requestId: req.id })
       res.json({ success: true, message: 'Account deleted successfully' })

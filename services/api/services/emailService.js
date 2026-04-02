@@ -1,5 +1,6 @@
 import pool from '../db/index.js'
 import { createLogger } from '../utils/logger.js'
+import { ExternalServiceError } from '../utils/errors.js'
 
 const logger = createLogger('email')
 
@@ -457,8 +458,9 @@ export async function sendEmail({ to, from: fromOverride, subject, html }) {
   })
 
   if (!response.ok) {
-    const error = await response.text()
-    throw new Error(`Resend API error: ${response.status} - ${error}`)
+    const errorText = await response.text()
+    logger.error('Resend API error', { status: response.status, error: errorText })
+    throw new ExternalServiceError('Resend')
   }
 
   logger.info('Email sent successfully', { to, subject })

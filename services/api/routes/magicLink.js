@@ -1,7 +1,9 @@
 import { Router } from 'express'
 import crypto from 'crypto'
 import jwt from 'jsonwebtoken'
+import { asyncHandler } from '../middleware/asyncHandler.js'
 import { createLogger } from '../utils/logger.js'
+import { ConfigurationError, ExternalServiceError } from '../utils/errors.js'
 
 const router = Router()
 const logger = createLogger('magic-link')
@@ -11,8 +13,9 @@ const logger = createLogger('magic-link')
  * Public endpoint - validates a magic link token and returns a scoped JWT + prompt
  * Used by the /talk/:token frontend page for no-login voice sessions
  */
-router.get('/:token', async (req, res) => {
-  try {
+router.get(
+  '/:token',
+  asyncHandler(async (req, res) => {
     const { token } = req.params
     const db = req.app.locals.db
 
@@ -26,12 +29,12 @@ router.get('/:token', async (req, res) => {
     // Find valid, unused, non-expired token
     const result = await db.query(
       `SELECT est.*, u.email, u.name, u.id as user_id
-       FROM email_session_tokens est
-       JOIN users u ON est.user_id = u.id
-       WHERE est.token_hash = $1
-         AND est.used_at IS NULL
-         AND est.expires_at > NOW()
-       LIMIT 1`,
+     FROM email_session_tokens est
+     JOIN users u ON est.user_id = u.id
+     WHERE est.token_hash = $1
+       AND est.used_at IS NULL
+       AND est.expires_at > NOW()
+     LIMIT 1`,
       [tokenHash]
     )
 
@@ -73,19 +76,17 @@ router.get('/:token', async (req, res) => {
         question_id: session.prompt_question_id
       }
     })
-  } catch (err) {
-    logger.error('Magic link validation failed:', { error: err.message })
-    res.status(500).json({ error: 'Something went wrong. Please try again.' })
-  }
-})
+  })
+)
 
 /**
  * POST /api/magic/:token/session
  * Creates a voice session for the magic link user (uses the scoped JWT from the GET above)
  * Called by the frontend after validating the magic link
  */
-router.post('/:token/session', async (req, res) => {
-  try {
+router.post(
+  '/:token/session',
+  asyncHandler(async (req, res) => {
     // Verify the scoped JWT from Authorization header
     const authHeader = req.headers['authorization']
     const jwtToken = authHeader && authHeader.split(' ')[1]
@@ -114,7 +115,7 @@ router.post('/:token/session', async (req, res) => {
     // Create xAI Realtime session
     const apiKey = process.env.GROK_API_KEY
     if (!apiKey) {
-      return res.status(500).json({ error: 'Voice service not configured' })
+      throw new ConfigurationError('GROK_API_KEY')
     }
 
     const controller = new AbortController()
@@ -133,9 +134,8 @@ router.post('/:token/session', async (req, res) => {
     clearTimeout(timeoutId)
 
     if (!response.ok) {
-      const error = await response.text()
-      logger.error('xAI session error:', { error })
-      return res.status(response.status).json({ error: 'Failed to start voice session' })
+      logger.error('xAI session error', { status: response.status, requestId: req.id })
+      throw new ExternalServiceError('xAI Realtime API')
     }
 
     const data = await response.json()
@@ -144,9 +144,12 @@ router.post('/:token/session', async (req, res) => {
     let voiceSession
     if (chapterId) {
       const existing = await db.query(
-        `SELECT * FROM voice_sessions
-         WHERE user_id = $1 AND chapter_id = $2 AND session_status = 'active'
-         ORDER BY created_at DESC LIMIT 1`,
+        `SELECT id, user_id, chapter_id, session_status, questions_answered, current_question_id,
+              questions_since_compile, session_transcripts, started_at, ended_at,
+              last_compile_at, created_at, updated_at
+       FROM voice_sessions
+       WHERE user_id = $1 AND chapter_id = $2 AND session_status = 'active'
+       ORDER BY created_at DESC LIMIT 1`,
         [decoded.id, chapterId]
       )
 
@@ -155,8 +158,8 @@ router.post('/:token/session', async (req, res) => {
       } else {
         const created = await db.query(
           `INSERT INTO voice_sessions (user_id, chapter_id, session_status)
-           VALUES ($1, $2, 'active')
-           RETURNING *`,
+         VALUES ($1, $2, 'active')
+         RETURNING *`,
           [decoded.id, chapterId]
         )
         voiceSession = created.rows[0]
@@ -168,10 +171,7 @@ router.post('/:token/session', async (req, res) => {
       session_id: voiceSession?.id,
       questions_answered: voiceSession?.questions_answered || []
     })
-  } catch (err) {
-    logger.error('Magic link session creation failed:', { error: err.message })
-    res.status(500).json({ error: 'Could not start voice session' })
-  }
-})
+  })
+)
 
 export default router

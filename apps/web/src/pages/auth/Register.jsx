@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { GoogleLogin } from '@react-oauth/google'
 import { useAuth } from '../../context/AuthContext'
 import { API_URL } from '../../config'
+import { registerSchema } from '../../lib/authSchemas'
 
 export default function Register() {
   const [name, setName] = useState('')
@@ -17,18 +18,13 @@ export default function Register() {
   const [website, setWebsite] = useState('') // honeypot - bots fill this
   const formLoadTime = useRef(Date.now())
 
-  // Password validation helper
-  const validatePassword = pwd => {
-    const errors = []
-    if (pwd.length < 8) errors.push('at least 8 characters')
-    if (!/[a-z]/.test(pwd)) errors.push('a lowercase letter')
-    if (!/[A-Z]/.test(pwd)) errors.push('an uppercase letter')
-    if (!/[0-9]/.test(pwd)) errors.push('a number')
-    return errors
-  }
-
-  const passwordErrors = password ? validatePassword(password) : []
-  const isPasswordValid = password && passwordErrors.length === 0
+  // Schema-based password validation (shows live feedback as user types)
+  const passwordResult = password
+    ? registerSchema.pick({ password: true }).safeParse({ password })
+    : null
+  const passwordErrors =
+    passwordResult?.success === false ? passwordResult.error.issues.map(i => i.message) : []
+  const isPasswordValid = passwordResult?.success === true
 
   const handleEmailRegister = async e => {
     e.preventDefault()
@@ -47,23 +43,23 @@ export default function Register() {
       return
     }
 
-    // Validate name
-    const trimmedName = name.trim()
-    if (!trimmedName || trimmedName.length < 1) {
-      setError('Please enter your name')
-      return
-    }
-
-    // Validate password
-    if (passwordErrors.length > 0) {
-      setError(`Password must contain ${passwordErrors.join(', ')}`)
-      return
-    }
-
     setLoading(true)
 
-    // Normalize email
+    // Normalize inputs
+    const trimmedName = name.trim()
     const normalizedEmail = email.trim().toLowerCase()
+
+    // Schema validation — catches all field errors in one pass
+    const parsed = registerSchema.safeParse({
+      name: trimmedName,
+      email: normalizedEmail,
+      password
+    })
+    if (!parsed.success) {
+      setError(parsed.error.issues[0].message)
+      setLoading(false)
+      return
+    }
 
     try {
       const res = await fetch(`${API_URL}/api/auth/register`, {

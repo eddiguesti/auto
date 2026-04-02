@@ -4,6 +4,7 @@ import { createLogger } from '../utils/logger.js'
 import { authenticateToken } from '../middleware/auth.js'
 import { requireDb } from '../middleware/requireDb.js'
 import { asyncHandler } from '../middleware/asyncHandler.js'
+import { ConfigurationError, ExternalServiceError } from '../utils/errors.js'
 
 const router = Router()
 const logger = createLogger('telnyx-call')
@@ -52,7 +53,7 @@ router.post(
     const fromNumber = process.env.TELNYX_PHONE_NUMBER
 
     if (!apiKey || !connectionId || !fromNumber) {
-      return res.status(503).json({ error: 'Calling service is not available right now' })
+      throw new ConfigurationError('Telnyx')
     }
 
     const appUrl = process.env.APP_URL || 'https://easymemoir.co.uk'
@@ -90,7 +91,7 @@ router.post(
     if (!response.ok) {
       const error = await response.text()
       logger.error('User call initiation failed', { userId, status: response.status, error })
-      return res.status(500).json({ error: 'Failed to initiate call. Please try again.' })
+      throw new ExternalServiceError('Telnyx')
     }
 
     const data = await response.json()
@@ -121,8 +122,9 @@ router.post(
  * Initiate an outbound phone call to a user.
  * Protected by internal secret (called from cron or admin, not from frontend).
  */
-router.post('/call', async (req, res) => {
-  try {
+router.post(
+  '/call',
+  asyncHandler(async (req, res) => {
     // Verify internal auth - reject if secret is not configured or doesn't match
     const expectedSecret = process.env.INTERNAL_CRON_SECRET
     if (
@@ -145,7 +147,7 @@ router.post('/call', async (req, res) => {
     const fromNumber = process.env.TELNYX_PHONE_NUMBER
 
     if (!apiKey || !connectionId || !fromNumber) {
-      return res.status(500).json({ error: 'Telnyx not configured' })
+      throw new ConfigurationError('Telnyx')
     }
 
     // Build the WebSocket URL for media streaming
@@ -185,7 +187,7 @@ router.post('/call', async (req, res) => {
     if (!response.ok) {
       const error = await response.text()
       logger.error('Telnyx call initiation failed', { status: response.status, error })
-      return res.status(response.status).json({ error: 'Failed to initiate call' })
+      throw new ExternalServiceError('Telnyx')
     }
 
     const data = await response.json()
@@ -195,7 +197,7 @@ router.post('/call', async (req, res) => {
     if (db) {
       await db.query(
         `INSERT INTO telnyx_calls (user_id, call_control_id, call_status, prompt_text, prompt_chapter_id, prompt_question_id)
-         VALUES ($1, $2, 'initiated', $3, $4, $5)`,
+       VALUES ($1, $2, 'initiated', $3, $4, $5)`,
         [userId, callControlId, prompt?.text, prompt?.chapter_id, prompt?.question_id]
       )
     }
@@ -210,17 +212,23 @@ router.post('/call', async (req, res) => {
       success: true,
       call_control_id: callControlId
     })
-  } catch (err) {
-    logger.error('Call initiation error', { error: err.message })
-    res.status(500).json({ error: 'Failed to start call' })
-  }
-})
+  })
+)
 
 /**
  * POST /api/telnyx/webhook
  * Telnyx call event webhooks (answered, hangup, etc.)
  */
 router.post('/webhook', async (req, res) => {
+  // Verify Telnyx webhook signature headers are present
+  const sigHeader = req.headers['telnyx-signature-ed25519']
+  const timestamp = req.headers['telnyx-timestamp']
+
+  if (!sigHeader || !timestamp) {
+    logger.warn('Telnyx webhook rejected — missing signature headers')
+    return res.status(400).json({ error: 'Missing signature headers' })
+  }
+
   // Always respond 200 quickly to Telnyx
   res.status(200).json({ ok: true })
 

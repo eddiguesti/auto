@@ -1,23 +1,10 @@
 /**
  * Error Handling Tests
  * Tests for consistent error responses, sanitization, and HTTP status codes
- *
- * Run with: node server/tests/errorHandling.test.js
  */
 
-import assert from 'assert'
-import {
-  test,
-  describe,
-  printSummary,
-  createMockRequest,
-  createMockResponse,
-  createMockNext,
-  assertStatus,
-  assertError,
-  assertMessage,
-  assertHasProperty
-} from './testUtils.js'
+import { describe, it, expect } from 'vitest'
+import { createMockRequest, createMockResponse, createMockNext } from './testUtils.js'
 
 // Import modules to test
 import { errorHandler, notFoundHandler } from '../middleware/errorHandler.js'
@@ -38,7 +25,7 @@ import {
 // ============ Error Response Format Tests ============
 
 describe('Error Response Format', () => {
-  test('error response contains "error" field', () => {
+  it('error response contains "error" field', () => {
     const err = new Error('Test error')
     const req = createMockRequest()
     const res = createMockResponse()
@@ -46,10 +33,10 @@ describe('Error Response Format', () => {
 
     errorHandler(err, req, res, next)
 
-    assertHasProperty(res.body, 'error')
+    expect(res.body).toHaveProperty('error')
   })
 
-  test('error response contains "message" field', () => {
+  it('error response contains "message" field', () => {
     const err = new Error('Test error')
     const req = createMockRequest()
     const res = createMockResponse()
@@ -57,10 +44,10 @@ describe('Error Response Format', () => {
 
     errorHandler(err, req, res, next)
 
-    assertHasProperty(res.body, 'message')
+    expect(res.body).toHaveProperty('message')
   })
 
-  test('error response includes requestId in production', () => {
+  it('error response includes requestId in production', () => {
     const originalEnv = process.env.NODE_ENV
     process.env.NODE_ENV = 'production'
 
@@ -71,13 +58,13 @@ describe('Error Response Format', () => {
 
     errorHandler(err, req, res, next)
 
-    assertHasProperty(res.body, 'requestId')
-    assert.strictEqual(res.body.requestId, 'test-request-123')
+    expect(res.body).toHaveProperty('requestId')
+    expect(res.body.requestId).toBe('test-request-123')
 
     process.env.NODE_ENV = originalEnv
   })
 
-  test('error response excludes requestId in development', () => {
+  it('error response excludes requestId in development', () => {
     const originalEnv = process.env.NODE_ENV
     process.env.NODE_ENV = 'development'
 
@@ -88,7 +75,7 @@ describe('Error Response Format', () => {
 
     errorHandler(err, req, res, next)
 
-    assert.ok(!res.body.requestId, 'requestId should not be in response in dev mode')
+    expect(res.body.requestId).toBeFalsy()
 
     process.env.NODE_ENV = originalEnv
   })
@@ -97,7 +84,7 @@ describe('Error Response Format', () => {
 // ============ HTTP Status Code Tests ============
 
 describe('HTTP Status Codes', () => {
-  test('ValidationError returns 400', () => {
+  it('ValidationError returns 400', () => {
     const err = new ValidationError('Invalid input')
     const req = createMockRequest()
     const res = createMockResponse()
@@ -105,11 +92,11 @@ describe('HTTP Status Codes', () => {
 
     errorHandler(err, req, res, next)
 
-    assertStatus(res, 400)
-    assertError(res, 'Validation failed')
+    expect(res.statusCode).toBe(400)
+    expect(res.body.error).toBe('Validation failed')
   })
 
-  test('UnauthorizedError returns 401', () => {
+  it('UnauthorizedError returns 401', () => {
     const err = new UnauthorizedError('Not logged in')
     const req = createMockRequest()
     const res = createMockResponse()
@@ -117,11 +104,11 @@ describe('HTTP Status Codes', () => {
 
     errorHandler(err, req, res, next)
 
-    assertStatus(res, 401)
-    assertError(res, 'Unauthorized')
+    expect(res.statusCode).toBe(401)
+    expect(res.body.error).toBe('Unauthorized')
   })
 
-  test('ForbiddenError returns 403', () => {
+  it('ForbiddenError returns 403', () => {
     const err = new ForbiddenError('No access')
     const req = createMockRequest()
     const res = createMockResponse()
@@ -129,11 +116,11 @@ describe('HTTP Status Codes', () => {
 
     errorHandler(err, req, res, next)
 
-    assertStatus(res, 403)
-    assertError(res, 'Forbidden')
+    expect(res.statusCode).toBe(403)
+    expect(res.body.error).toBe('Forbidden')
   })
 
-  test('NotFoundError returns 404', () => {
+  it('NotFoundError returns 404', () => {
     const err = new NotFoundError('Resource')
     const req = createMockRequest()
     const res = createMockResponse()
@@ -141,11 +128,11 @@ describe('HTTP Status Codes', () => {
 
     errorHandler(err, req, res, next)
 
-    assertStatus(res, 404)
-    assertError(res, 'Not found')
+    expect(res.statusCode).toBe(404)
+    expect(res.body.error).toBe('Not found')
   })
 
-  test('RateLimitError returns 429', () => {
+  it('RateLimitError returns 429', () => {
     const err = new RateLimitError(60)
     const req = createMockRequest()
     const res = createMockResponse()
@@ -153,11 +140,11 @@ describe('HTTP Status Codes', () => {
 
     errorHandler(err, req, res, next)
 
-    assertStatus(res, 429)
-    assertError(res, 'Too many requests')
+    expect(res.statusCode).toBe(429)
+    expect(res.body.error).toBe('Too many requests')
   })
 
-  test('ServiceUnavailableError returns 503', () => {
+  it('ServiceUnavailableError returns 503', () => {
     const err = new ServiceUnavailableError('Database')
     const req = createMockRequest()
     const res = createMockResponse()
@@ -165,11 +152,11 @@ describe('HTTP Status Codes', () => {
 
     errorHandler(err, req, res, next)
 
-    assertStatus(res, 503)
-    assertError(res, 'Service unavailable')
+    expect(res.statusCode).toBe(503)
+    expect(res.body.error).toBe('Service unavailable')
   })
 
-  test('ExternalServiceError returns 502', () => {
+  it('ExternalServiceError returns 502', () => {
     const err = new ExternalServiceError('AI service')
     const req = createMockRequest()
     const res = createMockResponse()
@@ -177,11 +164,11 @@ describe('HTTP Status Codes', () => {
 
     errorHandler(err, req, res, next)
 
-    assertStatus(res, 502)
-    assertError(res, 'Service error')
+    expect(res.statusCode).toBe(502)
+    expect(res.body.error).toBe('Service error')
   })
 
-  test('ConfigurationError returns 500', () => {
+  it('ConfigurationError returns 500', () => {
     const err = new ConfigurationError('API_KEY')
     const req = createMockRequest()
     const res = createMockResponse()
@@ -189,11 +176,11 @@ describe('HTTP Status Codes', () => {
 
     errorHandler(err, req, res, next)
 
-    assertStatus(res, 500)
-    assertError(res, 'Internal server error')
+    expect(res.statusCode).toBe(500)
+    expect(res.body.error).toBe('Internal server error')
   })
 
-  test('Generic error returns 500', () => {
+  it('Generic error returns 500', () => {
     const err = new Error('Something went wrong')
     const req = createMockRequest()
     const res = createMockResponse()
@@ -201,10 +188,10 @@ describe('HTTP Status Codes', () => {
 
     errorHandler(err, req, res, next)
 
-    assertStatus(res, 500)
+    expect(res.statusCode).toBe(500)
   })
 
-  test('Error with statusCode property uses that code', () => {
+  it('Error with statusCode property uses that code', () => {
     const err = new Error('Custom error')
     err.statusCode = 418 // I'm a teapot
 
@@ -214,50 +201,50 @@ describe('HTTP Status Codes', () => {
 
     errorHandler(err, req, res, next)
 
-    assertStatus(res, 418)
+    expect(res.statusCode).toBe(418)
   })
 })
 
 // ============ Error Sanitization Tests ============
 
 describe('Error Message Sanitization', () => {
-  test('sanitizes connection strings', () => {
+  it('sanitizes connection strings', () => {
     const msg = 'Failed to connect to postgresql://user:password@localhost:5432/db'
     const sanitized = sanitizeErrorMessage(msg)
 
-    assert.ok(!sanitized.includes('postgresql://'))
-    assert.ok(!sanitized.includes('password'))
+    expect(sanitized.includes('postgresql://')).toBeFalsy()
+    expect(sanitized.includes('password')).toBeFalsy()
   })
 
-  test('sanitizes API keys (sk_)', () => {
+  it('sanitizes API keys (sk_)', () => {
     const msg = 'API call failed with key sk_test_FAKE1234567890FAKE1234'
     const sanitized = sanitizeErrorMessage(msg)
 
-    assert.ok(!sanitized.includes('sk_test'))
+    expect(sanitized.includes('sk_test')).toBeFalsy()
   })
 
-  test('sanitizes Bearer tokens', () => {
+  it('sanitizes Bearer tokens', () => {
     const msg = 'Invalid Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.payload.signature'
     const sanitized = sanitizeErrorMessage(msg)
 
-    assert.ok(!sanitized.includes('eyJ'))
+    expect(sanitized.includes('eyJ')).toBeFalsy()
   })
 
-  test('sanitizes file paths', () => {
+  it('sanitizes file paths', () => {
     const msg = 'Error reading /Users/john/Documents/secrets.txt'
     const sanitized = sanitizeErrorMessage(msg)
 
-    assert.ok(!sanitized.includes('/Users/'))
+    expect(sanitized.includes('/Users/')).toBeFalsy()
   })
 
-  test('sanitizes internal IP addresses', () => {
+  it('sanitizes internal IP addresses', () => {
     const msg = 'Cannot connect to 192.168.1.100:3000'
     const sanitized = sanitizeErrorMessage(msg)
 
-    assert.ok(!sanitized.includes('192.168'))
+    expect(sanitized.includes('192.168')).toBeFalsy()
   })
 
-  test('allows known safe messages', () => {
+  it('allows known safe messages', () => {
     const safeMessages = [
       'Authentication required',
       'Invalid email or password',
@@ -269,82 +256,82 @@ describe('Error Message Sanitization', () => {
 
     safeMessages.forEach(msg => {
       const sanitized = sanitizeErrorMessage(msg)
-      assert.strictEqual(sanitized, msg, `"${msg}" should pass through unchanged`)
+      expect(sanitized).toBe(msg)
     })
   })
 
-  test('isSafeMessage returns true for safe messages', () => {
-    assert.ok(isSafeMessage('Authentication required'))
-    assert.ok(isSafeMessage('Validation failed'))
-    assert.ok(isSafeMessage('Not found'))
+  it('isSafeMessage returns true for safe messages', () => {
+    expect(isSafeMessage('Authentication required')).toBeTruthy()
+    expect(isSafeMessage('Validation failed')).toBeTruthy()
+    expect(isSafeMessage('Not found')).toBeTruthy()
   })
 
-  test('isSafeMessage returns false for unsafe messages', () => {
-    assert.ok(!isSafeMessage('postgresql://user:pass@host/db'))
-    assert.ok(!isSafeMessage(null))
-    assert.ok(!isSafeMessage(''))
+  it('isSafeMessage returns false for unsafe messages', () => {
+    expect(isSafeMessage('postgresql://user:pass@host/db')).toBeFalsy()
+    expect(isSafeMessage(null)).toBeFalsy()
+    expect(isSafeMessage('')).toBeFalsy()
   })
 
-  test('returns fallback for very long messages', () => {
+  it('returns fallback for very long messages', () => {
     const longMessage = 'A'.repeat(600)
     const sanitized = sanitizeErrorMessage(longMessage)
 
-    assert.strictEqual(sanitized, 'An unexpected error occurred')
+    expect(sanitized).toBe('An unexpected error occurred')
   })
 })
 
 // ============ Not Found Handler Tests ============
 
 describe('Not Found Handler', () => {
-  test('returns 404 status', () => {
+  it('returns 404 status', () => {
     const req = createMockRequest({ method: 'GET', path: '/api/nonexistent' })
     const res = createMockResponse()
 
     notFoundHandler(req, res)
 
-    assertStatus(res, 404)
-    assertError(res, 'Not found')
+    expect(res.statusCode).toBe(404)
+    expect(res.body.error).toBe('Not found')
   })
 
-  test('includes method and path in message', () => {
+  it('includes method and path in message', () => {
     const req = createMockRequest({ method: 'POST', path: '/api/unknown' })
     const res = createMockResponse()
 
     notFoundHandler(req, res)
 
-    assertMessage(res, 'POST')
-    assertMessage(res, '/api/unknown')
+    expect(res.body.message).toContain('POST')
+    expect(res.body.message).toContain('/api/unknown')
   })
 })
 
 // ============ sendError Helper Tests ============
 
 describe('sendError Helper', () => {
-  test('sends formatted error response', () => {
+  it('sends formatted error response', () => {
     const req = createMockRequest({ id: 'req-123' })
     const res = createMockResponse()
 
     sendError(res, 400, 'Bad request', 'Invalid input', req)
 
-    assertStatus(res, 400)
-    assertError(res, 'Bad request')
-    assertMessage(res, 'Invalid input')
+    expect(res.statusCode).toBe(400)
+    expect(res.body.error).toBe('Bad request')
+    expect(res.body.message).toContain('Invalid input')
   })
 
-  test('sanitizes message in error response', () => {
+  it('sanitizes message in error response', () => {
     const req = createMockRequest()
     const res = createMockResponse()
 
     sendError(res, 500, 'Error', 'Failed at /Users/john/app/server.js', req)
 
-    assert.ok(!res.body.message.includes('/Users/'))
+    expect(res.body.message.includes('/Users/')).toBeFalsy()
   })
 })
 
 // ============ Stripe Error Handling Tests ============
 
 describe('Stripe Error Handling', () => {
-  test('StripeCardError returns 400', () => {
+  it('StripeCardError returns 400', () => {
     const err = new Error('Card declined')
     err.type = 'StripeCardError'
 
@@ -354,32 +341,32 @@ describe('Stripe Error Handling', () => {
 
     errorHandler(err, req, res, next)
 
-    assertStatus(res, 400)
-    assertError(res, 'Payment failed')
+    expect(res.statusCode).toBe(400)
+    expect(res.body.error).toBe('Payment failed')
   })
 })
 
 // ============ Custom Error Classes Tests ============
 
 describe('Custom Error Classes', () => {
-  test('AppError has correct properties', () => {
+  it('AppError has correct properties', () => {
     const err = new AppError('Test message', 500, 'TEST_ERROR')
 
-    assert.strictEqual(err.message, 'Test message')
-    assert.strictEqual(err.statusCode, 500)
-    assert.strictEqual(err.code, 'TEST_ERROR')
-    assert.strictEqual(err.isOperational, true)
+    expect(err.message).toBe('Test message')
+    expect(err.statusCode).toBe(500)
+    expect(err.code).toBe('TEST_ERROR')
+    expect(err.isOperational).toBe(true)
   })
 
-  test('ValidationError extends AppError', () => {
+  it('ValidationError extends AppError', () => {
     const err = new ValidationError('Invalid field')
 
-    assert.ok(err instanceof AppError)
-    assert.strictEqual(err.statusCode, 400)
-    assert.strictEqual(err.name, 'ValidationError')
+    expect(err instanceof AppError).toBeTruthy()
+    expect(err.statusCode).toBe(400)
+    expect(err.name).toBe('ValidationError')
   })
 
-  test('ConfigurationError hides config details', () => {
+  it('ConfigurationError hides config details', () => {
     const err = new ConfigurationError('STRIPE_SECRET_KEY')
     const req = createMockRequest()
     const res = createMockResponse()
@@ -388,12 +375,7 @@ describe('Custom Error Classes', () => {
     errorHandler(err, req, res, next)
 
     // Should not expose which config is missing
-    assert.ok(!res.body.message.includes('STRIPE'))
-    assert.ok(!res.body.message.includes('KEY'))
+    expect(res.body.message.includes('STRIPE')).toBeFalsy()
+    expect(res.body.message.includes('KEY')).toBeFalsy()
   })
 })
-
-// ============ Run Tests ============
-
-const exitCode = printSummary()
-process.exit(exitCode)

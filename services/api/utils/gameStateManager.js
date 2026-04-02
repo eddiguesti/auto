@@ -1,6 +1,6 @@
 // /life-story/server/utils/gameStateManager.js
 
-import pool from '../db/index.js';
+import pool from '../db/index.js'
 
 /**
  * Initialize game state for a new user
@@ -8,13 +8,10 @@ import pool from '../db/index.js';
 export async function initializeGameState(userId) {
   try {
     // Check if already exists
-    const existing = await pool.query(
-      'SELECT id FROM user_game_state WHERE user_id = $1',
-      [userId]
-    );
+    const existing = await pool.query('SELECT id FROM user_game_state WHERE user_id = $1', [userId])
 
     if (existing.rows.length > 0) {
-      return existing.rows[0];
+      return existing.rows[0]
     }
 
     // Create new state
@@ -23,89 +20,92 @@ export async function initializeGameState(userId) {
        VALUES ($1, false)
        RETURNING *`,
       [userId]
-    );
+    )
 
     // Initialize collection progress for all collections in a single batch query
-    const collections = await pool.query('SELECT id FROM collections WHERE is_active = true');
+    const collections = await pool.query('SELECT id FROM collections WHERE is_active = true')
 
     if (collections.rows.length > 0) {
-      const values = collections.rows.map((c, i) => `($1, $${i + 2})`).join(', ');
-      const params = [userId, ...collections.rows.map(c => c.id)];
+      const values = collections.rows.map((c, i) => `($1, $${i + 2})`).join(', ')
+      const params = [userId, ...collections.rows.map(c => c.id)]
       await pool.query(
         `INSERT INTO user_collection_progress (user_id, collection_id)
          VALUES ${values}
          ON CONFLICT (user_id, collection_id) DO NOTHING`,
         params
-      );
+      )
     }
 
-    return result.rows[0];
+    return result.rows[0]
   } catch (error) {
-    console.error('Error initializing game state:', error);
-    throw error;
+    console.error('Error initializing game state:', error)
+    throw error
   }
 }
 
 /**
- * Record daily activity and update streak
+ * Record daily activity and update streak.
+ * Uses a transaction with SELECT FOR UPDATE to serialize concurrent calls per user,
+ * preventing double-counts if two requests arrive simultaneously.
  */
 export async function recordActivity(userId) {
-  const today = new Date().toISOString().split('T')[0];
+  const today = new Date().toISOString().split('T')[0]
+  const yesterday = new Date()
+  yesterday.setDate(yesterday.getDate() - 1)
+  const yesterdayStr = yesterday.toISOString().split('T')[0]
 
+  const client = await pool.connect()
   try {
-    // Get current state
-    const state = await pool.query(
+    await client.query('BEGIN')
+
+    // Lock this user's game state row for the duration of the transaction
+    const state = await client.query(
       `SELECT current_streak, longest_streak, last_activity_date
        FROM user_game_state
-       WHERE user_id = $1`,
+       WHERE user_id = $1
+       FOR UPDATE`,
       [userId]
-    );
+    )
 
     if (state.rows.length === 0) {
-      await initializeGameState(userId);
-      return recordActivity(userId);
+      await client.query('ROLLBACK')
+      await initializeGameState(userId)
+      return recordActivity(userId)
     }
 
-    const { current_streak, longest_streak, last_activity_date } = state.rows[0];
-    const lastDate = last_activity_date ? new Date(last_activity_date).toISOString().split('T')[0] : null;
+    const { current_streak, longest_streak, last_activity_date } = state.rows[0]
+    const lastDate = last_activity_date
+      ? new Date(last_activity_date).toISOString().split('T')[0]
+      : null
 
-    // Already recorded today
+    // Already recorded today — no-op
     if (lastDate === today) {
-      return { streakUpdated: false, currentStreak: current_streak };
+      await client.query('ROLLBACK')
+      return { streakUpdated: false, currentStreak: current_streak }
     }
 
-    let newStreak = current_streak;
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    let newStreak = current_streak
 
     if (lastDate === yesterdayStr) {
       // Consecutive day - increment streak
-      newStreak = current_streak + 1;
+      newStreak = current_streak + 1
     } else if (lastDate === null) {
       // First activity ever
-      newStreak = 1;
+      newStreak = 1
     } else {
       // Check if shield was used yesterday
-      const shieldUsed = await pool.query(
+      const shieldUsed = await client.query(
         `SELECT shield_used FROM streak_history
          WHERE user_id = $1 AND date = $2 AND shield_used = true`,
         [userId, yesterdayStr]
-      );
+      )
 
-      if (shieldUsed.rows.length > 0) {
-        // Shield protected the streak
-        newStreak = current_streak + 1;
-      } else {
-        // Streak broken - start fresh
-        newStreak = 1;
-      }
+      newStreak = shieldUsed.rows.length > 0 ? current_streak + 1 : 1
     }
 
-    const newLongest = Math.max(newStreak, longest_streak);
+    const newLongest = Math.max(newStreak, longest_streak)
 
-    // Update game state
-    await pool.query(
+    await client.query(
       `UPDATE user_game_state
        SET current_streak = $1,
            longest_streak = $2,
@@ -116,10 +116,9 @@ export async function recordActivity(userId) {
            updated_at = NOW()
        WHERE user_id = $4`,
       [newStreak, newLongest, today, userId]
-    );
+    )
 
-    // Record in history
-    await pool.query(
+    await client.query(
       `INSERT INTO streak_history (user_id, date, had_activity, streak_on_this_day, prompt_completed)
        VALUES ($1, $2, true, $3, true)
        ON CONFLICT (user_id, date) DO UPDATE SET
@@ -127,17 +126,22 @@ export async function recordActivity(userId) {
          streak_on_this_day = $3,
          prompt_completed = true`,
       [userId, today, newStreak]
-    );
+    )
+
+    await client.query('COMMIT')
 
     return {
       streakUpdated: true,
       currentStreak: newStreak,
       longestStreak: newLongest,
       isNewRecord: newStreak > longest_streak
-    };
+    }
   } catch (error) {
-    console.error('Error recording activity:', error);
-    throw error;
+    await client.query('ROLLBACK')
+    console.error('Error recording activity:', error)
+    throw error
+  } finally {
+    client.release()
   }
 }
 
@@ -150,12 +154,12 @@ export async function resetDailyFlags() {
       `UPDATE user_game_state
        SET daily_prompt_completed_today = false,
            updated_at = NOW()`
-    );
+    )
 
-    console.log('Daily flags reset');
+    console.log('Daily flags reset')
   } catch (error) {
-    console.error('Error resetting daily flags:', error);
-    throw error;
+    console.error('Error resetting daily flags:', error)
+    throw error
   }
 }
 
@@ -171,12 +175,12 @@ export async function resetWeeklyFlags() {
            streak_shields_available = LEAST(streak_shields_available + 1, 3),
            last_shield_reset = CURRENT_DATE,
            updated_at = NOW()`
-    );
+    )
 
-    console.log('Weekly flags reset, shields restored');
+    console.log('Weekly flags reset, shields restored')
   } catch (error) {
-    console.error('Error resetting weekly flags:', error);
-    throw error;
+    console.error('Error resetting weekly flags:', error)
+    throw error
   }
 }
 
@@ -190,21 +194,21 @@ export async function syncMemoryCounts(userId) {
       `SELECT COUNT(*) as count FROM stories
        WHERE user_id = $1 AND answer IS NOT NULL AND answer != ''`,
       [userId]
-    );
+    )
 
     // Count people
     const people = await pool.query(
       `SELECT COUNT(*) as count FROM memory_entities
        WHERE user_id = $1 AND entity_type = 'person'`,
       [userId]
-    );
+    )
 
     // Count places
     const places = await pool.query(
       `SELECT COUNT(*) as count FROM memory_entities
        WHERE user_id = $1 AND entity_type = 'place'`,
       [userId]
-    );
+    )
 
     await pool.query(
       `UPDATE user_game_state
@@ -219,9 +223,9 @@ export async function syncMemoryCounts(userId) {
         parseInt(places.rows[0].count),
         userId
       ]
-    );
+    )
   } catch (error) {
-    console.error('Error syncing memory counts:', error);
-    throw error;
+    console.error('Error syncing memory counts:', error)
+    throw error
   }
 }

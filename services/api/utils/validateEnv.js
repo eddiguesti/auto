@@ -101,6 +101,24 @@ export function validateSecurityConfig() {
     }
   }
 
+  // Validate DATABASE_URL format
+  const dbUrl = process.env.DATABASE_URL
+  if (dbUrl && !dbUrl.startsWith('postgresql://') && !dbUrl.startsWith('postgres://')) {
+    issues.push('DATABASE_URL must start with postgresql:// or postgres://')
+  }
+
+  // Validate STRIPE_SECRET_KEY format (skip obvious dev placeholders)
+  const stripeKey = process.env.STRIPE_SECRET_KEY
+  if (stripeKey && !stripeKey.startsWith('sk_')) {
+    issues.push('STRIPE_SECRET_KEY must start with sk_ (got unexpected format)')
+  }
+
+  // Validate GROK_API_KEY format
+  const grokKey = process.env.GROK_API_KEY
+  if (grokKey && !grokKey.startsWith('xai-')) {
+    issues.push('GROK_API_KEY must start with xai- (got unexpected format)')
+  }
+
   // In production, ensure HTTPS-related settings
   if (isProduction()) {
     if (!process.env.APP_URL?.startsWith('https://')) {
@@ -111,6 +129,27 @@ export function validateSecurityConfig() {
   return {
     valid: issues.length === 0,
     issues
+  }
+}
+
+/**
+ * Log which optional features are enabled/disabled based on env vars.
+ * Call once at startup after validateEnvOrExit().
+ */
+export function logFeatureStatus() {
+  const status = getFeatureStatus()
+  const enabled = Object.entries(status)
+    .filter(([, s]) => s.configured)
+    .map(([f]) => f)
+  const disabled = Object.entries(status)
+    .filter(([, s]) => !s.configured)
+    .map(([f]) => f)
+
+  if (enabled.length) {
+    console.log(`  Optional features enabled:  ${enabled.join(', ')}`)
+  }
+  if (disabled.length) {
+    console.log(`  Optional features disabled: ${disabled.join(', ')} (missing env vars)`)
   }
 }
 

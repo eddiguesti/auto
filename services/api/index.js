@@ -2,84 +2,45 @@
 import './polyfills.js'
 
 import express from 'express'
-import cors from 'cors'
-import helmet from 'helmet'
-import compression from 'compression'
-import rateLimit from 'express-rate-limit'
+import dotenv from 'dotenv'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
-import { existsSync } from 'fs'
-import dotenv from 'dotenv'
 
 // Load .env from root directory (grandparent of services/api/)
-const __filename_early = fileURLToPath(import.meta.url)
-const __dirname_early = dirname(__filename_early)
-dotenv.config({ path: join(__dirname_early, '..', '..', '.env') })
+dotenv.config({ path: join(dirname(fileURLToPath(import.meta.url)), '..', '..', '.env') })
 
-import pool, { initDatabase } from './db/index.js'
-import { validateEnvOrExit, validateSecurityConfig, isProduction } from './utils/validateEnv.js'
-import { authenticateToken } from './middleware/auth.js'
-import { checkAIQuota } from './middleware/aiQuota.js'
+import pool from './db/index.js'
+import { runMigrations } from './db/runner.js'
+import {
+  validateEnvOrExit,
+  validateSecurityConfig,
+  isProduction,
+  logFeatureStatus
+} from './utils/validateEnv.js'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js'
-import { requestId } from './middleware/requestId.js'
-import { requestTiming } from './middleware/requestTiming.js'
 import { wrapPoolWithTiming } from './utils/timedPool.js'
-import { getMetricsSummary } from './utils/metrics.js'
-import authRouter from './routes/auth.js'
-import storiesRouter from './routes/stories.js'
-import photosRouter from './routes/photos.js'
-import aiRouter from './routes/ai.js'
-import voiceRouter from './routes/voice.js'
-import luluRouter from './routes/lulu.js'
-import memoryRouter from './routes/memory.js'
-import coversRouter from './routes/covers.js'
-import seoRouter from './routes/seo.js'
-import exportRouter from './routes/export.js'
-import audiobookRouter from './routes/audiobook.js'
-import styleRouter from './routes/style.js'
-import paymentsRouter, { handleStripeWebhook } from './routes/payments.js'
-import supportRouter from './routes/support.js'
-import telegramRouter, { handleTelegramWebhook } from './routes/telegram.js'
-import onboardingRouter from './routes/onboarding.js'
-import chapterImagesRouter from './routes/chapter-images.js'
-import blogImagesRouter from './routes/blog-images.js'
-import gameRouter from './routes/game.js'
-import notificationRoutes from './routes/notifications.js'
-import userRouter from './routes/user.js'
-import newsletterRouter from './routes/newsletter.js'
-import chapterReviewRouter from './routes/chapterReview.js'
-import memosRouter from './routes/memos.js'
-import freeStoriesRouter from './routes/freeStories.js'
-import refundsRouter from './routes/refunds.js'
-import magicLinkRouter from './routes/magicLink.js'
-import telnyxCallRouter, { handleTelnyxMediaStream } from './routes/telnyxCall.js'
-import { WebSocketServer } from 'ws'
+import { mountRoutes } from './routes/index.js'
+import { setupMiddleware } from './middleware/setup.js'
+import { setupStaticFiles } from './middleware/staticFiles.js'
+import { setupWebSocket, setupGracefulShutdown } from './utils/serverSetup.js'
 import { initializeCronJobs } from './cron/index.js'
-import { initSentry, captureException } from './utils/sentry.js'
-import { isRedisAvailable } from './utils/redis.js'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
+import { getQueue, stopQueue } from './jobs/queue.js'
+import { initSentry } from './utils/sentry.js'
+import healthRouter from './routes/health.js'
+import { mountSwaggerDocs } from './utils/swagger.js'
 
 const app = express()
 const PORT = process.env.PORT || 3001
 
-// Initialize Sentry error tracking (no-op if SENTRY_DSN not set)
 initSentry(app)
-
-// Trust proxy when behind reverse proxy (Railway, Render, etc.)
-// This is required for rate limiting to work correctly with X-Forwarded-For headers
 app.set('trust proxy', 1)
 
-// Redirect www to non-www and enforce HTTPS (canonical URL: https://easymemoir.co.uk)
+// Redirect www to non-www and enforce HTTPS
 app.use((req, res, next) => {
   const host = req.hostname || req.headers.host
-  // www → non-www redirect
   if (host && host.startsWith('www.')) {
-    const newHost = host.replace(/^www\./, '')
-    return res.redirect(301, `https://${newHost}${req.originalUrl}`)
+    return res.redirect(301, `https://${host.replace(/^www\./, '')}${req.originalUrl}`)
   }
-  // HTTP → HTTPS redirect (when behind proxy, check X-Forwarded-Proto)
   if (req.headers['x-forwarded-proto'] === 'http') {
     return res.redirect(301, `https://${host}${req.originalUrl}`)
   }
@@ -90,464 +51,51 @@ app.use((req, res, next) => {
 const timedPool = wrapPoolWithTiming(pool)
 app.locals.db = timedPool
 
-// Middleware
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:3001',
-  'https://easymemoir.co.uk',
-  'https://www.easymemoir.co.uk',
-  process.env.FRONTEND_URL // Cloudflare Pages URL (e.g. https://easymemoir.pages.dev)
-].filter(Boolean)
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      // Allow requests with no origin (mobile apps, curl, etc)
-      if (!origin) return callback(null, true)
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true)
-      }
-      // In production, reject unknown origins; in dev, allow for flexibility
-      if (process.env.NODE_ENV === 'production') {
-        return callback(new Error('Not allowed by CORS'), false)
-      }
-      return callback(null, true)
-    },
-    credentials: true
-  })
-)
-
-// Gzip compression for all responses (reduces transfer size by ~70%)
-app.use(compression())
-
-// Security headers
-app.use(
-  helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc: [
-          "'self'",
-          "'unsafe-inline'",
-          'https://accounts.google.com',
-          'https://apis.google.com'
-        ],
-        styleSrc: [
-          "'self'",
-          "'unsafe-inline'",
-          'https://fonts.googleapis.com',
-          'https://api.fontshare.com',
-          'https://accounts.google.com'
-        ],
-        styleSrcElem: [
-          "'self'",
-          "'unsafe-inline'",
-          'https://fonts.googleapis.com',
-          'https://api.fontshare.com'
-        ],
-        fontSrc: ["'self'", 'https://fonts.gstatic.com', 'https://api.fontshare.com'],
-        imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
-        connectSrc: [
-          "'self'",
-          'https://api.x.ai',
-          'https://api.stripe.com',
-          'https://api.replicate.com',
-          'https://accounts.google.com',
-          'wss:'
-        ],
-        frameSrc: ["'self'", 'https://js.stripe.com', 'https://accounts.google.com']
-      }
-    },
-    crossOriginEmbedderPolicy: false, // Allow loading external images
-    crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' }, // Required for Google OAuth popup
-    hsts: {
-      maxAge: 31536000,
-      includeSubDomains: true,
-      preload: true
-    }
-  })
-)
-
-// Global rate limiting
-const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 500, // 500 requests per 15 minutes per IP
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many requests, please try again later' }
-})
-app.use(globalLimiter)
-
-// Add correlation ID to all requests for tracing
-app.use(requestId)
-
-// Add request timing for observability
-app.use(requestTiming)
-
-// Strict rate limiting for auth routes (prevent brute force)
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // 10 attempts per 15 minutes per IP
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many login attempts, please try again in 15 minutes' }
-})
-
-app.use(express.json({ limit: '1mb' }))
-
-// Serve uploaded files - authenticated to prevent unauthorized access
-// Public endpoint removed, use /api/photos/file/:filename instead
-
-// Auth routes (public, with rate limiting for login/register)
-app.use('/api/auth/login', authLimiter)
-app.use('/api/auth/register', authLimiter)
-app.use('/api/auth', authRouter)
-
-// Support chat (public, rate limited to prevent abuse and Telegram flooding)
-const supportLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 20, // 20 messages per hour per IP
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many support requests, please try again later' }
-})
-app.use('/api/support', supportLimiter, supportRouter)
-
-// Newsletter subscription (public - with built-in rate limiting)
-app.use('/api/newsletter', newsletterRouter)
-
-// Magic link routes (public - for weekly topic email no-login access)
-app.use('/api/magic', magicLinkRouter)
-
-// Test email endpoint (dev only - remove before production)
-app.post('/api/test-email', authLimiter, async (req, res) => {
-  if (process.env.NODE_ENV === 'production') {
-    return res.status(404).json({ error: 'Not found' })
-  }
-  try {
-    const { to } = req.body
-    if (!to) return res.status(400).json({ error: 'Provide "to" email address' })
-
-    const { sendEmail, weeklyTopicEmailTemplate } = await import('./services/emailService.js')
-    const html = weeklyTopicEmailTemplate({
-      name: 'Test User',
-      promptText: 'What is your earliest childhood memory?',
-      magicLinkUrl: 'https://easymemoir.co.uk/talk/test-token-123'
-    })
-
-    await sendEmail({ to, subject: "Test: This week's topic", html })
-    res.json({ success: true, message: `Test email sent to ${to}` })
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-})
-
-// Rate limit for landing voice sessions (prevent API key abuse)
-const voiceLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 5, // 5 sessions per hour per IP
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many voice session requests, please try again later' }
-})
-
-// Public voice session endpoint for landing page (uses xAI Realtime API)
-app.post('/api/landing-voice/session', voiceLimiter, async (req, res) => {
-  try {
-    const apiKey = process.env.GROK_API_KEY
-    if (!apiKey) {
-      return res.status(500).json({ error: 'GROK_API_KEY not configured' })
-    }
-
-    // Create ephemeral token via xAI API
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 15000)
-    const response = await fetch('https://api.x.ai/v1/realtime/client_secrets', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        expires_after: { seconds: 300 } // 5 minute token
-      }),
-      signal: controller.signal
-    })
-    clearTimeout(timeoutId)
-
-    if (!response.ok) {
-      const error = await response.text()
-      console.error('xAI session error:', error)
-      return res.status(response.status).json({ error: 'Failed to create voice session' })
-    }
-
-    const data = await response.json()
-    res.json(data)
-  } catch (err) {
-    console.error('Landing voice session error:', err)
-    res.status(500).json({ error: 'Voice session failed' })
-  }
-})
-
-// Protected routes - require authentication
-app.use('/api/stories', authenticateToken, storiesRouter)
-app.use('/api/photos', authenticateToken, photosRouter)
-app.use('/api/ai', authenticateToken, checkAIQuota, aiRouter)
-app.use('/api/voice', authenticateToken, checkAIQuota, voiceRouter)
-app.use('/api/memory', authenticateToken, memoryRouter)
-
-// Lulu routes (protected)
-app.use('/api/lulu', authenticateToken, luluRouter)
-
-// Cover generation routes (protected)
-app.use('/api/covers', authenticateToken, coversRouter)
-
-// Export routes (protected)
-app.use('/api/export', authenticateToken, exportRouter)
-
-// Audiobook routes (protected)
-app.use('/api/audiobook', authenticateToken, audiobookRouter)
-
-// Style routes (protected)
-app.use('/api/style', authenticateToken, styleRouter)
-
-// Chapter review routes (protected — AI quota checked per-route inside)
-app.use('/api/chapter-review', authenticateToken, chapterReviewRouter)
-
-// Payment routes (protected)
-app.use('/api/payments', authenticateToken, paymentsRouter)
-
-// Telegram routes (protected - for linking accounts)
-app.use('/api/telegram', authenticateToken, telegramRouter)
-
-// Onboarding routes (protected - post-login experience)
-app.use('/api/onboarding', authenticateToken, onboardingRouter)
-
-// Chapter images routes (protected - personalized chapter backgrounds)
-app.use('/api/chapter-images', authenticateToken, chapterImagesRouter)
-
-// Game/Memory Quest routes (protected)
-app.use('/api/game', authenticateToken, gameRouter)
-
-// Notification routes (protected)
-app.use('/api/notifications', authenticateToken, notificationRoutes)
-
-// User routes (protected - data export, account deletion)
-app.use('/api/user', authenticateToken, userRouter)
-
-// Quick memos routes (protected - free-form voice memos)
-app.use('/api/memos', authenticateToken, memosRouter)
-
-// Free-form text stories (protected - no chapter/question required)
-app.use('/api/free-stories', authenticateToken, freeStoriesRouter)
-
-// Refund routes (protected - usage tracking, refund requests)
-app.use('/api/refunds', authenticateToken, refundsRouter)
-
-// Stripe webhook (needs raw body, no auth)
-app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), (req, res) =>
-  handleStripeWebhook(req, res, pool)
-)
-
-// Telegram webhook (no auth - called by Telegram servers)
-app.post('/api/webhooks/telegram', (req, res) => handleTelegramWebhook(req, res, pool))
-
-// Telnyx call routes (public - webhook + call initiation with internal secret)
-app.use('/api/telnyx', telnyxCallRouter)
-
-// Health check with comprehensive status
-app.get('/api/health', async (req, res) => {
-  const health = {
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    memory: {
-      heapUsed: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
-      heapTotal: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
-      rss: Math.round(process.memoryUsage().rss / 1024 / 1024)
-    }
-  }
-
-  // Check database connectivity
-  try {
-    if (timedPool) {
-      const start = Date.now()
-      await timedPool.query('SELECT 1')
-      health.database = {
-        status: 'ok',
-        latencyMs: Date.now() - start
-      }
-    } else {
-      health.database = { status: 'unavailable' }
-    }
-  } catch (err) {
-    health.status = 'degraded'
-    health.database = { status: 'error' }
-  }
-
-  // Redis status
-  health.redis = { status: isRedisAvailable() ? 'ok' : 'unavailable (using memory fallback)' }
-
-  // Include metrics summary if requested
-  if (req.query.metrics === 'true') {
-    health.metrics = getMetricsSummary()
-  }
-
-  const statusCode = health.status === 'ok' ? 200 : 503
-  res.status(statusCode).json(health)
-})
-
-// SEO routes (public - must be before static file serving)
-app.use(seoRouter)
-
-// Blog image generation (public API for generating blog post images)
-app.use('/api/blog-images', blogImagesRouter)
-
-// Serve built frontend in production
-const clientBuildPath = join(__dirname, '..', '..', 'apps', 'web', 'dist')
-
-if (existsSync(clientBuildPath)) {
-  // Serve static files with aggressive caching (Vite uses content hashes in filenames)
-  // index: false prevents express.static from serving index.html with 1-year cache
-  app.use(
-    express.static(clientBuildPath, {
-      maxAge: '1y',
-      immutable: true,
-      etag: false,
-      index: false
-    })
-  )
-
-  // Handle client-side routing - serve index.html for all non-API routes
-  // index.html should not be cached so users always get latest version
-  app.get('*', (req, res, next) => {
-    if (req.path.startsWith('/api')) return next()
-    res.set('Cache-Control', 'no-cache, must-revalidate')
-    res.sendFile(join(clientBuildPath, 'index.html'))
-  })
-} else {
-  // Fallback when frontend build is not available (deploy in progress, build failed, etc.)
-  app.get('*', (req, res, next) => {
-    if (req.path.startsWith('/api')) return next()
-    res.status(200).send(`<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Easy Memoir</title>
-  <style>
-    body { font-family: Georgia, serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #FAF6F1; color: #5C4033; }
-    .container { text-align: center; padding: 2rem; max-width: 500px; }
-    h1 { font-size: 2rem; margin-bottom: 0.5rem; }
-    p { color: #8B7355; line-height: 1.6; }
-    a { color: #5C4033; text-decoration: underline; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>Easy Memoir</h1>
-    <p>We're getting things ready. Please refresh in a moment.</p>
-    <p><a href="/">Try again</a></p>
-  </div>
-</body>
-</html>`)
-  })
-}
-
-// 404 handler for API routes
+setupMiddleware(app)
+mountRoutes(app, { express, pool })
+app.use(healthRouter)
+mountSwaggerDocs(app)
+setupStaticFiles(app)
 app.use('/api/*', notFoundHandler)
-
-// Centralized error handling (must be last)
 app.use(errorHandler)
 
-// Initialize database and start server
 async function start() {
-  try {
-    // Validate required environment variables before starting
-    // Core features: database and auth are always required
-    // Other features validated but allowed to be missing (graceful degradation)
-    console.log('Validating environment configuration...')
-    validateEnvOrExit(['database', 'auth'])
+  console.log('Validating environment configuration...')
+  validateEnvOrExit(['database', 'auth'])
 
-    // Additional security checks
-    const securityCheck = validateSecurityConfig()
-    if (!securityCheck.valid) {
-      // Critical issues that must block startup
-      const criticalIssues = securityCheck.issues.filter(
-        i => i.includes('JWT_SECRET') || i.includes('DEV_BYPASS')
-      )
-      const warnings = securityCheck.issues.filter(
-        i => !i.includes('JWT_SECRET') && !i.includes('DEV_BYPASS')
-      )
-
-      if (warnings.length > 0) {
-        console.warn('Security configuration warnings:')
-        warnings.forEach(issue => console.warn(`  - ${issue}`))
-      }
-
-      if (criticalIssues.length > 0 && isProduction()) {
-        console.error('Critical security issues detected:')
-        criticalIssues.forEach(issue => console.error(`  - ${issue}`))
-        console.error('\nFix these issues before running in production.')
-        process.exit(1)
-      }
+  const securityCheck = validateSecurityConfig()
+  if (!securityCheck.valid) {
+    const critical = securityCheck.issues.filter(
+      i => i.includes('JWT_SECRET') || i.includes('DEV_BYPASS')
+    )
+    const warnings = securityCheck.issues.filter(i => !critical.includes(i))
+    warnings.forEach(i => console.warn(`  [warn] ${i}`))
+    if (critical.length > 0 && isProduction()) {
+      critical.forEach(i => console.error(`  [error] ${i}`))
+      process.exit(1)
     }
-
-    console.log('Environment validation passed.')
-
-    await initDatabase()
-    const server = app.listen(PORT, () => {
-      console.log(`Server running on http://localhost:${PORT}`)
-      // Initialize cron jobs after server starts
-      initializeCronJobs()
-    })
-
-    // WebSocket server for Telnyx media streams
-    const wss = new WebSocketServer({ noServer: true })
-    server.on('upgrade', (request, socket, head) => {
-      const url = new URL(request.url, `http://${request.headers.host}`)
-      if (url.pathname === '/api/telnyx/media-stream') {
-        // Verify the WebSocket connection has a valid stream token
-        const streamToken = url.searchParams.get('token')
-        const expectedToken = process.env.INTERNAL_CRON_SECRET
-        if (!expectedToken || streamToken !== expectedToken) {
-          socket.write('HTTP/1.1 403 Forbidden\r\n\r\n')
-          socket.destroy()
-          return
-        }
-        wss.handleUpgrade(request, socket, head, ws => {
-          handleTelnyxMediaStream(ws, timedPool)
-        })
-      } else {
-        socket.destroy()
-      }
-    })
-
-    // Graceful shutdown
-    const shutdown = async signal => {
-      console.log(`\n${signal} received — shutting down gracefully...`)
-      server.close(() => {
-        console.log('HTTP server closed')
-      })
-      wss.close()
-      if (pool) {
-        try {
-          await pool.end()
-          console.log('Database pool closed')
-        } catch (err) {
-          console.error('Error closing database pool:', err.message)
-        }
-      }
-      setTimeout(() => {
-        console.error('Forced shutdown after timeout')
-        process.exit(1)
-      }, 10000)
-    }
-    process.on('SIGTERM', () => shutdown('SIGTERM'))
-    process.on('SIGINT', () => shutdown('SIGINT'))
-  } catch (err) {
-    console.error('Failed to start server:', err)
-    process.exit(1)
   }
+
+  console.log('Environment validation passed.')
+  logFeatureStatus()
+  await runMigrations(pool)
+
+  // Start job queue (API only enqueues — workers run in services/worker)
+  // Non-fatal: if queue fails to start, the app continues without it
+  getQueue().catch(err => {
+    console.warn('[queue] Failed to start job queue — async jobs unavailable:', err.message)
+  })
+
+  const server = app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`)
+    initializeCronJobs()
+  })
+
+  const wss = setupWebSocket(server, timedPool)
+  setupGracefulShutdown(server, wss, pool, stopQueue)
 }
 
-start()
+start().catch(err => {
+  console.error('Failed to start server:', err)
+  process.exit(1)
+})

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { useFocusTrap } from '../hooks/useFocusTrap'
 
 const DISMISS_KEY = 'upgrade_dismissed_at'
 const DISMISS_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
@@ -15,6 +16,7 @@ export default function UpgradeModal({ onClose, memoriesCount = 0, variant = 'de
   const [visible, setVisible] = useState(false)
   const modalRef = useRef(null)
   const firstName = user?.name?.split(' ')[0] || 'there'
+  useFocusTrap(modalRef)
 
   // Animate in
   useEffect(() => {
@@ -67,11 +69,15 @@ export default function UpgradeModal({ onClose, memoriesCount = 0, variant = 'de
     >
       <div
         ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Upgrade to Premium"
         className={`relative bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto transition-all duration-300 ${visible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-8 scale-95'}`}
       >
         {/* Close button */}
         <button
           onClick={handleDismiss}
+          aria-label="Close"
           className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white/80 hover:bg-white text-stone-400 hover:text-stone-600 transition"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

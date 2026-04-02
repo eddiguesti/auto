@@ -1,7 +1,6 @@
 import { Router } from 'express'
 import { grokChat, isGrokConfigured } from '../services/grokService.js'
 import { extractAndStoreEntities } from '../services/entityExtractionService.js'
-import { getStoriesWithPhotos, getChapterStoriesWithPhotos } from '../utils/storyRepository.js'
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { requireDb } from '../middleware/requireDb.js'
 import validate from '../middleware/validate.js'
@@ -10,6 +9,9 @@ import Replicate from 'replicate'
 import cache, { cacheKeys, invalidateUserCache } from '../utils/cache.js'
 import { createLogger } from '../utils/logger.js'
 import { scheduleUpgradeDrip } from '../utils/notifications.js'
+import { storyRepository } from '../repositories/storyRepository.js'
+import { userRepository } from '../repositories/userRepository.js'
+import { onboardingRepository } from '../repositories/onboardingRepository.js'
 
 const logger = createLogger('stories')
 
@@ -33,9 +35,9 @@ const CHAPTER_PROMPTS = {
     `Family life, home with children, ${ctx.birth_year ? ctx.birth_year + 35 : '1980s'} era, warmth, garden or living room`,
   'world-around-you': ctx =>
     `Historical moments collage, newspaper clippings style, world events, ${ctx.birth_country || 'British'} perspective, sepia tones`,
-  'passions-beliefs': ctx =>
+  'passions-beliefs': () =>
     `Personal hobby scene, artistic expression, nature, books, peaceful and meaningful atmosphere`,
-  'wisdom-reflections': ctx =>
+  'wisdom-reflections': () =>
     `Peaceful reflection, comfortable armchair by window, golden sunset, books and photographs, wisdom and contentment`
 }
 
@@ -47,12 +49,7 @@ async function checkAndGenerateChapterImage(db, userId, chapterId, totalQuestion
   const replicateToken = process.env.REPLICATE_API_TOKEN
   if (!replicateToken) return
 
-  // Count answered questions for this chapter
-  const countResult = await db.query(
-    `SELECT COUNT(*) as count FROM stories WHERE user_id = $1 AND chapter_id = $2 AND answer IS NOT NULL AND answer != ''`,
-    [userId, chapterId]
-  )
-  const answeredCount = parseInt(countResult.rows[0].count)
+  const answeredCount = await storyRepository.countAnsweredInChapter(db, userId, chapterId)
 
   // Only generate if chapter is 100% complete
   if (answeredCount < totalQuestions) return
@@ -66,35 +63,19 @@ async function checkAndGenerateChapterImage(db, userId, chapterId, totalQuestion
 
   logger.info('Chapter completed, generating artwork', { chapterId, userId })
 
-  // Get user's answers for this chapter to create personalized prompt
-  const storiesResult = await db.query(
-    `SELECT answer FROM stories WHERE user_id = $1 AND chapter_id = $2 AND answer IS NOT NULL ORDER BY question_id`,
-    [userId, chapterId]
-  )
-  const chapterContent = storiesResult.rows
-    .map(r => r.answer)
-    .join(' ')
-    .substring(0, 2000)
+  const [answers, context] = await Promise.all([
+    storyRepository.getAnswersByChapter(db, userId, chapterId),
+    onboardingRepository.findContext(db, userId)
+  ])
 
-  // Get user context (birth info)
-  const ctxResult = await db.query(
-    'SELECT birth_place, birth_country, birth_year FROM user_onboarding WHERE user_id = $1',
-    [userId]
-  )
-  const context = ctxResult.rows[0] || {}
+  const chapterContent = answers.join(' ').substring(0, 2000)
+  const ctx = context || {}
 
   try {
-    const insertResult = await db.query(
-      `
-      INSERT INTO chapter_images (user_id, chapter_id, generation_status, created_at, updated_at)
-      VALUES ($1, $2, 'generating', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-      ON CONFLICT (user_id, chapter_id) DO NOTHING
-    `,
-      [userId, chapterId]
-    )
+    const started = await onboardingRepository.startChapterImageGeneration(db, userId, chapterId)
 
     // Another request already started generation
-    if (insertResult.rowCount === 0) return
+    if (!started) return
 
     // Use Grok to create a personalized image prompt based on their actual stories
     let personalizedPrompt = ''
@@ -103,8 +84,8 @@ async function checkAndGenerateChapterImage(db, userId, chapterId, totalQuestion
         const result = await grokChat({
           systemPrompt: `Create a single image prompt (max 100 words) for a nostalgic watercolor illustration based on someone's memoir chapter. Focus on the key visual elements: places, time period, emotions, objects mentioned. Do NOT include any text/words in the image. Style: warm sepia tones, painterly, evocative memoir book art.`,
           userPrompt: `Chapter theme: ${chapterId.replace(/-/g, ' ')}
-Birth place: ${context.birth_place || 'unknown'}, ${context.birth_country || ''}
-Birth year: ${context.birth_year || 'unknown'}
+Birth place: ${ctx.birth_place || 'unknown'}, ${ctx.birth_country || ''}
+Birth year: ${ctx.birth_year || 'unknown'}
 
 Their stories:
 ${chapterContent}
@@ -121,7 +102,7 @@ Create an image prompt:`,
 
     // Fallback to template prompt if Grok failed
     const promptFn = CHAPTER_PROMPTS[chapterId]
-    const prompt = personalizedPrompt || (promptFn ? promptFn(context) + STYLE_SUFFIX : '')
+    const prompt = personalizedPrompt || (promptFn ? promptFn(ctx) + STYLE_SUFFIX : '')
     if (!prompt) return
 
     const replicate = new Replicate({ auth: replicateToken })
@@ -147,24 +128,12 @@ Create an image prompt:`,
     }
 
     if (imageUrl) {
-      await db.query(
-        `
-        UPDATE chapter_images SET image_url = $1, prompt_used = $2, generation_status = 'completed', updated_at = CURRENT_TIMESTAMP
-        WHERE user_id = $3 AND chapter_id = $4
-      `,
-        [imageUrl, prompt, userId, chapterId]
-      )
+      await onboardingRepository.completeChapterImage(db, userId, chapterId, imageUrl, prompt)
       logger.info('Generated personalized image', { chapterId, userId })
     }
   } catch (err) {
     logger.error('Image generation failed', { chapterId, userId, error: err.message })
-    await db.query(
-      `
-      UPDATE chapter_images SET generation_status = 'failed', updated_at = CURRENT_TIMESTAMP
-      WHERE user_id = $1 AND chapter_id = $2
-    `,
-      [userId, chapterId]
-    )
+    await onboardingRepository.failChapterImage(db, userId, chapterId)
   }
 }
 
@@ -178,6 +147,26 @@ async function extractEntitiesAsync(db, userId, text, chapterId, questionId, sto
   }
 }
 
+/**
+ * @swagger
+ * /stories/all:
+ *   get:
+ *     tags: [Stories]
+ *     summary: Get all of the user's stories with associated photos
+ *     responses:
+ *       200:
+ *         description: Array of story objects grouped by chapter
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 allOf:
+ *                   - $ref: '#/components/schemas/Story'
+ *                   - type: object
+ *                     properties:
+ *                       photos: { type: array, items: { type: object } }
+ */
 // Get all stories (must be before /:chapterId to avoid conflicts)
 router.get(
   '/all',
@@ -186,11 +175,28 @@ router.get(
     const db = req.app.locals.db
     const userId = req.user.id
 
-    const stories = await getStoriesWithPhotos(db, userId)
+    const stories = await storyRepository.findWithPhotos(db, userId)
     res.json(stories)
   })
 )
 
+/**
+ * @swagger
+ * /stories/progress:
+ *   get:
+ *     tags: [Stories]
+ *     summary: Get answered question counts per chapter
+ *     description: Returns a map of chapterId → answeredCount. Cached for 60 seconds.
+ *     responses:
+ *       200:
+ *         description: Progress map
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               additionalProperties: { type: integer }
+ *               example: { "childhood": 5, "earliest-memories": 3 }
+ */
 // Get progress (count of answered questions per chapter) - cached for 60s
 router.get(
   '/progress',
@@ -202,19 +208,10 @@ router.get(
     const progress = await cache.getOrSet(
       cacheKeys.userProgress(userId),
       async () => {
-        const result = await db.query(
-          `
-        SELECT chapter_id, COUNT(*) as count
-        FROM stories
-        WHERE user_id = $1 AND answer IS NOT NULL AND answer != ''
-        GROUP BY chapter_id
-      `,
-          [userId]
-        )
-
+        const rows = await storyRepository.getProgress(db, userId)
         const progressMap = {}
-        result.rows.forEach(p => {
-          progressMap[p.chapter_id] = parseInt(p.count)
+        rows.forEach(p => {
+          progressMap[p.chapter_id] = parseInt(p.answered)
         })
         return progressMap
       },
@@ -225,6 +222,22 @@ router.get(
   })
 )
 
+/**
+ * @swagger
+ * /stories/settings:
+ *   get:
+ *     tags: [Stories]
+ *     summary: Get user story settings (display name)
+ *     responses:
+ *       200:
+ *         description: Settings object (empty object if not set)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 name: { type: string, nullable: true }
+ */
 // Get settings
 router.get(
   '/settings',
@@ -233,11 +246,36 @@ router.get(
     const db = req.app.locals.db
     const userId = req.user.id
 
-    const result = await db.query('SELECT * FROM settings WHERE user_id = $1', [userId])
-    res.json(result.rows[0] || {})
+    const settings = await storyRepository.getSettings(db, userId)
+    res.json(settings || {})
   })
 )
 
+/**
+ * @swagger
+ * /stories/settings:
+ *   post:
+ *     tags: [Stories]
+ *     summary: Save user story settings
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name: { type: string, maxLength: 100 }
+ *               birth_year: { type: integer, minimum: 1900 }
+ *     responses:
+ *       200:
+ *         description: Settings saved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ */
 // Save settings
 router.post(
   '/settings',
@@ -248,14 +286,7 @@ router.post(
     const userId = req.user.id
     const { name } = req.validatedBody
 
-    await db.query(
-      `
-    INSERT INTO settings (user_id, name, updated_at)
-    VALUES ($1, $2, CURRENT_TIMESTAMP)
-    ON CONFLICT (user_id) DO UPDATE SET name = $2, updated_at = CURRENT_TIMESTAMP
-  `,
-      [userId, name]
-    )
+    await storyRepository.saveSettings(db, userId, name)
 
     res.json({ success: true })
   })
@@ -264,11 +295,36 @@ router.post(
 // Check if user has premium access (for chapter gating)
 async function requirePremiumForChapter(db, userId, chapterId) {
   if (chapterId === 'earliest-memories') return true
-  const result = await db.query('SELECT premium_until FROM users WHERE id = $1', [userId])
-  const premiumUntil = result.rows[0]?.premium_until
-  return premiumUntil && new Date(premiumUntil) > new Date()
+  const user = await userRepository.findById(db, userId)
+  return user?.premium_until && new Date(user.premium_until) > new Date()
 }
 
+/**
+ * @swagger
+ * /stories/{chapterId}:
+ *   get:
+ *     tags: [Stories]
+ *     summary: Get all stories (answers + photos) for a chapter
+ *     description: Requires premium for all chapters except 'earliest-memories'.
+ *     parameters:
+ *       - in: path
+ *         name: chapterId
+ *         required: true
+ *         schema: { type: string }
+ *         example: childhood
+ *     responses:
+ *       200:
+ *         description: Array of story objects with photos
+ *       403:
+ *         description: Premium required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error: { type: string }
+ *                 code: { type: string, example: PREMIUM_REQUIRED }
+ */
 // Get all stories for a chapter
 router.get(
   '/:chapterId',
@@ -284,11 +340,43 @@ router.get(
       return res.status(403).json({ error: 'Premium required', code: 'PREMIUM_REQUIRED' })
     }
 
-    const stories = await getChapterStoriesWithPhotos(db, userId, chapterId)
+    const stories = await storyRepository.findWithPhotosByChapter(db, userId, chapterId)
     res.json(stories)
   })
 )
 
+/**
+ * @swagger
+ * /stories:
+ *   post:
+ *     tags: [Stories]
+ *     summary: Save or update a story answer
+ *     description: Upserts the answer for a chapter/question pair. Triggers chapter-image generation when a chapter is fully answered.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [chapter_id, question_id]
+ *             properties:
+ *               chapter_id: { type: string, example: childhood }
+ *               question_id: { type: string, example: first-memory }
+ *               answer: { type: string, maxLength: 100000 }
+ *               total_questions: { type: integer, description: "Total questions in chapter — used to detect chapter completion" }
+ *     responses:
+ *       200:
+ *         description: Story saved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 story_id: { type: integer }
+ *       403:
+ *         description: Premium required
+ */
 // Save/update a story
 router.post(
   '/',
@@ -304,25 +392,13 @@ router.post(
       return res.status(403).json({ error: 'Premium required', code: 'PREMIUM_REQUIRED' })
     }
 
-    await db.query(
-      `
-    INSERT INTO stories (user_id, chapter_id, question_id, answer, updated_at)
-    VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
-    ON CONFLICT (user_id, chapter_id, question_id)
-    DO UPDATE SET answer = $4, updated_at = CURRENT_TIMESTAMP
-  `,
-      [userId, chapter_id, question_id, answer]
-    )
+    const saved = await storyRepository.upsert(db, userId, {
+      chapterId: chapter_id,
+      questionId: question_id,
+      answer
+    })
 
-    // Get the story ID
-    const result = await db.query(
-      `
-    SELECT id FROM stories WHERE user_id = $1 AND chapter_id = $2 AND question_id = $3
-  `,
-      [userId, chapter_id, question_id]
-    )
-
-    const storyId = result.rows[0].id
+    const storyId = saved.id
 
     // Invalidate user's cached data since progress changed
     invalidateUserCache(userId)

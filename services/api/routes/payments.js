@@ -1,8 +1,10 @@
 import { Router } from 'express'
+import crypto from 'crypto'
 import Stripe from 'stripe'
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { requireDb } from '../middleware/requireDb.js'
 import { createLogger } from '../utils/logger.js'
+import { paymentRepository } from '../repositories/paymentRepository.js'
 
 const router = Router()
 const logger = createLogger('payments')
@@ -80,6 +82,41 @@ const PRODUCTS = {
   }
 }
 
+/**
+ * @swagger
+ * /payments/create-checkout:
+ *   post:
+ *     tags: [Payments]
+ *     summary: Create a Stripe Checkout session
+ *     description: |
+ *       Initiates a Stripe-hosted checkout flow for one of the available products.
+ *       Redirect URLs are restricted to the app domain to prevent open-redirect attacks.
+ *       Requires full-scope JWT (not magic link tokens).
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [productId]
+ *             properties:
+ *               productId:
+ *                 type: string
+ *                 enum: [export_style, export_ebook, export_audiobook, printed_book, premium_monthly, premium_yearly]
+ *               successUrl: { type: string, format: uri, description: "Must start with APP_URL" }
+ *               cancelUrl: { type: string, format: uri, description: "Must start with APP_URL" }
+ *     responses:
+ *       200:
+ *         description: Stripe Checkout URL
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 url: { type: string, format: uri, description: "Stripe-hosted checkout page" }
+ *       400:
+ *         description: Invalid product ID
+ */
 // Create checkout session
 router.post(
   '/create-checkout',
@@ -146,7 +183,16 @@ router.post(
       ]
     }
 
-    const session = await stripe.checkout.sessions.create(sessionConfig)
+    // Idempotency key scoped to user + product + 1-minute window so retries
+    // within that window reuse the same Stripe session rather than creating duplicates.
+    const idempotencyKey = crypto
+      .createHash('sha256')
+      .update(`checkout:${userId}:${productId}:${Math.floor(Date.now() / 60000)}`)
+      .digest('hex')
+
+    const session = await stripe.checkout.sessions.create(sessionConfig, {
+      idempotencyKey
+    })
     res.json({ url: session.url, sessionId: session.id })
   })
 )
@@ -173,29 +219,48 @@ export async function handleStripeWebhook(req, res, db) {
         const session = event.data.object
         const { userId, productId, productType } = session.metadata
 
+        // Verify the userId exists in our database before granting anything
+        const user = await paymentRepository.findUserById(db, userId)
+        if (!user) {
+          logger.error('Webhook userId not found in database', { userId, eventId: event.id })
+          return res.status(200).json({ received: true }) // Acknowledge but don't retry
+        }
+
+        // Verify Stripe customer email matches our user (detect metadata tampering)
+        if (session.customer_email && session.customer_email !== user.email) {
+          logger.error('Webhook email mismatch — possible metadata tampering', {
+            stripeEmail: session.customer_email,
+            dbEmail: user.email,
+            userId,
+            eventId: event.id
+          })
+        }
+
         // Record the payment (idempotent - ignore duplicates)
-        await db.query(
-          `
-          INSERT INTO payments (user_id, stripe_session_id, product_id, product_type, amount, status, created_at)
-          VALUES ($1, $2, $3, $4, $5, 'completed', CURRENT_TIMESTAMP)
-          ON CONFLICT (stripe_session_id) DO NOTHING
-        `,
-          [userId, session.id, productId, productType, session.amount_total]
-        )
+        await paymentRepository.recordPayment(db, {
+          userId,
+          stripeSessionId: session.id,
+          productId,
+          productType,
+          amount: session.amount_total
+        })
 
         // Activate premium access for premium_bundle purchases (idempotent - only set if not already active)
         if (productType === 'premium_bundle') {
-          await db.query(
-            `UPDATE users SET premium_until = CURRENT_TIMESTAMP + INTERVAL '12 months',
-             premium_activated_at = COALESCE(premium_activated_at, CURRENT_TIMESTAMP),
-             updated_at = CURRENT_TIMESTAMP
-             WHERE id = $1 AND (premium_until IS NULL OR premium_until < CURRENT_TIMESTAMP)`,
-            [userId]
-          )
+          await paymentRepository.activatePremiumById(db, userId)
           logger.info('Premium activated', { userId, productId })
         }
 
-        logger.info('Payment completed', { userId, productId })
+        // Immutable audit trail — append even if payment was a duplicate
+        await paymentRepository.recordAuditEvent(db, {
+          userId,
+          eventType: event.type,
+          stripeEventId: event.id,
+          amount: session.amount_total,
+          productId
+        })
+
+        logger.info('Payment completed', { userId, productId, stripeEventId: event.id })
       } catch (err) {
         logger.error('Failed to record payment', { error: err.message, eventId: event.id })
         return res.status(500).json({ error: 'Failed to process payment' })
@@ -213,13 +278,7 @@ export async function handleStripeWebhook(req, res, db) {
 
         if (subscription.status === 'active' || subscription.status === 'trialing') {
           const periodEnd = new Date(subscription.current_period_end * 1000)
-          await db.query(
-            `UPDATE users SET premium_until = $1,
-             premium_activated_at = COALESCE(premium_activated_at, CURRENT_TIMESTAMP),
-             updated_at = CURRENT_TIMESTAMP
-             WHERE email = $2 AND (premium_until IS NULL OR premium_until < $1)`,
-            [periodEnd, customerEmail]
-          )
+          await paymentRepository.activatePremiumByEmail(db, customerEmail, periodEnd)
           logger.info('Premium activated via subscription', {
             subscriptionId: subscription.id,
             customerEmail,
@@ -237,12 +296,7 @@ export async function handleStripeWebhook(req, res, db) {
           subscription.status === 'incomplete_expired'
         ) {
           const gracePeriod = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
-          await db.query(
-            `UPDATE users SET premium_until = LEAST(premium_until, $1),
-             updated_at = CURRENT_TIMESTAMP
-             WHERE email = $2`,
-            [gracePeriod, customerEmail]
-          )
+          await paymentRepository.expirePremiumByEmail(db, customerEmail, gracePeriod)
           logger.info('Premium set to expire (subscription status change)', {
             subscriptionId: subscription.id,
             customerEmail,
@@ -266,12 +320,7 @@ export async function handleStripeWebhook(req, res, db) {
         const customerEmail = customer.email
 
         const gracePeriod = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
-        await db.query(
-          `UPDATE users SET premium_until = LEAST(premium_until, $1),
-           updated_at = CURRENT_TIMESTAMP
-           WHERE email = $2`,
-          [gracePeriod, customerEmail]
-        )
+        await paymentRepository.expirePremiumByEmail(db, customerEmail, gracePeriod)
         logger.info('Premium revoked (subscription cancelled)', {
           subscriptionId: subscription.id,
           customerEmail,
@@ -293,6 +342,30 @@ export async function handleStripeWebhook(req, res, db) {
   res.json({ received: true })
 }
 
+/**
+ * @swagger
+ * /payments/history:
+ *   get:
+ *     tags: [Payments]
+ *     summary: Get the current user's payment history
+ *     responses:
+ *       200:
+ *         description: Array of payment records
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id: { type: integer }
+ *                   product_id: { type: string }
+ *                   product_type: { type: string }
+ *                   amount: { type: integer, description: "Amount in pence" }
+ *                   currency: { type: string, example: gbp }
+ *                   status: { type: string, enum: [completed, refunded, pending] }
+ *                   created_at: { type: string, format: date-time }
+ */
 // Get payment history
 router.get(
   '/history',
@@ -301,19 +374,35 @@ router.get(
     const db = req.app.locals.db
     const userId = req.user.id
 
-    const result = await db.query(
-      `
-    SELECT * FROM payments
-    WHERE user_id = $1
-    ORDER BY created_at DESC
-  `,
-      [userId]
-    )
-
-    res.json(result.rows)
+    const payments = await paymentRepository.findByUserId(db, userId)
+    res.json(payments)
   })
 )
 
+/**
+ * @swagger
+ * /payments/products:
+ *   get:
+ *     tags: [Payments]
+ *     summary: List available products and their prices
+ *     responses:
+ *       200:
+ *         description: Array of products with GBP prices
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id: { type: string }
+ *                   name: { type: string }
+ *                   description: { type: string }
+ *                   price: { type: integer, description: "Price in pence" }
+ *                   displayPrice: { type: string, example: "7.99" }
+ *                   currency: { type: string, example: gbp }
+ *                   type: { type: string }
+ */
 // Get available products/prices
 router.get('/products', (req, res) => {
   const products = Object.entries(PRODUCTS).map(([id, product]) => ({

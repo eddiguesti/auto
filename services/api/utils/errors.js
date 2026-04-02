@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Custom error classes for standardized error handling
  * Provides consistent error shapes and HTTP status codes
@@ -73,7 +74,7 @@ export class ConfigurationError extends AppError {
 
 export class ExternalServiceError extends AppError {
   constructor(service, originalError = null) {
-    super(`${service} temporarily unavailable`, 502, 'EXTERNAL_SERVICE_ERROR')
+    super(`${service} temporarily unavailable`, 503, 'EXTERNAL_SERVICE_ERROR')
     this.name = 'ExternalServiceError'
     this.originalError = originalError
   }
@@ -87,7 +88,7 @@ export class ExternalServiceError extends AppError {
  * @param {string} message - User-friendly message
  * @param {import('express').Request} req - Express request object (for requestId)
  */
-export function sendError(res, statusCode, error, message, req = null) {
+export function sendError(res, statusCode, error, message, req = null, code = null) {
   const requestId = req?.id
   const isDevelopment = process.env.NODE_ENV === 'development'
 
@@ -96,9 +97,8 @@ export function sendError(res, statusCode, error, message, req = null) {
     message: sanitizeErrorMessage(message)
   }
 
-  if (requestId && !isDevelopment) {
-    response.requestId = requestId
-  }
+  if (code) response.code = code
+  if (requestId && !isDevelopment) response.requestId = requestId
 
   return res.status(statusCode).json(response)
 }

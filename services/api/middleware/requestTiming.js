@@ -33,11 +33,26 @@ function getRoutePattern(req) {
  * @param {import('express').NextFunction} next
  */
 export function requestTiming(req, res, next) {
+  // Health check is polled frequently — skip to keep logs clean
+  if (req.path === '/api/health') {
+    return next()
+  }
+
   const startTime = process.hrtime.bigint()
   const startMs = Date.now()
 
   // Store start time on request for other middleware to use
   req.startTime = startMs
+
+  // Set X-Response-Time header before the response is flushed
+  const originalEnd = res.end
+  res.end = function (...args) {
+    const durationMs = Math.round(Number(process.hrtime.bigint() - startTime) / 1_000_000)
+    if (!res.headersSent) {
+      res.setHeader('X-Response-Time', String(durationMs))
+    }
+    return originalEnd.apply(res, args)
+  }
 
   // Hook into response finish event
   res.on('finish', () => {

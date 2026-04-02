@@ -4,6 +4,7 @@ import cron from 'node-cron'
 import { runDailyTasks, runEveningReminders, runStreakCheck } from './dailyTasks.js'
 import { runWeeklyTasks } from './weeklyTasks.js'
 import { processNotificationQueue } from '../services/emailService.js'
+import { withCronLock } from './lock.js'
 
 export function initializeCronJobs() {
   console.log('Initializing cron jobs...')
@@ -14,7 +15,7 @@ export function initializeCronJobs() {
     async () => {
       console.log('[CRON] Running midnight daily tasks...')
       try {
-        await runDailyTasks()
+        await withCronLock('daily-tasks', runDailyTasks)
       } catch (err) {
         console.error('[CRON] Daily tasks failed:', err)
       }
@@ -28,7 +29,7 @@ export function initializeCronJobs() {
     async () => {
       console.log('[CRON] Running evening reminders...')
       try {
-        await runEveningReminders()
+        await withCronLock('evening-reminders', runEveningReminders)
       } catch (err) {
         console.error('[CRON] Evening reminders failed:', err)
       }
@@ -42,7 +43,7 @@ export function initializeCronJobs() {
     async () => {
       console.log('[CRON] Running streak check...')
       try {
-        await runStreakCheck()
+        await withCronLock('streak-check', runStreakCheck)
       } catch (err) {
         console.error('[CRON] Streak check failed:', err)
       }
@@ -56,7 +57,7 @@ export function initializeCronJobs() {
     async () => {
       console.log('[CRON] Running weekly tasks...')
       try {
-        await runWeeklyTasks()
+        await withCronLock('weekly-tasks', runWeeklyTasks)
       } catch (err) {
         console.error('[CRON] Weekly tasks failed:', err)
       }
@@ -67,7 +68,7 @@ export function initializeCronJobs() {
   // Every 15 minutes - Process notification/email queue
   cron.schedule('*/15 * * * *', async () => {
     try {
-      const count = await processNotificationQueue()
+      const count = await withCronLock('notification-queue', processNotificationQueue)
       if (count > 0) {
         console.log(`[CRON] Processed ${count} notifications`)
       }

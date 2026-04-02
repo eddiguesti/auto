@@ -1,9 +1,13 @@
 import { Router } from 'express'
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { requireDb } from '../middleware/requireDb.js'
+import validate from '../middleware/validate.js'
+import { onboardingSchemas } from '../schemas/index.js'
 import { grokChat, parseGrokJson } from '../services/grokService.js'
 import Replicate from 'replicate'
 import { createLogger } from '../utils/logger.js'
+import { ConfigurationError } from '../utils/errors.js'
+import { onboardingRepository } from '../repositories/onboardingRepository.js'
 
 const router = Router()
 const logger = createLogger('onboarding')
@@ -56,11 +60,11 @@ const CHAPTER_PROMPTS = {
     return `An artistic fine art painting depicting the flow of history and change through one lifetime. A ${country} perspective on world events - newspapers, television moments, technological evolution woven together. Painted as a sophisticated visual narrative in the style of Diego Rivera's murals meets Ben Shahn - historically evocative, deeply personal yet universal, sepia and muted documentary tones`
   },
 
-  'passions-beliefs': ctx => {
+  'passions-beliefs': () => {
     return `A contemplative fine art painting of personal passion and meaning. A quiet corner dedicated to what matters most - perhaps books, art supplies, garden tools, travel mementos, or musical instruments. Natural light, sense of peace and purpose. Painted in the meditative style of Vermeer meets Andrew Wyeth - profound stillness, masterful light, celebrating the quiet things that give life meaning`
   },
 
-  'wisdom-reflections': ctx => {
+  'wisdom-reflections': () => {
     return `A masterpiece painting of peaceful reflection in life's golden years. An elegant armchair by a window, sunset light streaming in golden and amber, photographs and books nearby, a cup of tea. The earned serenity of a life well-lived. Painted in the transcendent style of Rembrandt's late works meets Vilhelm Hammershøi - profound depth, luminous light, dignity and wisdom, emotionally moving`
   }
 }
@@ -76,23 +80,12 @@ router.get(
     const db = req.app.locals.db
     const userId = req.user.id
 
-    const result = await db.query(
-      `
-    SELECT onboarding_completed, input_preference, birth_place, birth_country, birth_year
-    FROM user_onboarding
-    WHERE user_id = $1
-  `,
-      [userId]
-    )
+    const row = await onboardingRepository.findByUser(db, userId)
 
-    if (result.rows.length === 0) {
-      return res.json({
-        completed: false,
-        isNewUser: true
-      })
+    if (!row) {
+      return res.json({ completed: false, isNewUser: true })
     }
 
-    const row = result.rows[0]
     return res.json({
       completed: row.onboarding_completed,
       preference: row.input_preference,
@@ -117,16 +110,7 @@ router.post(
       return res.status(400).json({ error: 'Invalid preference. Must be "voice" or "type"' })
     }
 
-    await db.query(
-      `
-    INSERT INTO user_onboarding (user_id, input_preference, created_at, updated_at)
-    VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-    ON CONFLICT (user_id) DO UPDATE SET
-      input_preference = $2,
-      updated_at = CURRENT_TIMESTAMP
-  `,
-      [userId, preference]
-    )
+    await onboardingRepository.upsertPreference(db, userId, preference)
 
     res.json({ success: true, preference })
   })
@@ -140,8 +124,7 @@ router.post(
 
     const apiKey = process.env.GROK_API_KEY
     if (!apiKey) {
-      logger.error('GROK_API_KEY not configured', { requestId: req.id })
-      return res.status(500).json({ error: 'Server configuration error' })
+      throw new ConfigurationError('GROK_API_KEY')
     }
 
     // Create ephemeral token via xAI API
@@ -176,14 +159,11 @@ router.post(
 router.post(
   '/context',
   requireDb,
+  validate(onboardingSchemas.saveContext),
   asyncHandler(async (req, res) => {
     const db = req.app.locals.db
     const userId = req.user.id
-    const { transcripts } = req.body
-
-    if (!transcripts || !Array.isArray(transcripts)) {
-      return res.status(400).json({ error: 'Transcripts array required' })
-    }
+    const { transcripts } = req.validatedBody
 
     // Use Grok to extract structured data from conversation
     const conversationText = transcripts.map(t => `${t.role}: ${t.content}`).join('\n')
@@ -224,26 +204,12 @@ If they say "I grew up in Kent", that's additional context but birth_place might
       await db.query(`UPDATE users SET name = $1 WHERE id = $2`, [extracted.user_name, userId])
     }
 
-    // Save to database
-    await db.query(
-      `
-    INSERT INTO user_onboarding (user_id, birth_place, birth_country, birth_year, additional_context, updated_at)
-    VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
-    ON CONFLICT (user_id) DO UPDATE SET
-      birth_place = COALESCE($2, user_onboarding.birth_place),
-      birth_country = COALESCE($3, user_onboarding.birth_country),
-      birth_year = COALESCE($4, user_onboarding.birth_year),
-      additional_context = $5,
-      updated_at = CURRENT_TIMESTAMP
-  `,
-      [
-        userId,
-        extracted.birth_place,
-        extracted.birth_country,
-        extracted.birth_year,
-        JSON.stringify({ details: extracted.additional_details, transcripts })
-      ]
-    )
+    await onboardingRepository.upsertContext(db, userId, {
+      birthPlace: extracted.birth_place,
+      birthCountry: extracted.birth_country,
+      birthYear: extracted.birth_year,
+      additionalContext: JSON.stringify({ details: extracted.additional_details, transcripts })
+    })
 
     res.json({
       success: true,
@@ -257,35 +223,23 @@ If they say "I grew up in Kent", that's additional context but birth_place might
 router.post(
   '/context-form',
   requireDb,
+  validate(onboardingSchemas.saveContextForm),
   asyncHandler(async (req, res) => {
     const db = req.app.locals.db
     const userId = req.user.id
-    const { name, birthPlace, birthCountry, birthYear, additionalContext } = req.body
+    const { name, birthPlace, birthCountry, birthYear, additionalContext } = req.validatedBody
 
     // Update user name if provided
     if (name) {
       await db.query(`UPDATE users SET name = $1 WHERE id = $2`, [name, userId])
     }
 
-    await db.query(
-      `
-    INSERT INTO user_onboarding (user_id, birth_place, birth_country, birth_year, additional_context, updated_at)
-    VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
-    ON CONFLICT (user_id) DO UPDATE SET
-      birth_place = COALESCE($2, user_onboarding.birth_place),
-      birth_country = COALESCE($3, user_onboarding.birth_country),
-      birth_year = COALESCE($4, user_onboarding.birth_year),
-      additional_context = COALESCE($5, user_onboarding.additional_context),
-      updated_at = CURRENT_TIMESTAMP
-  `,
-      [
-        userId,
-        birthPlace || null,
-        birthCountry || null,
-        birthYear ? parseInt(birthYear) : null,
-        JSON.stringify({ additionalContext: additionalContext || '' })
-      ]
-    )
+    await onboardingRepository.upsertContext(db, userId, {
+      birthPlace: birthPlace || null,
+      birthCountry: birthCountry || null,
+      birthYear: birthYear ? parseInt(birthYear) : null,
+      additionalContext: JSON.stringify({ additionalContext: additionalContext || '' })
+    })
 
     res.json({ success: true, userName: name || null })
   })
@@ -330,12 +284,7 @@ router.post(
 
     const uniqueChannels = [...new Set(channels)]
 
-    await db.query(
-      `UPDATE user_onboarding
-       SET channel_preferences = $1, updated_at = CURRENT_TIMESTAMP
-       WHERE user_id = $2`,
-      [JSON.stringify(uniqueChannels), userId]
-    )
+    await onboardingRepository.upsertChannelPreferences(db, userId, uniqueChannels)
 
     res.json({ success: true, channels: uniqueChannels })
   })
@@ -349,11 +298,10 @@ router.delete(
     const db = req.app.locals.db
     const userId = req.user.id
 
-    // Delete onboarding data
-    await db.query(`DELETE FROM user_onboarding WHERE user_id = $1`, [userId])
-
-    // Delete all chapter images
-    await db.query(`DELETE FROM chapter_images WHERE user_id = $1`, [userId])
+    await Promise.all([
+      onboardingRepository.deleteByUser(db, userId),
+      onboardingRepository.deleteChapterImages(db, userId)
+    ])
 
     res.json({ success: true, message: 'Onboarding reset. You can start fresh.' })
   })
@@ -367,27 +315,9 @@ router.post(
     const db = req.app.locals.db
     const userId = req.user.id
 
-    // Mark onboarding as complete
-    await db.query(
-      `
-    UPDATE user_onboarding
-    SET onboarding_completed = true, updated_at = CURRENT_TIMESTAMP
-    WHERE user_id = $1
-  `,
-      [userId]
-    )
+    await onboardingRepository.markComplete(db, userId)
 
-    // Get user context for image generation
-    const contextResult = await db.query(
-      `
-    SELECT birth_place, birth_country, birth_year, additional_context
-    FROM user_onboarding
-    WHERE user_id = $1
-  `,
-      [userId]
-    )
-
-    const context = contextResult.rows[0] || {}
+    const context = (await onboardingRepository.findContext(db, userId)) || {}
 
     // Generate earliest-memories image based on birthplace/year from interview
     // Other chapters get personalized images when they are 100% completed
@@ -419,17 +349,7 @@ async function generateChapterImagesAsync(db, userId, context) {
   const replicate = new Replicate({ auth: replicateToken })
 
   try {
-    // Mark as generating
-    await db.query(
-      `
-      INSERT INTO chapter_images (user_id, chapter_id, generation_status, created_at, updated_at)
-      VALUES ($1, $2, 'generating', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-      ON CONFLICT (user_id, chapter_id) DO UPDATE SET
-        generation_status = 'generating',
-        updated_at = CURRENT_TIMESTAMP
-    `,
-      [userId, chapterId]
-    )
+    await onboardingRepository.upsertChapterImageGenerating(db, userId, chapterId)
 
     // Build personalized prompt based on interview context
     const prompt = promptFn(context) + STYLE_SUFFIX
@@ -472,27 +392,12 @@ async function generateChapterImagesAsync(db, userId, context) {
       throw new Error('No image URL returned from Replicate')
     }
 
-    // Update with success
-    await db.query(
-      `
-      UPDATE chapter_images
-      SET image_url = $1, prompt_used = $2, generation_status = 'completed', updated_at = CURRENT_TIMESTAMP
-      WHERE user_id = $3 AND chapter_id = $4
-    `,
-      [imageUrl, prompt, userId, chapterId]
-    )
+    await onboardingRepository.completeChapterImage(db, userId, chapterId, imageUrl, prompt)
 
     logger.info('Successfully generated personalized image', { chapterId, userId })
   } catch (err) {
     logger.error('Image generation failed', { chapterId, userId, error: err.message })
-    await db.query(
-      `
-      UPDATE chapter_images
-      SET generation_status = 'failed', updated_at = CURRENT_TIMESTAMP
-      WHERE user_id = $1 AND chapter_id = $2
-    `,
-      [userId, chapterId]
-    )
+    await onboardingRepository.failChapterImage(db, userId, chapterId)
   }
 }
 

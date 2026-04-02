@@ -1,8 +1,20 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { visualizer } from 'rollup-plugin-visualizer'
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), ...(process.env.ANALYZE ? [visualizer({ open: true, gzipSize: true })] : [])],
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: './src/test/setup.js',
+    css: false,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'lcov'],
+      exclude: ['node_modules/', 'src/test/']
+    }
+  },
   server: {
     port: 5173,
     proxy: {
@@ -28,7 +40,10 @@ export default defineConfig({
         manualChunks: {
           // Vendor chunks - rarely change, cache well
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'ui-vendor': ['@react-oauth/google', '@tabler/icons-react']
+          'ui-vendor': ['@react-oauth/google', '@tabler/icons-react'],
+          'three-vendor': ['three'],
+          'motion-vendor': ['framer-motion'],
+          'analytics-vendor': ['posthog-js']
         }
       }
     }

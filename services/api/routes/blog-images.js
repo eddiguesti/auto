@@ -1,5 +1,7 @@
 import { Router } from 'express'
+import { asyncHandler } from '../middleware/asyncHandler.js'
 import { createLogger } from '../utils/logger.js'
+import { ConfigurationError, ExternalServiceError } from '../utils/errors.js'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -148,20 +150,26 @@ function saveBase64Image(b64Data, slug) {
 }
 
 // Generate image for a blog post using xAI Grok image generation
-router.post('/generate/:slug', async (req, res) => {
-  const { slug } = req.params
-  const apiKey = process.env.GROK_API_KEY
+router.post(
+  '/generate/:slug',
+  asyncHandler(async (req, res) => {
+    const cronSecret = req.headers['x-cron-secret']
+    if (!process.env.INTERNAL_CRON_SECRET || cronSecret !== process.env.INTERNAL_CRON_SECRET) {
+      return res.status(401).json({ error: 'Unauthorized' })
+    }
 
-  if (!apiKey) {
-    return res.status(500).json({ error: 'Image generation not configured — set GROK_API_KEY' })
-  }
+    const { slug } = req.params
+    const apiKey = process.env.GROK_API_KEY
 
-  const prompt = BLOG_IMAGE_PROMPTS[slug]
-  if (!prompt) {
-    return res.status(400).json({ error: 'Unknown blog post slug' })
-  }
+    if (!apiKey) {
+      throw new ConfigurationError('GROK_API_KEY')
+    }
 
-  try {
+    const prompt = BLOG_IMAGE_PROMPTS[slug]
+    if (!prompt) {
+      return res.status(400).json({ error: 'Unknown blog post slug' })
+    }
+
     logger.info(`Generating image for blog post: ${slug}`)
 
     const response = await fetch('https://api.x.ai/v1/images/generations', {
@@ -182,13 +190,13 @@ router.post('/generate/:slug', async (req, res) => {
     if (!response.ok) {
       const errorText = await response.text()
       logger.error(`xAI API error: ${response.status} - ${errorText}`)
-      return res.status(502).json({ error: 'Image generation failed' })
+      throw new ExternalServiceError('xAI image generation')
     }
 
     const data = await response.json()
 
     if (!data.data || !data.data[0]) {
-      return res.status(502).json({ error: 'No image returned from API' })
+      throw new ExternalServiceError('xAI image generation')
     }
 
     // Download and save the image permanently
@@ -198,7 +206,7 @@ router.post('/generate/:slug', async (req, res) => {
     } else if (data.data[0].b64_json) {
       filename = saveBase64Image(data.data[0].b64_json, slug)
     } else {
-      return res.status(502).json({ error: 'Unexpected API response format' })
+      throw new ExternalServiceError('xAI image generation')
     }
 
     const publicPath = `/blog-images/${filename}`
@@ -211,88 +219,93 @@ router.post('/generate/:slug', async (req, res) => {
       prompt,
       generatedAt: new Date().toISOString()
     })
-  } catch (err) {
-    logger.error(`Image generation error for ${slug}:`, err)
-    res.status(500).json({ error: 'Image generation failed' })
-  }
-})
+  })
+)
 
 // Generate images for ALL blog posts (batch)
-router.post('/generate-all', async (req, res) => {
-  const apiKey = process.env.GROK_API_KEY
-
-  if (!apiKey) {
-    return res.status(500).json({ error: 'Image generation not configured — set GROK_API_KEY' })
-  }
-
-  const slugs = Object.keys(BLOG_IMAGE_PROMPTS)
-  const results = []
-
-  // Skip already-generated images unless force=true
-  const force = req.query.force === 'true'
-
-  for (const slug of slugs) {
-    // Check if image already exists
-    const filepath = path.join(IMAGES_DIR, `${slug}.jpg`)
-    if (!force && fs.existsSync(filepath)) {
-      results.push({ slug, status: 'skipped', imagePath: `/blog-images/${slug}.jpg` })
-      logger.info(`Skipping ${slug} — image already exists`)
-      continue
+router.post(
+  '/generate-all',
+  asyncHandler(async (req, res) => {
+    const cronSecret = req.headers['x-cron-secret']
+    if (!process.env.INTERNAL_CRON_SECRET || cronSecret !== process.env.INTERNAL_CRON_SECRET) {
+      return res.status(401).json({ error: 'Unauthorized' })
     }
 
-    try {
-      const prompt = BLOG_IMAGE_PROMPTS[slug]
+    const apiKey = process.env.GROK_API_KEY
 
-      const response = await fetch('https://api.x.ai/v1/images/generations', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-          model: 'grok-imagine-image',
-          prompt:
-            prompt +
-            ' Wide 16:9 aspect ratio, editorial quality, suitable as blog hero image. No text overlays.',
-          n: 1,
-          response_format: 'url'
-        })
-      })
+    if (!apiKey) {
+      throw new ConfigurationError('GROK_API_KEY')
+    }
 
-      if (response.ok) {
-        const data = await response.json()
-        let filename
-        if (data.data?.[0]?.url) {
-          filename = await downloadAndSaveImage(data.data[0].url, slug)
-        } else if (data.data?.[0]?.b64_json) {
-          filename = saveBase64Image(data.data[0].b64_json, slug)
-        }
-        if (filename) {
-          results.push({ slug, status: 'success', imagePath: `/blog-images/${filename}` })
-          logger.info(`Generated and saved image for ${slug}`)
-        } else {
-          results.push({ slug, status: 'failed', error: 'No image data in response' })
-        }
-      } else {
-        results.push({ slug, status: 'failed', error: `API ${response.status}` })
-        logger.warn(`Failed to generate image for ${slug}: ${response.status}`)
+    const slugs = Object.keys(BLOG_IMAGE_PROMPTS)
+    const results = []
+
+    // Skip already-generated images unless force=true
+    const force = req.query.force === 'true'
+
+    for (const slug of slugs) {
+      // Check if image already exists
+      const filepath = path.join(IMAGES_DIR, `${slug}.jpg`)
+      if (!force && fs.existsSync(filepath)) {
+        results.push({ slug, status: 'skipped', imagePath: `/blog-images/${slug}.jpg` })
+        logger.info(`Skipping ${slug} — image already exists`)
+        continue
       }
 
-      // Rate limit: wait 2 seconds between requests
-      await new Promise(resolve => setTimeout(resolve, 2000))
-    } catch (err) {
-      results.push({ slug, status: 'failed', error: err.message })
-    }
-  }
+      try {
+        const prompt = BLOG_IMAGE_PROMPTS[slug]
 
-  res.json({
-    total: slugs.length,
-    success: results.filter(r => r.status === 'success').length,
-    skipped: results.filter(r => r.status === 'skipped').length,
-    failed: results.filter(r => r.status === 'failed').length,
-    results
+        const response = await fetch('https://api.x.ai/v1/images/generations', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model: 'grok-imagine-image',
+            prompt:
+              prompt +
+              ' Wide 16:9 aspect ratio, editorial quality, suitable as blog hero image. No text overlays.',
+            n: 1,
+            response_format: 'url'
+          })
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          let filename
+          if (data.data?.[0]?.url) {
+            filename = await downloadAndSaveImage(data.data[0].url, slug)
+          } else if (data.data?.[0]?.b64_json) {
+            filename = saveBase64Image(data.data[0].b64_json, slug)
+          }
+          if (filename) {
+            results.push({ slug, status: 'success', imagePath: `/blog-images/${filename}` })
+            logger.info(`Generated and saved image for ${slug}`)
+          } else {
+            results.push({ slug, status: 'failed', error: 'No image data in response' })
+          }
+        } else {
+          results.push({ slug, status: 'failed', error: `API ${response.status}` })
+          logger.warn(`Failed to generate image for ${slug}: ${response.status}`)
+        }
+
+        // Rate limit: wait 2 seconds between requests
+        await new Promise(resolve => setTimeout(resolve, 2000))
+      } catch (err) {
+        results.push({ slug, status: 'failed', error: err.message })
+      }
+    }
+
+    res.json({
+      total: slugs.length,
+      success: results.filter(r => r.status === 'success').length,
+      skipped: results.filter(r => r.status === 'skipped').length,
+      failed: results.filter(r => r.status === 'failed').length,
+      results
+    })
   })
-})
+)
 
 // Check which images exist
 router.get('/status', (req, res) => {

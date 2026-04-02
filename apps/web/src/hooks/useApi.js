@@ -46,9 +46,13 @@ export function useApi() {
 
         if (!res.ok) {
           const errorData = await res.json().catch(() => ({}))
-          throw new Error(
+          const err = new Error(
             errorData.error || errorData.message || `Request failed with status ${res.status}`
           )
+          err.code = errorData.code || null
+          err.requestId = errorData.requestId || null
+          err.status = res.status
+          throw err
         }
 
         // Check content type for response parsing
@@ -99,7 +103,14 @@ export function useFetch(url, { skip = false, initialData = null } = {}) {
     try {
       const res = await authFetch(url)
       if (!res.ok) {
-        throw new Error('Failed to fetch data')
+        const errorData = await res.json().catch(() => ({}))
+        const err = new Error(
+          errorData.error || errorData.message || `Request failed with status ${res.status}`
+        )
+        err.code = errorData.code || null
+        err.requestId = errorData.requestId || null
+        err.status = res.status
+        throw err
       }
       const result = await res.json()
       setData(result)

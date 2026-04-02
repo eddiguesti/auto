@@ -1,7 +1,8 @@
 import { Router } from 'express'
 // epub-gen-memory is dynamically imported to ensure polyfills load first
 import { chapters } from '@easy-memoir/shared/chapters'
-import { getStoriesWithPhotos } from '../utils/storyRepository.js'
+import { storyRepository } from '../repositories/storyRepository.js'
+import { paymentRepository } from '../repositories/paymentRepository.js'
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { requireDb } from '../middleware/requireDb.js'
 
@@ -29,27 +30,21 @@ router.get(
     const userId = req.user.id
 
     // Verify user has paid for export or is an early adopter
-    const paymentResult = await db.query(
-      `SELECT id FROM payments WHERE user_id = $1 AND product_type = 'export' AND status = 'completed' LIMIT 1`,
-      [userId]
-    )
-    const earlyAdopterResult = await db.query(
-      'SELECT COUNT(*) as count FROM users WHERE id <= $1',
-      [userId]
-    )
-    const isEarlyAdopter = parseInt(earlyAdopterResult.rows[0].count) <= 100
-    if (paymentResult.rows.length === 0 && !isEarlyAdopter) {
+    const [hasPaid, isEarlyAdopter, settings] = await Promise.all([
+      paymentRepository.hasProductPayment(db, userId, 'export'),
+      paymentRepository.isEarlyAdopter(db, userId),
+      storyRepository.getSettings(db, userId)
+    ])
+    if (!hasPaid && !isEarlyAdopter) {
       return res
         .status(403)
         .json({ error: 'Payment required for export', code: 'PAYMENT_REQUIRED' })
     }
 
-    // Get user settings for name
-    const settingsResult = await db.query('SELECT name FROM settings WHERE user_id = $1', [userId])
-    const userName = settingsResult.rows[0]?.name || 'My'
+    const userName = settings?.name || 'My'
 
     // Get all stories with photos
-    const storiesResult = await getStoriesWithPhotos(db, userId)
+    const storiesResult = await storyRepository.findWithPhotos(db, userId)
 
     // Organize stories by chapter
     const stories = {}
@@ -172,46 +167,18 @@ router.get(
     const db = req.app.locals.db
     const userId = req.user.id
 
-    // Check user's subscription/payment status
-    const userResult = await db.query(
-      `
-      SELECT u.*,
-        (SELECT COUNT(*) FROM stories WHERE user_id = u.id AND answer IS NOT NULL AND answer != '') as story_count
-      FROM users u WHERE u.id = $1
-    `,
-      [userId]
-    )
-
-    const user = userResult.rows[0]
-    const storyCount = parseInt(user.story_count) || 0
-
-    // Check if user has paid for export
-    const paymentResult = await db.query(
-      `
-      SELECT * FROM payments
-      WHERE user_id = $1 AND product_type = 'export' AND status = 'completed'
-      ORDER BY created_at DESC LIMIT 1
-    `,
-      [userId]
-    )
-
-    const hasPaid = paymentResult.rows.length > 0
-
-    // Early adopter check (first 100 users get free export)
-    const earlyAdopterResult = await db.query(
-      `
-      SELECT COUNT(*) as count FROM users WHERE id <= $1
-    `,
-      [userId]
-    )
-    const isEarlyAdopter = parseInt(earlyAdopterResult.rows[0].count) <= 100
+    const [{ total: storyCount }, hasPaid, isEarlyAdopter] = await Promise.all([
+      storyRepository.countByUser(db, userId),
+      paymentRepository.hasProductPayment(db, userId, 'export'),
+      paymentRepository.isEarlyAdopter(db, userId)
+    ])
 
     res.json({
-      storyCount,
+      storyCount: parseInt(storyCount) || 0,
       canExport: hasPaid || isEarlyAdopter,
       isEarlyAdopter,
       hasPaid,
-      exportPrice: 9.99 // Price for non-early adopters
+      exportPrice: 9.99
     })
   })
 )
