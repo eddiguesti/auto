@@ -9,7 +9,7 @@
  * Cache versioning: bump CACHE_VERSION to force immediate refresh on deploy.
  */
 
-const CACHE_VERSION = 'v1'
+const CACHE_VERSION = 'v2'
 const STATIC_CACHE = `easy-memoir-static-${CACHE_VERSION}`
 const SHELL_CACHE = `easy-memoir-shell-${CACHE_VERSION}`
 
@@ -58,6 +58,11 @@ self.addEventListener('fetch', event => {
 
   // Never intercept non-GET requests
   if (request.method !== 'GET') {
+    return
+  }
+
+  // Never intercept cross-origin requests (fonts, CDNs, etc.)
+  if (url.origin !== self.location.origin) {
     return
   }
 
