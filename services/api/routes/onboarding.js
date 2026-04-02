@@ -152,7 +152,9 @@ router.post(
     const data = await response.json()
     logger.info('Voice session created', {
       requestId: req.id,
-      hasSecret: !!data?.client_secret?.value
+      hasSecret: !!data?.client_secret?.value,
+      dataKeys: Object.keys(data || {}),
+      clientSecretKeys: data?.client_secret ? Object.keys(data.client_secret) : null
     })
     res.json(data)
   })
