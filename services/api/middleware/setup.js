@@ -81,7 +81,8 @@ export function setupMiddleware(app) {
             "'self'",
             "'unsafe-inline'",
             'https://fonts.googleapis.com',
-            'https://api.fontshare.com'
+            'https://api.fontshare.com',
+            'https://accounts.google.com'
           ],
           fontSrc: ["'self'", 'https://fonts.gstatic.com', 'https://api.fontshare.com'],
           imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
@@ -91,6 +92,9 @@ export function setupMiddleware(app) {
             'https://api.stripe.com',
             'https://api.replicate.com',
             'https://accounts.google.com',
+            'https://fonts.googleapis.com',
+            'https://api.fontshare.com',
+            'https://fonts.gstatic.com',
             'wss:'
           ],
           frameSrc: ["'self'", 'https://js.stripe.com', 'https://accounts.google.com'],

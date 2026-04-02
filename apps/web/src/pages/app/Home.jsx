@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, lazy } from 'react'
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react'
 import { Link } from 'react-router-dom'
 import { chapters } from '../../data/chapters'
 import { useAuth } from '../../context/AuthContext'
