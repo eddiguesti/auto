@@ -110,6 +110,13 @@ router.post(
 
     const data = await response.json()
 
+    const dataKeys = Object.keys(data || {}).join(',')
+    const tokenValue = data?.client_secret?.value || data?.value || data?.token || null
+    const tokenPreview = tokenValue ? tokenValue.substring(0, 8) + '...' : 'none'
+    logger.info(`xAI realtime response keys=[${dataKeys}] token=${tokenPreview}`, {
+      requestId: req.id
+    })
+
     // Get or create voice session if chapter provided
     let session = null
     if (db && chapterId) {

@@ -111,7 +111,7 @@ export function setupMiddleware(app) {
     })
   )
 
-  app.use(globalLimiter)
+  app.use('/api', globalLimiter)
   app.use(requestId)
   app.use(requestTiming)
   app.use(express.json({ limit: '1mb' }))
