@@ -6,7 +6,7 @@
 import swaggerJsdoc from 'swagger-jsdoc'
 import swaggerUi from 'swagger-ui-express'
 import { authenticateToken } from '../middleware/auth.js'
-import { requireAdmin } from '../routes/admin.js'
+import { requireAdmin } from '../middleware/requireAdmin.js'
 
 const definition = {
   openapi: '3.0.0',
