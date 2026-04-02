@@ -2,7 +2,7 @@
 NODE_VERSION = "22.15.1"
 
 [phases.install]
-cmds = ["npm install --no-fund --no-audit"]
+cmds = ["rm -rf node_modules package-lock.json && npm install --no-fund --no-audit --ignore-scripts"]
 
 [phases.build]
 cmds = ["npm run build"]
