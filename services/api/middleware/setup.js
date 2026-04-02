@@ -95,6 +95,7 @@ export function setupMiddleware(app) {
             'https://fonts.googleapis.com',
             'https://api.fontshare.com',
             'https://fonts.gstatic.com',
+            'wss://api.x.ai',
             'wss:'
           ],
           frameSrc: ["'self'", 'https://js.stripe.com', 'https://accounts.google.com'],

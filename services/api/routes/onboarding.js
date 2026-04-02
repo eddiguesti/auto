@@ -150,7 +150,10 @@ router.post(
     }
 
     const data = await response.json()
-    logger.info('Voice session created', { requestId: req.id })
+    logger.info('Voice session created', {
+      requestId: req.id,
+      hasSecret: !!data?.client_secret?.value
+    })
     res.json(data)
   })
 )
