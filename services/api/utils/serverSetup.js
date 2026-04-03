@@ -5,6 +5,7 @@
 
 import { WebSocketServer } from 'ws'
 import { handleTelnyxMediaStream } from '../routes/index.js'
+import { handleVoiceProxy } from './voiceProxy.js'
 
 /**
  * Attach a WebSocket server to the HTTP server for Telnyx media streams.
@@ -16,22 +17,29 @@ export function setupWebSocket(server, db) {
 
   server.on('upgrade', (request, socket, head) => {
     const url = new URL(request.url, `http://${request.headers.host}`)
-    if (url.pathname !== '/api/telnyx/media-stream') {
-      socket.destroy()
+
+    if (url.pathname === '/api/voice/ws') {
+      wss.handleUpgrade(request, socket, head, ws => {
+        handleVoiceProxy(ws, request)
+      })
       return
     }
 
-    const streamToken = url.searchParams.get('token')
-    const expectedToken = process.env.INTERNAL_CRON_SECRET
-    if (!expectedToken || streamToken !== expectedToken) {
-      socket.write('HTTP/1.1 403 Forbidden\r\n\r\n')
-      socket.destroy()
+    if (url.pathname === '/api/telnyx/media-stream') {
+      const streamToken = url.searchParams.get('token')
+      const expectedToken = process.env.INTERNAL_CRON_SECRET
+      if (!expectedToken || streamToken !== expectedToken) {
+        socket.write('HTTP/1.1 403 Forbidden\r\n\r\n')
+        socket.destroy()
+        return
+      }
+      wss.handleUpgrade(request, socket, head, ws => {
+        handleTelnyxMediaStream(ws, db)
+      })
       return
     }
 
-    wss.handleUpgrade(request, socket, head, ws => {
-      handleTelnyxMediaStream(ws, db)
-    })
+    socket.destroy()
   })
 
   return wss

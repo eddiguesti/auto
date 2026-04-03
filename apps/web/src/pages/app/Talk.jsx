@@ -199,13 +199,11 @@ SAFETY — NON-NEGOTIABLE:
         throw new Error(errData.error || 'Failed to connect')
       }
 
-      const session = await response.json()
-      const voiceToken = session.value || session.client_secret?.value || session.token
-      if (!voiceToken) {
-        throw new Error('No voice session received')
-      }
+      await response.json() // consume session metadata
 
-      const ws = new WebSocket(`wss://api.x.ai/v1/realtime?api_key=${voiceToken}`)
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+      const wsHost = new URL(API_URL).host
+      const ws = new WebSocket(`${protocol}//${wsHost}/api/voice/ws?token=${jwtToken}`)
 
       ws.onopen = () => {
         setPhase('active')

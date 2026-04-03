@@ -17,7 +17,7 @@ import { AudioVisualizer } from '../AudioVisualizer'
  * 2. WebSocket → Base64 → PCM16 → Float32 → AudioContext → Speakers
  */
 export default function OnboardingVoiceInterview({ onComplete, onBack }) {
-  const { authFetch } = useAuth()
+  const { authFetch, token: jwtToken } = useAuth()
   const { getPaceSettings, getVoice } = useSettings()
 
   // ============================================
@@ -398,21 +398,14 @@ export default function OnboardingVoiceInterview({ onComplete, onBack }) {
       playbackContextRef.current = createAudioContext(24000)
       await playbackContextRef.current.resume()
 
-      // Fetch ephemeral token
-      const response = await authFetch('/api/onboarding/voice-session', { method: 'POST' })
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}))
-        throw new Error(err.error || 'Authentication failed')
-      }
-
-      const session = await response.json()
-      const token = session.client_secret?.value || session.value
-      if (!token) throw new Error('No session token received')
-
+      if (!jwtToken) throw new Error('Not authenticated')
       if (unmountedRef.current) return
 
-      // Connect to xAI Realtime API with Grok model
-      const ws = new WebSocket(`wss://api.x.ai/v1/realtime?model=grok-2-public&api_key=${token}`)
+      // Connect via server-side proxy (handles xAI auth with API key)
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+      const ws = new WebSocket(
+        `${protocol}//${window.location.host}/api/voice/ws?token=${jwtToken}`
+      )
 
       // Connection timeout (10 seconds)
       const connectionTimeout = safeTimeout(() => {

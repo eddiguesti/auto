@@ -10,7 +10,7 @@ import { buildInstructions } from '../utils/voiceInstructions'
 import { VOICE_CONFIG } from '../data/voiceConfig'
 
 export function useVoiceSession({ chapter, initialQuestionIndex = 0 }) {
-  const { authFetch } = useAuth()
+  const { authFetch, token: jwtToken } = useAuth()
   const { getPaceSettings, getVoice } = useSettings()
 
   const [phase, setPhase] = useState('ready') // 'ready' | 'connecting' | 'active' | 'compiling' | 'ended'
@@ -261,8 +261,6 @@ export function useVoiceSession({ chapter, initialQuestionIndex = 0 }) {
         throw new Error(errData.details || errData.error || 'Failed to connect')
       }
       const session = await response.json()
-      const token = session.value || session.client_secret?.value || session.token
-      if (!token) throw new Error('No authentication token received')
 
       if (session.session_id) {
         setSessionId(session.session_id)
@@ -274,7 +272,11 @@ export function useVoiceSession({ chapter, initialQuestionIndex = 0 }) {
         if (nextIdx > 0 && nextIdx < chapter.questions.length) setQuestionIndex(nextIdx)
       }
 
-      const ws = new WebSocket(`${VOICE_CONFIG.WS_URL}?api_key=${token}`)
+      if (!jwtToken) throw new Error('Not authenticated')
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+      const ws = new WebSocket(
+        `${protocol}//${window.location.host}/api/voice/ws?token=${jwtToken}`
+      )
 
       ws.onopen = () => {
         setPhase('active')

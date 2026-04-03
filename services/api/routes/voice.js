@@ -7,7 +7,7 @@ import { sanitizeForPrompt } from '../utils/security.js'
 import { extractAndStoreEntities } from '../services/entityExtractionService.js'
 import { compileTranscripts } from '../services/transcriptService.js'
 import { invalidateUserCache } from '../utils/cache.js'
-import { ConfigurationError, ExternalServiceError } from '../utils/errors.js'
+import { ConfigurationError } from '../utils/errors.js'
 
 const router = Router()
 const logger = createLogger('voice')
@@ -87,37 +87,8 @@ router.post(
       throw new ConfigurationError('GROK_API_KEY')
     }
 
-    // Create ephemeral token via xAI API
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 15000)
-    const response = await fetch('https://api.x.ai/v1/realtime/client_secrets', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        expires_after: { seconds: 300 } // 5 minute token
-      }),
-      signal: controller.signal
-    })
-    clearTimeout(timeoutId)
-
-    if (!response.ok) {
-      logger.error('xAI session error', { status: response.status, requestId: req.id })
-      throw new ExternalServiceError('xAI Realtime API')
-    }
-
-    const data = await response.json()
-
-    const dataKeys = Object.keys(data || {}).join(',')
-    const tokenValue = data?.client_secret?.value || data?.value || data?.token || null
-    const tokenPreview = tokenValue ? tokenValue.substring(0, 8) + '...' : 'none'
-    logger.info(`xAI realtime response keys=[${dataKeys}] token=${tokenPreview}`, {
-      requestId: req.id
-    })
-
     // Get or create voice session if chapter provided
+    // (WebSocket connection is handled server-side via /api/voice/ws proxy)
     let session = null
     if (db && chapterId) {
       try {
@@ -128,7 +99,6 @@ router.post(
     }
 
     res.json({
-      ...data,
       session_id: session?.id,
       questions_answered: session?.questions_answered || [],
       current_question_id: session?.current_question_id

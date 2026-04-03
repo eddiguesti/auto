@@ -50,7 +50,7 @@ const TOUR_STEPS = [
 ]
 
 export default function TourOverlay({ onComplete, onSkip }) {
-  const { authFetch } = useAuth()
+  const { authFetch, token: jwtToken } = useAuth()
   const { getVoice } = useSettings()
   const [currentStep, setCurrentStep] = useState(0)
   const [isVisible, setIsVisible] = useState(false)
@@ -154,9 +154,15 @@ export default function TourOverlay({ onComplete, onSkip }) {
           return
         }
 
-        const { ephemeralToken } = await tokenRes.json()
+        await tokenRes.json() // consume session metadata (session_id etc)
+        if (!jwtToken) {
+          clearTimeout(speakingTimeoutRef.current)
+          setIsClioSpeaking(false)
+          return
+        }
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
         const ws = new WebSocket(
-          `wss://api.x.ai/v1/realtime?model=grok-3-mini-realtime-beta&api_key=${ephemeralToken}`
+          `${protocol}//${window.location.host}/api/voice/ws?token=${jwtToken}`
         )
 
         wsRef.current = ws
