@@ -26,7 +26,11 @@ export default function OnboardingOffer({ firstName, onTryFree }) {
         })
       })
       const data = await res.json()
-      if (data.url) window.location.href = data.url
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        setIsLoading(false)
+      }
     } catch (err) {
       console.error('Checkout failed:', err)
       setIsLoading(false)
