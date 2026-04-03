@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useMemo } from 'react'
 import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { usePremium } from '../../hooks/usePremium'
 import { useVoiceSession } from '../../hooks/useVoiceSession'
@@ -16,13 +16,11 @@ export default function VoiceChat() {
   const chapterId = searchParams.get('chapter')
   const initialQuestionIndex = parseInt(searchParams.get('question') || '0')
 
-  const chapter = chapters.find(c => c.id === chapterId) || chapters[0]
-
-  // Redirect if chapter is locked
-  useEffect(() => {
-    if (chapterId && isChapterLocked(chapterId)) {
-      navigate('/home', { replace: true })
-    }
+  // Fall back to the free chapter if the requested one is locked
+  const chapter = useMemo(() => {
+    const requested = chapters.find(c => c.id === chapterId)
+    if (requested && !isChapterLocked(requested.id)) return requested
+    return chapters.find(c => !isChapterLocked(c.id)) || chapters[0]
   }, [chapterId, isChapterLocked])
 
   const {
