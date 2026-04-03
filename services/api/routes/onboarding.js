@@ -6,7 +6,6 @@ import { onboardingSchemas } from '../schemas/index.js'
 import { grokChat, parseGrokJson } from '../services/grokService.js'
 import Replicate from 'replicate'
 import { createLogger } from '../utils/logger.js'
-import { ConfigurationError } from '../utils/errors.js'
 import { onboardingRepository } from '../repositories/onboardingRepository.js'
 
 const router = Router()
@@ -116,47 +115,12 @@ router.post(
   })
 )
 
-// Get xAI voice session for onboarding interview
+// Voice session endpoint — voice now uses server-side proxy at /api/voice/ws
+// This endpoint is kept for backwards compatibility but no longer issues tokens
 router.post(
   '/voice-session',
   asyncHandler(async (req, res) => {
-    logger.info('Voice session requested', { userId: req.user?.id, requestId: req.id })
-
-    const apiKey = process.env.GROK_API_KEY
-    if (!apiKey) {
-      throw new ConfigurationError('GROK_API_KEY')
-    }
-
-    // Create ephemeral token via xAI API
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 15000)
-    const response = await fetch('https://api.x.ai/v1/realtime/client_secrets', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        expires_after: { seconds: 600 } // 10 minute token for onboarding
-      }),
-      signal: controller.signal
-    })
-    clearTimeout(timeoutId)
-
-    if (!response.ok) {
-      const error = await response.text()
-      logger.error('xAI session error', { status: response.status, requestId: req.id })
-      return res.status(response.status).json({ error: 'Failed to create voice session' })
-    }
-
-    const data = await response.json()
-    logger.info('Voice session created', {
-      requestId: req.id,
-      hasSecret: !!data?.client_secret?.value,
-      dataKeys: Object.keys(data || {}),
-      clientSecretKeys: data?.client_secret ? Object.keys(data.client_secret) : null
-    })
-    res.json(data)
+    res.json({ proxy: true })
   })
 )
 

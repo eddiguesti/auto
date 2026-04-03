@@ -3,7 +3,6 @@
  */
 
 export const VOICE_CONFIG = {
-  WS_URL: 'wss://api.x.ai/v1/realtime',
   SAMPLE_RATE: 24000,
   GREETING_DELAY_MS: 500,
   TRANSITION_PHRASES: [
