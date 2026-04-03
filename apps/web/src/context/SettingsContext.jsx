@@ -16,28 +16,29 @@ export const VOICE_OPTIONS = {
   }
 }
 
-// Speaking pace presets - very generous silence durations to let people finish their thoughts
+// Speaking pace presets — silence_duration_ms is how long to wait after the user
+// stops talking before the AI responds. Threshold controls voice detection sensitivity.
 export const SPEAKING_PACE = {
   slow: {
     label: 'Slow',
-    description: 'Maximum time to think and share your story fully',
-    silence_duration_ms: 25000,
-    threshold: 0.92,
-    prefix_padding_ms: 2000
+    description: 'Extra time to think between sentences',
+    silence_duration_ms: 5000,
+    threshold: 0.6,
+    prefix_padding_ms: 800
   },
   normal: {
     label: 'Normal',
-    description: 'Plenty of time to speak without interruption',
-    silence_duration_ms: 18000,
-    threshold: 0.88,
-    prefix_padding_ms: 1500
+    description: 'Natural conversational pace',
+    silence_duration_ms: 2500,
+    threshold: 0.5,
+    prefix_padding_ms: 500
   },
   fast: {
     label: 'Fast',
-    description: 'Quicker responses but still patient',
-    silence_duration_ms: 10000,
-    threshold: 0.8,
-    prefix_padding_ms: 1000
+    description: 'Quick back-and-forth',
+    silence_duration_ms: 1200,
+    threshold: 0.4,
+    prefix_padding_ms: 300
   }
 }
 
