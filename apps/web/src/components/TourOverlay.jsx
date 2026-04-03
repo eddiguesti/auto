@@ -155,10 +155,9 @@ export default function TourOverlay({ onComplete, onSkip }) {
         }
 
         const { ephemeralToken } = await tokenRes.json()
-        const ws = new WebSocket('wss://api.x.ai/v1/realtime?model=grok-3-mini-realtime-beta', [
-          'realtime',
-          `openai-insecure-api-key.${ephemeralToken}`
-        ])
+        const ws = new WebSocket(
+          `wss://api.x.ai/v1/realtime?model=grok-3-mini-realtime-beta&api_key=${ephemeralToken}`
+        )
 
         wsRef.current = ws
 

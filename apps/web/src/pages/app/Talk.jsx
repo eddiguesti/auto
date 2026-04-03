@@ -205,10 +205,7 @@ SAFETY — NON-NEGOTIABLE:
         throw new Error('No voice session received')
       }
 
-      const ws = new WebSocket('wss://api.x.ai/v1/realtime', [
-        'realtime',
-        `openai-insecure-api-key.${voiceToken}`
-      ])
+      const ws = new WebSocket(`wss://api.x.ai/v1/realtime?api_key=${voiceToken}`)
 
       ws.onopen = () => {
         setPhase('active')

@@ -412,10 +412,7 @@ export default function OnboardingVoiceInterview({ onComplete, onBack }) {
       if (unmountedRef.current) return
 
       // Connect to xAI Realtime API with Grok model
-      const ws = new WebSocket('wss://api.x.ai/v1/realtime?model=grok-2-public', [
-        'realtime',
-        `openai-insecure-api-key.${token}`
-      ])
+      const ws = new WebSocket(`wss://api.x.ai/v1/realtime?model=grok-2-public&api_key=${token}`)
 
       // Connection timeout (10 seconds)
       const connectionTimeout = safeTimeout(() => {

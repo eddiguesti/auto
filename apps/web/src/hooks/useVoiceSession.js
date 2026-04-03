@@ -274,10 +274,7 @@ export function useVoiceSession({ chapter, initialQuestionIndex = 0 }) {
         if (nextIdx > 0 && nextIdx < chapter.questions.length) setQuestionIndex(nextIdx)
       }
 
-      const ws = new WebSocket(VOICE_CONFIG.WS_URL, [
-        'realtime',
-        `openai-insecure-api-key.${token}`
-      ])
+      const ws = new WebSocket(`${VOICE_CONFIG.WS_URL}?api_key=${token}`)
 
       ws.onopen = () => {
         setPhase('active')
