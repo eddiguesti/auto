@@ -84,10 +84,9 @@ export class TelnyxCallBridge {
     if (!apiKey) throw new Error('GROK_API_KEY not configured')
 
     return new Promise((resolve, reject) => {
-      this.xaiWs = new WebSocket('wss://api.x.ai/v1/realtime', [
-        'realtime',
-        `openai-insecure-api-key.${apiKey}`
-      ])
+      this.xaiWs = new WebSocket('wss://api.x.ai/v1/realtime', {
+        headers: { Authorization: `Bearer ${apiKey}` }
+      })
 
       const timeout = setTimeout(() => {
         reject(new Error('xAI connection timeout'))
