@@ -37,10 +37,14 @@ export default function CallMe() {
       if (res.ok) {
         setCallRequested(true)
       } else {
-        setError(data.error || 'Failed to initiate call. Please try again.')
+        const msg = data.error || 'Failed to initiate call.'
+        setError(
+          msg.includes('configured') || res.status === 500
+            ? 'Phone calls are not available yet. Please use the voice chat instead.'
+            : msg
+        )
       }
-    } catch (err) {
-      console.error('Call request error:', err)
+    } catch {
       setError('Something went wrong. Please check your connection and try again.')
     } finally {
       setCalling(false)
