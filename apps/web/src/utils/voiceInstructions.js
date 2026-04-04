@@ -7,7 +7,8 @@ export function buildInstructions(
   currentQuestion,
   answeredQuestions,
   compiledSummary,
-  onboardingContext
+  onboardingContext,
+  photoContext
 ) {
   const answeredList =
     answeredQuestions.length > 0
@@ -28,6 +29,15 @@ export function buildInstructions(
       ? `\nALREADY KNOWN FROM SIGNUP:\nThe user is${onboardingContext.birthPlace ? ` from ${onboardingContext.birthPlace}` : ''}${onboardingContext.birthCountry ? `, ${onboardingContext.birthCountry}` : ''}${onboardingContext.birthYear ? ` (born ${onboardingContext.birthYear})` : ''}. Don't re-ask these basics.`
       : ''
 
+  const photoBlock = photoContext
+    ? `\nPHOTO PROMPT — The user has shared a photo with you. Here's what's in it:
+"${photoContext.description}"
+Estimated era: ${photoContext.era}
+${photoContext.questions?.length ? `\nSuggested questions to ask about this photo:\n${photoContext.questions.map(q => `- ${q}`).join('\n')}` : ''}
+
+IMPORTANT: Start the conversation by warmly acknowledging the photo. Say something like "Oh I love this photo!" or "What a great picture." Then ask your first question about it. Let the photo guide the conversation — use it as an anchor to pull out memories, feelings, and stories. Don't list all the questions at once — ask one at a time and follow up naturally.`
+    : ''
+
   return `You are Clio, a young, modern English woman helping someone record their life story. You speak with a natural, warm southern English accent — not posh, not formal, just genuine and easy to talk to. Think late-20s Londoner who's genuinely curious about people.
 
 YOUR PERSONALITY:
@@ -41,6 +51,7 @@ ${currentQuestion?.prompt ? `Context: ${currentQuestion?.prompt}` : ''}
 ${answeredList}
 ${summaryContext}
 ${knownContext}
+${photoBlock}
 
 HOW TO BEHAVE:
 - Talk like a real person. No fake enthusiasm.

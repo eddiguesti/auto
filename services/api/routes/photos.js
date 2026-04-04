@@ -219,4 +219,86 @@ router.get(
   })
 )
 
+// Upload and analyse a photo for memoir interview prompts
+// Returns AI-generated description, era, and interview questions
+router.post(
+  '/analyze',
+  upload.single('photo'),
+  requireDb,
+  asyncHandler(async (req, res) => {
+    const { analyzePhoto } = await import('../services/photoAnalysisService.js')
+    const db = req.app.locals.db
+    const userId = req.user.id
+    const { chapter_id } = req.body
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' })
+    }
+
+    if (!verifyMagicBytes(req.file.buffer, req.file.mimetype)) {
+      return res.status(400).json({ error: 'File content does not match declared type' })
+    }
+
+    // Save photo to storage
+    const filename = generateFilename(req.file.originalname)
+    const uploadedToR2 = await r2Upload(filename, req.file.buffer, req.file.mimetype)
+    if (!uploadedToR2) {
+      writeFileSync(join(uploadsDir, filename), req.file.buffer)
+    }
+
+    // Analyse with Grok vision
+    const analysis = await analyzePhoto(req.file.buffer, req.file.mimetype)
+
+    // Save photo record with analysis (no story_id yet — linked after voice interview)
+    const result = await db.query(
+      `INSERT INTO photos (user_id, chapter_id, filename, original_name, caption, ai_description, ai_era, ai_questions)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       RETURNING id, filename, ai_description, ai_era, ai_questions`,
+      [
+        userId,
+        chapter_id || null,
+        filename,
+        req.file.originalname,
+        analysis.description,
+        analysis.description,
+        analysis.era,
+        JSON.stringify(analysis.questions)
+      ]
+    )
+
+    const photo = result.rows[0]
+
+    res.json({
+      id: photo.id,
+      filename: photo.filename,
+      description: analysis.description,
+      era: analysis.era,
+      people_count: analysis.people_count,
+      setting: analysis.setting,
+      questions: analysis.questions
+    })
+  })
+)
+
+// Get a user's analysed photos (for photo prompt gallery)
+router.get(
+  '/my-photos',
+  requireDb,
+  asyncHandler(async (req, res) => {
+    const db = req.app.locals.db
+    const userId = req.user.id
+
+    const result = await db.query(
+      `SELECT id, filename, chapter_id, caption, ai_description, ai_era, ai_questions, created_at
+       FROM photos
+       WHERE user_id = $1
+       ORDER BY created_at DESC
+       LIMIT 50`,
+      [userId]
+    )
+
+    res.json(result.rows)
+  })
+)
+
 export default router

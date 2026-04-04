@@ -11,6 +11,7 @@ const PreviewStyle = lazy(() => import('../pages/app/PreviewStyle'))
 const Settings = lazy(() => import('../pages/app/Settings'))
 const QuickStory = lazy(() => import('../pages/app/QuickStory'))
 const CallMe = lazy(() => import('../pages/app/CallMe'))
+const PhotoPrompt = lazy(() => import('../pages/app/PhotoPrompt'))
 const Talk = lazy(() => import('../pages/app/Talk'))
 
 /**
@@ -59,6 +60,14 @@ export function appRoutes() {
         element={
           <ProtectedRoute>
             <VoiceChat />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/photo"
+        element={
+          <ProtectedRoute>
+            <PhotoPrompt />
           </ProtectedRoute>
         }
       />

@@ -15,6 +15,17 @@ export default function VoiceChat() {
   const [searchParams] = useSearchParams()
   const chapterId = searchParams.get('chapter')
   const initialQuestionIndex = parseInt(searchParams.get('question') || '0')
+  const photoParam = searchParams.get('photo')
+
+  // Parse photo context from URL if present (set by PhotoPrompt page)
+  const photoContext = useMemo(() => {
+    if (!photoParam) return null
+    try {
+      return JSON.parse(decodeURIComponent(photoParam))
+    } catch {
+      return null
+    }
+  }, [photoParam])
 
   // Fall back to the free chapter if the requested one is locked
   const chapter = useMemo(() => {
@@ -36,7 +47,7 @@ export default function VoiceChat() {
     startConversation,
     endConversation,
     resetError
-  } = useVoiceSession({ chapter, initialQuestionIndex })
+  } = useVoiceSession({ chapter, initialQuestionIndex, photoContext })
 
   const totalQuestions = chapter.questions.length
   const answeredCount = questionsAnswered.length

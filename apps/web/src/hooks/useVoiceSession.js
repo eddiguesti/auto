@@ -9,7 +9,7 @@ import { base64ToArrayBuffer, arrayBufferToBase64 } from '../utils/audio'
 import { buildInstructions } from '../utils/voiceInstructions'
 import { VOICE_CONFIG } from '../data/voiceConfig'
 
-export function useVoiceSession({ chapter, initialQuestionIndex = 0 }) {
+export function useVoiceSession({ chapter, initialQuestionIndex = 0, photoContext = null }) {
   const { authFetch, token: jwtToken } = useAuth()
   const { getPaceSettings, getVoice } = useSettings()
 
@@ -180,7 +180,8 @@ export function useVoiceSession({ chapter, initialQuestionIndex = 0 }) {
                 chapter.questions[nextIdx],
                 questionsAnswered,
                 compiledSummary,
-                onboardingContext
+                onboardingContext,
+                photoContext
               )
             }
           })
@@ -290,7 +291,8 @@ export function useVoiceSession({ chapter, initialQuestionIndex = 0 }) {
                 question,
                 questionsAnswered,
                 compiledSummary,
-                onboardingContext
+                onboardingContext,
+                photoContext
               ),
               voice: getVoice(),
               temperature: 0.75,
