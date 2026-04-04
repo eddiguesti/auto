@@ -194,7 +194,8 @@ export function useVoiceSession({ chapter, initialQuestionIndex = 0, photoContex
     chapter,
     questionsAnswered,
     compiledSummary,
-    onboardingContext
+    onboardingContext,
+    photoContext
   ])
 
   useEffect(() => {
@@ -333,7 +334,7 @@ export function useVoiceSession({ chapter, initialQuestionIndex = 0, photoContex
       setError(err.message)
       setPhase('ready')
     }
-  }, [chapter, question, questionsAnswered, compiledSummary, onboardingContext])
+  }, [chapter, question, questionsAnswered, compiledSummary, onboardingContext, photoContext])
 
   // Handle WebSocket messages
   const handleWsMessage = useCallback(
