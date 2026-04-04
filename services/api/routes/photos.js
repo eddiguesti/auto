@@ -8,7 +8,7 @@ import { asyncHandler } from '../middleware/asyncHandler.js'
 import { requireDb } from '../middleware/requireDb.js'
 import { authenticateToken } from '../middleware/auth.js'
 import { createLogger } from '../utils/logger.js'
-import { r2Upload, r2Get, r2Delete, isR2Available } from '../utils/r2.js'
+import { r2Upload, r2Get, r2Delete } from '../utils/r2.js'
 import { photoRepository } from '../repositories/photoRepository.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -259,7 +259,7 @@ router.post(
         chapter_id || null,
         filename,
         req.file.originalname,
-        analysis.description,
+        null,
         analysis.description,
         analysis.era,
         JSON.stringify(analysis.questions)
