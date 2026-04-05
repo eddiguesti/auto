@@ -4,7 +4,7 @@
 
 export const VOICE_CONFIG = {
   SAMPLE_RATE: 24000,
-  GREETING_DELAY_MS: 500,
+  GREETING_DELAY_MS: 100,
   TRANSITION_PHRASES: [
     "let's move on",
     'lets move on',
