@@ -17,28 +17,30 @@ export const VOICE_OPTIONS = {
 }
 
 // Speaking pace presets — silence_duration_ms is how long to wait after the user
-// stops talking before the AI responds. Threshold controls voice detection sensitivity.
+// stops talking before the AI responds. Threshold controls how confident the VAD
+// must be that the user has stopped (higher = waits longer, less likely to cut in).
+// prefix_padding_ms captures audio before detected speech start (prevents clipped words).
 export const SPEAKING_PACE = {
   slow: {
     label: 'Slow',
     description: 'Extra time to think between sentences',
-    silence_duration_ms: 5000,
-    threshold: 0.6,
+    silence_duration_ms: 4000,
+    threshold: 0.7,
     prefix_padding_ms: 800
   },
   normal: {
     label: 'Normal',
     description: 'Natural conversational pace',
     silence_duration_ms: 2500,
-    threshold: 0.5,
-    prefix_padding_ms: 500
+    threshold: 0.6,
+    prefix_padding_ms: 600
   },
   fast: {
     label: 'Fast',
     description: 'Quick back-and-forth',
-    silence_duration_ms: 1200,
-    threshold: 0.4,
-    prefix_padding_ms: 300
+    silence_duration_ms: 1500,
+    threshold: 0.5,
+    prefix_padding_ms: 400
   }
 }
 
