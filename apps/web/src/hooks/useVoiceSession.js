@@ -348,8 +348,39 @@ export function useVoiceSession({ chapter, initialQuestionIndex = 0, photoContex
           break
 
         case 'conversation.item.input_audio_transcription.completed':
-          if (data.transcript)
+          if (data.transcript) {
             setConversationHistory(prev => [...prev, { role: 'user', content: data.transcript }])
+            // Detect frustration with pacing and adapt dynamically + persistently
+            const transcriptLower = data.transcript.toLowerCase()
+            const isCutOff =
+              transcriptLower.includes('cutting me off') ||
+              transcriptLower.includes('cut me off') ||
+              transcriptLower.includes('interrupting') ||
+              transcriptLower.includes('let me finish') ||
+              transcriptLower.includes('wait let me') ||
+              transcriptLower.includes("i wasn't finished") ||
+              transcriptLower.includes("hadn't finished") ||
+              transcriptLower.includes('slow down') ||
+              transcriptLower.includes('too fast')
+            if (isCutOff && wsRef.current?.readyState === WebSocket.OPEN) {
+              // Immediately slow down this session
+              wsRef.current.send(
+                JSON.stringify({
+                  type: 'session.update',
+                  session: {
+                    turn_detection: {
+                      type: 'server_vad',
+                      silence_duration_ms: 5000,
+                      threshold: 0.8,
+                      prefix_padding_ms: 1000
+                    }
+                  }
+                })
+              )
+              // Persist preference so all future sessions are slower
+              localStorage.setItem('speakingPace', 'slow')
+            }
+          }
           break
 
         case 'response.audio_transcript.delta':
