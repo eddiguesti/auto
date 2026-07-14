@@ -1,44 +1,81 @@
 /**
- * AudioVisualizer Configuration
+ * Clio Orb configuration.
  *
- * Customize colors, sizes, and particle counts
- * Palette is harmonized with the Keepsake system: sepia (#9C7E5D),
- * bronze (#B88336 / #CC9C52) and ink (#292420) only.
+ * Four states, each a full palette + behaviour profile. The component lerps
+ * every value continuously, so state changes melt into each other instead of
+ * switching. All colors stay inside the Keepsake palette:
+ * sepia (#9C7E5D ramp), bronze (#B88336 / #CC9C52 ramp), ink (#292420).
+ *
+ * colA = light tone (veins, sparkles, core glow)
+ * colB = mid tone   (body)
+ * colC = deep tone  (depths)
+ * rim  = fresnel rim light | aura = outer halo
  */
 
-export const defaultColorSchemes = {
-  // Idle state - quiet warm sepia
+export const orbStates = {
+  // At rest — a quiet warm pearl, slow breath, faint life
   idle: {
-    primary: '#9C7E5D',
-    secondary: 'rgba(156, 126, 93, 0.65)',
-    glow: 'rgba(156, 126, 93, 0.4)',
-    center: 'rgba(156, 126, 93, 0.15)'
+    colA: '#F3E9D0',
+    colB: '#CFB690',
+    colC: '#8E7454',
+    rim: '#E8D9C0',
+    aura: '#CFB690',
+    flow: 0.5,
+    wobble: 0.022,
+    rimAmt: 0.38,
+    auraAmt: 0.3,
+    spark: 0.18,
+    breath: 0.013
   },
-  // Active/listening - soft bronze, ready to receive
+  // Listening — soft bronze, open and receptive
   active: {
-    primary: '#CC9C52',
-    secondary: 'rgba(204, 156, 82, 0.75)',
-    glow: 'rgba(204, 156, 82, 0.45)',
-    center: 'rgba(204, 156, 82, 0.18)'
+    colA: '#F0DDB6',
+    colB: '#CC9C52',
+    colC: '#7F5522',
+    rim: '#E3C68C',
+    aura: '#CC9C52',
+    flow: 0.9,
+    wobble: 0.032,
+    rimAmt: 0.7,
+    auraAmt: 0.55,
+    spark: 0.4,
+    breath: 0.01
   },
-  // AI/Clio speaking - deep ink
-  speaking: {
-    primary: '#292420',
-    secondary: 'rgba(41, 36, 32, 0.7)',
-    glow: 'rgba(41, 36, 32, 0.45)',
-    center: 'rgba(41, 36, 32, 0.18)'
-  },
-  // User speaking detected - burnished bronze
+  // User speaking — burnished bronze, energized, wobbling with the voice
   detected: {
-    primary: '#B88336',
-    secondary: '#CC9C52',
-    glow: 'rgba(184, 131, 54, 0.6)',
-    center: 'rgba(184, 131, 54, 0.25)'
+    colA: '#F5E3BE',
+    colB: '#B88336',
+    colC: '#61411D',
+    rim: '#EAD3AB',
+    aura: '#B88336',
+    flow: 1.3,
+    wobble: 0.05,
+    rimAmt: 1.0,
+    auraAmt: 0.85,
+    spark: 0.8,
+    breath: 0.008
+  },
+  // Clio speaking — deep ink body threaded with bronze veins
+  speaking: {
+    colA: '#CC9C52',
+    colB: '#453E37',
+    colC: '#17130F',
+    rim: '#B88336',
+    aura: '#9E6C29',
+    flow: 1.6,
+    wobble: 0.04,
+    rimAmt: 0.9,
+    auraAmt: 0.7,
+    spark: 0.55,
+    breath: 0.008
   }
 }
 
+// Legacy export name kept so existing imports keep resolving
+export const defaultColorSchemes = orbStates
+
 export const defaultSizes = {
-  sm: { width: 120, height: 120, particlesPerLayer: [8, 12, 16] },
-  md: { width: 160, height: 160, particlesPerLayer: [12, 16, 20] },
-  lg: { width: 200, height: 200, particlesPerLayer: [16, 20, 24] }
+  sm: { width: 120, height: 120 },
+  md: { width: 160, height: 160 },
+  lg: { width: 200, height: 200 }
 }

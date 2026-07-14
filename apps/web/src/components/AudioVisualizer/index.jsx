@@ -1,4 +1,3 @@
 export { default } from './AudioVisualizer'
 export { default as AudioVisualizer } from './AudioVisualizer'
-export { Particle } from './Particle'
-export { defaultColorSchemes, defaultSizes } from './config'
+export { orbStates, defaultColorSchemes, defaultSizes } from './config'
