@@ -2,7 +2,16 @@
 
 **Goal:** Take the webapp from 6.2/10 to 9/10
 **Focus:** Security, reliability, architecture, performance, and growth readiness
-**Last audit:** 2026-04-02 (full architecture review)
+**Last audit:** 2026-07-14 (full repository and executable architecture review)
+
+## Current Canonical Plan
+
+[todo architectre.md](todo%20architectre.md) is the current, dependency-ordered architecture
+backlog for the API, worker, database, web, mobile, security, delivery, and operations.
+
+The numbered April 2026 TODOs below are retained as historical detail. Several tasks in them
+were partially implemented after that audit, so use the canonical plan for current status and
+priority.
 
 ## Scoring Breakdown
 

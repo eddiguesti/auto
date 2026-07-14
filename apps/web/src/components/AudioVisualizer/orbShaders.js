@@ -173,16 +173,33 @@ void main() {
   float f1 = fbm(q + 0.8 * warp);
   float f2 = fbm(q * 1.8 - 0.55 * warp + vec3(0.0, -ft * 0.24, 0.0));
 
-  // Wide, soft thresholds — flowing ink, not marble
-  float m1 = smoothstep(-0.75, 0.85, f1 + uLevel * 0.22);
-  float m2 = smoothstep(-0.55, 0.95, f2);
+  // Ridged noise -> thin flowing ink filaments (the fine structure)
+  float ridge = 1.0 - abs(snoise(q * 2.4 + 0.9 * warp + vec3(0.0, -ft * 0.20, 0.0)));
+  ridge = pow(max(ridge, 0.0), 4.0);
+  float ridge2 = 1.0 - abs(snoise(q * 4.8 - 0.6 * warp + vec3(3.1, ft * 0.26, 0.0)));
+  ridge2 = pow(max(ridge2, 0.0), 6.0);
+
+  // Fine shimmer octave for micro-detail
+  float fine = snoise(q * 6.5 + warp * 0.5 + vec3(0.0, ft * 0.3, 0.0));
+
+  // Broad liquid forms with real depth range
+  float m1 = smoothstep(-0.55, 0.75, f1 + uLevel * 0.22);
+  float m2 = smoothstep(-0.45, 0.9, f2);
   vec3 body = mix(uColC, uColB, m1);
   body = mix(body, uColA, m2 * 0.55);
 
-  // Gentle volume shading + soft luminous veins + voice energy flush
-  body *= 0.80 + 0.20 * z;
-  body = mix(body, uColA, 0.10 * z); // milky glass depth toward the center
-  body += uColA * pow(max(0.0, f1 * f2), 2.0) * 0.20;
+  // Carve dark channels between filaments, then paint the filaments luminous.
+  // Filament energy builds with the state (uSpark) — calm at rest, electric live.
+  float energy = 0.45 + uSpark * 0.8;
+  body = mix(body, uColC, (1.0 - ridge) * 0.20 * m1);
+  body += uColA * ridge * (0.28 + uLevel * 0.30) * energy;
+  body += mix(uColB, uColA, 0.5) * ridge2 * (0.32 + uHighs * 0.5) * energy;
+  body += body * fine * 0.08; // micro-shimmer
+
+  // Volume shading + luminous vein crossings + voice energy flush
+  body *= 0.76 + 0.24 * z;
+  body = mix(body, uColA, 0.08 * z); // milky glass depth toward the center
+  body += uColA * pow(max(0.0, f1 * f2), 2.0) * 0.24;
   body += uRim * uPulse * 0.16;
   body *= 1.0 + 0.07 * (uv.y / R); // soft top-light ambience
 

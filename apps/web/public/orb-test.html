@@ -1,0 +1,69 @@
+<!doctype html>
+<!-- TEMPORARY visual test harness for the Clio Orb shader — delete after use -->
+<html>
+<head><meta charset="utf-8" />
+<style>
+  body { background: #FBF8F3; margin: 0; padding: 40px; font-family: sans-serif; }
+  .row { display: flex; gap: 30px; align-items: center; }
+  .cell { text-align: center; }
+  .label { color: #6B6259; font-size: 13px; margin-top: 8px; }
+  #status { color: #B0442C; font-size: 14px; margin-bottom: 16px; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<div id="status">loading…</div>
+<div class="row" id="orbs"></div>
+<script type="module">
+import { ORB_VERTEX_SHADER, ORB_FRAGMENT_SHADER } from '/src/components/AudioVisualizer/orbShaders.js'
+import { orbStates } from '/src/components/AudioVisualizer/config.js'
+const status = document.getElementById('status')
+const hexToRgb = hex => { const h = hex.replace('#',''); return [parseInt(h.slice(0,2),16)/255, parseInt(h.slice(2,4),16)/255, parseInt(h.slice(4,6),16)/255] }
+const CASES = [
+  { name: 'idle', state: 'idle', level: 0.0, time: 12.4 },
+  { name: 'listening', state: 'active', level: 0.25, time: 30.7 },
+  { name: 'user speaking', state: 'detected', level: 0.6, time: 51.2 },
+  { name: 'clio speaking', state: 'speaking', level: 0.45, time: 74.9 }
+]
+try {
+  for (const c of CASES) {
+    const wrap = document.createElement('div'); wrap.className = 'cell'
+    const canvas = document.createElement('canvas')
+    canvas.width = 400; canvas.height = 400
+    canvas.style.width = '200px'; canvas.style.height = '200px'
+    wrap.appendChild(canvas)
+    const label = document.createElement('div'); label.className = 'label'; label.textContent = c.name
+    wrap.appendChild(label)
+    document.getElementById('orbs').appendChild(wrap)
+    const gl = canvas.getContext('webgl', { alpha: true, premultipliedAlpha: true, preserveDrawingBuffer: true })
+    const make = (type, src) => { const sh = gl.createShader(type); gl.shaderSource(sh, src); gl.compileShader(sh); if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) throw new Error('COMPILE FAIL: ' + gl.getShaderInfoLog(sh)); return sh }
+    const prog = gl.createProgram()
+    gl.attachShader(prog, make(gl.VERTEX_SHADER, ORB_VERTEX_SHADER))
+    gl.attachShader(prog, make(gl.FRAGMENT_SHADER, ORB_FRAGMENT_SHADER))
+    gl.linkProgram(prog)
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error('LINK FAIL: ' + gl.getProgramInfoLog(prog))
+    gl.useProgram(prog)
+    const buf = gl.createBuffer()
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf)
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW)
+    const aPos = gl.getAttribLocation(prog, 'aPos')
+    gl.enableVertexAttribArray(aPos); gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0)
+    gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
+    gl.clearColor(0,0,0,0); gl.viewport(0,0,400,400)
+    const u = n => gl.getUniformLocation(prog, n)
+    const s = orbStates[c.state]
+    gl.uniform2f(u('uRes'), 400, 400)
+    gl.uniform1f(u('uTime'), c.time)
+    gl.uniform1f(u('uLevel'), c.level)
+    gl.uniform1f(u('uPulse'), c.level * 0.4)
+    gl.uniform1f(u('uHighs'), c.level * 0.5)
+    gl.uniform3fv(u('uColA'), hexToRgb(s.colA)); gl.uniform3fv(u('uColB'), hexToRgb(s.colB)); gl.uniform3fv(u('uColC'), hexToRgb(s.colC))
+    gl.uniform3fv(u('uRim'), hexToRgb(s.rim)); gl.uniform3fv(u('uAura'), hexToRgb(s.aura))
+    gl.uniform1f(u('uFlow'), s.flow); gl.uniform1f(u('uWobble'), s.wobble); gl.uniform1f(u('uRimAmt'), s.rimAmt)
+    gl.uniform1f(u('uAuraAmt'), s.auraAmt); gl.uniform1f(u('uSpark'), s.spark); gl.uniform1f(u('uBreath'), s.breath)
+    gl.clear(gl.COLOR_BUFFER_BIT); gl.drawArrays(gl.TRIANGLES, 0, 3)
+  }
+  status.textContent = 'OK'; status.style.color = '#4E7A5A'
+} catch (e) { status.textContent = String(e) }
+</script>
+</body>
+</html>

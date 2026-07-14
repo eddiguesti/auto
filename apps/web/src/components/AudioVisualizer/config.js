@@ -15,11 +15,11 @@
 export const orbStates = {
   // At rest — a quiet warm pearl, slow breath, faint life
   idle: {
-    colA: '#F3E9D0',
-    colB: '#CFB690',
-    colC: '#8E7454',
+    colA: '#F2E4C4',
+    colB: '#C8A87A',
+    colC: '#755A3E',
     rim: '#E8D9C0',
-    aura: '#CFB690',
+    aura: '#C9AF87',
     flow: 0.5,
     wobble: 0.022,
     rimAmt: 0.38,
