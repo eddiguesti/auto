@@ -51,6 +51,12 @@ uniform float uAuraAmt;  // halo + ripple strength
 uniform float uSpark;    // sparkle mote amount
 uniform float uBreath;   // idle breathing amplitude
 
+// Face (expressions computed on the CPU)
+uniform float uFace;     // 1 = draw the face
+uniform float uEyeOpen;  // 0 closed .. ~1.15 wide attentive
+uniform float uMouth;    // 0 resting smile .. 1 fully open (speech)
+uniform vec2  uLook;     // gaze offset, roughly -1..1
+
 // ---------------------------------------------------------------------------
 // Simplex noise 3D — Ian McEwan & Stefan Gustavson (Ashima Arts), MIT.
 // ---------------------------------------------------------------------------
@@ -246,6 +252,51 @@ void main() {
 
   // Soft inner shadow at the base for weight
   body *= 1.0 - 0.16 * smoothstep(0.0, 1.1, -uv.y / R * 0.8 + d * 0.4) * (1.0 - z);
+
+  // ---- Face — drawn in blob space so it deforms with the body --------------
+  if (uFace > 0.5) {
+    vec2 p = uv / R;
+    vec2 look = uLook * 0.12;
+    vec3 featureCol = mix(uColC, vec3(0.14, 0.11, 0.09), 0.65);
+
+    // Eyes: vertical ellipses that squash shut when blinking
+    float eyeH = 0.14 * max(uEyeOpen, 0.10);
+    float eyeW = 0.085 + 0.012 * (1.0 - min(uEyeOpen, 1.0));
+    vec2 eL = vec2(-0.30, 0.16) + look;
+    vec2 eR = vec2(0.30, 0.16) + look;
+    float dL = length((p - eL) / vec2(eyeW, eyeH)) - 1.0;
+    float dR = length((p - eR) / vec2(eyeW, eyeH)) - 1.0;
+    float eyeMask = smoothstep(0.22, -0.15, min(dL, dR));
+    body = mix(body, featureCol, eyeMask * 0.92);
+
+    // Catchlights — the spark of life
+    float cl = min(
+      length(p - (eL + vec2(-0.026, 0.052))),
+      length(p - (eR + vec2(-0.026, 0.052)))
+    );
+    float clMask = smoothstep(0.034, 0.004, cl) * step(0.35, uEyeOpen);
+    body = mix(body, vec3(1.0, 0.99, 0.96), clMask * 0.9);
+
+    // Mouth: a true smile arc at rest, opening into a wide talking mouth
+    float openAmt = smoothstep(0.02, 0.2, uMouth);
+
+    // Resting smile — lower arc of a circle, unmistakably curled
+    vec2 sv = p - vec2(0.0, -0.13) - look * 0.4;
+    float dArc = abs(length(sv) - 0.185);
+    float smileMask = smoothstep(0.020, 0.007, dArc)
+                    * smoothstep(-0.10, -0.15, sv.y)
+                    * (1.0 - openAmt);
+
+    // Talking mouth — wide, gently smiling ellipse driven by the voice
+    vec2 mp = p - vec2(0.0, -0.31) - look * 0.4;
+    vec2 op = vec2(mp.x, mp.y - 0.5 * mp.x * mp.x); // corners lifted
+    float mouthH = 0.012 + 0.105 * uMouth;
+    float mouthW = 0.19 + 0.05 * uMouth;
+    float dm = length(op / vec2(mouthW, mouthH)) - 1.0;
+    float openMask = smoothstep(0.28, -0.2, dm) * openAmt;
+
+    body = mix(body, featureCol, max(openMask * 0.9, smileMask * 0.75));
+  }
 
   // ---- Compositing: orb mask, aura, ripples --------------------------------
   float px = 2.0 / min(uRes.x, uRes.y);   // one pixel in uv units

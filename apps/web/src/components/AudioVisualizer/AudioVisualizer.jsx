@@ -69,7 +69,11 @@ const UNIFORM_NAMES = [
   'uRimAmt',
   'uAuraAmt',
   'uSpark',
-  'uBreath'
+  'uBreath',
+  'uFace',
+  'uEyeOpen',
+  'uMouth',
+  'uLook'
 ]
 
 const lerp = (a, b, t) => a + (b - a) * t
@@ -102,7 +106,8 @@ export default function AudioVisualizer({
   isActive = false,
   isSpeaking = false,
   isSpeechDetected = false,
-  size = 'lg'
+  size = 'lg',
+  face = true
 }) {
   const dims = defaultSizes[size] || defaultSizes.lg
 
@@ -123,12 +128,13 @@ export default function AudioVisualizer({
     level: 0,
     pulse: 0,
     highs: 0,
-    params: null // lerped copy of STATE_PARAMS[state]
+    params: null, // lerped copy of STATE_PARAMS[state]
+    face: { eyeOpen: 1, mouth: 0, look: [0, 0], nextBlink: 2.4, blinkAt: -1 }
   })
 
   // Live flags readable from the render loop without re-creating it
-  const flagsRef = useRef({ isActive, isSpeaking, isSpeechDetected })
-  flagsRef.current = { isActive, isSpeaking, isSpeechDetected }
+  const flagsRef = useRef({ isActive, isSpeaking, isSpeechDetected, face })
+  flagsRef.current = { isActive, isSpeaking, isSpeechDetected, face }
 
   const reducedMotion =
     typeof window !== 'undefined' &&
@@ -306,6 +312,37 @@ export default function AudioVisualizer({
       p.spark = lerp(p.spark, target.spark, k)
       p.breath = lerp(p.breath, target.breath, k)
 
+      // -- Face expressions --
+      const face = anim.face
+      // Blink scheduling (time-seeded so it feels irregular but natural)
+      if (anim.time > face.nextBlink) {
+        face.blinkAt = anim.time
+        face.nextBlink = anim.time + 2.6 + (Math.sin(anim.time * 7.13) * 0.5 + 0.5) * 2.6
+      }
+      let blink = 0
+      if (face.blinkAt >= 0) {
+        const bt = (anim.time - face.blinkAt) / 0.26 // 260ms blink
+        if (bt < 1) blink = Math.sin(Math.PI * bt)
+      }
+      // Wide and attentive while listening; soft while Clio talks
+      const eyeBase = flags.isSpeechDetected
+        ? 1.15
+        : flags.isActive
+          ? 1.1
+          : flags.isSpeaking
+            ? 0.92
+            : 1.0
+      face.eyeOpen += (eyeBase * (1 - blink) - face.eyeOpen) * 0.5
+
+      // Gaze: gentle wander at rest, steady focus when engaged
+      const wander = flags.isActive || flags.isSpeaking ? 0.25 : 1.0
+      face.look[0] = Math.sin(anim.time * 0.31 + 1.3) * 0.35 * wander
+      face.look[1] = Math.sin(anim.time * 0.23 + 4.1) * 0.22 * wander + (flags.isActive ? 0.2 : 0)
+
+      // Mouth: opens with Clio's voice, otherwise settles into the smile
+      const mouthTarget = flags.isSpeaking ? Math.min(0.15 + anim.level * 1.15, 1) : 0
+      face.mouth += (mouthTarget - face.mouth) * (mouthTarget > face.mouth ? 0.55 : 0.3)
+
       // -- Draw --
       ctx.clear(ctx.COLOR_BUFFER_BIT)
       ctx.uniform2f(uniforms.uRes, canvas.width, canvas.height)
@@ -326,6 +363,10 @@ export default function AudioVisualizer({
       ctx.uniform1f(uniforms.uAuraAmt, p.auraAmt)
       ctx.uniform1f(uniforms.uSpark, p.spark)
       ctx.uniform1f(uniforms.uBreath, p.breath)
+      ctx.uniform1f(uniforms.uFace, flags.face ? 1 : 0)
+      ctx.uniform1f(uniforms.uEyeOpen, face.eyeOpen)
+      ctx.uniform1f(uniforms.uMouth, Math.max(0, Math.min(face.mouth, 1)))
+      ctx.uniform2f(uniforms.uLook, face.look[0], face.look[1])
       ctx.drawArrays(ctx.TRIANGLES, 0, 3)
     }
 

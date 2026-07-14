@@ -59,7 +59,7 @@ try {
     gl.uniform3fv(u('uColA'), hexToRgb(s.colA)); gl.uniform3fv(u('uColB'), hexToRgb(s.colB)); gl.uniform3fv(u('uColC'), hexToRgb(s.colC))
     gl.uniform3fv(u('uRim'), hexToRgb(s.rim)); gl.uniform3fv(u('uAura'), hexToRgb(s.aura))
     gl.uniform1f(u('uFlow'), s.flow); gl.uniform1f(u('uWobble'), s.wobble); gl.uniform1f(u('uLobe'), s.lobe); gl.uniform1f(u('uPetal'), s.petal); gl.uniform1f(u('uRimAmt'), s.rimAmt)
-    gl.uniform1f(u('uAuraAmt'), s.auraAmt); gl.uniform1f(u('uSpark'), s.spark); gl.uniform1f(u('uBreath'), s.breath)
+    gl.uniform1f(u('uAuraAmt'), s.auraAmt); gl.uniform1f(u('uSpark'), s.spark); gl.uniform1f(u('uBreath'), s.breath); gl.uniform1f(u('uFace'), 1); gl.uniform1f(u('uEyeOpen'), c.state === 'active' ? 1.1 : 1.0); gl.uniform1f(u('uMouth'), c.state === 'speaking' ? 0.45 : 0.0); gl.uniform2f(u('uLook'), 0, c.state === 'active' ? 0.2 : 0)
     gl.clear(gl.COLOR_BUFFER_BIT); gl.drawArrays(gl.TRIANGLES, 0, 3)
   }
   status.textContent = 'OK'; status.style.color = '#4E7A5A'

@@ -68,14 +68,14 @@ export const orbStates = {
   // Clio speaking — warm ink with bronze veins; petal waves pulse outward
   speaking: {
     colA: '#D9AE66',
-    colB: '#5C5045',
+    colB: '#6B5D4E',
     colC: '#322B24',
     rim: '#C99B4E',
     aura: '#B08A4E',
     flow: 1.5,
     wobble: 0.025,
     lobe: 0.015,
-    petal: 0.1,
+    petal: 0.075,
     rimAmt: 0.85,
     auraAmt: 0.7,
     spark: 0.5,
