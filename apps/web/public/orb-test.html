@@ -58,7 +58,7 @@ try {
     gl.uniform1f(u('uHighs'), c.level * 0.5)
     gl.uniform3fv(u('uColA'), hexToRgb(s.colA)); gl.uniform3fv(u('uColB'), hexToRgb(s.colB)); gl.uniform3fv(u('uColC'), hexToRgb(s.colC))
     gl.uniform3fv(u('uRim'), hexToRgb(s.rim)); gl.uniform3fv(u('uAura'), hexToRgb(s.aura))
-    gl.uniform1f(u('uFlow'), s.flow); gl.uniform1f(u('uWobble'), s.wobble); gl.uniform1f(u('uRimAmt'), s.rimAmt)
+    gl.uniform1f(u('uFlow'), s.flow); gl.uniform1f(u('uWobble'), s.wobble); gl.uniform1f(u('uLobe'), s.lobe); gl.uniform1f(u('uPetal'), s.petal); gl.uniform1f(u('uRimAmt'), s.rimAmt)
     gl.uniform1f(u('uAuraAmt'), s.auraAmt); gl.uniform1f(u('uSpark'), s.spark); gl.uniform1f(u('uBreath'), s.breath)
     gl.clear(gl.COLOR_BUFFER_BIT); gl.drawArrays(gl.TRIANGLES, 0, 3)
   }

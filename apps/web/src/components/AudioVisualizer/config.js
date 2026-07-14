@@ -1,72 +1,84 @@
 /**
  * Clio Orb configuration.
  *
- * Four states, each a full palette + behaviour profile. The component lerps
- * every value continuously, so state changes melt into each other instead of
- * switching. All colors stay inside the Keepsake palette:
- * sepia (#9C7E5D ramp), bronze (#B88336 / #CC9C52 ramp), ink (#292420).
+ * Four states, each a full palette + behaviour + shape profile. The component
+ * lerps every value continuously, so states melt into each other. All colors
+ * stay inside the Keepsake palette family (sepia / bronze / ink, softened).
  *
  * colA = light tone (veins, sparkles, core glow)
  * colB = mid tone   (body)
  * colC = deep tone  (depths)
  * rim  = fresnel rim light | aura = outer halo
+ *
+ * Shape language:
+ *  wobble = fine organic texture (always subtle)
+ *  lobe   = soft jelly lobes — the orb "leans in" while listening
+ *  petal  = rhythmic radial waves — sound rippling out while speaking
  */
 
 export const orbStates = {
-  // At rest — a quiet warm pearl, slow breath, faint life
+  // At rest — a calm cream pearl, slow breath
   idle: {
-    colA: '#F2E4C4',
-    colB: '#C8A87A',
-    colC: '#755A3E',
-    rim: '#E8D9C0',
-    aura: '#C9AF87',
+    colA: '#F6ECD8',
+    colB: '#D9BE97',
+    colC: '#9A7B57',
+    rim: '#EFE2CC',
+    aura: '#DCC49E',
     flow: 0.5,
-    wobble: 0.022,
+    wobble: 0.02,
+    lobe: 0.012,
+    petal: 0.0,
     rimAmt: 0.38,
     auraAmt: 0.3,
     spark: 0.18,
     breath: 0.013
   },
-  // Listening — soft bronze, open and receptive
+  // Listening — warm honey; soft lobes slowly morph (attentive jelly)
   active: {
-    colA: '#F0DDB6',
-    colB: '#CC9C52',
-    colC: '#7F5522',
-    rim: '#E3C68C',
-    aura: '#CC9C52',
-    flow: 0.9,
-    wobble: 0.032,
-    rimAmt: 0.7,
+    colA: '#F8EACB',
+    colB: '#E0BE85',
+    colC: '#9A7443',
+    rim: '#F0DCB0',
+    aura: '#E3C48F',
+    flow: 0.85,
+    wobble: 0.022,
+    lobe: 0.04,
+    petal: 0.0,
+    rimAmt: 0.65,
     auraAmt: 0.55,
     spark: 0.4,
     breath: 0.01
   },
-  // User speaking — burnished bronze, energized, wobbling with the voice
+  // User speaking — friendly gold, lobes ripple with the voice
   detected: {
-    colA: '#F5E3BE',
-    colB: '#B88336',
-    colC: '#61411D',
-    rim: '#EAD3AB',
-    aura: '#B88336',
-    flow: 1.3,
-    wobble: 0.05,
-    rimAmt: 1.0,
-    auraAmt: 0.85,
-    spark: 0.8,
+    colA: '#F8E7C2',
+    colB: '#D9A952',
+    colC: '#8A6228',
+    rim: '#EFD9A8',
+    aura: '#D9A952',
+    flow: 1.25,
+    wobble: 0.035,
+    lobe: 0.038,
+    petal: 0.012,
+    rimAmt: 0.9,
+    auraAmt: 0.8,
+    spark: 0.75,
     breath: 0.008
   },
-  // Clio speaking — deep ink body threaded with bronze veins
+  // Clio speaking — warm ink with bronze veins; petal waves pulse outward
   speaking: {
-    colA: '#CC9C52',
-    colB: '#453E37',
-    colC: '#17130F',
-    rim: '#B88336',
-    aura: '#9E6C29',
-    flow: 1.6,
-    wobble: 0.04,
-    rimAmt: 0.9,
+    colA: '#D9AE66',
+    colB: '#5C5045',
+    colC: '#322B24',
+    rim: '#C99B4E',
+    aura: '#B08A4E',
+    flow: 1.5,
+    wobble: 0.025,
+    lobe: 0.012,
+    petal: 0.04,
+    rimAmt: 0.85,
     auraAmt: 0.7,
-    spark: 0.55,
+    spark: 0.5,
     breath: 0.008
   }
 }

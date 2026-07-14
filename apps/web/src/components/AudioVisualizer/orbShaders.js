@@ -43,7 +43,9 @@ uniform vec3  uAura;     // outer halo
 
 // State-blended behaviour
 uniform float uFlow;     // interior flow speed
-uniform float uWobble;   // silhouette displacement amplitude
+uniform float uWobble;   // fine organic silhouette texture
+uniform float uLobe;     // soft jelly lobes (listening — the orb "leans in")
+uniform float uPetal;    // rhythmic radial waves (speaking — sound leaving)
 uniform float uRimAmt;   // fresnel rim strength
 uniform float uAuraAmt;  // halo + ripple strength
 uniform float uSpark;    // sparkle mote amount
@@ -145,13 +147,26 @@ void main() {
     + uLevel * 0.055
     + uPulse * 0.03;
 
-  // ---- Organic silhouette: seamless angular noise displacement -------------
+  // ---- Living silhouette: three shape languages blended by state -----------
   float ang = atan(uv.y, uv.x);
   vec3 circ = vec3(cos(ang), sin(ang), 0.0);
+
+  // Fine organic texture (always subtly present)
   float edge1 = fbm(circ * 1.3 + vec3(0.0, 0.0, t * 0.32));
   float edge2 = snoise(circ * 2.6 + vec3(0.0, 0.0, t * 0.7));
+  float organic = uWobble * (0.75 * edge1 + 0.15 * edge2) * (0.45 + uLevel * 1.4 + uPulse);
+
+  // Listening: soft slow jelly lobes — a friendly blob leaning in
+  float lobes = snoise(circ * 1.05 + vec3(0.0, 0.0, t * 0.55))
+              + 0.5 * snoise(circ * 1.9 - vec3(0.0, 0.0, t * 0.4));
+  float lobe = uLobe * lobes * (0.7 + uLevel * 1.2);
+
+  // Speaking: rhythmic radial petals — sound rippling outward
+  float petals = sin(ang * 6.0 - t * 2.4) * 0.6 + sin(ang * 3.0 + t * 1.6) * 0.4;
+  float petal = uPetal * petals * (0.45 + uLevel * 1.6);
+
   float r = length(uv);
-  float R = baseR * (1.0 + uWobble * (0.75 * edge1 + 0.15 * edge2) * (0.45 + uLevel * 1.4 + uPulse));
+  float R = baseR * (1.0 + organic + lobe + petal);
   float d = r / R;
 
   // ---- Fake sphere geometry -------------------------------------------------
@@ -190,7 +205,7 @@ void main() {
 
   // Carve dark channels between filaments, then paint the filaments luminous.
   // Filament energy builds with the state (uSpark) — calm at rest, electric live.
-  float energy = 0.45 + uSpark * 0.8;
+  float energy = 0.32 + uSpark * 0.55;
   body = mix(body, uColC, (1.0 - ridge) * 0.20 * m1);
   body += uColA * ridge * (0.28 + uLevel * 0.30) * energy;
   body += mix(uColB, uColA, 0.5) * ridge2 * (0.32 + uHighs * 0.5) * energy;
@@ -221,7 +236,7 @@ void main() {
   // ---- Fresnel rim light (broad glow + thin crisp glass edge) ---------------
   float fres = pow(1.0 - z, 2.2);
   body += uRim * fres * uRimAmt * (0.55 + uLevel * 0.9 + uPulse * 0.4);
-  body += uRim * pow(1.0 - z, 7.0) * (0.45 + uLevel * 0.5);
+  body += uRim * pow(1.0 - z, 7.0) * (0.28 + uLevel * 0.4);
 
   // ---- Glass specular (soft bloom + hot point, top-left) --------------------
   vec2 hl = uv / R - vec2(-0.38, 0.42);

@@ -41,6 +41,8 @@ const STATE_PARAMS = Object.fromEntries(
       aura: hexToRgb(s.aura),
       flow: s.flow,
       wobble: s.wobble,
+      lobe: s.lobe,
+      petal: s.petal,
       rimAmt: s.rimAmt,
       auraAmt: s.auraAmt,
       spark: s.spark,
@@ -62,6 +64,8 @@ const UNIFORM_NAMES = [
   'uAura',
   'uFlow',
   'uWobble',
+  'uLobe',
+  'uPetal',
   'uRimAmt',
   'uAuraAmt',
   'uSpark',
@@ -295,6 +299,8 @@ export default function AudioVisualizer({
       p.aura = lerpVec(p.aura, target.aura, k)
       p.flow = lerp(p.flow, target.flow, k)
       p.wobble = lerp(p.wobble, target.wobble, k)
+      p.lobe = lerp(p.lobe, target.lobe, k)
+      p.petal = lerp(p.petal, target.petal, k)
       p.rimAmt = lerp(p.rimAmt, target.rimAmt, k)
       p.auraAmt = lerp(p.auraAmt, target.auraAmt, k)
       p.spark = lerp(p.spark, target.spark, k)
@@ -314,6 +320,8 @@ export default function AudioVisualizer({
       ctx.uniform3fv(uniforms.uAura, p.aura)
       ctx.uniform1f(uniforms.uFlow, p.flow)
       ctx.uniform1f(uniforms.uWobble, p.wobble)
+      ctx.uniform1f(uniforms.uLobe, p.lobe)
+      ctx.uniform1f(uniforms.uPetal, p.petal)
       ctx.uniform1f(uniforms.uRimAmt, p.rimAmt)
       ctx.uniform1f(uniforms.uAuraAmt, p.auraAmt)
       ctx.uniform1f(uniforms.uSpark, p.spark)
