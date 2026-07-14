@@ -141,7 +141,7 @@ void main() {
   float t = uTime;
 
   // ---- Breathing, audio-swelling base radius -------------------------------
-  float baseR = 0.70
+  float baseR = 0.65
     + uBreath * sin(t * 0.9)
     + uBreath * 0.6 * sin(t * 1.7 + 1.3)
     + uLevel * 0.055
@@ -157,12 +157,12 @@ void main() {
   float organic = uWobble * (0.75 * edge1 + 0.15 * edge2) * (0.45 + uLevel * 1.4 + uPulse);
 
   // Listening: soft slow jelly lobes — a friendly blob leaning in
-  float lobes = snoise(circ * 1.05 + vec3(0.0, 0.0, t * 0.55))
-              + 0.5 * snoise(circ * 1.9 - vec3(0.0, 0.0, t * 0.4));
+  float lobes = snoise(circ * 1.05 + vec3(0.0, 0.0, t * 0.8))
+              + 0.5 * snoise(circ * 1.9 - vec3(0.0, 0.0, t * 0.55));
   float lobe = uLobe * lobes * (0.7 + uLevel * 1.2);
 
   // Speaking: rhythmic radial petals — sound rippling outward
-  float petals = sin(ang * 6.0 - t * 2.4) * 0.6 + sin(ang * 3.0 + t * 1.6) * 0.4;
+  float petals = sin(ang * 5.0 - t * 2.6) * 0.6 + sin(ang * 3.0 + t * 1.8) * 0.4;
   float petal = uPetal * petals * (0.45 + uLevel * 1.6);
 
   float r = length(uv);

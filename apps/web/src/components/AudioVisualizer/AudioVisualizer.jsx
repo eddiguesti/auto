@@ -291,7 +291,7 @@ export default function AudioVisualizer({
 
       if (!anim.params) anim.params = JSON.parse(JSON.stringify(target))
       const p = anim.params
-      const k = 0.06 // transition speed
+      const k = 0.09 // transition speed
       p.colA = lerpVec(p.colA, target.colA, k)
       p.colB = lerpVec(p.colB, target.colB, k)
       p.colC = lerpVec(p.colC, target.colC, k)
