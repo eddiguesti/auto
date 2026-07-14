@@ -79,7 +79,7 @@ export function setupWebSocket(server, db) {
 
       wss.handleUpgrade(request, socket, head, ws => {
         markAlive(ws)
-        handleVoiceProxy(ws, request, db).catch(error => {
+        handleVoiceProxy(ws, request).catch(error => {
           console.error('Voice WebSocket setup failed:', error.message)
           if (ws.readyState === WebSocket.OPEN) ws.close(1011, 'Voice service unavailable')
         })

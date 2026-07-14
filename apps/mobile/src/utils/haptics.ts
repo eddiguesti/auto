@@ -136,6 +136,7 @@ const haptics = {
   mediumTap,
   heavyTap,
   success,
+  successNotification: success,
   warning,
   error,
   selection,

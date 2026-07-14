@@ -3,7 +3,13 @@
  * Tests that protected resources cannot be accessed without proper authorization
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
+
+vi.mock('../utils/tokenBlacklist.js', () => ({
+  isTokenBlacklisted: vi.fn().mockResolvedValue(false),
+  isUserTokenBlacklisted: vi.fn().mockResolvedValue(false),
+  isUserActive: vi.fn().mockResolvedValue(true)
+}))
 import {
   generateTestToken,
   getTestJwtSecret,

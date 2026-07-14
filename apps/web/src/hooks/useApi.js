@@ -11,10 +11,10 @@ import { useAuth } from '../context/AuthContext'
  * const { loading, error, request, clearError } = useApi()
  *
  * // Simple GET request
- * const data = await request('/api/stories/all')
+ * const data = await request('/api/v1/stories/all')
  *
  * // POST request with body
- * const result = await request('/api/stories', {
+ * const result = await request('/api/v1/stories', {
  *   method: 'POST',
  *   body: { chapter_id: 'childhood', question_id: 'q1', answer: 'My story...' }
  * })
@@ -88,7 +88,7 @@ export function useApi() {
  * @returns {Object} { data, loading, error, refetch }
  *
  * @example
- * const { data: stories, loading, error, refetch } = useFetch('/api/stories/all')
+ * const { data: stories, loading, error, refetch } = useFetch('/api/v1/stories/all')
  */
 export function useFetch(url, { skip = false, initialData = null } = {}) {
   const { authFetch } = useAuth()

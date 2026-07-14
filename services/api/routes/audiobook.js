@@ -1,8 +1,5 @@
 import { Router } from 'express'
-import { writeFile, mkdir, unlink } from 'fs/promises'
-import { existsSync } from 'fs'
-import { join, basename, dirname } from 'path'
-import { fileURLToPath } from 'url'
+import { basename } from 'path'
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { requireDb } from '../middleware/requireDb.js'
 import validate from '../middleware/validate.js'
@@ -14,9 +11,7 @@ import { paymentRepository } from '../repositories/paymentRepository.js'
 import { storyRepository } from '../repositories/storyRepository.js'
 import { enqueueAudiobook, getAudiobookJob } from '../jobs/audiobookQueue.js'
 import { r2Delete, r2GetBuffer, r2Upload } from '../utils/r2.js'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
+import { priceInPounds } from '@easy-memoir/shared/products'
 
 const router = Router()
 const logger = createLogger('audiobook')
@@ -70,12 +65,7 @@ router.post(
     // Sanitize filename to prevent path traversal
     const safeUserId = String(userId).replace(/[^0-9]/g, '')
     const filename = `voice_${safeUserId}_${Date.now()}.wav`
-    const uploaded = await r2Upload(`voices/${filename}`, audioBuffer, 'audio/wav')
-    if (!uploaded) {
-      const voicesDir = join(__dirname, '..', '..', '..', 'uploads', 'voices')
-      if (!existsSync(voicesDir)) await mkdir(voicesDir, { recursive: true })
-      await writeFile(join(voicesDir, basename(filename)), audioBuffer)
-    }
+    await r2Upload(`voices/${filename}`, audioBuffer, 'audio/wav')
 
     await audiobookRepository.saveVoiceSample(db, userId, filename, consentGiven)
 
@@ -98,10 +88,6 @@ router.delete(
 
     if (filename) {
       await r2Delete(`voices/${filename}`)
-      const filepath = join(__dirname, '..', '..', '..', 'uploads', 'voices', filename)
-      if (existsSync(filepath)) {
-        await unlink(filepath)
-      }
     }
 
     res.json({ success: true, message: 'Voice model deleted' })
@@ -211,7 +197,7 @@ router.get(
       hasVoiceModel: !!voiceModel?.fish_model_id,
       voiceConsentGiven: voiceModel?.consent_given || false,
       previousAudiobooks,
-      audiobookPrice: 14.99
+      audiobookPrice: priceInPounds('export_audiobook')
     })
   })
 )
@@ -276,12 +262,7 @@ router.get(
       return res.send(stored.body)
     }
 
-    const filepath = join(__dirname, '..', '..', '..', 'uploads', 'audiobooks', filename)
-    if (!existsSync(filepath)) {
-      return res.status(404).json({ error: 'Audiobook file not found' })
-    }
-
-    res.download(filepath, filename)
+    return res.status(404).json({ error: 'Audiobook file not found' })
   })
 )
 

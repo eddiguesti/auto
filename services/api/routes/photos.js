@@ -1,28 +1,15 @@
 import { Router } from 'express'
 import multer from 'multer'
-import { fileURLToPath } from 'url'
-import { dirname, join, extname } from 'path'
-import { existsSync, unlinkSync, mkdirSync, writeFileSync } from 'fs'
+import { extname } from 'path'
 import crypto from 'crypto'
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { requireDb } from '../middleware/requireDb.js'
-import { authenticateToken } from '../middleware/auth.js'
 import { createLogger } from '../utils/logger.js'
 import { r2Upload, r2GetBuffer, r2Delete } from '../utils/r2.js'
 import { photoRepository } from '../repositories/photoRepository.js'
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-
 const router = Router()
 const logger = createLogger('photos')
-
-// Local uploads directory (fallback when R2 is not configured)
-const uploadsDir = join(__dirname, '..', '..', '..', 'uploads')
-if (!globalThis.__CLOUDFLARE_BINDINGS__ && !existsSync(uploadsDir)) {
-  mkdirSync(uploadsDir, { recursive: true })
-  logger.info('Created uploads directory', { path: uploadsDir })
-}
 
 // Use memory storage so we can upload to R2 or save locally
 const upload = multer({
@@ -43,13 +30,20 @@ const MAGIC_BYTES = {
   'image/jpeg': [Buffer.from([0xff, 0xd8, 0xff])],
   'image/png': [Buffer.from([0x89, 0x50, 0x4e, 0x47])],
   'image/gif': [Buffer.from('GIF87a'), Buffer.from('GIF89a')],
-  'image/webp': [Buffer.from('RIFF')] // RIFF header (WebP starts with RIFF....WEBP)
+  'image/webp': [Buffer.from('RIFF')]
 }
 
 /**
  * Verify uploaded file content matches declared MIME type
  */
 function verifyMagicBytes(buffer, mimetype) {
+  if (mimetype === 'image/webp') {
+    return (
+      buffer.length >= 12 &&
+      buffer.subarray(0, 4).toString('ascii') === 'RIFF' &&
+      buffer.subarray(8, 12).toString('ascii') === 'WEBP'
+    )
+  }
   const signatures = MAGIC_BYTES[mimetype]
   if (!signatures) return false
   return signatures.some(sig => {
@@ -102,12 +96,7 @@ router.post(
 
     const filename = generateFilename(req.file.originalname)
 
-    // Try R2 first, fall back to local disk
-    const uploadedToR2 = await r2Upload(filename, req.file.buffer, req.file.mimetype)
-    if (!uploadedToR2) {
-      writeFileSync(join(uploadsDir, filename), req.file.buffer)
-      logger.info('Photo saved to local disk (R2 unavailable)', { filename })
-    }
+    await r2Upload(filename, req.file.buffer, req.file.mimetype)
 
     const photo = await photoRepository.create(db, {
       storyId: story_id,
@@ -123,7 +112,6 @@ router.post(
 // Get photo file - requires authentication and ownership verification
 router.get(
   '/file/:filename',
-  authenticateToken,
   asyncHandler(async (req, res) => {
     const { filename } = req.params
 
@@ -148,17 +136,11 @@ router.get(
       return res.status(403).json({ error: 'Not authorized to access this photo' })
     }
 
-    // Try R2 first
     const r2File = await r2GetBuffer(sanitizedFilename)
     if (r2File) {
       res.set('Content-Type', r2File.contentType)
+      res.set('Cache-Control', 'private, no-store')
       return res.send(r2File.body)
-    }
-
-    // Fall back to local file
-    const filepath = join(uploadsDir, sanitizedFilename)
-    if (existsSync(filepath)) {
-      return res.sendFile(filepath)
     }
 
     res.status(404).json({ error: 'Photo not found' })
@@ -181,14 +163,7 @@ router.delete(
 
     await photoRepository.deleteById(db, id)
 
-    // Delete from R2
     await r2Delete(photo.filename)
-
-    // Also clean up local file if it exists
-    const filepath = join(uploadsDir, photo.filename)
-    if (existsSync(filepath)) {
-      unlinkSync(filepath)
-    }
 
     res.json({ success: true })
   })
@@ -230,10 +205,7 @@ router.post(
 
     // Save photo to storage
     const filename = generateFilename(req.file.originalname)
-    const uploadedToR2 = await r2Upload(filename, req.file.buffer, req.file.mimetype)
-    if (!uploadedToR2) {
-      writeFileSync(join(uploadsDir, filename), req.file.buffer)
-    }
+    await r2Upload(filename, req.file.buffer, req.file.mimetype)
 
     // Analyse with Grok vision
     const analysis = await analyzePhoto(req.file.buffer, req.file.mimetype)

@@ -2,7 +2,8 @@
  * Durable object storage facade.
  *
  * Cloudflare Workers use the native R2 binding. Long-running Node.js processes
- * use R2's S3-compatible API. Local disk is permitted only in development.
+ * use R2's S3-compatible API. Object storage is deliberately required in every
+ * runtime: a local-disk fallback would hide data loss before a Worker deploy.
  */
 
 import { createLogger } from './logger.js'
@@ -13,10 +14,6 @@ let s3Promise
 
 function nativeBinding() {
   return globalThis.__CLOUDFLARE_BINDINGS__?.UPLOADS || null
-}
-
-function durableStorageRequired() {
-  return process.env.NODE_ENV === 'production' || process.env.REQUIRE_OBJECT_STORAGE === 'true'
 }
 
 async function getS3() {
@@ -30,7 +27,7 @@ async function getS3() {
   }
 
   s3Promise = import('@aws-sdk/client-s3').then(
-    ({ S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand }) => ({
+    ({ S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, HeadObjectCommand }) => ({
       client: new S3Client({
         region: 'auto',
         endpoint: process.env.R2_ENDPOINT,
@@ -42,17 +39,17 @@ async function getS3() {
       }),
       PutObjectCommand,
       GetObjectCommand,
-      DeleteObjectCommand
+      DeleteObjectCommand,
+      HeadObjectCommand
     })
   )
   return s3Promise
 }
 
 function unavailable() {
-  if (durableStorageRequired()) {
-    throw new Error('R2 object storage is required but not configured')
-  }
-  return false
+  throw new Error(
+    'R2 object storage is not configured. Use the Worker UPLOADS binding or set R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, and R2_ENDPOINT.'
+  )
 }
 
 export async function r2Upload(key, body, contentType) {
@@ -72,8 +69,7 @@ export async function r2Upload(key, body, contentType) {
     return true
   } catch (error) {
     logger.error('R2 upload failed', { key, error: error.message })
-    if (durableStorageRequired()) throw error
-    return false
+    throw error
   }
 }
 
@@ -104,8 +100,7 @@ export async function r2Get(key) {
   } catch (error) {
     if (error.name === 'NoSuchKey' || error.$metadata?.httpStatusCode === 404) return null
     logger.error('R2 get failed', { key, error: error.message })
-    if (durableStorageRequired()) throw error
-    return null
+    throw error
   }
 }
 
@@ -140,8 +135,23 @@ export async function r2Delete(key) {
     return true
   } catch (error) {
     logger.error('R2 delete failed', { key, error: error.message })
-    if (durableStorageRequired()) throw error
-    return false
+    throw error
+  }
+}
+
+export async function r2Exists(key) {
+  const binding = nativeBinding()
+  if (binding) return Boolean(await binding.head(key))
+
+  const s3 = await getS3()
+  if (!s3) unavailable()
+  try {
+    await s3.client.send(new s3.HeadObjectCommand({ Bucket: bucket, Key: key }))
+    return true
+  } catch (error) {
+    if (error.name === 'NotFound' || error.$metadata?.httpStatusCode === 404) return false
+    logger.error('R2 head failed', { key, error: error.message })
+    throw error
   }
 }
 

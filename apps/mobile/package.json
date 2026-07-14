@@ -6,9 +6,11 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@easy-memoir/shared": "file:../../packages/shared",
     "@expo-google-fonts/cormorant": "^0.4.2",
     "@expo-google-fonts/literata": "^0.4.3",
     "@expo-google-fonts/lora": "0.4.2",
@@ -42,6 +44,9 @@
   "devDependencies": {
     "@types/react": "~19.1.0",
     "typescript": "~5.9.2"
+  },
+  "overrides": {
+    "ws": "8.21.0"
   },
   "private": true
 }

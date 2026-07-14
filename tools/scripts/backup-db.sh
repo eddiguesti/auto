@@ -1,82 +1,64 @@
-#!/bin/bash
-# ===========================================
-# Daily PostgreSQL backup script
-# ===========================================
-# Dumps the database and uploads to S3.
-#
-# Setup:
-#   1. Install AWS CLI: brew install awscli
-#   2. Configure: aws configure (add your S3 access key)
-#   3. Create an S3 bucket for backups
-#   4. Add to crontab: crontab -e
-#      0 3 * * * /path/to/life-story/tools/scripts/backup-db.sh
-#
-# Required env vars (set in .env or export before running):
-#   DATABASE_URL    - PostgreSQL connection string
-#   S3_BACKUP_BUCKET - S3 bucket name (e.g. easymemoir-backups)
-#
-# Without S3, backups are saved locally to ./backups/
-# ===========================================
+#!/usr/bin/env bash
+# Create a PostgreSQL custom-format archive, verify it, and optionally copy it
+# to Cloudflare R2 through the S3-compatible API.
 
 set -euo pipefail
+umask 077
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-# Load .env if it exists
-if [ -f "$PROJECT_ROOT/.env" ]; then
-  export $(grep -v '^#' "$PROJECT_ROOT/.env" | grep -v '^\s*$' | xargs)
-fi
+: "${DATABASE_URL:?DATABASE_URL must be set by the runtime or secret store}"
 
-if [ -z "${DATABASE_URL:-}" ]; then
-  echo "ERROR: DATABASE_URL not set"
-  exit 1
-fi
-
-# Create backup directory
-BACKUP_DIR="$PROJECT_ROOT/backups"
-mkdir -p "$BACKUP_DIR"
-
-# Generate filename with timestamp
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-FILENAME="easymemoir_${TIMESTAMP}.sql.gz"
+BACKUP_DIR="${BACKUP_DIR:-$PROJECT_ROOT/backups}"
+BACKUP_BUCKET="${R2_BACKUP_BUCKET:-${S3_BACKUP_BUCKET:-}}"
+RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-30}"
+TIMESTAMP="$(date -u +%Y%m%dT%H%M%SZ)"
+FILENAME="easymemoir_${TIMESTAMP}.dump"
 FILEPATH="$BACKUP_DIR/$FILENAME"
 
-echo "Starting database backup..."
+mkdir -p "$BACKUP_DIR"
+trap 'rm -f "$FILEPATH.tmp"' EXIT
 
-# Dump and compress
-pg_dump "$DATABASE_URL" --no-owner --no-privileges | gzip > "$FILEPATH"
+echo "Creating PostgreSQL archive $FILENAME"
+pg_dump "$DATABASE_URL" \
+  --format=custom \
+  --compress=9 \
+  --no-owner \
+  --no-privileges \
+  --file="$FILEPATH.tmp"
+mv "$FILEPATH.tmp" "$FILEPATH"
 
-FILESIZE=$(du -h "$FILEPATH" | cut -f1)
-echo "Backup created: $FILENAME ($FILESIZE)"
+echo "Verifying archive catalog"
+pg_restore --list "$FILEPATH" >/dev/null
+sha256sum "$FILEPATH" >"$FILEPATH.sha256"
 
-# Upload to S3 if bucket is configured
-if [ -n "${S3_BACKUP_BUCKET:-}" ]; then
-  echo "Uploading to S3..."
-  aws s3 cp "$FILEPATH" "s3://$S3_BACKUP_BUCKET/daily/$FILENAME" --quiet
-  echo "Uploaded to s3://$S3_BACKUP_BUCKET/daily/$FILENAME"
-
-  # Delete local copy after successful upload
-  rm "$FILEPATH"
-  echo "Local copy removed"
-
-  # Clean up old backups (keep last 30 days)
-  echo "Cleaning up backups older than 30 days..."
-  CUTOFF=$(date -v-30d +%Y%m%d 2>/dev/null || date -d '30 days ago' +%Y%m%d)
-  aws s3 ls "s3://$S3_BACKUP_BUCKET/daily/" | while read -r line; do
-    FILE=$(echo "$line" | awk '{print $4}')
-    FILE_DATE=$(echo "$FILE" | grep -o '[0-9]\{8\}' | head -1)
-    if [ -n "$FILE_DATE" ] && [ "$FILE_DATE" -lt "$CUTOFF" ]; then
-      aws s3 rm "s3://$S3_BACKUP_BUCKET/daily/$FILE" --quiet
-      echo "Deleted old backup: $FILE"
-    fi
-  done
-else
-  echo "S3_BACKUP_BUCKET not set — backup saved locally at $FILEPATH"
-
-  # Clean up local backups older than 7 days
-  find "$BACKUP_DIR" -name "easymemoir_*.sql.gz" -mtime +7 -delete 2>/dev/null
-  echo "Cleaned up local backups older than 7 days"
+if [ -n "${RESTORE_VERIFY_DATABASE_URL:-}" ]; then
+  echo "Running destructive restore verification against the dedicated verification database"
+  pg_restore \
+    --dbname="$RESTORE_VERIFY_DATABASE_URL" \
+    --clean \
+    --if-exists \
+    --no-owner \
+    --no-privileges \
+    "$FILEPATH"
+  psql "$RESTORE_VERIFY_DATABASE_URL" -v ON_ERROR_STOP=1 \
+    -c "SELECT COUNT(*) FROM schema_migrations" >/dev/null
 fi
 
-echo "Backup complete!"
+if [ -n "$BACKUP_BUCKET" ]; then
+  : "${R2_ENDPOINT:?R2_ENDPOINT is required when a backup bucket is configured}"
+  echo "Uploading verified archive to R2"
+  aws s3 cp "$FILEPATH" "s3://$BACKUP_BUCKET/daily/$FILENAME" \
+    --endpoint-url "$R2_ENDPOINT" \
+    --only-show-errors
+  aws s3 cp "$FILEPATH.sha256" "s3://$BACKUP_BUCKET/daily/$FILENAME.sha256" \
+    --endpoint-url "$R2_ENDPOINT" \
+    --only-show-errors
+else
+  echo "No backup bucket configured; retained $FILEPATH locally"
+fi
+
+find "$BACKUP_DIR" -name 'easymemoir_*.dump' -mtime "+$RETENTION_DAYS" -delete
+find "$BACKUP_DIR" -name 'easymemoir_*.dump.sha256' -mtime "+$RETENTION_DAYS" -delete
+echo "Backup verified successfully: $FILEPATH"

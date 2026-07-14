@@ -77,7 +77,7 @@ export default function AdminUsers() {
         const params = new URLSearchParams({ page, limit: 20 })
         if (query) params.set('q', query)
 
-        const res = await authFetch(`/api/admin/users?${params}`)
+        const res = await authFetch(`/api/v1/admin/users?${params}`)
         if (!res.ok) throw new Error('Failed to load users')
 
         const data = await res.json()
@@ -117,7 +117,7 @@ export default function AdminUsers() {
 
     setPremiumLoading(userId)
     try {
-      const res = await authFetch(`/api/admin/users/${userId}/premium`, {
+      const res = await authFetch(`/api/v1/admin/users/${userId}/premium`, {
         method: 'POST',
         body: JSON.stringify({ months: parsed })
       })

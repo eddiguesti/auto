@@ -64,7 +64,7 @@ export default function Register() {
     }
 
     try {
-      const res = await fetch(`${API_URL}/api/auth/register`, {
+      const res = await fetch(`${API_URL}/api/v1/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -94,7 +94,7 @@ export default function Register() {
     setLoading(true)
 
     try {
-      const res = await fetch(`${API_URL}/api/auth/google`, {
+      const res = await fetch(`${API_URL}/api/v1/auth/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ credential: credentialResponse.credential })
@@ -108,7 +108,7 @@ export default function Register() {
       // Check onboarding status - but always navigate even if this fails
       let needsOnboarding = true // Default to showing onboarding for new users
       try {
-        const onboardingRes = await fetch(`${API_URL}/api/onboarding/status`, {
+        const onboardingRes = await fetch(`${API_URL}/api/v1/onboarding/status`, {
           headers: { Authorization: `Bearer ${data.token}` }
         })
         if (onboardingRes.ok) {

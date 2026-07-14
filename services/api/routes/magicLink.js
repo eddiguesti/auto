@@ -3,7 +3,9 @@ import crypto from 'crypto'
 import jwt from 'jsonwebtoken'
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { createLogger } from '../utils/logger.js'
-import { ConfigurationError, ExternalServiceError } from '../utils/errors.js'
+import { ConfigurationError } from '../utils/errors.js'
+import { consumeAIQuota } from '../middleware/aiQuota.js'
+import { issueAuthenticatedVoiceTicket } from '../utils/voiceTicket.js'
 
 const router = Router()
 const logger = createLogger('magic-link')
@@ -34,6 +36,7 @@ router.get(
      WHERE est.token_hash = $1
        AND est.used_at IS NULL
        AND est.expires_at > NOW()
+       AND u.deleted_at IS NULL
      LIMIT 1`,
       [tokenHash]
     )
@@ -112,33 +115,21 @@ router.post(
     const { chapterId } = req.body
     const db = req.app.locals.db
 
-    // Create xAI Realtime session
     const apiKey = process.env.GROK_API_KEY
     if (!apiKey) {
       throw new ConfigurationError('GROK_API_KEY')
     }
 
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 15000)
-    const response = await fetch('https://api.x.ai/v1/realtime/client_secrets', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        expires_after: { seconds: 600 } // 10 minute token for seniors (longer than normal)
-      }),
-      signal: controller.signal
-    })
-    clearTimeout(timeoutId)
-
-    if (!response.ok) {
-      logger.error('xAI session error', { status: response.status, requestId: req.id })
-      throw new ExternalServiceError('xAI Realtime API')
+    const quota = await consumeAIQuota(db, decoded.id)
+    if (!quota.allowed) {
+      return res.status(quota.reason === 'unauthorized' ? 401 : 403).json({
+        error:
+          quota.reason === 'unauthorized'
+            ? 'Authentication required.'
+            : 'Daily AI limit reached. Upgrade to premium for unlimited access.',
+        code: quota.reason === 'unauthorized' ? 'UNAUTHORIZED' : 'UPGRADE_REQUIRED'
+      })
     }
-
-    const data = await response.json()
 
     // Create or get voice session in DB
     let voiceSession
@@ -166,8 +157,9 @@ router.post(
       }
     }
 
+    const ticket = await issueAuthenticatedVoiceTicket(decoded.id)
     res.json({
-      ...data,
+      ticket,
       session_id: voiceSession?.id,
       questions_answered: voiceSession?.questions_answered || []
     })

@@ -19,6 +19,7 @@ import api from '../services/api';
 import { colors, spacing, borderRadius, fonts, shadows } from '../utils/theme';
 import { durations, easings, springs } from '../utils/animations';
 import haptics from '../utils/haptics';
+import { getTotalQuestions } from '../data/chapters';
 import {
   StreakBadge,
   SkeletonHome,
@@ -31,8 +32,7 @@ import {
   IconChevronRight,
 } from '../components';
 
-// Chapter data matching web
-const TOTAL_QUESTIONS = 100; // Approximate total from chapters data
+const TOTAL_QUESTIONS = getTotalQuestions();
 
 export default function HomeScreen({ navigation }: any) {
   const { user } = useAuth();

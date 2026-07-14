@@ -18,9 +18,9 @@ import healthRouter from './routes/health.js'
 import { mountSwaggerDocs } from './utils/swagger.js'
 
 /**
- * @param {{ serveStatic?: boolean, serveDocs?: boolean }} [options]
+ * @param {{ serveStatic?: boolean, serveDocs?: boolean, dbPool?: import('pg').Pool }} [options]
  */
-export function createApp({ serveStatic = true, serveDocs = true } = {}) {
+export function createApp({ serveStatic = true, serveDocs = true, dbPool = pool } = {}) {
   const app = express()
 
   initSentry(app)
@@ -37,7 +37,7 @@ export function createApp({ serveStatic = true, serveDocs = true } = {}) {
     next()
   })
 
-  const timedPool = wrapPoolWithTiming(pool)
+  const timedPool = wrapPoolWithTiming(dbPool)
   app.locals.db = timedPool
 
   // Stripe requires the exact bytes received from Stripe. Mount raw-body

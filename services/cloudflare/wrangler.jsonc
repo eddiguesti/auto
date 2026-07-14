@@ -30,6 +30,10 @@
       {
         "binding": "AUDIOBOOK_QUEUE",
         "queue": "easy-memoir-audiobook"
+      },
+      {
+        "binding": "BACKGROUND_QUEUE",
+        "queue": "easy-memoir-background"
       }
     ],
     "consumers": [
@@ -39,6 +43,13 @@
         "max_batch_size": 1,
         "max_retries": 3,
         "max_concurrency": 5
+      },
+      {
+        "queue": "easy-memoir-background",
+        "dead_letter_queue": "easy-memoir-background-dlq",
+        "max_batch_size": 1,
+        "max_retries": 3,
+        "max_concurrency": 10
       }
     ]
   },

@@ -82,7 +82,7 @@ export default function Home() {
 
   const checkOnboardingStatus = async () => {
     try {
-      const res = await authFetch('/api/onboarding/status')
+      const res = await authFetch('/api/v1/onboarding/status')
       if (res.ok) {
         const data = await res.json()
         if (!data.completed) setShowOnboarding(true)

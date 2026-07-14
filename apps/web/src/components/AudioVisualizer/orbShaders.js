@@ -249,8 +249,8 @@ void main() {
     p /= 0.82 + 0.18 * z;
     vec2 look = uLook * 0.12;
 
-    // Feature pigment: dark warm ink, lit like the body, texture showing through
-    vec3 featureCol = mix(uColC, vec3(0.14, 0.11, 0.09), 0.65);
+    // Feature pigment: deep cool ink, lit like the body, texture showing through
+    vec3 featureCol = mix(uColC, vec3(0.09, 0.11, 0.15), 0.65);
     featureCol *= 0.72 + 0.28 * z;              // same limb shading as the body
     featureCol += body * 0.16;                   // filaments ghost through the ink
 

@@ -7,6 +7,8 @@
 import { Router } from 'express'
 import { getMetricsSummary } from '../utils/metrics.js'
 import { isRedisAvailable } from '../utils/redis.js'
+import { isR2Available } from '../utils/r2.js'
+import crypto from 'crypto'
 
 const router = Router()
 
@@ -18,12 +20,8 @@ router.get('/api/health', async (req, res) => {
   const health = {
     status: 'ok',
     timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    memory: {
-      heapUsed: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
-      heapTotal: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
-      rss: Math.round(process.memoryUsage().rss / 1024 / 1024)
-    }
+    runtime: process.env.RUNTIME_PLATFORM || 'node',
+    uptime: process.uptime()
   }
 
   try {
@@ -40,6 +38,28 @@ router.get('/api/health', async (req, res) => {
   }
 
   health.redis = { status: isRedisAvailable() ? 'ok' : 'unavailable' }
+  health.objectStorage = { status: isR2Available() ? 'ok' : 'unavailable' }
+  if (!isR2Available() && process.env.NODE_ENV === 'production') health.status = 'degraded'
+
+  try {
+    if (db) {
+      const jobs = await db.query(
+        `SELECT
+           COUNT(*) FILTER (WHERE state IN ('created', 'active'))::int AS pending,
+           COUNT(*) FILTER (WHERE state = 'failed' AND updated_at > NOW() - INTERVAL '24 hours')::int AS failed_24h,
+           EXTRACT(EPOCH FROM (NOW() - MIN(created_at) FILTER (WHERE state = 'created')))::int AS oldest_pending_seconds
+         FROM background_jobs`
+      )
+      health.queue = { status: 'ok', ...jobs.rows[0] }
+      if (jobs.rows[0]?.oldest_pending_seconds > 900) {
+        health.status = 'degraded'
+        health.queue.status = 'stale'
+      }
+    }
+  } catch {
+    health.status = 'degraded'
+    health.queue = { status: 'error' }
+  }
 
   // Cron job health — last success times from cron_health table
   try {
@@ -79,7 +99,19 @@ router.get('/api/health', async (req, res) => {
   }
 
   if (req.query.metrics === 'true') {
+    const expected = process.env.HEALTH_METRICS_SECRET || process.env.INTERNAL_CRON_SECRET
+    const supplied = req.get('x-health-secret') || ''
+    const authorized =
+      expected &&
+      supplied.length === expected.length &&
+      crypto.timingSafeEqual(Buffer.from(supplied), Buffer.from(expected))
+    if (!authorized) return res.status(403).json({ error: 'Metrics access denied' })
     health.metrics = getMetricsSummary()
+    health.memory = {
+      heapUsed: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+      heapTotal: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+      rss: Math.round(process.memoryUsage().rss / 1024 / 1024)
+    }
   }
 
   res.status(health.status === 'ok' ? 200 : 503).json(health)

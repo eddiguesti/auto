@@ -6,6 +6,7 @@ import { requireDb } from '../middleware/requireDb.js'
 import validate from '../middleware/validate.js'
 import { userSchemas } from '../schemas/index.js'
 import { authLogger } from '../utils/logger.js'
+import { r2Delete } from '../utils/r2.js'
 
 const router = Router()
 
@@ -99,7 +100,13 @@ router.get(
       styleResult,
       coverResult,
       achievementsResult,
-      entitiesResult
+      entitiesResult,
+      memosResult,
+      paymentsResult,
+      audiobooksResult,
+      notificationsResult,
+      voiceSessionsResult,
+      freeStoriesResult
     ] = await Promise.all([
       db.query(
         `SELECT chapter_id, question_id, answer, original_answer, style_applied, created_at, updated_at
@@ -154,6 +161,38 @@ router.get(
          FROM memory_entities WHERE user_id = $1
          ORDER BY mention_count DESC LIMIT 5000`,
         [userId]
+      ),
+      db.query(
+        `SELECT title, audio_url, transcript, duration, created_at, updated_at
+         FROM memos WHERE user_id = $1 ORDER BY created_at DESC LIMIT 10000`,
+        [userId]
+      ),
+      db.query(
+        `SELECT product_id, product_type, amount, currency, status, created_at
+         FROM payments WHERE user_id = $1 ORDER BY created_at DESC LIMIT 10000`,
+        [userId]
+      ),
+      db.query(
+        `SELECT filename, voice_type, created_at
+         FROM audiobooks WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1000`,
+        [userId]
+      ),
+      db.query(
+        `SELECT notification_type, channel, subject, body, data, scheduled_for,
+                sent_at, failed_at, failure_reason, created_at
+         FROM notification_queue WHERE user_id = $1 ORDER BY created_at DESC LIMIT 10000`,
+        [userId]
+      ),
+      db.query(
+        `SELECT chapter_id, session_status, questions_answered, session_transcripts,
+                started_at, ended_at
+         FROM voice_sessions WHERE user_id = $1 ORDER BY started_at DESC LIMIT 1000`,
+        [userId]
+      ),
+      db.query(
+        `SELECT title, content, created_at, updated_at
+         FROM free_stories WHERE user_id = $1 ORDER BY created_at DESC LIMIT 10000`,
+        [userId]
       )
     ])
 
@@ -203,6 +242,12 @@ router.get(
         firstMentionedChapter: e.first_mentioned_chapter,
         mentionCount: e.mention_count
       })),
+      memos: memosResult.rows,
+      payments: paymentsResult.rows,
+      audiobooks: audiobooksResult.rows,
+      notifications: notificationsResult.rows,
+      voiceSessions: voiceSessionsResult.rows,
+      freeStories: freeStoriesResult.rows,
       gameProgress: gameResult.rows[0] || null,
       onboarding: onboardingResult.rows[0] || null,
       stylePreferences: styleResult.rows[0] || null,
@@ -229,6 +274,48 @@ router.delete(
 
     try {
       await client.query('BEGIN')
+
+      // Collect and remove private blobs while database ownership records still
+      // exist. In production R2 failures abort erasure instead of silently
+      // leaving user media behind.
+      const [
+        photoFiles,
+        voiceFiles,
+        audiobookFiles,
+        memoFiles,
+        promptFiles,
+        chapterFiles,
+        registeredMedia
+      ] = await Promise.all([
+        client.query(
+          `SELECT p.filename FROM photos p
+           WHERE p.user_id = $1
+              OR p.story_id IN (SELECT id FROM stories WHERE user_id = $1)`,
+          [userId]
+        ),
+        client.query('SELECT fish_model_id AS filename FROM voice_models WHERE user_id = $1', [
+          userId
+        ]),
+        client.query('SELECT filename FROM audiobooks WHERE user_id = $1', [userId]),
+        client.query('SELECT audio_url FROM memos WHERE user_id = $1', [userId]),
+        client.query('SELECT audio_url FROM daily_prompts WHERE user_id = $1', [userId]),
+        client.query('SELECT chapter_id FROM chapter_images WHERE user_id = $1', [userId]),
+        client.query('SELECT object_key FROM media_objects WHERE user_id = $1', [userId])
+      ])
+      const objectKeys = new Set([
+        ...photoFiles.rows.map(row => row.filename),
+        ...voiceFiles.rows.filter(row => row.filename).map(row => `voices/${row.filename}`),
+        ...audiobookFiles.rows.map(row => `audiobooks/${row.filename}`),
+        ...memoFiles.rows
+          .filter(row => row.audio_url)
+          .map(row => `recordings/${userId}/${row.audio_url.split('/').pop()}`),
+        ...promptFiles.rows
+          .filter(row => row.audio_url)
+          .map(row => `recordings/${userId}/${row.audio_url.split('/').pop()}`),
+        ...chapterFiles.rows.map(row => `chapter-images/${userId}/${row.chapter_id}.webp`),
+        ...registeredMedia.rows.map(row => row.object_key)
+      ])
+      await Promise.all([...objectKeys].map(key => r2Delete(key)))
 
       // Delete in order respecting foreign key constraints
 
@@ -322,6 +409,13 @@ router.delete(
 
       // Delete payments
       await client.query('DELETE FROM payments WHERE user_id = $1', [userId])
+      await client.query('DELETE FROM payments_audit_log WHERE user_id = $1', [userId])
+
+      // Delete background jobs and memo/voice data that may not exist in older
+      // cascade definitions.
+      await client.query('DELETE FROM background_jobs WHERE user_id = $1', [userId])
+      await client.query('DELETE FROM memos WHERE user_id = $1', [userId])
+      await client.query('DELETE FROM voice_sessions WHERE user_id = $1', [userId])
 
       // Delete lulu order tracking
       await client.query('DELETE FROM lulu_orders WHERE user_id = $1', [userId])

@@ -65,6 +65,15 @@ export async function isUserTokenBlacklisted(userId, tokenIssuedAt) {
   return tokenIssuedAt <= invalidatedAt
 }
 
+/** Reject tokens for deleted or nonexistent accounts. */
+export async function isUserActive(userId) {
+  if (!pool) throw new Error('Authentication store unavailable')
+  const result = await pool.query('SELECT 1 FROM users WHERE id = $1 AND deleted_at IS NULL', [
+    userId
+  ])
+  return result.rows.length > 0
+}
+
 /**
  * Delete expired blacklist entries — call from the daily cron job.
  */

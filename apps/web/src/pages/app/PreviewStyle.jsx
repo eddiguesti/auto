@@ -49,7 +49,7 @@ export default function PreviewStyle() {
   const fetchAllStories = async () => {
     try {
       setError(null)
-      const res = await authFetch('/api/stories/all')
+      const res = await authFetch('/api/v1/stories/all')
       if (!res.ok) throw new Error('Failed to load stories')
 
       const storiesData = await res.json()
@@ -82,7 +82,7 @@ export default function PreviewStyle() {
 
   const fetchStylePreferences = async () => {
     try {
-      const res = await authFetch('/api/style/preferences')
+      const res = await authFetch('/api/v1/style/preferences')
       if (res.ok) {
         const prefs = await res.json()
         setSelectedTones(prefs.tones || [])
@@ -96,7 +96,7 @@ export default function PreviewStyle() {
 
   const savePreferences = async (tones, narrative, authorStyle) => {
     try {
-      await authFetch('/api/style/preferences', {
+      await authFetch('/api/v1/style/preferences', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tones, narrative, authorStyle })
@@ -150,7 +150,7 @@ export default function PreviewStyle() {
     setPreviewTransformed('')
 
     try {
-      const res = await authFetch('/api/style/preview', {
+      const res = await authFetch('/api/v1/style/preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -182,7 +182,7 @@ export default function PreviewStyle() {
     setApplyProgress({ current: 0, total: 0 })
 
     try {
-      const res = await authFetch('/api/style/apply-all', {
+      const res = await authFetch('/api/v1/style/apply-all', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -218,7 +218,7 @@ export default function PreviewStyle() {
   const handleRevert = async () => {
     setReverting(true)
     try {
-      const res = await authFetch('/api/style/revert', {
+      const res = await authFetch('/api/v1/style/revert', {
         method: 'POST'
       })
 

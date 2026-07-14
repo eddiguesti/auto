@@ -3,7 +3,7 @@
  * Call trackEvent() at key conversion points throughout the app.
  */
 
-const ANALYTICS_ENDPOINT = '/api/analytics/event'
+const ANALYTICS_ENDPOINT = '/api/v1/analytics/event'
 
 export function trackEvent(name, properties = {}) {
   // PostHog integration (if loaded)

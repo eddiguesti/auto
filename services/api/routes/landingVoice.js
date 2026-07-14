@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { ConfigurationError } from '../utils/errors.js'
-import { createVoiceTicket } from '../utils/voiceProxy.js'
+import { issuePublicVoiceTicket } from '../utils/voiceTicket.js'
 
 const router = Router()
 
@@ -18,7 +18,7 @@ router.post(
       throw new ConfigurationError('GROK_API_KEY')
     }
 
-    const ticket = createVoiceTicket()
+    const ticket = await issuePublicVoiceTicket()
     res.json({ ticket })
   })
 )

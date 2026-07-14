@@ -23,7 +23,7 @@ export default function Login() {
     const normalizedEmail = email.trim().toLowerCase()
 
     try {
-      const res = await fetch(`${API_URL}/api/auth/login`, {
+      const res = await fetch(`${API_URL}/api/v1/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: normalizedEmail, password })
@@ -37,7 +37,7 @@ export default function Login() {
       // Check onboarding status - but always navigate even if this fails
       let needsOnboarding = false // Returning users likely completed onboarding
       try {
-        const onboardingRes = await fetch(`${API_URL}/api/onboarding/status`, {
+        const onboardingRes = await fetch(`${API_URL}/api/v1/onboarding/status`, {
           headers: { Authorization: `Bearer ${data.token}` }
         })
         if (onboardingRes.ok) {
@@ -61,7 +61,7 @@ export default function Login() {
     setLoading(true)
 
     try {
-      const res = await fetch(`${API_URL}/api/auth/google`, {
+      const res = await fetch(`${API_URL}/api/v1/auth/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ credential: credentialResponse.credential })
@@ -75,7 +75,7 @@ export default function Login() {
       // Check onboarding status - but always navigate even if this fails
       let needsOnboarding = false // Returning users likely completed onboarding
       try {
-        const onboardingRes = await fetch(`${API_URL}/api/onboarding/status`, {
+        const onboardingRes = await fetch(`${API_URL}/api/v1/onboarding/status`, {
           headers: { Authorization: `Bearer ${data.token}` }
         })
         if (onboardingRes.ok) {

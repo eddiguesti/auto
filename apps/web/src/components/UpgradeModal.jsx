@@ -41,7 +41,7 @@ export default function UpgradeModal({ onClose, memoriesCount = 0, variant = 'de
   const handleUpgrade = async () => {
     setLoading(true)
     try {
-      const res = await authFetch('/api/payments/create-checkout', {
+      const res = await authFetch('/api/v1/payments/create-checkout', {
         method: 'POST',
         body: JSON.stringify({
           productId: 'premium_bundle',

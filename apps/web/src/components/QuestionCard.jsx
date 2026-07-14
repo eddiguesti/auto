@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, memo } from 'react'
 import { IconCamera, IconFeather, IconLoader2, IconSearch, IconX } from '@tabler/icons-react'
 import { useAuth } from '../context/AuthContext'
 import { Button, Card, Input, Textarea } from './ui'
+import AuthenticatedImage from './AuthenticatedImage'
 
 export default memo(function QuestionCard({
   question,
@@ -58,7 +59,7 @@ export default memo(function QuestionCard({
     formData.append('story_id', storyId)
 
     try {
-      const res = await authFetch('/api/photos', {
+      const res = await authFetch('/api/v1/photos', {
         method: 'POST',
         body: formData
       })
@@ -83,7 +84,7 @@ export default memo(function QuestionCard({
     if (!confirm('Delete this photo?')) return
     setError(null)
     try {
-      const res = await authFetch(`/api/photos/${photoId}`, { method: 'DELETE' })
+      const res = await authFetch(`/api/v1/photos/${photoId}`, { method: 'DELETE' })
       if (!res.ok) {
         throw new Error('Delete failed')
       }
@@ -208,8 +209,8 @@ export default memo(function QuestionCard({
             <div className="flex flex-wrap gap-2">
               {photos.map(photo => (
                 <div key={photo.id} className="relative group">
-                  <img
-                    src={`/api/photos/file/${photo.filename}`}
+                  <AuthenticatedImage
+                    src={`/api/v1/photos/file/${photo.filename}`}
                     alt={photo.caption || 'Memory photo'}
                     loading="lazy"
                     className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-xl"

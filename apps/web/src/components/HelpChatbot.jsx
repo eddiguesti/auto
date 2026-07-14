@@ -77,7 +77,7 @@ export default function HelpChatbot() {
       }
       abortControllerRef.current = new AbortController()
 
-      const res = await fetch('/api/support/chat', {
+      const res = await fetch('/api/v1/support/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -2,25 +2,13 @@ import { Router } from 'express'
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { createLogger } from '../utils/logger.js'
 import { ConfigurationError, ExternalServiceError } from '../utils/errors.js'
-import fs from 'fs'
-import path from 'path'
-import { fileURLToPath } from 'url'
-import { pipeline } from 'stream/promises'
-import { Readable } from 'stream'
+import { r2Exists, r2GetBuffer, r2Upload } from '../utils/r2.js'
 
 const router = Router()
 const logger = createLogger('blog-images')
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-
-// Output directory for generated images (web app's public folder)
-const IMAGES_DIR = path.resolve(__dirname, '../../..', 'apps/web/public/blog-images')
-
-// Ensure the output directory exists
-if (!fs.existsSync(IMAGES_DIR)) {
-  fs.mkdirSync(IMAGES_DIR, { recursive: true })
-}
+const blogImageKey = slug => `blog-images/${slug}.jpg`
+const blogImagePath = slug => `/api/v1/blog-images/file/${slug}`
 
 // Blog post image prompts — each crafted to produce a stunning, relevant editorial illustration
 const BLOG_IMAGE_PROMPTS = {
@@ -118,36 +106,42 @@ const CATEGORY_GRADIENTS = {
 }
 
 /**
- * Download an image from a URL and save it to disk.
- * Returns the local filename.
+ * Download an image from a provider URL and persist it in R2.
  */
 async function downloadAndSaveImage(imageUrl, slug) {
-  const filename = `${slug}.jpg`
-  const filepath = path.join(IMAGES_DIR, filename)
-
   const response = await fetch(imageUrl)
   if (!response.ok) throw new Error(`Failed to download image: ${response.status}`)
-
-  const fileStream = fs.createWriteStream(filepath)
-  await pipeline(Readable.fromWeb(response.body), fileStream)
-
-  logger.info(`Saved image to ${filepath}`)
-  return filename
+  const buffer = Buffer.from(await response.arrayBuffer())
+  await r2Upload(blogImageKey(slug), buffer, response.headers.get('content-type') || 'image/jpeg')
+  logger.info('Saved blog image to R2', { slug })
+  return blogImagePath(slug)
 }
 
 /**
- * Save a base64 image to disk.
+ * Save a base64 image to R2.
  */
-function saveBase64Image(b64Data, slug) {
-  const filename = `${slug}.jpg`
-  const filepath = path.join(IMAGES_DIR, filename)
-
+async function saveBase64Image(b64Data, slug) {
   const buffer = Buffer.from(b64Data, 'base64')
-  fs.writeFileSync(filepath, buffer)
-
-  logger.info(`Saved base64 image to ${filepath}`)
-  return filename
+  await r2Upload(blogImageKey(slug), buffer, 'image/jpeg')
+  logger.info('Saved base64 blog image to R2', { slug })
+  return blogImagePath(slug)
 }
+
+// Generated blog art is public editorial content. Existing checked-in images
+// remain available through Static Assets; newly generated replacements live in R2.
+router.get(
+  '/file/:slug',
+  asyncHandler(async (req, res) => {
+    if (!BLOG_IMAGE_PROMPTS[req.params.slug]) {
+      return res.status(404).json({ error: 'Unknown blog post slug' })
+    }
+    const image = await r2GetBuffer(blogImageKey(req.params.slug))
+    if (!image) return res.status(404).json({ error: 'Blog image not found' })
+    res.setHeader('Content-Type', image.contentType)
+    res.setHeader('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400')
+    return res.send(image.body)
+  })
+)
 
 // Generate image for a blog post using xAI Grok image generation
 router.post(
@@ -200,22 +194,20 @@ router.post(
     }
 
     // Download and save the image permanently
-    let filename
+    let imagePath
     if (data.data[0].url) {
-      filename = await downloadAndSaveImage(data.data[0].url, slug)
+      imagePath = await downloadAndSaveImage(data.data[0].url, slug)
     } else if (data.data[0].b64_json) {
-      filename = saveBase64Image(data.data[0].b64_json, slug)
+      imagePath = await saveBase64Image(data.data[0].b64_json, slug)
     } else {
       throw new ExternalServiceError('xAI image generation')
     }
 
-    const publicPath = `/blog-images/${filename}`
-
-    logger.info(`Image generated and saved for ${slug}: ${publicPath}`)
+    logger.info('Blog image generated and saved', { slug, imagePath })
 
     res.json({
       slug,
-      imagePath: publicPath,
+      imagePath,
       prompt,
       generatedAt: new Date().toISOString()
     })
@@ -244,10 +236,9 @@ router.post(
     const force = req.query.force === 'true'
 
     for (const slug of slugs) {
-      // Check if image already exists
-      const filepath = path.join(IMAGES_DIR, `${slug}.jpg`)
-      if (!force && fs.existsSync(filepath)) {
-        results.push({ slug, status: 'skipped', imagePath: `/blog-images/${slug}.jpg` })
+      const existing = force ? false : await r2Exists(blogImageKey(slug))
+      if (existing) {
+        results.push({ slug, status: 'skipped', imagePath: blogImagePath(slug) })
         logger.info(`Skipping ${slug} — image already exists`)
         continue
       }
@@ -273,14 +264,14 @@ router.post(
 
         if (response.ok) {
           const data = await response.json()
-          let filename
+          let imagePath
           if (data.data?.[0]?.url) {
-            filename = await downloadAndSaveImage(data.data[0].url, slug)
+            imagePath = await downloadAndSaveImage(data.data[0].url, slug)
           } else if (data.data?.[0]?.b64_json) {
-            filename = saveBase64Image(data.data[0].b64_json, slug)
+            imagePath = await saveBase64Image(data.data[0].b64_json, slug)
           }
-          if (filename) {
-            results.push({ slug, status: 'success', imagePath: `/blog-images/${filename}` })
+          if (imagePath) {
+            results.push({ slug, status: 'success', imagePath })
             logger.info(`Generated and saved image for ${slug}`)
           } else {
             results.push({ slug, status: 'failed', error: 'No image data in response' })
@@ -308,25 +299,29 @@ router.post(
 )
 
 // Check which images exist
-router.get('/status', (req, res) => {
-  const slugs = Object.keys(BLOG_IMAGE_PROMPTS)
-  const status = slugs.map(slug => {
-    const filepath = path.join(IMAGES_DIR, `${slug}.jpg`)
-    const exists = fs.existsSync(filepath)
-    return {
-      slug,
-      hasImage: exists,
-      imagePath: exists ? `/blog-images/${slug}.jpg` : null
-    }
-  })
+router.get(
+  '/status',
+  asyncHandler(async (_req, res) => {
+    const slugs = Object.keys(BLOG_IMAGE_PROMPTS)
+    const status = await Promise.all(
+      slugs.map(async slug => {
+        const hasImage = await r2Exists(blogImageKey(slug))
+        return {
+          slug,
+          hasImage,
+          imagePath: hasImage ? blogImagePath(slug) : `/blog-images/${slug}.jpg`
+        }
+      })
+    )
 
-  res.json({
-    total: slugs.length,
-    generated: status.filter(s => s.hasImage).length,
-    missing: status.filter(s => !s.hasImage).length,
-    images: status
+    res.json({
+      total: slugs.length,
+      generated: status.filter(s => s.hasImage).length,
+      missing: status.filter(s => !s.hasImage).length,
+      images: status
+    })
   })
-})
+)
 
 // Get image prompt for a blog post (useful for debugging)
 router.get('/prompt/:slug', (req, res) => {

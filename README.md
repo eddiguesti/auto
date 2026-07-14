@@ -4,6 +4,9 @@ AI-powered autobiography platform that helps seniors and families preserve life 
 
 **Live:** easymemoir.co.uk
 
+**Production target:** Cloudflare Workers, Static Assets, Hyperdrive, R2,
+Queues, Cron Triggers, and Durable Objects
+
 ---
 
 ## Quick Start
@@ -17,6 +20,9 @@ cp .env.example .env
 
 # 3. Run both API server + web client
 npm run dev
+
+# Production-shaped Cloudflare bundle validation
+npm run build:cloudflare
 ```
 
 - API runs on `http://localhost:3001`
@@ -34,7 +40,9 @@ life-story/
 │   └── mobile/                  # React Native Expo app (iOS/Android)
 │
 ├── services/
-│   └── api/                     # Node.js Express backend
+│   ├── api/                     # Shared Express application + Node runtime
+│   ├── cloudflare/              # Worker, Queue/Cron handlers, Durable Object
+│   └── worker/                  # Transitional Node pg-boss worker
 │
 ├── packages/
 │   └── shared/                  # Shared data between web, mobile & API
@@ -50,8 +58,8 @@ life-story/
 │
 ├── .env.example                 # All env vars documented (115 vars)
 ├── package.json                 # Monorepo root (npm workspaces)
-├── railway.json                 # Railway deployment config
-└── render.yaml                  # Render deployment config
+├── services/cloudflare/wrangler.jsonc
+└── docs/CLOUDFLARE_MIGRATION.md
 ```
 
 ---
@@ -364,19 +372,21 @@ React Native Expo app (iOS/Android/Web). Entry point: `apps/mobile/App.tsx`
 
 ## Tech Stack
 
-| Layer            | Technology                                                                  |
-| ---------------- | --------------------------------------------------------------------------- |
-| **Web Frontend** | React 18, Vite, TailwindCSS, React Router 6                                 |
-| **Mobile**       | React Native, Expo, TypeScript, React Navigation                            |
-| **Backend**      | Node.js, Express 4, ES Modules                                              |
-| **Database**     | PostgreSQL (Supabase/Neon cloud)                                            |
-| **AI**           | Grok (xAI) for conversation & text, Replicate for images                    |
-| **Voice**        | Fish.audio (TTS/audiobook), Telnyx (phone calls), xAI Realtime (live voice) |
-| **Payments**     | Stripe (checkout, webhooks, subscriptions)                                  |
-| **Print**        | Lulu API (print-on-demand books)                                            |
-| **Email**        | Resend (transactional emails)                                               |
-| **Auth**         | JWT + Google OAuth + Magic Links                                            |
-| **Deploy**       | Railway or Render (Node.js + static hosting)                                |
+| Layer            | Technology                                                                        |
+| ---------------- | --------------------------------------------------------------------------------- |
+| **Web Frontend** | React 18, Vite 7, TailwindCSS, React Router 6                                     |
+| **Mobile**       | React Native, Expo, TypeScript, React Navigation                                  |
+| **Backend**      | Express 4 on Cloudflare Workers (`nodejs_compat`)                                 |
+| **Database**     | Managed PostgreSQL through Cloudflare Hyperdrive                                  |
+| **Storage**      | Private Cloudflare R2                                                             |
+| **Jobs/Cron**    | Cloudflare Queues with DLQs and Cron Triggers                                     |
+| **Realtime**     | Durable Objects bridging browser WebSockets to xAI Realtime                       |
+| **AI**           | Grok (xAI) for conversation/text, Replicate for images, Fish.audio for audiobooks |
+| **Payments**     | Stripe (checkout, signed webhooks, subscriptions)                                 |
+| **Print**        | Lulu API (print-on-demand books)                                                  |
+| **Email**        | Resend (transactional emails)                                                     |
+| **Auth**         | JWT + Google OAuth + Magic Links; one-time voice tickets                          |
+| **Deploy**       | Cloudflare Worker + Workers Static Assets                                         |
 
 ---
 
@@ -388,11 +398,17 @@ npm run server           # API only (port 3001)
 npm run client           # Web client only (port 5173)
 npm run build            # Production build (web + validation)
 npm run test             # Run all API tests
-npm run test:auth        # Auth tests only
-npm run test:integration # Integration tests only
+npm run test:all         # Run API and web tests
 npm run lint             # Lint server + client
 npm run format           # Prettier format all files
+npm run build:cloudflare # Build and dry-run the Worker bundle
+npm run cloudflare:check # Validate account-specific Worker config
+npm run migrate          # Apply locked, checksummed SQL migrations
 ```
+
+`railway.json`, `render.yaml`, and `nixpacks.toml` are retained only for the
+documented rollback window during Cloudflare cutover. They are not the production
+target and should be removed after that window closes.
 
 ---
 

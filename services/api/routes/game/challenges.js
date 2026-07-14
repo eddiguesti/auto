@@ -1,7 +1,6 @@
 // /life-story/services/api/routes/game/challenges.js
 
 import { Router } from 'express'
-import pool from '../../db/index.js'
 import { asyncHandler } from '../../middleware/asyncHandler.js'
 import validate from '../../middleware/validate.js'
 import { gameSchemas } from '../../schemas/index.js'
@@ -53,11 +52,13 @@ router.post(
   asyncHandler(async (req, res) => {
     const userId = req.user.id
     const { promptId } = req.validatedParams
-    const { answer } = req.validatedBody
+    const { answer, audioUrl } = req.validatedBody
+    const db = req.app.locals.db
 
     // Get the prompt
-    const prompt = await pool.query(
-      `SELECT id, user_id, prompt_date, prompt_text, prompt_type, chapter_id, question_id, is_completed, completed_at, xp_awarded, created_at
+    const prompt = await db.query(
+      `SELECT id, user_id, prompt_date, prompt_text, prompt_type,
+              linked_chapter_id, linked_question_id, status, created_at
        FROM daily_prompts WHERE id = $1 AND user_id = $2`,
       [promptId, userId]
     )
@@ -84,9 +85,27 @@ router.post(
     const wordCount = answer.trim().split(/\s+/).length
 
     // Start transaction
-    const client = await pool.connect()
+    const client = await db.connect()
     try {
       await client.query('BEGIN')
+
+      let recordingKey = null
+      if (audioUrl) {
+        recordingKey = `recordings/${userId}/${audioUrl.split('/').pop()}`
+        const claimed = await client.query(
+          `UPDATE media_objects
+           SET referenced_at = NOW(), reference_type = 'daily_prompt', reference_id = $1
+           WHERE object_key = $2 AND user_id = $3 AND referenced_at IS NULL
+           RETURNING object_key`,
+          [promptId, recordingKey, userId]
+        )
+        if (claimed.rows.length === 0) {
+          await client.query('ROLLBACK')
+          return res
+            .status(400)
+            .json({ success: false, error: 'Recording is invalid or already used' })
+        }
+      }
 
       // Save the answer to stories table if linked to a question
       let storyId = null
@@ -118,9 +137,10 @@ router.post(
            answered_at = NOW(),
            answer_story_id = $1,
            time_to_complete_seconds = $2,
-           word_count = $3
-       WHERE id = $4`,
-        [storyId, timeToComplete, wordCount, promptId]
+           word_count = $3,
+           audio_url = $4
+       WHERE id = $5`,
+        [storyId, timeToComplete, wordCount, audioUrl || null, promptId]
       )
 
       await client.query('COMMIT')
@@ -190,9 +210,10 @@ router.post(
     const userId = req.user.id
     const { promptId } = req.params
     const { reason } = req.body
+    const db = req.app.locals.db
 
     // Update prompt status
-    await pool.query(
+    await db.query(
       `UPDATE daily_prompts
      SET status = 'skipped',
          skipped_at = NOW(),
@@ -217,6 +238,7 @@ router.get(
   '/prompts/history',
   asyncHandler(async (req, res) => {
     const userId = req.user.id
+    const db = req.app.locals.db
 
     // Validate and sanitize pagination parameters
     const rawLimit = parseInt(req.query.limit) || 20
@@ -224,11 +246,10 @@ router.get(
     const limit = Math.min(Math.max(rawLimit, 1), 100) // Max 100 items
     const offset = Math.max(rawOffset, 0)
 
-    const prompts = await pool.query(
+    const prompts = await db.query(
       `SELECT
-       dp.id, dp.prompt_date, dp.prompt_type, dp.prompt_category,
-       dp.prompt_text, dp.status, dp.answered_at, dp.word_count,
-       s.answer
+       dp.id, dp.prompt_text AS "promptText", dp.audio_url AS "audioUrl",
+       dp.created_at AS "createdAt", dp.prompt_category AS collection, s.answer
      FROM daily_prompts dp
      LEFT JOIN stories s ON dp.answer_story_id = s.id
      WHERE dp.user_id = $1
@@ -237,9 +258,7 @@ router.get(
       [userId, limit, offset]
     )
 
-    const total = await pool.query(`SELECT COUNT(*) FROM daily_prompts WHERE user_id = $1`, [
-      userId
-    ])
+    const total = await db.query(`SELECT COUNT(*) FROM daily_prompts WHERE user_id = $1`, [userId])
 
     res.json({
       success: true,

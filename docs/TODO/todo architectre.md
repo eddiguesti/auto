@@ -6,11 +6,59 @@
 
 ## Outcome
 
-Keep Easy Memoir as a **modular monolith** with one HTTP/WebSocket API and one background worker. Do not split it into microservices. First make the existing runtime safe and reproducible; then migrate one feature at a time behind clear module, contract, and data boundaries.
+Keep Easy Memoir as a **modular monolith** in one Cloudflare Worker deployment.
+HTTP, queue, cron, static-asset, and Durable Object entry points share application
+modules without becoming separately deployed microservices. PostgreSQL remains the
+source of truth through Hyperdrive and all durable media lives in R2.
 
 This document supersedes the unchecked April 2026 architecture TODOs as the current execution plan. Those files remain useful historical references, but several of their tasks were partially scaffolded without being adopted by production code.
 
-## Current architecture
+## 2026-07-14 execution update
+
+The Cloudflare migration foundation is implemented and dry-run bundled. The
+production target is now Workers Static Assets + Express on Workers + Hyperdrive
+PostgreSQL + R2 + Queues/DLQ + Cron Triggers + a Durable Object for realtime
+voice. See `docs/CLOUDFLARE_MIGRATION.md` for account setup and cutover.
+
+Completed in code:
+
+- Stripe raw-body ordering, worker boot/migration ownership, API/worker cron
+  separation, graceful shutdown, fail-closed token revocation, deleted-user JWT
+  rejection, and WebSocket resource controls.
+- R2-backed photos, recordings, voice samples, audiobooks, generated chapter
+  art, and runtime-generated blog art, with no ephemeral filesystem fallback.
+- Runtime-neutral audiobook, story post-processing, entity extraction, and
+  chapter-art jobs on Cloudflare Queues with retries and DLQs.
+- Realtime voice moved behind 60-second single-use tickets, so browser URLs no
+  longer contain reusable JWTs and quota is charged exactly once.
+- One SQL migration system, Cloudflare bundle/deploy/backup workflows, Node 22
+  alignment, non-mutating lint commands, and high-severity production audit gates.
+- Mobile `/api/v1` configuration, canonical shared chapters, clean TypeScript,
+  shared product pricing, expanded GDPR export, and R2-aware account erasure.
+- Root production and development dependency audit reduced to zero findings;
+  mobile high and critical findings reduced to zero.
+- Verification is green: 200 API tests, 18 web tests, mobile TypeScript, lint,
+  production web build, and an 8.6 MB Worker dry-run bundle.
+
+Accepted dependency exception: the Expo 54 development toolchain reports 11
+moderate transitive advisories in PostCSS/UUID. There are no mobile high or
+critical findings and `npm audit` can resolve the moderate set only through the
+breaking Expo 57 upgrade. Owner: mobile platform; review/upgrade deadline:
+2026-09-30.
+
+Mobile remains an intentional separate npm dependency boundary because Expo's
+native toolchain has a different upgrade cadence, but it is an active product:
+CI installs its lockfile independently, type-checks it, and blocks high/critical
+production advisories.
+
+Still requires account authority rather than repository changes:
+
+- Create the Cloudflare resources, install Worker/integration secrets, replace
+  the Hyperdrive placeholder ID, test on `workers.dev`, attach the Custom Domain,
+  run the media copy with production credentials, update provider
+  webhooks/allowlists, and execute the monitored DNS cutover.
+
+## Pre-migration architecture (historical audit snapshot)
 
 ```text
 Web SPA (React/Vite) -----------+
@@ -32,7 +80,7 @@ Background worker (intended queue consumer + cron owner)
 
 The deployable shape is appropriate for the product. The main problem is that ownership is ambiguous: HTTP routes still own most business logic and SQL, the API and worker both claim cron, local files cross process boundaries, and several new architectural layers are unused facades.
 
-## Audit baseline
+## Audit baseline before implementation
 
 | Area            | Verified current state                                                                                                                                               |
 | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -75,9 +123,11 @@ services/api/
   platform/
     config/ db/ queue/ storage/ auth/ observability/
 
-services/worker/
-  bootstrap/                   queue consumers and cron scheduling only
-  handlers/                    calls the same application use cases as the API
+services/cloudflare/
+  index.js                     fetch, Queue, Cron Trigger, and Static Asset adapter
+  voiceSession.js              Durable Object for one realtime voice session
+
+services/worker/               transitional Node rollback runtime only
 ```
 
 ### Mandatory dependency direction
@@ -92,62 +142,65 @@ HTTP / worker handler -> application use case -> domain policy
 - Domain code does not know about Express, PostgreSQL, environment variables, or vendor SDKs.
 - API and worker share application modules, not route modules.
 - PostgreSQL remains the source of truth; Redis is used only where its loss has an explicitly designed effect.
-- User files are stored in object storage in production. Local disk is development-only.
+- User files are stored in object storage in every runtime; local disk is never a media source of truth.
 - Breaking API changes start in a new version and are contract-tested against both clients.
 
 ## P0 — make production safe
 
+Checked items are implemented in the repository. Unchecked items remain genuine
+follow-up work or require a Cloudflare/provider account and production data.
+
 ### ARCH-001 — Preserve Stripe's raw webhook body
 
-- [ ] Mount `POST /api/webhooks/stripe` before the global `express.json()` middleware, or exclude that path from JSON parsing.
-- [ ] Reject requests when the webhook secret or signature is missing.
-- [ ] Add a real HTTP test using a Stripe-signed raw payload; assert invalid signatures fail and duplicate events do not duplicate entitlements or payments.
-- [ ] Make `stripe_event_id` unique in the immutable audit table and record every handled event transactionally.
+- [x] Mount `POST /api/webhooks/stripe` before the global `express.json()` middleware, or exclude that path from JSON parsing.
+- [x] Reject requests when the webhook secret or signature is missing.
+- [x] Add a real HTTP test using a Stripe-signed raw payload; assert invalid signatures fail and duplicate events do not duplicate entitlements or payments.
+- [x] Claim each Stripe event in a unique event ledger and record its payment/audit effects in the same transaction.
 
 Done when a production-shaped request reaches `stripe.webhooks.constructEvent()` as a `Buffer`, and the test would fail if middleware order regresses.
 
 ### ARCH-002 — Repair and deploy the worker
 
-- [ ] Replace the removed `initDatabase()` import so `npm run worker` boots successfully.
-- [ ] Add a worker service to the chosen production manifest; remove or explicitly deprecate unused Render/Railway alternatives.
-- [ ] Make the worker the only cron scheduler. The API may enqueue and inspect jobs but must not schedule cron jobs.
+- [x] Replace the removed `initDatabase()` import so `npm run worker` boots successfully.
+- [x] Add the selected Worker service to the production manifest.
+- [x] Make the Worker/Cron Trigger the only production scheduler. The API may enqueue and inspect jobs but must not schedule cron jobs.
 - [ ] Add worker readiness, queue lag, active/failed job, and last-consumer-heartbeat checks.
 - [ ] Add a worker boot smoke test to CI.
-- [ ] Decide how schema migration is run before both API and worker start; prefer a single release command/job, not two racing processes.
+- [x] Run schema migration as a gated release command before the Cloudflare deploy.
 
 Done when one API plus one worker can be deployed from configuration in the repository and an audiobook job is consumed in staging.
 
 ### ARCH-003 — Remove cross-process local-file coupling
 
-- [ ] Store audiobook output and voice samples in R2 (or one selected object store), not `uploads/` in production.
+- [x] Store all runtime media in R2, not `uploads/` in production.
 - [ ] Use user-namespaced keys such as `users/{userId}/photos/...`, `voice/...`, and `audiobooks/...`.
 - [ ] Persist object key, content type, size, checksum, provider, and lifecycle status in the database.
-- [ ] Return short-lived authorized downloads or stream through an ownership-checked endpoint.
-- [ ] Fail startup for production features requiring object storage; do not silently fall back to an ephemeral filesystem.
-- [ ] Add orphan cleanup and account-deletion jobs for every object category.
+- [x] Stream private media through ownership-checked endpoints with bearer authentication.
+- [x] Fail media operations if object storage is unavailable; never silently use an ephemeral filesystem.
+- [x] Track unattached recordings, clean 24-hour orphans daily, and erase every known object category during account deletion.
 
 Done when API and worker can run on separate hosts with no shared filesystem and all upload/download/delete flows still pass.
 
 ### ARCH-004 — Use one migration system
 
-- [ ] Choose the SQL runner and `schema_migrations` as the only migration history.
-- [ ] Remove or convert the `.js` migrations, `pgmigrations` config, `node-pg-migrate` dependency, and npm scripts that operate on the other history.
-- [ ] Rename every migration with a strict monotonic number; move the unnumbered performance-index migration into that sequence.
-- [ ] Add a PostgreSQL advisory lock around migration execution to prevent concurrent deploy races.
-- [ ] Record a checksum and fail on edits to an applied migration.
+- [x] Choose the SQL runner and `schema_migrations` as the only migration history.
+- [x] Archive the `.js` migration history and remove its config/runtime commands.
+- [x] Give every active migration a strict monotonic number.
+- [x] Add a PostgreSQL advisory lock around migration execution to prevent concurrent deploy races.
+- [x] Record SHA-256 checksums and fail on edits to an applied migration.
 - [ ] Move reference-data seeding out of every API startup; version it as migrations or an explicit idempotent release task.
 - [ ] Test the complete chain against an empty database and a sanitized production-shaped snapshot.
-- [ ] Add migration status, backup, rollback/forward-fix, and restore instructions.
+- [x] Add migration status, verified backup, rollback/forward-fix, and restore instructions.
 
 Done when local, CI, staging, API startup, worker startup, and operator commands all agree on one ordered migration history.
 
 ### ARCH-005 — Close known dependency vulnerabilities and make the gate real
 
-- [ ] Triage and upgrade the current critical/high root and mobile advisories, starting with `protobufjs`, `fast-xml-parser`, `shell-quote`, `express-rate-limit`, `ws`, `form-data`, and mobile transitive packages.
-- [ ] Separate runtime from development audit results and document accepted exceptions with owner and expiry.
-- [ ] Remove `continue-on-error` and `|| true` for critical/high dependency and static-security checks.
-- [ ] Pin third-party GitHub Actions to immutable commit SHAs.
-- [ ] Add automated dependency update PRs and a monthly supported-runtime upgrade cadence.
+- [x] Remove all root runtime and mobile critical/high dependency advisories.
+- [x] Separate runtime from development audit results and document accepted exceptions with owner and expiry.
+- [x] Remove `continue-on-error` and `|| true` for critical/high dependency and static-security checks.
+- [x] Pin third-party GitHub Actions to immutable commit SHAs.
+- [x] Add automated Dependabot update PRs.
 
 Done when CI blocks new unapproved critical/high runtime vulnerabilities and current exceptions are explicit and time-bounded.
 
@@ -155,9 +208,9 @@ Done when CI blocks new unapproved critical/high runtime vulnerabilities and cur
 
 - [ ] Fix the duplicated `WHERE` clause in the password-reset throttling query.
 - [ ] Replace tests that only assert mock values with HTTP tests for register, login, logout, reset, verify, scoped magic links, deleted users, and admin access.
-- [ ] Decide a fail-secure policy for blacklist lookup failures. A database error must not make a known-revoked credential valid.
+- [x] Fail securely when blacklist/invalidation storage is unavailable.
 - [ ] Make password reset, token use, password update, and user-wide invalidation atomic where required.
-- [ ] Apply soft-deleted-user checks consistently to token use and all auth lookup paths.
+- [x] Reject soft-deleted users in bearer and magic-link authentication paths.
 - [ ] Standardize unauthenticated/invalid/expired responses and client behavior.
 
 Done when recovery emails are actually generated in an integration test and revoked/deleted users cannot authenticate through HTTP or WebSocket paths.
@@ -165,19 +218,19 @@ Done when recovery emails are actually generated in an integration test and revo
 ### ARCH-007 — Apply HTTP security and cost controls to WebSockets
 
 - [ ] Extract one credential-verification service used by HTTP and WebSockets, including revocation and scoped-token policy.
-- [ ] Enforce AI entitlements and usage quotas on voice WebSockets; an upgrade request must not bypass `checkAIQuota`.
-- [ ] Validate `Origin`, cap connections per user/IP, cap message and pending-buffer size, and add idle/session deadlines and heartbeat termination.
+- [x] Enforce AI entitlements and usage quotas before issuing a voice WebSocket ticket.
+- [x] Validate `Origin`, cap connections/payload/buffer size, and add session deadlines and heartbeat termination.
 - [ ] Add upstream connect timeout, backpressure handling, structured close reasons, and metrics for concurrent sessions and bytes.
-- [ ] Move public one-time tickets to a multi-instance-safe store or explicitly keep voice traffic single-instance.
-- [ ] Never place reusable long-lived JWTs in logs; plan a short-lived WebSocket ticket for authenticated users too.
+- [x] Store Cloudflare voice tickets in the Durable Object that owns the session.
+- [x] Use 60-second single-use WebSocket tickets instead of reusable JWT query parameters.
 
 Done when the same account, revocation, entitlement, and abuse rules apply to REST and voice sessions.
 
 ### ARCH-008 — Fix graceful shutdown and process ownership
 
-- [ ] Make shutdown idempotent and stop accepting new HTTP/WebSocket work before closing dependencies.
-- [ ] Await HTTP draining, WebSocket closure, queue stop, and database close in order.
-- [ ] Clear the force-exit timer on successful shutdown and exit `0`; use `1` only after a real timeout/failure.
+- [x] Make Node-transition shutdown idempotent and stop accepting new HTTP/WebSocket work first.
+- [x] Await HTTP draining, WebSocket closure, queue stop, and database close.
+- [x] Clear the force-exit timer on success and use a failure exit only after timeout/error.
 - [ ] Give worker jobs a drain window and make abandoned jobs retryable.
 - [ ] Add signal tests for API and worker.
 
@@ -187,9 +240,9 @@ Done when SIGTERM drains a healthy process within the platform grace period with
 
 ### ARCH-009 — Create a testable API bootstrap
 
-- [ ] Split `createApp(dependencies)` from `listen()` so tests can run the real middleware/router stack without starting production cron, sockets, or vendors.
+- [x] Split `createApp(dependencies)` from `listen()` so tests can run the middleware/router stack without process side effects.
 - [ ] Inject database, queue, storage, clock, ID generator, logger, and provider clients through a composition root.
-- [ ] Keep middleware order in one reviewed bootstrap module, with explicit raw-body, public, protected, admin, not-found, and error phases.
+- [x] Keep middleware order in one reviewed bootstrap with an explicit raw-body phase.
 - [ ] Add an automated route inventory showing method, path, auth/scope, validation, rate limit, and response schema.
 
 ### ARCH-010 — Migrate backend features as vertical slices
@@ -205,21 +258,21 @@ Done when new route code cannot bypass the dependency direction and the selected
 
 ### ARCH-011 — Make background side effects durable
 
-- [ ] Replace fire-and-forget entity extraction and chapter-image work with named pg-boss jobs.
+- [x] Replace Worker fire-and-forget entity extraction and chapter-image work with named Cloudflare Queue messages.
 - [ ] Add consumers for every declared job or delete unused job names.
 - [ ] Use a transactional outbox, or a documented equivalent, where a database write and required job publication must not diverge.
 - [ ] Define retry limits, exponential backoff, idempotency key, timeout, dead-letter behavior, and operator replay for each job.
-- [ ] Derive chapter completion from canonical server data, never client-provided `total_questions` or a default of five.
+- [x] Derive chapter completion from canonical shared chapter data, never client-provided totals.
 - [ ] Report job state to clients with stable product states rather than raw queue implementation states.
 
 ### ARCH-012 — Publish one versioned API contract
 
-- [ ] Make `/api/v1` the canonical HTTP base and update web, mobile, emails, Telegram, webhooks, and documentation.
+- [x] Make `/api/v1` the canonical client HTTP base and update web, mobile, webhooks, and documentation.
 - [ ] Remove duplicated router registration by mounting a v1 router once; keep an explicit, measured compatibility layer for legacy clients.
 - [ ] Define a consistent success/error/pagination envelope and machine-readable error codes.
 - [ ] Complete OpenAPI coverage for all public endpoints, including auth, scopes, rate limits, file/binary responses, and webhook schemas.
 - [ ] Generate client types and request functions from the contract; add a breaking-change check in CI.
-- [ ] Publish a deprecation policy and remove unversioned aliases only after usage reaches zero.
+- [x] Publish machine-readable deprecation/sunset headers for legacy business routes.
 
 ### ARCH-013 — Standardize validation, errors, and pagination
 
@@ -249,9 +302,9 @@ Done when new route code cannot bypass the dependency direction and the selected
 
 ### ARCH-016 — Make product catalog and entitlements a domain module
 
-- [ ] Centralize product IDs, prices, currencies, included artifacts, free chapters, premium duration, refund rules, and feature entitlements.
+- [x] Centralize product IDs, prices, currencies, and product metadata in the shared package.
 - [ ] Remove contradictory hardcoded prices from marketing pages, legal pages, support answers, notifications, export status, and payment routes.
-- [ ] Fetch display pricing from a safe catalog endpoint or generate client constants from the same source.
+- [x] Generate web and API pricing from the same shared product catalog.
 - [ ] Model payment and entitlement transitions explicitly and transactionally, including refund and subscription cancellation.
 - [ ] Add tests proving every sellable UI product maps to a Stripe product rule and grants exactly the promised entitlement.
 
@@ -309,18 +362,18 @@ Done when new route code cannot bypass the dependency direction and the selected
 
 ### ARCH-023 — Make mobile a first-class workspace or isolate it
 
-- [ ] Make an explicit product decision: ship mobile and include it in the monorepo gates, or move/freeze it outside the active product workspace.
+- [x] Keep mobile active as an intentionally isolated package and include its lockfile, typecheck, and audit in CI.
 - [ ] If active, add it to root scripts and CI with `expo-doctor`, TypeScript, lint, unit/component tests, and an EAS preview build.
-- [ ] Fix all 15 current TypeScript errors before feature work.
-- [ ] Replace the hardcoded localhost/production URL with validated `EXPO_PUBLIC_API_URL` environment profiles suitable for real devices.
+- [x] Fix all 15 current TypeScript errors.
+- [x] Replace the fixed API host with an `EXPO_PUBLIC_API_URL` override and canonical Cloudflare production origin.
 - [ ] Add typed navigation parameters and eliminate broad `any` response types.
 - [ ] Define supported Expo/React Native upgrade cadence and release ownership.
 
 ### ARCH-024 — Share contracts and canonical domain content with mobile
 
-- [ ] Move mobile onto the canonical 24-chapter package; remove its 1,488-line duplicate.
-- [ ] Add package exports and types that work in Node, Vite, and Metro without source-path hacks.
-- [ ] Share API schemas/client, product metadata, entitlement rules, and design tokens where behavior must match.
+- [x] Move mobile onto the canonical 24-chapter package; remove its 1,488-line duplicate.
+- [x] Add shared package exports and declarations that work in Node, Vite, and Metro.
+- [x] Share canonical chapter and product metadata across clients and API.
 - [ ] Keep platform UI components separate; share semantics and tokens, not DOM/native implementations.
 - [ ] Add a CI test proving web, mobile, API, worker, and Telegram reference valid canonical chapter/question IDs.
 
@@ -346,8 +399,8 @@ Done when new route code cannot bypass the dependency direction and the selected
 
 ### ARCH-027 — Make CI reproducible and non-mutating
 
-- [ ] Standardize Node 22 across `engines`, `.nvmrc`, CI, Nixpacks, Render, and contributor docs.
-- [ ] Stop deleting `package-lock.json`; use one reproducible `npm ci` workspace install.
+- [x] Standardize Node 22 across `engines`, `.nvmrc`, CI, Nixpacks, Render, and contributor docs.
+- [x] Stop deleting `package-lock.json`; use reproducible `npm ci` workspace installs.
 - [ ] Change lint scripts so CI never uses `--fix`; make warnings fail after the existing backlog is cleared.
 - [ ] Add backend JS type-check, mobile type-check, worker boot, clean-DB migrations, contract diff, web/mobile build, bundle budget, and route inventory jobs.
 - [ ] Cache safely without hiding lockfile or generated-contract changes.

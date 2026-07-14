@@ -11,7 +11,7 @@ export function usePremiumStatus() {
 
   return useQuery({
     queryKey: queryKeys.payments.status,
-    queryFn: () => api.get('/api/payments/status'),
+    queryFn: () => api.get('/api/v1/payments/status'),
     staleTime: 10 * 60 * 1000 // Premium status changes infrequently — cache for 10 min
   })
 }
@@ -24,6 +24,6 @@ export function usePaymentHistory() {
 
   return useQuery({
     queryKey: queryKeys.payments.history,
-    queryFn: () => api.get('/api/payments/history')
+    queryFn: () => api.get('/api/v1/payments/history')
   })
 }

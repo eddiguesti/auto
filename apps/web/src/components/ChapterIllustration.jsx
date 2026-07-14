@@ -55,7 +55,7 @@ export default function ChapterIllustration({ chapterId, stories = [], onGenerat
     setError(null)
 
     try {
-      const res = await authFetch('/api/ai/generate-illustration', {
+      const res = await authFetch('/api/v1/ai/generate-illustration', {
         method: 'POST',
         body: JSON.stringify({
           chapterId,

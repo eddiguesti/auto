@@ -80,7 +80,7 @@ export default function ChapterReview() {
   const fetchReview = async () => {
     setLoading(true)
     try {
-      const res = await authFetch(`/api/chapter-review/${chapterId}`)
+      const res = await authFetch(`/api/v1/chapter-review/${chapterId}`)
       if (res.ok) {
         const data = await res.json()
         if (data.review) {
@@ -107,7 +107,7 @@ export default function ChapterReview() {
       return
     setRewriting(true)
     try {
-      const res = await authFetch(`/api/chapter-review/${chapterId}/rewrite`, { method: 'POST' })
+      const res = await authFetch(`/api/v1/chapter-review/${chapterId}/rewrite`, { method: 'POST' })
       if (res.ok) {
         const data = await res.json()
         setPolishedText(data.polishedText)
@@ -136,7 +136,7 @@ export default function ChapterReview() {
     setClioLoading(true)
 
     try {
-      const res = await authFetch(`/api/chapter-review/${chapterId}/clio-edit`, {
+      const res = await authFetch(`/api/v1/chapter-review/${chapterId}/clio-edit`, {
         method: 'POST',
         body: JSON.stringify({
           instruction,
@@ -182,7 +182,7 @@ export default function ChapterReview() {
         const controller = new AbortController()
         abortControllerRef.current = controller
         try {
-          const res = await authFetch(`/api/chapter-review/${chapterId}/save`, {
+          const res = await authFetch(`/api/v1/chapter-review/${chapterId}/save`, {
             method: 'PUT',
             body: JSON.stringify({ polishedText: newText }),
             signal: controller.signal

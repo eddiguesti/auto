@@ -114,6 +114,23 @@ export function setupMiddleware(app, { beforeJson } = {}) {
   app.use('/api', globalLimiter)
   app.use(requestId)
   app.use(requestTiming)
+  app.use('/api', (req, res, next) => {
+    const operationalPrefixes = [
+      '/v1',
+      '/health',
+      '/docs',
+      '/webhooks',
+      '/csp-report',
+      '/telnyx',
+      '/voice/ws'
+    ]
+    if (!operationalPrefixes.some(prefix => req.path.startsWith(prefix))) {
+      res.setHeader('Deprecation', 'true')
+      res.setHeader('Sunset', 'Wed, 14 Jan 2027 00:00:00 GMT')
+      res.setHeader('Link', `</api/v1${req.path}>; rel="successor-version"`)
+    }
+    next()
+  })
   if (beforeJson) beforeJson()
   app.use(express.json({ limit: '1mb' }))
 }

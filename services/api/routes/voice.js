@@ -8,9 +8,106 @@ import { extractAndStoreEntities } from '../services/entityExtractionService.js'
 import { compileTranscripts } from '../services/transcriptService.js'
 import { invalidateUserCache } from '../utils/cache.js'
 import { ConfigurationError } from '../utils/errors.js'
+import multer from 'multer'
+import crypto from 'crypto'
+import { r2Delete, r2GetBuffer, r2Upload } from '../utils/r2.js'
+import { checkAIQuota } from '../middleware/aiQuota.js'
+import { issueAuthenticatedVoiceTicket } from '../utils/voiceTicket.js'
 
 const router = Router()
 const logger = createLogger('voice')
+const audioUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 25 * 1024 * 1024 },
+  fileFilter: (_req, file, callback) => {
+    const allowed = new Set([
+      'audio/mp4',
+      'audio/m4a',
+      'audio/x-m4a',
+      'audio/mpeg',
+      'audio/wav',
+      'audio/ogg',
+      'audio/webm'
+    ])
+    callback(
+      allowed.has(file.mimetype) ? null : new Error('Unsupported audio type'),
+      allowed.has(file.mimetype)
+    )
+  }
+})
+
+function isAudio(buffer) {
+  return (
+    buffer.subarray(0, 4).toString('ascii') === 'RIFF' ||
+    buffer.subarray(0, 3).toString('ascii') === 'ID3' ||
+    (buffer[0] === 0xff && (buffer[1] & 0xe0) === 0xe0) ||
+    buffer.subarray(0, 4).toString('ascii') === 'OggS' ||
+    buffer.subarray(0, 4).toString('hex') === '1a45dfa3' ||
+    buffer.subarray(4, 8).toString('ascii') === 'ftyp'
+  )
+}
+
+// Upload a mobile recording to private R2 storage. Transcription is optional;
+// the current provider path stores the original recording without fabricating text.
+router.post(
+  '/upload',
+  audioUpload.single('audio'),
+  asyncHandler(async (req, res) => {
+    if (!req.file || !isAudio(req.file.buffer)) {
+      return res.status(400).json({ error: 'A valid audio recording is required' })
+    }
+
+    const userId = req.user.id
+    const filename = `${crypto.randomUUID()}.m4a`
+    const objectKey = `recordings/${userId}/${filename}`
+    await r2Upload(objectKey, req.file.buffer, req.file.mimetype)
+    try {
+      await req.app.locals.db.query(
+        `INSERT INTO media_objects (object_key, user_id, media_type, content_type, size_bytes)
+         VALUES ($1, $2, 'recording', $3, $4)`,
+        [objectKey, userId, req.file.mimetype, req.file.size]
+      )
+    } catch (error) {
+      await r2Delete(objectKey).catch(() => {})
+      throw error
+    }
+
+    res.status(201).json({
+      success: true,
+      data: { audioUrl: `/api/v1/voice/audio/${filename}` }
+    })
+  })
+)
+
+// Stream only recordings referenced by the authenticated user's memo/prompt.
+router.get(
+  '/audio/:filename',
+  asyncHandler(async (req, res) => {
+    const filename = req.params.filename.replace(/[^a-zA-Z0-9._-]/g, '')
+    if (filename !== req.params.filename) return res.status(400).json({ error: 'Invalid filename' })
+
+    const db = req.app.locals.db
+    const audioUrl = `/api/v1/voice/audio/${filename}`
+    const owned = await db.query(
+      `SELECT 1 FROM memos WHERE user_id = $1 AND audio_url = $2
+     UNION ALL
+     SELECT 1 FROM daily_prompts WHERE user_id = $1 AND audio_url = $2
+     LIMIT 1`,
+      [req.user.id, audioUrl]
+    )
+    if (owned.rows.length === 0) return res.status(404).json({ error: 'Recording not found' })
+
+    const object = await r2GetBuffer(`recordings/${req.user.id}/${filename}`)
+    if (!object) return res.status(404).json({ error: 'Recording not found' })
+    res.setHeader('Content-Type', object.contentType)
+    res.setHeader('Cache-Control', 'private, no-store')
+    return res.send(object.body)
+  })
+)
+
+// Remaining voice endpoints invoke AI and consume the daily allowance. Media
+// upload/playback above are storage operations and must not consume AI quota.
+router.use(checkAIQuota)
 
 // Helper: Get or create active voice session
 async function getOrCreateSession(db, userId, chapterId) {
@@ -98,7 +195,9 @@ router.post(
       }
     }
 
+    const ticket = await issueAuthenticatedVoiceTicket(userId)
     res.json({
+      ticket,
       session_id: session?.id,
       questions_answered: session?.questions_answered || [],
       current_question_id: session?.current_question_id

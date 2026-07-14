@@ -49,7 +49,7 @@ export default function Settings() {
     setProfileSuccess(false)
 
     try {
-      const res = await authFetch('/api/auth/profile', {
+      const res = await authFetch('/api/v1/auth/profile', {
         method: 'PUT',
         body: JSON.stringify({
           name: profileName,
@@ -87,7 +87,7 @@ export default function Settings() {
     setDeleteError(null)
 
     try {
-      const res = await authFetch('/api/user/delete-account', {
+      const res = await authFetch('/api/v1/user/delete-account', {
         method: 'DELETE'
       })
 
@@ -109,7 +109,7 @@ export default function Settings() {
     setResendingVerification(true)
     setVerificationMessage('')
     try {
-      const res = await authFetch('/api/auth/resend-verification', {
+      const res = await authFetch('/api/v1/auth/resend-verification', {
         method: 'POST'
       })
       const data = await res.json()

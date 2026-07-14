@@ -59,7 +59,7 @@ export default function AIAssistant({ context, onClose, onInsertText }) {
   }
 
   const callAI = async (endpoint, body) => {
-    const res = await authFetch(`/api/ai/${endpoint}`, {
+    const res = await authFetch(`/api/v1/ai/${endpoint}`, {
       method: 'POST',
       body: JSON.stringify(body)
     })

@@ -37,8 +37,8 @@ export default function OnboardingOffer({ firstName, onTryFree }) {
     if (isLoading) return
     setIsLoading(true)
     try {
-      authFetch('/api/onboarding/complete', { method: 'POST' }).catch(() => {})
-      const res = await authFetch('/api/payments/create-checkout', {
+      authFetch('/api/v1/onboarding/complete', { method: 'POST' }).catch(() => {})
+      const res = await authFetch('/api/v1/payments/create-checkout', {
         method: 'POST',
         body: JSON.stringify({
           productId: 'onboarding_bundle',

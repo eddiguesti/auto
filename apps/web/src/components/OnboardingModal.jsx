@@ -92,7 +92,7 @@ export default function OnboardingModal({ onClose, initialStep }) {
     setPreference(pref)
 
     try {
-      await authFetch('/api/onboarding/preference', {
+      await authFetch('/api/v1/onboarding/preference', {
         method: 'POST',
         body: JSON.stringify({ preference: pref })
       })
@@ -108,7 +108,7 @@ export default function OnboardingModal({ onClose, initialStep }) {
     setStep(STEPS.CHANNEL_SELECTION)
 
     // Extract context in the background — don't block the UI
-    authFetch('/api/onboarding/context', {
+    authFetch('/api/v1/onboarding/context', {
       method: 'POST',
       body: JSON.stringify({ transcripts })
     })
@@ -128,7 +128,7 @@ export default function OnboardingModal({ onClose, initialStep }) {
     const timeout = setTimeout(() => controller.abort(), 12000)
 
     try {
-      const res = await authFetch('/api/onboarding/context-form', {
+      const res = await authFetch('/api/v1/onboarding/context-form', {
         method: 'POST',
         body: JSON.stringify(formData),
         signal: controller.signal
@@ -155,7 +155,7 @@ export default function OnboardingModal({ onClose, initialStep }) {
   // Handle channel selection completion — save preferences in background, show offer
   const handleChannelSelectionComplete = async selectedChannels => {
     // Save channel preferences in background — don't block the UI
-    authFetch('/api/onboarding/channel-preferences', {
+    authFetch('/api/v1/onboarding/channel-preferences', {
       method: 'POST',
       body: JSON.stringify({ channels: selectedChannels })
     }).catch(err => console.error('Channel save failed:', err))
@@ -165,7 +165,7 @@ export default function OnboardingModal({ onClose, initialStep }) {
 
   // Handle "try free" from offer — mark onboarding complete, show tour
   const handleTryFree = () => {
-    authFetch('/api/onboarding/complete', { method: 'POST' }).catch(() => {})
+    authFetch('/api/v1/onboarding/complete', { method: 'POST' }).catch(() => {})
     setStep(STEPS.TOUR_OFFER)
   }
 

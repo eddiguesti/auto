@@ -148,7 +148,12 @@ export const gameSchemas = {
     },
     body: {
       answer: { type: 'string', required: true, minLength: 1, maxLength: 100000 },
-      audioUrl: { type: 'url', protocols: ['https'] }
+      audioUrl: {
+        type: 'string',
+        maxLength: 200,
+        pattern: /^\/api\/v1\/voice\/audio\/[a-zA-Z0-9._-]+$/,
+        patternMessage: 'must be a private Easy Memoir recording URL'
+      }
     }
   },
 
@@ -334,7 +339,13 @@ export const memoSchemas = {
   create: {
     body: {
       title: { type: 'string', maxLength: 500 },
-      audio_url: { type: 'url', required: true, protocols: ['https'] },
+      audio_url: {
+        type: 'string',
+        required: true,
+        maxLength: 200,
+        pattern: /^\/api\/v1\/voice\/audio\/[a-zA-Z0-9._-]+$/,
+        patternMessage: 'must be a private Easy Memoir recording URL'
+      },
       transcript: { type: 'string', maxLength: 100000 },
       duration: { type: 'number', min: 0, max: 36000 }
     }

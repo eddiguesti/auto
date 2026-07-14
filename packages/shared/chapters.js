@@ -1705,3 +1705,11 @@ export const chapters = [
     ]
   }
 ]
+
+export function getChapterById(id) {
+  return chapters.find(chapter => chapter.id === id)
+}
+
+export function getTotalQuestions() {
+  return chapters.reduce((total, chapter) => total + chapter.questions.length, 0)
+}

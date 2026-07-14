@@ -11,7 +11,7 @@ export function useChapterStories(chapterId) {
 
   return useQuery({
     queryKey: queryKeys.stories.chapter(chapterId),
-    queryFn: () => api.get(`/api/stories/${chapterId}`),
+    queryFn: () => api.get(`/api/v1/stories/${chapterId}`),
     enabled: Boolean(chapterId)
   })
 }
@@ -24,7 +24,7 @@ export function useStoryById(storyId) {
 
   return useQuery({
     queryKey: queryKeys.stories.byId(storyId),
-    queryFn: () => api.get(`/api/stories/answer/${storyId}`),
+    queryFn: () => api.get(`/api/v1/stories/answer/${storyId}`),
     enabled: Boolean(storyId)
   })
 }
@@ -38,7 +38,7 @@ export function useDashboardProgress(userId) {
 
   return useQuery({
     queryKey: queryKeys.dashboard.progress(userId),
-    queryFn: () => api.get('/api/stories/progress').then(data => data.progress || data),
+    queryFn: () => api.get('/api/v1/stories/progress').then(data => data.progress || data),
     enabled: Boolean(userId)
   })
 }

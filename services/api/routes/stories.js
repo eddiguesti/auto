@@ -12,6 +12,12 @@ import { scheduleUpgradeDrip } from '../utils/notifications.js'
 import { storyRepository } from '../repositories/storyRepository.js'
 import { userRepository } from '../repositories/userRepository.js'
 import { onboardingRepository } from '../repositories/onboardingRepository.js'
+import { chapters } from '@easy-memoir/shared/chapters'
+import {
+  chapterImageKey,
+  chapterImagePath,
+  persistGeneratedImage
+} from '../utils/generatedImage.js'
 
 const logger = createLogger('stories')
 
@@ -128,12 +134,20 @@ Create an image prompt:`,
     }
 
     if (imageUrl) {
-      await onboardingRepository.completeChapterImage(db, userId, chapterId, imageUrl, prompt)
+      await persistGeneratedImage(imageUrl, chapterImageKey(userId, chapterId))
+      await onboardingRepository.completeChapterImage(
+        db,
+        userId,
+        chapterId,
+        chapterImagePath(chapterId),
+        prompt
+      )
       logger.info('Generated personalized image', { chapterId, userId })
     }
   } catch (err) {
     logger.error('Image generation failed', { chapterId, userId, error: err.message })
     await onboardingRepository.failChapterImage(db, userId, chapterId)
+    throw err
   }
 }
 
@@ -145,6 +159,33 @@ async function extractEntitiesAsync(db, userId, text, chapterId, questionId, sto
   } catch (err) {
     logger.error('Entity extraction failed', { storyId, error: err.message })
   }
+}
+
+export async function processStoryPostprocess(db, data) {
+  await extractEntitiesAsync(
+    db,
+    data.userId,
+    data.answer,
+    data.chapterId,
+    data.questionId,
+    data.storyId
+  )
+  await checkAndGenerateChapterImage(db, data.userId, data.chapterId, data.totalQuestions)
+}
+
+async function scheduleStoryPostprocess(db, data) {
+  const queue = globalThis.__CLOUDFLARE_BINDINGS__?.BACKGROUND_QUEUE
+  if (queue) return queue.send({ type: 'story.postprocess', ...data })
+
+  // Transitional Node runtime: run asynchronously in-process. Cloudflare always
+  // uses the durable Queue binding because request isolates may be reclaimed.
+  processStoryPostprocess(db, data).catch(error => {
+    logger.error('Story post-processing failed', {
+      storyId: data.storyId,
+      chapterId: data.chapterId,
+      error: error.message
+    })
+  })
 }
 
 /**
@@ -385,7 +426,12 @@ router.post(
   asyncHandler(async (req, res) => {
     const db = req.app.locals.db
     const userId = req.user.id
-    const { chapter_id, question_id, answer, total_questions } = req.validatedBody
+    const { chapter_id, question_id, answer } = req.validatedBody
+
+    const chapter = chapters.find(item => item.id === chapter_id)
+    if (!chapter || !chapter.questions.some(question => question.id === question_id)) {
+      return res.status(400).json({ error: 'Unknown chapter or question' })
+    }
 
     const hasPremium = await requirePremiumForChapter(db, userId, chapter_id)
     if (!hasPremium) {
@@ -403,22 +449,13 @@ router.post(
     // Invalidate user's cached data since progress changed
     invalidateUserCache(userId)
 
-    // Extract entities asynchronously (don't wait for it)
-    extractEntitiesAsync(db, userId, answer, chapter_id, question_id, storyId).catch(err => {
-      logger.error('Background entity extraction error', {
-        storyId,
-        chapterId: chapter_id,
-        error: err.message
-      })
-    })
-
-    // Check if chapter is now complete and generate personalized artwork (don't wait)
-    const totalQuestions = total_questions || 5 // Default assumption
-    checkAndGenerateChapterImage(db, userId, chapter_id, totalQuestions).catch(err => {
-      logger.error('Background image generation error', {
-        chapterId: chapter_id,
-        error: err.message
-      })
+    await scheduleStoryPostprocess(db, {
+      userId,
+      storyId,
+      chapterId: chapter_id,
+      questionId: question_id,
+      answer,
+      totalQuestions: chapter.questions.length
     })
 
     res.json({ success: true, id: storyId })

@@ -4,6 +4,7 @@ import { scheduleDailyReminder, scheduleStreakWarning } from '../utils/notificat
 import { captureException } from '../utils/sentry.js'
 import { createLogger } from '../utils/logger.js'
 import { cleanupExpiredBlacklist } from '../utils/tokenBlacklist.js'
+import { r2Delete } from '../utils/r2.js'
 
 const logger = createLogger('cron:daily')
 
@@ -31,6 +32,21 @@ async function markCronSuccess(jobName) {
   } catch {
     /* non-critical */
   }
+}
+
+async function cleanupOrphanMedia() {
+  const result = await pool.query(
+    `SELECT object_key FROM media_objects
+     WHERE referenced_at IS NULL AND created_at < NOW() - INTERVAL '24 hours'
+     ORDER BY created_at LIMIT 500`
+  )
+  for (const row of result.rows) {
+    await r2Delete(row.object_key)
+    await pool.query('DELETE FROM media_objects WHERE object_key = $1 AND referenced_at IS NULL', [
+      row.object_key
+    ])
+  }
+  return result.rows.length
 }
 
 /**
@@ -101,6 +117,7 @@ export async function runDailyTasks() {
     await cleanupExpiredBlacklist()
     await pool.query(`DELETE FROM email_verification_tokens WHERE expires_at < NOW()`)
     await pool.query(`DELETE FROM password_reset_tokens WHERE expires_at < NOW()`)
+    const orphanMediaDeleted = await cleanupOrphanMedia()
     logger.info('Cleaned up expired tokens')
 
     const duration = Date.now() - startedAt
@@ -109,6 +126,7 @@ export async function runDailyTasks() {
       status: 'success',
       durationMs: duration,
       promptsGenerated,
+      orphanMediaDeleted,
       brokenStreaks: brokenStreaks.rows.length
     })
     await markCronSuccess(jobName)

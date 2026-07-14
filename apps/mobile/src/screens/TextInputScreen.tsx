@@ -37,6 +37,7 @@ export default function TextInputScreen({ navigation, route }: any) {
   const checkmarkScale = useRef(new Animated.Value(0)).current;
   const headerOpacity = useRef(new Animated.Value(0)).current;
   const contentOpacity = useRef(new Animated.Value(0)).current;
+  const wasValid = useRef(false);
 
   // Entrance animations
   useEffect(() => {
@@ -65,7 +66,8 @@ export default function TextInputScreen({ navigation, route }: any) {
     }).start();
 
     // Animate checkmark when valid
-    if (isValid && checkmarkScale._value === 0) {
+    if (isValid && !wasValid.current) {
+      wasValid.current = true;
       haptics.success();
       Animated.spring(checkmarkScale, {
         toValue: 1,
@@ -73,7 +75,8 @@ export default function TextInputScreen({ navigation, route }: any) {
         friction: 8,
         useNativeDriver: true,
       }).start();
-    } else if (!isValid && checkmarkScale._value !== 0) {
+    } else if (!isValid && wasValid.current) {
+      wasValid.current = false;
       Animated.timing(checkmarkScale, {
         toValue: 0,
         duration: 150,

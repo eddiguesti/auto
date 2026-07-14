@@ -57,7 +57,7 @@ export default function AdminUserDetail() {
     setError(null)
 
     try {
-      const res = await authFetch(`/api/admin/users/${id}`)
+      const res = await authFetch(`/api/v1/admin/users/${id}`)
       if (!res.ok) {
         const data = await res.json()
         throw new Error(data.error || 'Failed to load user')
@@ -89,7 +89,7 @@ export default function AdminUserDetail() {
 
     setPremiumLoading(true)
     try {
-      const res = await authFetch(`/api/admin/users/${id}/premium`, {
+      const res = await authFetch(`/api/v1/admin/users/${id}/premium`, {
         method: 'POST',
         body: JSON.stringify({ months: parsed })
       })

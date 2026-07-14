@@ -126,7 +126,7 @@ describe('AuthContext', () => {
     mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({}) })
 
     await act(async () => {
-      await latestAuth.authFetch('/api/test')
+      await latestAuth.authFetch('/api/v1/test')
     })
 
     const fetchCall = mockFetch.mock.calls[mockFetch.mock.calls.length - 1]

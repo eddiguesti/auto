@@ -1,4 +1,4 @@
--- Performance Indexes Migration
+-- Performance Indexes Migration (idempotent; formerly add_performance_indexes.sql)
 -- Run this to improve query performance on common operations
 
 -- Stories table indexes (most queried table)

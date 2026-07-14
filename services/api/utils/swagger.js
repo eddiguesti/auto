@@ -17,7 +17,7 @@ const definition = {
       'REST API for the Easy Memoir AI-powered autobiography platform. ' +
       'Most endpoints require a Bearer JWT obtained from POST /api/auth/login.'
   },
-  servers: [{ url: '/api', description: 'Current server' }],
+  servers: [{ url: '/api/v1', description: 'Version 1' }],
   components: {
     securitySchemes: {
       bearerAuth: {

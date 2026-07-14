@@ -41,7 +41,7 @@ export default function ResetPassword() {
     const verifyToken = async () => {
       try {
         const res = await fetch(
-          `${API_URL}/api/auth/verify-reset-token?token=${encodeURIComponent(token)}`
+          `${API_URL}/api/v1/auth/verify-reset-token?token=${encodeURIComponent(token)}`
         )
         const data = await res.json()
         setTokenValid(data.valid)
@@ -72,7 +72,7 @@ export default function ResetPassword() {
     setLoading(true)
 
     try {
-      const res = await fetch(`${API_URL}/api/auth/reset-password`, {
+      const res = await fetch(`${API_URL}/api/v1/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, password })

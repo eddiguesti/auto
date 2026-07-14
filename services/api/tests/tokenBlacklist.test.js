@@ -17,6 +17,7 @@ import {
   isTokenBlacklisted,
   blacklistAllUserTokens,
   isUserTokenBlacklisted,
+  isUserActive,
   cleanupExpiredBlacklist
 } from '../utils/tokenBlacklist.js'
 
@@ -79,6 +80,14 @@ describe('Token Blacklisting', () => {
 })
 
 describe('User-Level Token Blacklisting', () => {
+  it('requires an existing non-deleted user', async () => {
+    pool.query.mockResolvedValue({ rows: [{ '?column?': 1 }], rowCount: 1 })
+    await expect(isUserActive(42)).resolves.toBe(true)
+
+    pool.query.mockResolvedValue({ rows: [], rowCount: 0 })
+    await expect(isUserActive(42)).resolves.toBe(false)
+  })
+
   it('upserts into user_token_invalidation for a user', async () => {
     pool.query.mockResolvedValue({ rows: [], rowCount: 1 })
     const result = await blacklistAllUserTokens(42)

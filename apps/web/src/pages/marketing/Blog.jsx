@@ -401,7 +401,7 @@ export default function Blog() {
     }
     setNewsletterLoading(true)
     try {
-      const res = await fetch(`${API_URL}/api/newsletter/subscribe`, {
+      const res = await fetch(`${API_URL}/api/v1/newsletter/subscribe`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

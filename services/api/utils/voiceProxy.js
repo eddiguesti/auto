@@ -3,7 +3,7 @@
  *
  * Browser cannot set Authorization headers on WebSocket connections, but Node.js can.
  * This proxy:
- *   1. Accepts a browser WS connection authenticated via JWT query param
+ *   1. Accepts a browser WS connection authenticated by a single-use ticket
  *   2. Opens a server-side WS to xAI with the GROK_API_KEY in the Authorization header
  *   3. Forwards all messages bidirectionally
  *
@@ -13,9 +13,7 @@
 
 import { WebSocket } from 'ws'
 import crypto from 'crypto'
-import jwt from 'jsonwebtoken'
 import { createLogger } from './logger.js'
-import { isTokenBlacklisted, isUserTokenBlacklisted } from './tokenBlacklist.js'
 
 const logger = createLogger('voice-proxy')
 
@@ -25,20 +23,19 @@ const TICKET_TTL_MS = 60_000
 const MAX_PENDING_MESSAGES = 32
 const MAX_PENDING_BYTES = 2 * 1024 * 1024
 const MAX_SESSION_MS = 15 * 60 * 1000
-const FREE_DAILY_AI_LIMIT = 10
 
 /**
  * Create a single-use voice ticket for public (no JWT) voice connections.
  * Tickets expire after 60 seconds and are consumed on first use.
  */
-export function createVoiceTicket() {
+export function createVoiceTicket({ userId = 'anonymous' } = {}) {
   const ticket = crypto.randomBytes(32).toString('hex')
-  voiceTickets.set(ticket, Date.now() + TICKET_TTL_MS)
+  voiceTickets.set(ticket, { expiresAt: Date.now() + TICKET_TTL_MS, userId })
   // Cleanup expired tickets periodically
   if (voiceTickets.size > 50) {
     const now = Date.now()
-    for (const [k, exp] of voiceTickets) {
-      if (exp < now) voiceTickets.delete(k)
+    for (const [k, entry] of voiceTickets) {
+      if (entry.expiresAt < now) voiceTickets.delete(k)
     }
   }
   return ticket
@@ -49,72 +46,21 @@ export function createVoiceTicket() {
  * @param {WebSocket} browserWs - The browser's WebSocket connection
  * @param {import('http').IncomingMessage} req - The upgrade HTTP request
  */
-export async function handleVoiceProxy(browserWs, req, db) {
+export async function handleVoiceProxy(browserWs, req) {
   const url = new URL(req.url, `http://${req.headers.host}`)
-  const userToken = url.searchParams.get('token')
   const ticket = url.searchParams.get('ticket')
 
-  // Authenticate via JWT or one-time ticket
+  // HTTP authentication and quota checks happen before this ticket is issued.
   let userId = 'anonymous'
-  if (userToken) {
-    let decoded
-    try {
-      decoded = jwt.verify(userToken, process.env.JWT_SECRET)
-    } catch {
-      browserWs.close(1008, 'Unauthorized')
-      return
-    }
-
-    try {
-      if (decoded.jti && (await isTokenBlacklisted(decoded.jti))) {
-        browserWs.close(1008, 'Token revoked')
-        return
-      }
-      if (decoded.iat && (await isUserTokenBlacklisted(decoded.id, decoded.iat))) {
-        browserWs.close(1008, 'Token revoked')
-        return
-      }
-
-      const userResult = await db.query(
-        'SELECT id, premium_until FROM users WHERE id = $1 AND deleted_at IS NULL',
-        [decoded.id]
-      )
-      if (userResult.rows.length === 0) {
-        browserWs.close(1008, 'Unauthorized')
-        return
-      }
-
-      const premiumUntil = userResult.rows[0].premium_until
-      const isPremium = premiumUntil && new Date(premiumUntil) > new Date()
-      if (!isPremium) {
-        const usage = await db.query(
-          `INSERT INTO ai_usage (user_id, date, request_count)
-           VALUES ($1, CURRENT_DATE, 1)
-           ON CONFLICT (user_id, date)
-           DO UPDATE SET request_count = ai_usage.request_count + 1, updated_at = NOW()
-           RETURNING request_count`,
-          [decoded.id]
-        )
-        if (usage.rows[0].request_count > FREE_DAILY_AI_LIMIT) {
-          browserWs.close(1008, 'Daily AI limit reached')
-          return
-        }
-      }
-
-      userId = decoded.id
-    } catch (error) {
-      logger.error('Voice authorization store unavailable', { error: error.message })
-      browserWs.close(1013, 'Authentication temporarily unavailable')
-      return
-    }
-  } else if (ticket) {
-    const expiry = voiceTickets.get(ticket)
-    if (!expiry || expiry < Date.now()) {
+  if (ticket) {
+    const entry = voiceTickets.get(ticket)
+    if (!entry || entry.expiresAt < Date.now()) {
       voiceTickets.delete(ticket)
       browserWs.close(1008, 'Invalid or expired ticket')
       return
     }
     voiceTickets.delete(ticket) // single-use
+    userId = entry.userId
   } else {
     browserWs.close(1008, 'Unauthorized')
     return

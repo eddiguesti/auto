@@ -11,7 +11,7 @@ import { buildInstructions } from '../utils/voiceInstructions'
 import { VOICE_CONFIG } from '../data/voiceConfig'
 
 export function useVoiceSession({ chapter, initialQuestionIndex = 0, photoContext = null }) {
-  const { authFetch, token: jwtToken } = useAuth()
+  const { authFetch } = useAuth()
   const { getPaceSettings, getVoice } = useSettings()
 
   const [phase, setPhase] = useState('ready') // 'ready' | 'connecting' | 'active' | 'compiling' | 'ended'
@@ -53,7 +53,7 @@ export function useVoiceSession({ chapter, initialQuestionIndex = 0, photoContex
   // Fetch session context on mount
   useEffect(() => {
     if (!chapter?.id) return
-    authFetch(`/api/voice/config?chapter=${chapter.id}`)
+    authFetch(`/api/v1/voice/config?chapter=${chapter.id}`)
       .then(res => (res.ok ? res.json() : null))
       .then(data => {
         if (data?.session) {
@@ -69,7 +69,7 @@ export function useVoiceSession({ chapter, initialQuestionIndex = 0, photoContex
       })
       .catch(() => {})
 
-    authFetch('/api/onboarding/status')
+    authFetch('/api/v1/onboarding/status')
       .then(res => (res.ok ? res.json() : null))
       .then(data => {
         if (data?.completed) {
@@ -144,7 +144,7 @@ export function useVoiceSession({ chapter, initialQuestionIndex = 0, photoContex
     if (!userText) return
 
     try {
-      const res = await authFetch('/api/voice/transcript', {
+      const res = await authFetch('/api/v1/voice/transcript', {
         method: 'POST',
         body: JSON.stringify({
           session_id: sessionIdRef.current,
@@ -255,7 +255,7 @@ export function useVoiceSession({ chapter, initialQuestionIndex = 0, photoContex
     try {
       setPhase('connecting')
       setError(null)
-      const response = await authFetch('/api/voice/session', {
+      const response = await authFetch('/api/v1/voice/session', {
         method: 'POST',
         body: JSON.stringify({ chapterId: chapter.id })
       })
@@ -275,10 +275,10 @@ export function useVoiceSession({ chapter, initialQuestionIndex = 0, photoContex
         if (nextIdx > 0 && nextIdx < chapter.questions.length) setQuestionIndex(nextIdx)
       }
 
-      if (!jwtToken) throw new Error('Not authenticated')
+      if (!session.ticket) throw new Error('Voice ticket was not issued')
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
       const ws = new WebSocket(
-        `${protocol}//${window.location.host}/api/voice/ws?token=${jwtToken}`
+        `${protocol}//${window.location.host}/api/voice/ws?ticket=${encodeURIComponent(session.ticket)}`
       )
 
       ws.onopen = () => {
@@ -335,7 +335,18 @@ export function useVoiceSession({ chapter, initialQuestionIndex = 0, photoContex
       setError(err.message)
       setPhase('ready')
     }
-  }, [chapter, question, questionsAnswered, compiledSummary, onboardingContext, photoContext])
+  }, [
+    authFetch,
+    chapter,
+    question,
+    questionsAnswered,
+    compiledSummary,
+    onboardingContext,
+    photoContext,
+    getVoice,
+    getPaceSettings,
+    phase
+  ])
 
   // Handle WebSocket messages
   const handleWsMessage = useCallback(
@@ -470,7 +481,7 @@ export function useVoiceSession({ chapter, initialQuestionIndex = 0, photoContex
     if (conversationHistory.length > 0) await saveCurrentTranscript()
     if (sessionIdRef.current) {
       try {
-        await authFetch('/api/voice/end-session', {
+        await authFetch('/api/v1/voice/end-session', {
           method: 'POST',
           body: JSON.stringify({ session_id: sessionIdRef.current })
         })

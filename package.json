@@ -45,17 +45,18 @@
     "format:check": "prettier --check \"services/api/**/*.js\" \"*.js\" \"apps/web/src/**/*.{js,jsx}\"",
     "backup": "bash tools/scripts/backup-db.sh",
     "cloudflare:check": "node tools/scripts/cloudflare-check.js",
+    "cloudflare:migrate-media": "node tools/scripts/migrate-media-to-r2.js",
     "cloudflare:dev": "npm run build && wrangler dev --config services/cloudflare/wrangler.jsonc",
     "cloudflare:deploy": "npm run cloudflare:check && npm run build:cloudflare && wrangler deploy --config services/cloudflare/wrangler.jsonc",
     "cloudflare:tail": "wrangler tail --config services/cloudflare/wrangler.jsonc",
     "prepare": "husky"
   },
   "engines": {
-    "node": ">=20.18.0"
+    "node": ">=22.12.0"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.985.0",
-    "@sentry/node": "10.38.0",
+    "@sentry/node": "10.65.0",
     "bcryptjs": "^3.0.3",
     "compression": "1.8.1",
     "concurrently": "^8.2.2",
@@ -77,7 +78,7 @@
     "stripe": "^20.3.0",
     "swagger-jsdoc": "6.2.8",
     "swagger-ui-express": "5.0.1",
-    "ws": "8.19.0"
+    "ws": "8.21.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",

@@ -53,8 +53,8 @@ export function useExport({ userName = 'My', successPath = '/export' } = {}) {
   const fetchStatus = useCallback(async () => {
     try {
       const [exportRes, audiobookRes] = await Promise.all([
-        authFetch('/api/export/status'),
-        authFetch('/api/audiobook/status')
+        authFetch('/api/v1/export/status'),
+        authFetch('/api/v1/audiobook/status')
       ])
       if (!mountedRef.current) return
       if (exportRes.ok) setExportStatus(await exportRes.json())
@@ -67,7 +67,7 @@ export function useExport({ userName = 'My', successPath = '/export' } = {}) {
   const handlePayment = useCallback(
     async productId => {
       try {
-        const res = await authFetch('/api/payments/create-checkout', {
+        const res = await authFetch('/api/v1/payments/create-checkout', {
           method: 'POST',
           body: JSON.stringify({
             productId,
@@ -92,7 +92,7 @@ export function useExport({ userName = 'My', successPath = '/export' } = {}) {
     }
     setDownloading(true)
     try {
-      const res = await authFetch('/api/export/epub')
+      const res = await authFetch('/api/v1/export/epub')
       if (!res.ok) throw new Error('Download failed')
       triggerDownload(await res.blob(), `${userName}_Life_Story.epub`)
     } catch (err) {
@@ -110,7 +110,7 @@ export function useExport({ userName = 'My', successPath = '/export' } = {}) {
       }
       setGeneratingAudiobook(true)
       try {
-        const res = await authFetch('/api/audiobook/generate', {
+        const res = await authFetch('/api/v1/audiobook/generate', {
           method: 'POST',
           body: JSON.stringify({ useOwnVoice })
         })
@@ -135,7 +135,7 @@ export function useExport({ userName = 'My', successPath = '/export' } = {}) {
     try {
       const base64 = await readBlobAsDataURL(voice.recordedAudio)
       if (!mountedRef.current) return false
-      const res = await authFetch('/api/audiobook/voice-sample', {
+      const res = await authFetch('/api/v1/audiobook/voice-sample', {
         method: 'POST',
         body: JSON.stringify({ audioData: base64, consentGiven: voiceConsent })
       })
@@ -155,7 +155,7 @@ export function useExport({ userName = 'My', successPath = '/export' } = {}) {
 
   const deleteVoiceModel = useCallback(async () => {
     try {
-      const res = await authFetch('/api/audiobook/voice-sample', { method: 'DELETE' })
+      const res = await authFetch('/api/v1/audiobook/voice-sample', { method: 'DELETE' })
       if (res.ok) await fetchStatus()
     } catch (err) {
       if (mountedRef.current) console.error('Delete voice error:', err)

@@ -25,7 +25,7 @@ export default function EmailVerificationBanner() {
     setResendMessage('')
 
     try {
-      const res = await authFetch('/api/auth/resend-verification', {
+      const res = await authFetch('/api/v1/auth/resend-verification', {
         method: 'POST'
       })
 

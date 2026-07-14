@@ -3,7 +3,16 @@
   "version": "1.0.0",
   "type": "module",
   "exports": {
-    "./chapters": "./chapters.js",
+    "./chapters": {
+      "types": "./chapters.d.ts",
+      "import": "./chapters.js",
+      "default": "./chapters.js"
+    },
+    "./products": {
+      "types": "./products.d.ts",
+      "import": "./products.js",
+      "default": "./products.js"
+    },
     "./style": "./styleOptions.js"
   }
 }

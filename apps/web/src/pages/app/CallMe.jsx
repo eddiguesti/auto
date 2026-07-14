@@ -32,7 +32,7 @@ export default function CallMe() {
     setCalling(true)
 
     try {
-      const res = await authFetch('/api/telnyx/request-call', {
+      const res = await authFetch('/api/v1/telnyx/request-call', {
         method: 'POST',
         body: JSON.stringify({ phoneNumber: cleaned })
       })

@@ -4,6 +4,7 @@ import { requireDb } from '../middleware/requireDb.js'
 import validate from '../middleware/validate.js'
 import { memoSchemas } from '../schemas/index.js'
 import { createLogger } from '../utils/logger.js'
+import { r2Delete } from '../utils/r2.js'
 
 const logger = createLogger('memos')
 
@@ -69,15 +70,44 @@ router.post(
     const db = req.app.locals.db
     const userId = req.user.id
     const { title, audio_url, transcript, duration } = req.validatedBody
+    const filename = audio_url.split('/').pop()
+    const objectKey = `recordings/${userId}/${filename}`
+    const client = await db.connect()
 
-    const result = await db.query(
-      `
-      INSERT INTO memos (user_id, title, audio_url, transcript, duration, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-      RETURNING id, title, audio_url, transcript, duration, created_at, updated_at
-    `,
-      [userId, title || null, audio_url, transcript || null, duration || null]
-    )
+    let result
+    try {
+      await client.query('BEGIN')
+      const claimed = await client.query(
+        `UPDATE media_objects
+         SET referenced_at = NOW(), reference_type = 'memo'
+         WHERE object_key = $1 AND user_id = $2 AND referenced_at IS NULL
+         RETURNING object_key`,
+        [objectKey, userId]
+      )
+      if (claimed.rows.length === 0) {
+        await client.query('ROLLBACK')
+        return res
+          .status(400)
+          .json({ success: false, error: 'Recording is invalid or already used' })
+      }
+
+      result = await client.query(
+        `INSERT INTO memos (user_id, title, audio_url, transcript, duration, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+         RETURNING id, title, audio_url, transcript, duration, created_at, updated_at`,
+        [userId, title || null, audio_url, transcript || null, duration || null]
+      )
+      await client.query('UPDATE media_objects SET reference_id = $1 WHERE object_key = $2', [
+        result.rows[0].id,
+        objectKey
+      ])
+      await client.query('COMMIT')
+    } catch (error) {
+      await client.query('ROLLBACK').catch(() => {})
+      throw error
+    } finally {
+      client.release()
+    }
 
     logger.info('Created memo', { userId, memoId: result.rows[0].id })
 
@@ -97,7 +127,7 @@ router.put(
     const { title } = req.validatedBody
 
     // Check ownership
-    const check = await db.query('SELECT id FROM memos WHERE id = $1 AND user_id = $2', [
+    const check = await db.query('SELECT id, audio_url FROM memos WHERE id = $1 AND user_id = $2', [
       memoId,
       userId
     ])
@@ -131,7 +161,7 @@ router.delete(
     const memoId = parseInt(req.params.id)
 
     // Check ownership
-    const check = await db.query('SELECT id FROM memos WHERE id = $1 AND user_id = $2', [
+    const check = await db.query('SELECT id, audio_url FROM memos WHERE id = $1 AND user_id = $2', [
       memoId,
       userId
     ])
@@ -139,7 +169,11 @@ router.delete(
       return res.status(404).json({ success: false, error: 'Memo not found' })
     }
 
+    const filename = check.rows[0].audio_url?.split('/').pop()
+    const objectKey = filename ? `recordings/${userId}/${filename}` : null
+    if (objectKey) await r2Delete(objectKey)
     await db.query('DELETE FROM memos WHERE id = $1 AND user_id = $2', [memoId, userId])
+    if (objectKey) await db.query('DELETE FROM media_objects WHERE object_key = $1', [objectKey])
 
     logger.info('Deleted memo', { userId, memoId })
 

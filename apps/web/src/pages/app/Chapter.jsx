@@ -110,7 +110,7 @@ export default function Chapter() {
   // Pre-fill birth-details answer from onboarding data if user hasn't answered it yet
   const prefillFromOnboarding = async () => {
     try {
-      const res = await authFetch('/api/onboarding/status')
+      const res = await authFetch('/api/v1/onboarding/status')
       if (!res.ok) return
       const data = await res.json()
       if (!data.completed) return
@@ -136,7 +136,7 @@ export default function Chapter() {
 
         const prefilled = parts.join(' ') + '.'
         // Save to backend so it persists
-        authFetch('/api/stories', {
+        authFetch('/api/v1/stories', {
           method: 'POST',
           body: JSON.stringify({
             chapter_id: 'earliest-memories',
@@ -182,7 +182,7 @@ export default function Chapter() {
       abortControllersRef.current[questionId] = controller
 
       try {
-        const res = await authFetch('/api/stories', {
+        const res = await authFetch('/api/v1/stories', {
           method: 'POST',
           body: JSON.stringify({
             chapter_id: chapterId,

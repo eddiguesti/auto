@@ -11,19 +11,12 @@
  * @typedef {import('../types/index.js').DbClient} DbClient
  */
 
-import { writeFile, mkdir, readFile } from 'fs/promises'
-import { existsSync } from 'fs'
-import { join, basename, dirname } from 'path'
-import { fileURLToPath } from 'url'
 import { chapters } from '@easy-memoir/shared/chapters'
 import { audiobookRepository } from '../repositories/audiobookRepository.js'
 import { storyRepository } from '../repositories/storyRepository.js'
 import { createLogger } from '../utils/logger.js'
 import { JOB } from './jobNames.js'
 import { r2GetBuffer, r2Upload } from '../utils/r2.js'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
 
 const logger = createLogger('audiobook-worker')
 const FISH_API_URL = 'https://api.fish.audio/v1'
@@ -80,17 +73,6 @@ export async function generateAudiobook({ userId, useOwnVoice }, db, jobId = 'di
       const storedVoice = await r2GetBuffer(`voices/${voiceModel.fish_model_id}`)
       if (storedVoice) {
         voiceSampleBuffer = storedVoice.body
-      } else {
-        const voicePath = join(
-          __dirname,
-          '..',
-          '..',
-          '..',
-          'uploads',
-          'voices',
-          voiceModel.fish_model_id
-        )
-        if (existsSync(voicePath)) voiceSampleBuffer = await readFile(voicePath)
       }
     }
   }
@@ -158,12 +140,7 @@ export async function generateAudiobook({ userId, useOwnVoice }, db, jobId = 'di
 
   const safeName = userName.replace(/[^a-zA-Z0-9]/g, '_')
   const filename = `${safeName}_Life_Story_${Date.now()}.mp3`
-  const uploaded = await r2Upload(`audiobooks/${filename}`, Buffer.from(audioBuffer), 'audio/mpeg')
-  if (!uploaded) {
-    const uploadsDir = join(__dirname, '..', '..', '..', 'uploads', 'audiobooks')
-    if (!existsSync(uploadsDir)) await mkdir(uploadsDir, { recursive: true })
-    await writeFile(join(uploadsDir, basename(filename)), Buffer.from(audioBuffer))
-  }
+  await r2Upload(`audiobooks/${filename}`, Buffer.from(audioBuffer), 'audio/mpeg')
 
   await audiobookRepository.saveAudiobook(db, userId, filename, useOwnVoice ? 'custom' : 'default')
 

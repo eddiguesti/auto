@@ -14,6 +14,7 @@ import { Platform } from 'react-native';
 export const fonts = {
   // Lora - elegant serif for headings and display text
   display: 'Lora_700Bold',
+  displaySemiBold: 'Lora_600SemiBold',
   displayMedium: 'Lora_600SemiBold',
   displayRegular: 'Lora_500Medium',
 

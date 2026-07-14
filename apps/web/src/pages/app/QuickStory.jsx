@@ -19,7 +19,7 @@ export default function QuickStory() {
     setSaving(true)
     setError(null)
     try {
-      const res = await authFetch('/api/free-stories', {
+      const res = await authFetch('/api/v1/free-stories', {
         method: 'POST',
         body: JSON.stringify({
           title: title.trim() || null,

@@ -1,7 +1,11 @@
 // @ts-check
 import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
-import { isTokenBlacklisted, isUserTokenBlacklisted } from '../utils/tokenBlacklist.js'
+import {
+  isTokenBlacklisted,
+  isUserTokenBlacklisted,
+  isUserActive
+} from '../utils/tokenBlacklist.js'
 
 // Dev user for local testing - bypasses auth in development
 const DEV_USER = {
@@ -49,6 +53,10 @@ export async function authenticateToken(req, res, next) {
     // Check if all user tokens were blacklisted (password reset)
     if (decoded.iat && (await isUserTokenBlacklisted(decoded.id, decoded.iat))) {
       return res.status(401).json({ error: 'Token revoked' })
+    }
+
+    if (!(await isUserActive(decoded.id))) {
+      return res.status(401).json({ error: 'Account unavailable' })
     }
 
     req.user = decoded // { id, email, jti }

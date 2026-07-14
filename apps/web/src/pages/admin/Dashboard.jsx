@@ -46,8 +46,8 @@ export default function AdminDashboard() {
 
     try {
       const [metricsRes, usersRes] = await Promise.all([
-        authFetch('/api/admin/metrics'),
-        authFetch('/api/admin/users?limit=10&page=1')
+        authFetch('/api/v1/admin/metrics'),
+        authFetch('/api/v1/admin/users?limit=10&page=1')
       ])
 
       if (!metricsRes.ok || !usersRes.ok) {

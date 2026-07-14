@@ -56,7 +56,7 @@ export default function PhotoPrompt() {
       formData.append('photo', file)
       if (selectedChapter) formData.append('chapter_id', selectedChapter)
 
-      const res = await authFetch('/api/photos/analyze', {
+      const res = await authFetch('/api/v1/photos/analyze', {
         method: 'POST',
         body: formData
       })

@@ -203,8 +203,9 @@ export default function MemosListScreen({ navigation }: any) {
     }
 
     try {
+      const source = await api.getMediaSource(memo.audio_url);
       const { sound: newSound } = await Audio.Sound.createAsync(
-        { uri: memo.audio_url },
+        source,
         { shouldPlay: true },
         (status: any) => {
           if (status.didJustFinish) {

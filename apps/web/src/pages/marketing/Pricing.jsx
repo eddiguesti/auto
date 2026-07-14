@@ -11,6 +11,7 @@ import {
 import { useAuth } from '../../context/AuthContext'
 import SEO, { breadcrumbSchema } from '../../components/SEO'
 import { Button, Card, Badge } from '../../components/ui'
+import { priceInPounds } from '@easy-memoir/shared/products'
 
 export default function Pricing() {
   const { user } = useAuth()
@@ -37,10 +38,13 @@ export default function Pricing() {
       icon: IconBook2
     },
     {
-      id: 'storyteller',
-      name: 'Storyteller',
+      id: 'premium',
+      name: 'Premium',
       description: 'Everything you need to tell your complete life story',
-      price: { monthly: 19, yearly: 190 },
+      price: {
+        monthly: priceInPounds('premium_monthly'),
+        yearly: priceInPounds('premium_yearly')
+      },
       features: [
         'Unlimited voice recordings',
         'Unlimited AI-written chapters',
@@ -55,10 +59,14 @@ export default function Pricing() {
       icon: IconPencil
     },
     {
-      id: 'legacy',
-      name: 'Legacy',
+      id: 'premium_bundle',
+      name: 'Legacy Bundle',
       description: 'Create a timeless treasure for generations to come',
-      price: { monthly: 39, yearly: 390 },
+      price: {
+        monthly: priceInPounds('premium_bundle'),
+        yearly: priceInPounds('premium_bundle')
+      },
+      oneTime: true,
       features: [
         'Everything in Storyteller',
         '4 Hardcover books included',
@@ -199,7 +207,9 @@ export default function Pricing() {
                       </span>
                       {plan.price[billingCycle] > 0 && (
                         <span className="text-sepia-600">
-                          /{billingCycle === 'monthly' ? 'mo' : 'yr'}
+                          {plan.oneTime
+                            ? ' one-time'
+                            : `/${billingCycle === 'monthly' ? 'mo' : 'yr'}`}
                         </span>
                       )}
                     </div>

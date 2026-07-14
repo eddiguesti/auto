@@ -18,10 +18,17 @@ export function setupStaticFiles(app) {
   if (existsSync(clientBuildPath)) {
     app.use(
       express.static(clientBuildPath, {
-        maxAge: '1y',
-        immutable: true,
-        etag: false,
-        index: false
+        index: false,
+        etag: true,
+        setHeaders(res, filepath) {
+          const immutableAsset = /[/\\]assets[/\\].+-[A-Za-z0-9_-]{8,}\.(?:js|css|woff2?)$/.test(
+            filepath
+          )
+          res.setHeader(
+            'Cache-Control',
+            immutableAsset ? 'public, max-age=31536000, immutable' : 'no-cache, must-revalidate'
+          )
+        }
       })
     )
 

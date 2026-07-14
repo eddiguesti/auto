@@ -10,7 +10,7 @@ import { Button, Skeleton } from '../../components/ui'
  * Talk - Senior-friendly voice recording page accessed via magic link (no login)
  *
  * Flow:
- * 1. Validates the magic link token via /api/magic/:token
+ * 1. Validates the magic link token via /api/v1/magic/:token
  * 2. Shows the week's topic with a big "Start Talking" button
  * 3. Connects to xAI Realtime for voice conversation
  * 4. Auto-saves when done
@@ -56,7 +56,7 @@ export default function Talk() {
       return
     }
 
-    fetch(`${API_URL}/api/magic/${token}`)
+    fetch(`${API_URL}/api/v1/magic/${token}`)
       .then(res => {
         if (res.status === 404) {
           setExpired(true)
@@ -188,7 +188,7 @@ SAFETY — NON-NEGOTIABLE:
       setPhase('connecting')
       setError(null)
 
-      const response = await fetch(`${API_URL}/api/magic/${token}/session`, {
+      const response = await fetch(`${API_URL}/api/v1/magic/${token}/session`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${jwtToken}`,
@@ -202,11 +202,14 @@ SAFETY — NON-NEGOTIABLE:
         throw new Error(errData.error || 'Failed to connect')
       }
 
-      await response.json() // consume session metadata
+      const session = await response.json()
+      if (!session.ticket) throw new Error('Voice ticket was not issued')
 
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-      const wsHost = new URL(API_URL).host
-      const ws = new WebSocket(`${protocol}//${wsHost}/api/voice/ws?token=${jwtToken}`)
+      const wsHost = API_URL ? new URL(API_URL, window.location.origin).host : window.location.host
+      const ws = new WebSocket(
+        `${protocol}//${wsHost}/api/voice/ws?ticket=${encodeURIComponent(session.ticket)}`
+      )
 
       ws.onopen = () => {
         setPhase('active')

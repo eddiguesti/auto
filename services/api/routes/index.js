@@ -90,7 +90,8 @@ export function mountRoutes(app, { express, pool }) {
   app.use('/api/stories', authenticateToken, storiesRouter)
   app.use('/api/photos', authenticateToken, photosRouter)
   app.use('/api/ai', authenticateToken, checkAIQuota, aiRouter)
-  app.use('/api/voice', authenticateToken, checkAIQuota, voiceRouter)
+  app.use('/api/voice/session', voiceLimiter)
+  app.use('/api/voice', authenticateToken, voiceRouter)
   app.use('/api/memory', authenticateToken, memoryRouter)
   app.use('/api/lulu', authenticateToken, luluRouter)
   app.use('/api/covers', authenticateToken, coversRouter)
@@ -138,7 +139,8 @@ export function mountRoutes(app, { express, pool }) {
   app.use('/api/v1/stories', authenticateToken, storiesRouter)
   app.use('/api/v1/photos', authenticateToken, photosRouter)
   app.use('/api/v1/ai', authenticateToken, checkAIQuota, aiRouter)
-  app.use('/api/v1/voice', authenticateToken, checkAIQuota, voiceRouter)
+  app.use('/api/v1/voice/session', voiceLimiter)
+  app.use('/api/v1/voice', authenticateToken, voiceRouter)
   app.use('/api/v1/memory', authenticateToken, memoryRouter)
   app.use('/api/v1/lulu', authenticateToken, luluRouter)
   app.use('/api/v1/covers', authenticateToken, coversRouter)
@@ -166,11 +168,11 @@ export function mountRoutes(app, { express, pool }) {
  * application composer immediately before the global JSON parser.
  */
 export function mountRawBodyRoutes(app, { express, pool }) {
-  app.post(
-    '/api/webhooks/stripe',
-    express.raw({ type: 'application/json', limit: '1mb' }),
-    (req, res) => handleStripeWebhook(req, res, pool)
-  )
+  for (const path of ['/api/webhooks/stripe', '/api/v1/webhooks/stripe']) {
+    app.post(path, express.raw({ type: 'application/json', limit: '1mb' }), (req, res) =>
+      handleStripeWebhook(req, res, pool)
+    )
+  }
 }
 
 // Re-export for WebSocket handler access

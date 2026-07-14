@@ -84,7 +84,7 @@ export default function AdminPayments() {
 
       try {
         const params = new URLSearchParams({ page, limit: 20 })
-        const res = await authFetch(`/api/admin/payments?${params}`)
+        const res = await authFetch(`/api/v1/admin/payments?${params}`)
         if (!res.ok) throw new Error('Failed to load payments')
 
         const data = await res.json()
@@ -115,7 +115,7 @@ export default function AdminPayments() {
 
     setRefundLoading(paymentId)
     try {
-      const res = await authFetch(`/api/admin/refunds/${paymentId}/process`, {
+      const res = await authFetch(`/api/v1/admin/refunds/${paymentId}/process`, {
         method: 'POST'
       })
 

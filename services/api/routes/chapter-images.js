@@ -4,9 +4,97 @@ import { requireDb } from '../middleware/requireDb.js'
 import Replicate from 'replicate'
 import { createLogger } from '../utils/logger.js'
 import { ConfigurationError } from '../utils/errors.js'
+import { r2Delete, r2GetBuffer } from '../utils/r2.js'
+import {
+  chapterImageKey,
+  chapterImagePath,
+  persistGeneratedImage
+} from '../utils/generatedImage.js'
 
 const router = Router()
 const logger = createLogger('chapter-images')
+
+export async function generateExplicitChapterImage(db, { userId, chapterId, prompt }) {
+  try {
+    const replicateToken = process.env.REPLICATE_API_TOKEN
+    if (!replicateToken) throw new ConfigurationError('REPLICATE_API_TOKEN')
+    const replicate = new Replicate({ auth: replicateToken })
+    const output = await replicate.run('black-forest-labs/flux-1.1-pro', {
+      input: {
+        prompt,
+        aspect_ratio: '16:9',
+        output_format: 'webp',
+        output_quality: 100,
+        safety_tolerance: 2,
+        prompt_upsampling: true
+      }
+    })
+
+    let imageUrl = null
+    if (output?.url && typeof output.url === 'function') {
+      imageUrl = output.url()
+    } else if (Array.isArray(output) && output[0]) {
+      imageUrl = typeof output[0].url === 'function' ? output[0].url() : output[0]
+    } else if (typeof output === 'string') {
+      imageUrl = output
+    }
+    if (typeof imageUrl === 'string') imageUrl = imageUrl.replace(/^"|"$/g, '')
+    if (!imageUrl) throw new Error('No image URL returned')
+
+    await persistGeneratedImage(imageUrl, chapterImageKey(userId, chapterId))
+    await db.query(
+      `UPDATE chapter_images
+       SET image_url = $1, prompt_used = $2, generation_status = 'completed', updated_at = CURRENT_TIMESTAMP
+       WHERE user_id = $3 AND chapter_id = $4`,
+      [chapterImagePath(chapterId), prompt, userId, chapterId]
+    )
+  } catch (error) {
+    logger.error('Chapter image generation failed', {
+      chapterId,
+      userId,
+      error: error.message
+    })
+    await db.query(
+      `UPDATE chapter_images SET generation_status = 'failed', updated_at = CURRENT_TIMESTAMP
+       WHERE user_id = $1 AND chapter_id = $2`,
+      [userId, chapterId]
+    )
+    throw error
+  }
+}
+
+async function scheduleExplicitChapterImage(db, data) {
+  const queue = globalThis.__CLOUDFLARE_BINDINGS__?.BACKGROUND_QUEUE
+  if (queue) return queue.send({ type: 'chapter-image.generate', ...data })
+  generateExplicitChapterImage(db, data).catch(() => {})
+}
+
+router.get(
+  '/file/:chapterId',
+  requireDb,
+  asyncHandler(async (req, res) => {
+    const db = req.app.locals.db
+    const { chapterId } = req.params
+    const result = await db.query(
+      `SELECT image_url FROM chapter_images
+       WHERE user_id = $1 AND chapter_id = $2 AND generation_status = 'completed'`,
+      [req.user.id, chapterId]
+    )
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Image not found' })
+
+    const image = await r2GetBuffer(chapterImageKey(req.user.id, chapterId))
+    if (image) {
+      res.setHeader('Content-Type', image.contentType)
+      res.setHeader('Cache-Control', 'private, no-store')
+      return res.send(image.body)
+    }
+
+    // Transitional compatibility for provider URLs generated before the R2 migration.
+    const legacyUrl = result.rows[0].image_url
+    if (/^https:\/\//.test(legacyUrl)) return res.redirect(302, legacyUrl)
+    return res.status(404).json({ error: 'Image object not found' })
+  })
+)
 
 // Get all chapter images for user
 router.get(
@@ -243,71 +331,14 @@ router.post(
       [userId, chapterId]
     )
 
-    // Return immediately - generation happens async
+    const prompt = promptFn(context) + STYLE_SUFFIX
+    await scheduleExplicitChapterImage(db, { userId, chapterId, prompt })
+
     res.json({
       success: true,
       message: 'Image generation started',
       chapterId
     })
-
-    // Generate in background
-    try {
-      const replicate = new Replicate({ auth: replicateToken })
-      const prompt = promptFn(context) + STYLE_SUFFIX
-
-      const output = await replicate.run('black-forest-labs/flux-1.1-pro', {
-        input: {
-          prompt,
-          aspect_ratio: '16:9',
-          output_format: 'webp',
-          output_quality: 100,
-          safety_tolerance: 2,
-          prompt_upsampling: true
-        }
-      })
-
-      let imageUrl = null
-      if (output?.url && typeof output.url === 'function') {
-        imageUrl = output.url()
-      } else if (Array.isArray(output) && output[0]) {
-        imageUrl = typeof output[0].url === 'function' ? output[0].url() : output[0]
-      } else if (typeof output === 'string') {
-        imageUrl = output
-      }
-
-      // Clean up JSON-stringified URLs (Replicate sometimes wraps in quotes)
-      if (typeof imageUrl === 'string') {
-        imageUrl = imageUrl.replace(/^"|"$/g, '')
-      }
-
-      if (imageUrl) {
-        await db.query(
-          `
-        UPDATE chapter_images
-        SET image_url = $1, prompt_used = $2, generation_status = 'completed', updated_at = CURRENT_TIMESTAMP
-        WHERE user_id = $3 AND chapter_id = $4
-      `,
-          [imageUrl, prompt, userId, chapterId]
-        )
-      } else {
-        throw new Error('No image URL returned')
-      }
-    } catch (err) {
-      logger.error('Regeneration failed', {
-        chapterId,
-        userId,
-        error: err.message,
-        requestId: req.id
-      })
-      await db.query(
-        `
-      UPDATE chapter_images
-      SET generation_status = 'failed', updated_at = CURRENT_TIMESTAMP
-      WHERE user_id = $1 AND chapter_id = $2
-    `,
-        [userId, chapterId]
-      )
-    }
   })
 )
 
@@ -318,6 +349,13 @@ router.delete(
   asyncHandler(async (req, res) => {
     const db = req.app.locals.db
     const userId = req.user.id
+
+    const existing = await db.query(
+      `SELECT chapter_id FROM chapter_images
+       WHERE user_id = $1 AND chapter_id != 'earliest-memories'`,
+      [userId]
+    )
+    await Promise.all(existing.rows.map(row => r2Delete(chapterImageKey(userId, row.chapter_id))))
 
     await db.query(
       `

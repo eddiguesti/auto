@@ -8,12 +8,12 @@ import { Button } from '../ui'
  *
  * FUTURE DEVS: When adding a new channel:
  * 1. Add it here with a unique `id` string
- * 2. Add the id to the `validChannels` array in services/api/routes/onboarding.js
+ * 2. Add the id to the `validChannels` array in services/api/v1/routes/onboarding.js
  * 3. Build the activation flow that triggers when this channel is in a user's preferences
  *
  * Decision tree after selection (built separately, not in this component):
  *   phone    -> Collect phone number -> Schedule call -> Telnyx integration
- *   email    -> Already wired into weekly cron (services/api/cron/)
+ *   email    -> Already wired into weekly cron (services/api/v1/cron/)
  *   webapp   -> No additional action (user is already here)
  *
  * Removed until their activation flows exist (offering them was a dead end):

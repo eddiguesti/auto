@@ -5,6 +5,7 @@ import { asyncHandler } from '../middleware/asyncHandler.js'
 import { requireDb } from '../middleware/requireDb.js'
 import { createLogger } from '../utils/logger.js'
 import { paymentRepository } from '../repositories/paymentRepository.js'
+import { PRODUCTS } from '@easy-memoir/shared/products'
 
 const router = Router()
 const logger = createLogger('payments')
@@ -16,70 +17,6 @@ const getStripe = () => {
     throw new Error('STRIPE_SECRET_KEY not configured')
   }
   return new Stripe(key)
-}
-
-// Product prices (in pence for Stripe GBP)
-const PRODUCTS = {
-  export_style: {
-    name: 'Style Your Memoir',
-    description: 'Transform your writing in the style of famous authors',
-    price: 499, // £4.99
-    currency: 'gbp',
-    type: 'style'
-  },
-  export_ebook: {
-    name: 'eBook Export',
-    description: 'Download your memoir as an EPUB eBook',
-    price: 799, // £7.99
-    currency: 'gbp',
-    type: 'export'
-  },
-  export_audiobook: {
-    name: 'Audiobook Export',
-    description: 'Download your memoir as an MP3 audiobook',
-    price: 1499, // £14.99
-    currency: 'gbp',
-    type: 'audiobook'
-  },
-  printed_book: {
-    name: 'Printed Book',
-    description: '4 beautiful colour royal hardcover books in cloth, delivered to your door',
-    price: 29900, // £299
-    currency: 'gbp',
-    type: 'book'
-  },
-  premium_monthly: {
-    name: 'Premium Monthly',
-    description: 'Unlimited AI interviews, priority support',
-    price: 999, // £9.99/month
-    currency: 'gbp',
-    type: 'subscription',
-    interval: 'month'
-  },
-  premium_yearly: {
-    name: 'Premium Yearly',
-    description: 'Unlimited AI interviews, priority support (2 months free)',
-    price: 9999, // £99.99/year
-    currency: 'gbp',
-    type: 'subscription',
-    interval: 'year'
-  },
-  premium_bundle: {
-    name: 'Premium Bundle — Full Memoir + 4 Printed Books + Audiobook',
-    description:
-      '12 months access to all chapters + 4 colour royal hardcover books in cloth + audiobook + talk over the phone features',
-    price: 29900, // £299 (50% off £599)
-    currency: 'gbp',
-    type: 'premium_bundle'
-  },
-  onboarding_bundle: {
-    name: 'Welcome Bundle — Full Memoir + 4 Printed Books + Audiobook',
-    description:
-      '12 months access to all chapters + 4 colour royal hardcover books in cloth + audiobook + talk over the phone features (welcome offer)',
-    price: 29900, // £299 (50% off £599) — onboarding welcome price
-    currency: 'gbp',
-    type: 'premium_bundle' // Same type so webhook activates premium identically
-  }
 }
 
 /**
@@ -199,31 +136,42 @@ router.post(
 
 // Stripe webhook handler (call this from main express app without auth)
 export async function handleStripeWebhook(req, res, db) {
-  const stripe = getStripe()
   const sig = req.headers['stripe-signature']
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
+  if (!sig) return res.status(400).json({ error: 'Missing Stripe signature' })
+  if (!webhookSecret) return res.status(503).json({ error: 'Stripe webhook is not configured' })
 
+  const stripe = getStripe()
   let event
-
   try {
     event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret)
-  } catch (err) {
-    logger.error('Webhook signature verification failed', { error: err.message })
-    return res.status(400).send(`Webhook Error: ${err.message}`)
+  } catch (error) {
+    logger.error('Webhook signature verification failed', { error: error.message })
+    return res.status(400).json({ error: 'Invalid Stripe webhook signature' })
   }
 
-  // Handle the event
-  switch (event.type) {
-    case 'checkout.session.completed': {
-      try {
+  const client = await db.connect()
+  try {
+    await client.query('BEGIN')
+    const claim = await client.query(
+      `INSERT INTO stripe_webhook_events (event_id, event_type)
+       VALUES ($1, $2) ON CONFLICT (event_id) DO NOTHING RETURNING event_id`,
+      [event.id, event.type]
+    )
+    if (claim.rows.length === 0) {
+      await client.query('ROLLBACK')
+      return res.json({ received: true, duplicate: true })
+    }
+
+    switch (event.type) {
+      case 'checkout.session.completed': {
         const session = event.data.object
         const { userId, productId, productType } = session.metadata
 
-        // Verify the userId exists in our database before granting anything
-        const user = await paymentRepository.findUserById(db, userId)
+        const user = await paymentRepository.findUserById(client, userId)
         if (!user) {
           logger.error('Webhook userId not found in database', { userId, eventId: event.id })
-          return res.status(200).json({ received: true }) // Acknowledge but don't retry
+          break
         }
 
         // Verify Stripe customer email matches our user (detect metadata tampering)
@@ -236,8 +184,7 @@ export async function handleStripeWebhook(req, res, db) {
           })
         }
 
-        // Record the payment (idempotent - ignore duplicates)
-        await paymentRepository.recordPayment(db, {
+        await paymentRepository.recordPayment(client, {
           userId,
           stripeSessionId: session.id,
           productId,
@@ -245,14 +192,12 @@ export async function handleStripeWebhook(req, res, db) {
           amount: session.amount_total
         })
 
-        // Activate premium access for premium_bundle purchases (idempotent - only set if not already active)
         if (productType === 'premium_bundle') {
-          await paymentRepository.activatePremiumById(db, userId)
+          await paymentRepository.activatePremiumById(client, userId)
           logger.info('Premium activated', { userId, productId })
         }
 
-        // Immutable audit trail — append even if payment was a duplicate
-        await paymentRepository.recordAuditEvent(db, {
+        await paymentRepository.recordAuditEvent(client, {
           userId,
           eventType: event.type,
           stripeEventId: event.id,
@@ -261,24 +206,18 @@ export async function handleStripeWebhook(req, res, db) {
         })
 
         logger.info('Payment completed', { userId, productId, stripeEventId: event.id })
-      } catch (err) {
-        logger.error('Failed to record payment', { error: err.message, eventId: event.id })
-        return res.status(500).json({ error: 'Failed to process payment' })
+        break
       }
-      break
-    }
 
-    case 'customer.subscription.created':
-    case 'customer.subscription.updated': {
-      try {
+      case 'customer.subscription.created':
+      case 'customer.subscription.updated': {
         const subscription = event.data.object
-        const customerId = subscription.customer
-        const customer = await stripe.customers.retrieve(customerId)
+        const customer = await stripe.customers.retrieve(subscription.customer)
         const customerEmail = customer.email
 
         if (subscription.status === 'active' || subscription.status === 'trialing') {
           const periodEnd = new Date(subscription.current_period_end * 1000)
-          await paymentRepository.activatePremiumByEmail(db, customerEmail, periodEnd)
+          await paymentRepository.activatePremiumByEmail(client, customerEmail, periodEnd)
           logger.info('Premium activated via subscription', {
             subscriptionId: subscription.id,
             customerEmail,
@@ -296,50 +235,44 @@ export async function handleStripeWebhook(req, res, db) {
           subscription.status === 'incomplete_expired'
         ) {
           const gracePeriod = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
-          await paymentRepository.expirePremiumByEmail(db, customerEmail, gracePeriod)
+          await paymentRepository.expirePremiumByEmail(client, customerEmail, gracePeriod)
           logger.info('Premium set to expire (subscription status change)', {
             subscriptionId: subscription.id,
             customerEmail,
             expiresAt: gracePeriod
           })
         }
-      } catch (err) {
-        logger.error('Failed to process subscription event', {
-          error: err.message,
-          eventId: event.id
-        })
+        break
       }
-      break
-    }
 
-    case 'customer.subscription.deleted': {
-      try {
+      case 'customer.subscription.deleted': {
         const subscription = event.data.object
-        const customerId = subscription.customer
-        const customer = await stripe.customers.retrieve(customerId)
+        const customer = await stripe.customers.retrieve(subscription.customer)
         const customerEmail = customer.email
 
         const gracePeriod = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
-        await paymentRepository.expirePremiumByEmail(db, customerEmail, gracePeriod)
+        await paymentRepository.expirePremiumByEmail(client, customerEmail, gracePeriod)
         logger.info('Premium revoked (subscription cancelled)', {
           subscriptionId: subscription.id,
           customerEmail,
           expiresAt: gracePeriod
         })
-      } catch (err) {
-        logger.error('Failed to revoke premium on cancellation', {
-          error: err.message,
-          eventId: event.id
-        })
+        break
       }
-      break
+
+      default:
+        logger.debug('Unhandled event type', { eventType: event.type })
     }
 
-    default:
-      logger.debug('Unhandled event type', { eventType: event.type })
+    await client.query('COMMIT')
+    return res.json({ received: true })
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => {})
+    logger.error('Stripe webhook transaction failed', { eventId: event.id, error: error.message })
+    return res.status(500).json({ error: 'Failed to process payment event' })
+  } finally {
+    client.release()
   }
-
-  res.json({ received: true })
 }
 
 /**

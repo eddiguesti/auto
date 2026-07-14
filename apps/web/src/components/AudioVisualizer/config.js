@@ -2,8 +2,9 @@
  * Clio Orb configuration.
  *
  * Four states, each a full palette + behaviour + shape profile. The component
- * lerps every value continuously, so states melt into each other. All colors
- * stay inside the Keepsake palette family (sepia / bronze / ink, softened).
+ * lerps every value continuously, so states melt into each other. Colors are a friendly
+ * "morning sky" blue family anchored to the design system's info blue —
+ * blue reads as trust and calm for assistant orbs.
  *
  * colA = light tone (veins, sparkles, core glow)
  * colB = mid tone   (body)
@@ -19,11 +20,11 @@
 export const orbStates = {
   // At rest — a calm cream pearl, slow breath
   idle: {
-    colA: '#F6ECD8',
-    colB: '#D9BE97',
-    colC: '#9A7B57',
-    rim: '#EFE2CC',
-    aura: '#DCC49E',
+    colA: '#EDF4FA',
+    colB: '#AACBE4',
+    colC: '#5F8AA9',
+    rim: '#E1EDF6',
+    aura: '#BFD7E6',
     flow: 0.5,
     wobble: 0.02,
     lobe: 0.012,
@@ -35,11 +36,11 @@ export const orbStates = {
   },
   // Listening — warm honey; soft lobes slowly morph (attentive jelly)
   active: {
-    colA: '#F8EACB',
-    colB: '#E0BE85',
-    colC: '#9A7443',
-    rim: '#F0DCB0',
-    aura: '#E3C48F',
+    colA: '#E6F3FD',
+    colB: '#8FC0E2',
+    colC: '#4C7CA0',
+    rim: '#D2E8F8',
+    aura: '#9CC8E8',
     flow: 0.85,
     wobble: 0.022,
     lobe: 0.1,
@@ -51,11 +52,11 @@ export const orbStates = {
   },
   // User speaking — friendly gold, lobes ripple with the voice
   detected: {
-    colA: '#F8E7C2',
-    colB: '#D9A952',
-    colC: '#8A6228',
-    rim: '#EFD9A8',
-    aura: '#D9A952',
+    colA: '#E0F1FF',
+    colB: '#6BAEE0',
+    colC: '#35688F',
+    rim: '#C4E2F9',
+    aura: '#79B9E8',
     flow: 1.25,
     wobble: 0.035,
     lobe: 0.09,
@@ -67,11 +68,11 @@ export const orbStates = {
   },
   // Clio speaking — warm ink with bronze veins; petal waves pulse outward
   speaking: {
-    colA: '#D9AE66',
-    colB: '#6B5D4E',
-    colC: '#322B24',
-    rim: '#C99B4E',
-    aura: '#B08A4E',
+    colA: '#A9CDE9',
+    colB: '#4C6E8B',
+    colC: '#26415A',
+    rim: '#86B4D8',
+    aura: '#5D89AC',
     flow: 1.5,
     wobble: 0.025,
     lobe: 0.015,

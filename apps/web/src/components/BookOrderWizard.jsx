@@ -11,6 +11,7 @@ import {
   IconDiscount2
 } from '@tabler/icons-react'
 import { Badge, Button, Card, Field, Input, ProgressBar, Skeleton } from './ui'
+import { priceInPounds } from '@easy-memoir/shared/products'
 
 const SELECT_CLASSES = [
   'w-full px-4 py-3 rounded-xl text-base text-ink bg-surface',
@@ -41,7 +42,7 @@ const PACKAGES = {
 }
 
 // Audiobook pricing
-const AUDIOBOOK_PRICE = 19.99
+const AUDIOBOOK_PRICE = priceInPounds('export_audiobook')
 const AUDIOBOOK_BUNDLE_DISCOUNT = 0.4 // 40% off when bundled with books
 
 // Simple book cover preview - shows default cloth cover
@@ -171,7 +172,7 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
 
   const fetchOptions = async () => {
     try {
-      const res = await authFetch('/api/covers/options')
+      const res = await authFetch('/api/v1/covers/options')
       if (!res.ok) throw new Error('Failed to load options')
       const data = await res.json()
       setOptions(data)

@@ -3,8 +3,8 @@
  *
  * Usage in a component or hook:
  *   const api = useApiClient()
- *   const data = await api.get('/api/stories/progress')
- *   await api.post('/api/stories', { chapterId, questionId, answer })
+ *   const data = await api.get('/api/v1/stories/progress')
+ *   await api.post('/api/v1/stories', { chapterId, questionId, answer })
  *
  * All methods:
  *  - Resolve with the parsed JSON body on 2xx

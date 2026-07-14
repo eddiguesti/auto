@@ -5,7 +5,13 @@
  * Run with: npx vitest run services/api/tests/auth.test.js
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+
+vi.mock('../utils/tokenBlacklist.js', () => ({
+  isTokenBlacklisted: vi.fn().mockResolvedValue(false),
+  isUserTokenBlacklisted: vi.fn().mockResolvedValue(false),
+  isUserActive: vi.fn().mockResolvedValue(true)
+}))
 import jwt from 'jsonwebtoken'
 import {
   generateTestToken,

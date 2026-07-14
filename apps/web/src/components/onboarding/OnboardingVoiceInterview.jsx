@@ -404,10 +404,21 @@ export default function OnboardingVoiceInterview({ onComplete, onBack }) {
       if (!jwtToken) throw new Error('Not authenticated')
       if (unmountedRef.current) return
 
+      const ticketResponse = await authFetch('/api/v1/voice/session', {
+        method: 'POST',
+        body: JSON.stringify({})
+      })
+      if (!ticketResponse.ok) {
+        const body = await ticketResponse.json().catch(() => ({}))
+        throw new Error(body.error || 'Unable to start voice session')
+      }
+      const { ticket } = await ticketResponse.json()
+      if (!ticket) throw new Error('Voice ticket was not issued')
+
       // Connect via server-side proxy (handles xAI auth with API key)
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
       const ws = new WebSocket(
-        `${protocol}//${window.location.host}/api/voice/ws?token=${jwtToken}`
+        `${protocol}//${window.location.host}/api/voice/ws?ticket=${encodeURIComponent(ticket)}`
       )
 
       // Connection timeout (10 seconds)

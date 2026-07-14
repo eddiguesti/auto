@@ -5,6 +5,11 @@ import validate from '../middleware/validate.js'
 import { onboardingSchemas } from '../schemas/index.js'
 import { grokChat, parseGrokJson } from '../services/grokService.js'
 import Replicate from 'replicate'
+import {
+  chapterImageKey,
+  chapterImagePath,
+  persistGeneratedImage
+} from '../utils/generatedImage.js'
 import { createLogger } from '../utils/logger.js'
 import { onboardingRepository } from '../repositories/onboardingRepository.js'
 
@@ -290,9 +295,7 @@ router.post(
 
     // Generate earliest-memories image based on birthplace/year from interview
     // Other chapters get personalized images when they are 100% completed
-    generateChapterImagesAsync(db, userId, context).catch(err => {
-      logger.error('Background image generation error', { userId, error: err.message })
-    })
+    await scheduleOnboardingChapterImage(db, userId, context)
 
     res.json({
       success: true,
@@ -303,7 +306,7 @@ router.post(
 
 // Async function to generate ONLY the first chapter image (earliest-memories)
 // Other chapters get images when user starts working on them
-async function generateChapterImagesAsync(db, userId, context) {
+export async function generateOnboardingChapterImage(db, userId, context) {
   const replicateToken = process.env.REPLICATE_API_TOKEN
   if (!replicateToken) {
     logger.warn('REPLICATE_API_TOKEN not configured - skipping image generation')
@@ -361,13 +364,32 @@ async function generateChapterImagesAsync(db, userId, context) {
       throw new Error('No image URL returned from Replicate')
     }
 
-    await onboardingRepository.completeChapterImage(db, userId, chapterId, imageUrl, prompt)
+    await persistGeneratedImage(imageUrl, chapterImageKey(userId, chapterId))
+    await onboardingRepository.completeChapterImage(
+      db,
+      userId,
+      chapterId,
+      chapterImagePath(chapterId),
+      prompt
+    )
 
     logger.info('Successfully generated personalized image', { chapterId, userId })
   } catch (err) {
     logger.error('Image generation failed', { chapterId, userId, error: err.message })
     await onboardingRepository.failChapterImage(db, userId, chapterId)
+    throw err
   }
+}
+
+async function scheduleOnboardingChapterImage(db, userId, context) {
+  const queue = globalThis.__CLOUDFLARE_BINDINGS__?.BACKGROUND_QUEUE
+  if (queue) {
+    await queue.send({ type: 'onboarding.chapter-image', userId, context })
+    return
+  }
+  generateOnboardingChapterImage(db, userId, context).catch(error => {
+    logger.error('Background image generation error', { userId, error: error.message })
+  })
 }
 
 export default router

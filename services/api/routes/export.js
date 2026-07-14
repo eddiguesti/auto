@@ -5,6 +5,7 @@ import { storyRepository } from '../repositories/storyRepository.js'
 import { paymentRepository } from '../repositories/paymentRepository.js'
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { requireDb } from '../middleware/requireDb.js'
+import { priceInPounds } from '@easy-memoir/shared/products'
 
 const router = Router()
 
@@ -178,7 +179,7 @@ router.get(
       canExport: hasPaid || isEarlyAdopter,
       isEarlyAdopter,
       hasPaid,
-      exportPrice: 9.99
+      exportPrice: priceInPounds('export_ebook')
     })
   })
 )

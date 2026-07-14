@@ -50,7 +50,7 @@ export function AuthProvider({ children }) {
     const currentToken = token
     if (currentToken && currentToken !== 'dev-token') {
       try {
-        await fetch(`${API_URL}/api/auth/logout`, {
+        await fetch(`${API_URL}/api/v1/auth/logout`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${currentToken}` }
         })
@@ -67,7 +67,7 @@ export function AuthProvider({ children }) {
 
   const fetchUser = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/api/auth/me`, {
+      const res = await fetch(`${API_URL}/api/v1/auth/me`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       if (res.ok) {
@@ -87,7 +87,7 @@ export function AuthProvider({ children }) {
   // Refresh user data (works in dev mode too)
   const refreshUser = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/api/auth/me`, {
+      const res = await fetch(`${API_URL}/api/v1/auth/me`, {
         headers: { Authorization: `Bearer ${token || 'dev-token'}` }
       })
       if (res.ok) {

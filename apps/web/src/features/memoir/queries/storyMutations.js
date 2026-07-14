@@ -12,7 +12,7 @@ export function useSaveStory() {
 
   return useMutation({
     mutationFn: ({ chapterId, questionId, answer }) =>
-      api.post('/api/stories/save', { chapterId, questionId, answer }),
+      api.post('/api/v1/stories/save', { chapterId, questionId, answer }),
     onSuccess: (_, { chapterId }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.stories.chapter(chapterId) })
       queryClient.invalidateQueries({ queryKey: queryKeys.stories.all })
@@ -29,7 +29,7 @@ export function useDeleteStory() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: storyId => api.delete(`/api/stories/${storyId}`),
+    mutationFn: storyId => api.delete(`/api/v1/stories/${storyId}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.stories.all })
     }
