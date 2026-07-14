@@ -41,7 +41,6 @@ export default defineConfig({
           // Vendor chunks - rarely change, cache well
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
           'ui-vendor': ['@react-oauth/google', '@tabler/icons-react'],
-          'three-vendor': ['three'],
           'motion-vendor': ['framer-motion'],
           'analytics-vendor': ['posthog-js']
         }

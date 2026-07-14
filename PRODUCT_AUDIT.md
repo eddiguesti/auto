@@ -3,6 +3,32 @@
 _Date: 14 July 2026. Scope: entire monorepo (web app, API, worker, mobile, shared, loose files)._
 _State at audit: production build ✓, all 18 tests ✓, ESLint 0 errors ✓, no dead internal links ✓, full "Keepsake" redesign applied (uncommitted)._
 
+> ## ✅ EXECUTED — 14 July 2026
+>
+> Everything below was carried out the same day, with one owner decision: the
+> half-built features (items 10–12) were **deleted rather than wired** for now.
+>
+> - Items 1–6: all dead code deleted (3D book renderer + `three` dependency,
+>   BookOrder, ProgressCard, MemoryMap, TourOverlay, root prototypes → Trash).
+> - Item 7: `Landing.jsx` promoted to `/`; `LandingDesign1.jsx` and
+>   `/landing-original` deleted; `/welcome` kept for ads.
+> - Item 8: unreachable `/export` page deleted; ExportModal is the one surface.
+> - Item 9: chapters consolidated — `packages/shared/chapters.js` is canonical
+>   (24 chapters / 204 questions); web re-exports; API unaffected.
+> - Item 10: web `features/game/` deleted (backend game routes left intact for
+>   a future revival); `features/export/` orphan shim also deleted.
+> - Item 11: Telegram + mobile-app options removed from onboarding
+>   ChannelSelector (documented in-file how to re-add); `TelegramLinkModal`
+>   deleted; backend `telegram.js` left intact.
+> - Item 12: `CompletionCertificate` and `ImageUnlockAnimation` deleted
+>   (recoverable from git if the celebration moment is revived).
+> - Item 13: mobile app parked via `apps/mobile/README.md` note.
+> - Items 14–16: `react/jsx-uses-vars` enabled (warnings: ~500 false positives
+>   → 68 genuine, all pre-existing), `/compare` added to footer, redesign
+>   committed (`5ca5349`) before any deletion.
+>
+> Post-execution state: build ✓, 18/18 tests ✓, ESLint 0 errors ✓.
+
 ---
 
 ## 1. The product, in one sentence

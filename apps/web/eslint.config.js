@@ -1,5 +1,6 @@
 import js from '@eslint/js'
 import globals from 'globals'
+import react from 'eslint-plugin-react'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 
@@ -24,11 +25,15 @@ export default [
       }
     },
     plugins: {
+      react,
       'react-hooks': reactHooks,
       'react-refresh': reactRefresh
     },
     rules: {
       ...js.configs.recommended.rules,
+      // Mark identifiers used in JSX as used — without this every JSX-only
+      // import is a false-positive no-unused-vars warning
+      'react/jsx-uses-vars': 'error',
       // React hooks rules
       ...reactHooks.configs.recommended.rules,
       // React refresh for HMR

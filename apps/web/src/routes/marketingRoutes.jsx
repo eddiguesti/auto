@@ -1,12 +1,9 @@
 import { Route } from 'react-router-dom'
 import { lazy } from 'react'
 
-// Production landing page: LandingDesign1 is the canonical "/" route.
-// Landing (original design) is preserved at /landing-original for reference only.
+// Production landing page: Landing (modular, composes marketing/ sections) is canonical "/".
 // FacebookLanding is a paid-ad variant served at /welcome.
-// Both experiment pages should be deleted once analytics confirm zero organic traffic.
 
-const LandingDesign1 = lazy(() => import('../pages/marketing/LandingDesign1'))
 const Landing = lazy(() => import('../pages/marketing/Landing'))
 const FacebookLanding = lazy(() => import('../pages/marketing/FacebookLanding'))
 const HowItWorks = lazy(() => import('../pages/marketing/HowItWorks'))
@@ -32,10 +29,9 @@ export function marketingRoutes() {
   return (
     <>
       {/* Canonical home page */}
-      <Route path="/" element={<LandingDesign1 />} />
+      <Route path="/" element={<Landing />} />
 
-      {/* Experiment / variant pages — archive or delete once traffic is confirmed zero */}
-      <Route path="/landing-original" element={<Landing />} />
+      {/* Paid-ad variant */}
       <Route path="/welcome" element={<FacebookLanding />} />
 
       {/* Marketing pages */}

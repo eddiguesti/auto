@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom'
 
 const PRODUCT_LINKS = [
   { to: '/how-it-works', label: 'How it works' },
+  { to: '/compare', label: 'Compare' },
   { to: '/blog', label: 'Blog' },
   { to: '/register', label: 'Start free' }
 ]

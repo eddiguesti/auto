@@ -1,13 +1,6 @@
 import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import {
-  IconPhone,
-  IconMail,
-  IconBrandTelegram,
-  IconDeviceMobile,
-  IconWorld,
-  IconCheck
-} from '@tabler/icons-react'
+import { IconPhone, IconMail, IconWorld, IconCheck } from '@tabler/icons-react'
 import { Button } from '../ui'
 
 /**
@@ -21,9 +14,11 @@ import { Button } from '../ui'
  * Decision tree after selection (built separately, not in this component):
  *   phone    -> Collect phone number -> Schedule call -> Telnyx integration
  *   email    -> Already wired into weekly cron (services/api/cron/)
- *   telegram -> Show TelegramLinkModal -> Bot linking flow
- *   app      -> Show app store download links (coming soon)
  *   webapp   -> No additional action (user is already here)
+ *
+ * Removed until their activation flows exist (offering them was a dead end):
+ *   telegram -> needs the bot-linking flow surfaced (backend routes/telegram.js exists)
+ *   app      -> needs the mobile app shipped (apps/mobile is parked)
  */
 export const CHANNEL_OPTIONS = [
   {
@@ -39,18 +34,6 @@ export const CHANNEL_OPTIONS = [
     icon: 'email'
   },
   {
-    id: 'telegram',
-    label: 'Telegram',
-    description: 'Message me anytime through Telegram. Quick and easy on any device.',
-    icon: 'telegram'
-  },
-  {
-    id: 'app',
-    label: 'Mobile App',
-    description: 'Record memories on the go with our app. Anywhere, anytime.',
-    icon: 'app'
-  },
-  {
     id: 'webapp',
     label: 'This Website',
     description: 'Continue right here in your browser. Nothing to download.',
@@ -63,8 +46,6 @@ export const CHANNEL_OPTIONS = [
 const CHANNEL_ICONS = {
   phone: IconPhone,
   email: IconMail,
-  telegram: IconBrandTelegram,
-  app: IconDeviceMobile,
   webapp: IconWorld
 }
 

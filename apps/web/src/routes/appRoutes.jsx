@@ -5,7 +5,6 @@ import ProtectedRoute from '../components/ProtectedRoute'
 const Home = lazy(() => import('../pages/app/Home'))
 const Chapter = lazy(() => import('../pages/app/Chapter'))
 const ChapterReview = lazy(() => import('../pages/app/ChapterReview'))
-const Export = lazy(() => import('../pages/app/Export'))
 const VoiceChat = lazy(() => import('../pages/app/VoiceChat'))
 const PreviewStyle = lazy(() => import('../pages/app/PreviewStyle'))
 const Settings = lazy(() => import('../pages/app/Settings'))
@@ -44,14 +43,6 @@ export function appRoutes() {
         element={
           <ProtectedRoute>
             <ChapterReview />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/export"
-        element={
-          <ProtectedRoute>
-            <Export />
           </ProtectedRoute>
         }
       />
