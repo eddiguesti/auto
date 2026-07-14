@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { getAiVoiceTap } from '../../utils/aiVoiceTap'
 import { useNavigate } from 'react-router-dom'
 import { IconPlayerPlay, IconCircleCheck, IconAlertCircle } from '@tabler/icons-react'
 import { Button, Card, Input } from '../../components/ui'
@@ -84,7 +85,7 @@ export default function FacebookLanding() {
 
         const source = playbackContextRef.current.createBufferSource()
         source.buffer = audioBuffer
-        source.connect(playbackContextRef.current.destination)
+        source.connect(getAiVoiceTap(playbackContextRef.current))
 
         await new Promise(resolve => {
           source.onended = resolve

@@ -108,7 +108,7 @@ export function wrapPoolWithTiming(pool) {
   }, POOL_STATS_INTERVAL_MS)
 
   // Don't keep the process alive just for stats logging
-  statsInterval.unref()
+  if (typeof statsInterval.unref === 'function') statsInterval.unref()
 
   return pool
 }

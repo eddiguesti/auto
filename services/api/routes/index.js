@@ -116,9 +116,6 @@ export function mountRoutes(app, { express, pool }) {
 
   // ── Webhooks (no auth — verified by signature/secret) ────────────
 
-  app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), (req, res) =>
-    handleStripeWebhook(req, res, pool)
-  )
   app.post('/api/webhooks/telegram', (req, res) => handleTelegramWebhook(req, res, pool))
 
   // Telnyx call routes (public — webhook + call initiation with internal secret)
@@ -162,6 +159,18 @@ export function mountRoutes(app, { express, pool }) {
   app.use('/api/v1/refunds', authenticateToken, requireScope(), refundsRouter)
 
   app.use('/api/v1/admin', authenticateToken, requireAdmin, adminRouter)
+}
+
+/**
+ * Routes that must receive an unparsed request body. These are mounted by the
+ * application composer immediately before the global JSON parser.
+ */
+export function mountRawBodyRoutes(app, { express, pool }) {
+  app.post(
+    '/api/webhooks/stripe',
+    express.raw({ type: 'application/json', limit: '1mb' }),
+    (req, res) => handleStripeWebhook(req, res, pool)
+  )
 }
 
 // Re-export for WebSocket handler access

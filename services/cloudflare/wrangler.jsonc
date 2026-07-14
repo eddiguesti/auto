@@ -1,0 +1,72 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "easy-memoir",
+  "main": "./index.js",
+  "compatibility_date": "2026-07-14",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "preview_urls": true,
+  "assets": {
+    "directory": "../../apps/web/dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*", "/sitemap.xml", "/robots.txt"]
+  },
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "00000000000000000000000000000000"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "UPLOADS",
+      "bucket_name": "easymemoir-uploads",
+      "preview_bucket_name": "easymemoir-uploads-preview"
+    }
+  ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "AUDIOBOOK_QUEUE",
+        "queue": "easy-memoir-audiobook"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "easy-memoir-audiobook",
+        "dead_letter_queue": "easy-memoir-audiobook-dlq",
+        "max_batch_size": 1,
+        "max_retries": 3,
+        "max_concurrency": 5
+      }
+    ]
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "VOICE_SESSIONS",
+        "class_name": "VoiceSession"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["VoiceSession"]
+    }
+  ],
+  "triggers": {
+    "crons": ["*/15 * * * *"]
+  },
+  "vars": {
+    "NODE_ENV": "production",
+    "APP_URL": "https://easymemoir.co.uk",
+    "FRONTEND_URL": "https://easymemoir.co.uk",
+    "REQUIRE_OBJECT_STORAGE": "true"
+  },
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  }
+}

@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from 'react'
 import { ORB_VERTEX_SHADER, ORB_FRAGMENT_SHADER } from './orbShaders'
 import { orbStates, defaultSizes } from './config'
+import { readAiVoiceLevel } from '../../utils/aiVoiceTap'
 
 /**
  * AudioVisualizer — the Clio Orb.
@@ -271,15 +272,22 @@ export default function AudioVisualizer({
         for (let i = half; i < bins.length; i++) hi += bins[i]
         rawHighs = hi / (half * 255)
       } else if (flags.isSpeaking) {
-        // Organic simulated cadence while Clio talks
-        const t = anim.time
-        rawLevel =
-          0.35 +
-          Math.sin(t * 6) * 0.12 +
-          Math.sin(t * 9.5) * 0.08 +
-          Math.sin(t * 14) * 0.05 +
-          Math.random() * 0.03
-        rawHighs = 0.2 + Math.sin(t * 11) * 0.1
+        // Real lip sync: read the amplitude of Clio's actual voice from the
+        // shared playback tap; fall back to simulated cadence without one.
+        const real = readAiVoiceLevel()
+        if (real >= 0) {
+          rawLevel = real
+          rawHighs = real * 0.6
+        } else {
+          const t = anim.time
+          rawLevel =
+            0.35 +
+            Math.sin(t * 6) * 0.12 +
+            Math.sin(t * 9.5) * 0.08 +
+            Math.sin(t * 14) * 0.05 +
+            Math.random() * 0.03
+          rawHighs = 0.2 + Math.sin(t * 11) * 0.1
+        }
       }
 
       // Fast attack, slow release

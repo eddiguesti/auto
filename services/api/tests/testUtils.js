@@ -174,12 +174,12 @@ export function createMockResponse() {
  */
 export function createMockNext() {
   const calls = []
-  const next = (err) => {
+  const next = err => {
     calls.push(err)
   }
   next.calls = calls
   next.called = () => calls.length > 0
-  next.calledWith = (err) => calls.includes(err)
+  next.calledWith = err => calls.includes(err)
   next.getError = () => calls[0]
   return next
 }
@@ -205,19 +205,21 @@ export function createMockDb(queryResults = {}) {
       return { rows: [], rowCount: 0 }
     },
     getQueries: () => queries,
-    clearQueries: () => queries.length = 0
+    clearQueries: () => (queries.length = 0)
   }
 }
 
 /**
  * Create mock database with user data
  */
-export function createMockDbWithUser(user = {
-  id: 1,
-  email: 'test@test.com',
-  name: 'Test User',
-  password_hash: '$2a$12$test.hash'
-}) {
+export function createMockDbWithUser(
+  user = {
+    id: 1,
+    email: 'test@test.com',
+    name: 'Test User',
+    password_hash: '$2a$12$test.hash'
+  }
+) {
   return createMockDb({
     'SELECT id, email, name, password_hash, avatar_url FROM users WHERE email = $1': {
       rows: [user],
@@ -278,7 +280,7 @@ export function assertStatus(res, expected, message = '') {
   if (res.statusCode !== expected) {
     throw new Error(
       `${message ? message + ': ' : ''}Expected status ${expected}, got ${res.statusCode}` +
-      (res.body ? ` (body: ${JSON.stringify(res.body)})` : '')
+        (res.body ? ` (body: ${JSON.stringify(res.body)})` : '')
     )
   }
 }

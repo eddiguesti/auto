@@ -41,7 +41,7 @@ const allowedOrigins = [
   process.env.FRONTEND_URL
 ].filter(Boolean)
 
-export function setupMiddleware(app) {
+export function setupMiddleware(app, { beforeJson } = {}) {
   app.use(
     cors({
       origin: function (origin, callback) {
@@ -114,5 +114,6 @@ export function setupMiddleware(app) {
   app.use('/api', globalLimiter)
   app.use(requestId)
   app.use(requestTiming)
+  if (beforeJson) beforeJson()
   app.use(express.json({ limit: '1mb' }))
 }

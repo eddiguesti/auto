@@ -3,6 +3,7 @@ import { IconAlertCircle } from '@tabler/icons-react'
 import { useAuth } from '../../context/AuthContext'
 import { useSettings } from '../../context/SettingsContext'
 import { AudioVisualizer } from '../AudioVisualizer'
+import { getAiVoiceTap } from '../../utils/aiVoiceTap'
 import { Button } from '../ui'
 
 /**
@@ -185,7 +186,7 @@ export default function OnboardingVoiceInterview({ onComplete, onBack }) {
 
           const source = playbackContextRef.current.createBufferSource()
           source.buffer = buffer
-          source.connect(playbackContextRef.current.destination)
+          source.connect(getAiVoiceTap(playbackContextRef.current))
           currentSourceRef.current = source
 
           await new Promise(resolve => {

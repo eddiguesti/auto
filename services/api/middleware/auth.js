@@ -25,17 +25,22 @@ export async function authenticateToken(req, res, next) {
     return res.status(401).json({ error: 'Authentication required' })
   }
 
+  const secret = process.env.JWT_SECRET
+
+  // Security: Ensure JWT_SECRET is properly configured
+  if (!secret || secret.includes('CHANGE_ME') || secret.length < 32) {
+    console.error('JWT_SECRET not properly configured')
+    return res.status(500).json({ error: 'Server configuration error' })
+  }
+
+  let decoded
   try {
-    const secret = process.env.JWT_SECRET
+    decoded = jwt.verify(token, secret)
+  } catch {
+    return res.status(403).json({ error: 'Invalid or expired token' })
+  }
 
-    // Security: Ensure JWT_SECRET is properly configured
-    if (!secret || secret.includes('CHANGE_ME') || secret.length < 32) {
-      console.error('JWT_SECRET not properly configured')
-      return res.status(500).json({ error: 'Server configuration error' })
-    }
-
-    const decoded = jwt.verify(token, secret)
-
+  try {
     // Check if this specific token has been blacklisted (logout / account deletion)
     if (decoded.jti && (await isTokenBlacklisted(decoded.jti))) {
       return res.status(401).json({ error: 'Token revoked' })
@@ -50,7 +55,11 @@ export async function authenticateToken(req, res, next) {
     req.token = token
     next()
   } catch (err) {
-    return res.status(403).json({ error: 'Invalid or expired token' })
+    console.error('Token revocation check failed:', err.message)
+    return res.status(503).json({
+      error: 'Authentication service temporarily unavailable',
+      code: 'AUTH_STORE_UNAVAILABLE'
+    })
   }
 }
 

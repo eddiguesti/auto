@@ -239,7 +239,64 @@ void main() {
   float spark = smoothstep(0.10, 0.0, sd) * twinkle;
   body += uColA * spark * uSpark * (0.4 + uHighs * 1.2) * z;
 
+  // ---- Face — pigment set inside the glass, under the gloss ----------------
+  // Drawn in blob space (deforms with the body), shaded by the same volume
+  // light, with the filament texture ghosting through; the fresnel rim and
+  // glass speculars render AFTER, coating the face so it sits inside the ball.
+  if (uFace > 0.5) {
+    vec2 p = uv / R;
+    // Mild spherical foreshortening pins features to the curved surface
+    p /= 0.82 + 0.18 * z;
+    vec2 look = uLook * 0.12;
+
+    // Feature pigment: dark warm ink, lit like the body, texture showing through
+    vec3 featureCol = mix(uColC, vec3(0.14, 0.11, 0.09), 0.65);
+    featureCol *= 0.72 + 0.28 * z;              // same limb shading as the body
+    featureCol += body * 0.16;                   // filaments ghost through the ink
+
+    // Eyes: vertical ellipses that squash shut when blinking
+    float eyeH = 0.14 * max(uEyeOpen, 0.10);
+    float eyeW = 0.085 + 0.012 * (1.0 - min(uEyeOpen, 1.0));
+    vec2 eL = vec2(-0.30, 0.16) + look;
+    vec2 eR = vec2(0.30, 0.16) + look;
+    float dL = length((p - eL) / vec2(eyeW, eyeH)) - 1.0;
+    float dR = length((p - eR) / vec2(eyeW, eyeH)) - 1.0;
+    float eyeD = min(dL, dR);
+    float eyeMask = smoothstep(0.22, -0.15, eyeD);
+
+    // Mouth: a true smile arc at rest, opening into a wide talking mouth
+    float openAmt = smoothstep(0.02, 0.2, uMouth);
+    vec2 sv = p - vec2(0.0, -0.13) - look * 0.4;
+    float dArc = abs(length(sv) - 0.185);
+    float smileMask = smoothstep(0.020, 0.007, dArc)
+                    * smoothstep(-0.10, -0.15, sv.y)
+                    * (1.0 - openAmt);
+    vec2 mp = p - vec2(0.0, -0.31) - look * 0.4;
+    vec2 op = vec2(mp.x, mp.y - 0.5 * mp.x * mp.x); // corners lifted
+    float mouthH = 0.012 + 0.105 * uMouth;
+    float mouthW = 0.19 + 0.05 * uMouth;
+    float dm = length(op / vec2(mouthW, mouthH)) - 1.0;
+    float openMask = smoothstep(0.28, -0.2, dm) * openAmt;
+    float mouthMask = max(openMask, smileMask * 0.85);
+
+    // Soft inset shadow around the features — carved in, not stuck on
+    float inset = smoothstep(0.5, -0.1, eyeD) * 0.5
+                + smoothstep(0.55, -0.2, dm) * openAmt * 0.4;
+    body *= 1.0 - inset * 0.10;
+
+    body = mix(body, featureCol, max(eyeMask * 0.9, mouthMask * 0.85));
+
+    // Catchlights — the spark of life (drawn on the pigment, still under gloss)
+    float cl = min(
+      length(p - (eL + vec2(-0.026, 0.052))),
+      length(p - (eR + vec2(-0.026, 0.052)))
+    );
+    float clMask = smoothstep(0.034, 0.004, cl) * step(0.35, uEyeOpen);
+    body = mix(body, vec3(1.0, 0.99, 0.96), clMask * 0.85);
+  }
+
   // ---- Fresnel rim light (broad glow + thin crisp glass edge) ---------------
+  // Rendered after the face: the glass coats her, embedding the features.
   float fres = pow(1.0 - z, 2.2);
   body += uRim * fres * uRimAmt * (0.55 + uLevel * 0.9 + uPulse * 0.4);
   body += uRim * pow(1.0 - z, 7.0) * (0.28 + uLevel * 0.4);
@@ -252,51 +309,6 @@ void main() {
 
   // Soft inner shadow at the base for weight
   body *= 1.0 - 0.16 * smoothstep(0.0, 1.1, -uv.y / R * 0.8 + d * 0.4) * (1.0 - z);
-
-  // ---- Face — drawn in blob space so it deforms with the body --------------
-  if (uFace > 0.5) {
-    vec2 p = uv / R;
-    vec2 look = uLook * 0.12;
-    vec3 featureCol = mix(uColC, vec3(0.14, 0.11, 0.09), 0.65);
-
-    // Eyes: vertical ellipses that squash shut when blinking
-    float eyeH = 0.14 * max(uEyeOpen, 0.10);
-    float eyeW = 0.085 + 0.012 * (1.0 - min(uEyeOpen, 1.0));
-    vec2 eL = vec2(-0.30, 0.16) + look;
-    vec2 eR = vec2(0.30, 0.16) + look;
-    float dL = length((p - eL) / vec2(eyeW, eyeH)) - 1.0;
-    float dR = length((p - eR) / vec2(eyeW, eyeH)) - 1.0;
-    float eyeMask = smoothstep(0.22, -0.15, min(dL, dR));
-    body = mix(body, featureCol, eyeMask * 0.92);
-
-    // Catchlights — the spark of life
-    float cl = min(
-      length(p - (eL + vec2(-0.026, 0.052))),
-      length(p - (eR + vec2(-0.026, 0.052)))
-    );
-    float clMask = smoothstep(0.034, 0.004, cl) * step(0.35, uEyeOpen);
-    body = mix(body, vec3(1.0, 0.99, 0.96), clMask * 0.9);
-
-    // Mouth: a true smile arc at rest, opening into a wide talking mouth
-    float openAmt = smoothstep(0.02, 0.2, uMouth);
-
-    // Resting smile — lower arc of a circle, unmistakably curled
-    vec2 sv = p - vec2(0.0, -0.13) - look * 0.4;
-    float dArc = abs(length(sv) - 0.185);
-    float smileMask = smoothstep(0.020, 0.007, dArc)
-                    * smoothstep(-0.10, -0.15, sv.y)
-                    * (1.0 - openAmt);
-
-    // Talking mouth — wide, gently smiling ellipse driven by the voice
-    vec2 mp = p - vec2(0.0, -0.31) - look * 0.4;
-    vec2 op = vec2(mp.x, mp.y - 0.5 * mp.x * mp.x); // corners lifted
-    float mouthH = 0.012 + 0.105 * uMouth;
-    float mouthW = 0.19 + 0.05 * uMouth;
-    float dm = length(op / vec2(mouthW, mouthH)) - 1.0;
-    float openMask = smoothstep(0.28, -0.2, dm) * openAmt;
-
-    body = mix(body, featureCol, max(openMask * 0.9, smileMask * 0.75));
-  }
 
   // ---- Compositing: orb mask, aura, ripples --------------------------------
   float px = 2.0 / min(uRes.x, uRes.y);   // one pixel in uv units

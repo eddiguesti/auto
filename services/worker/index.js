@@ -9,25 +9,27 @@
  * (audiobook generation, EPUB, image generation) from blocking request handling.
  */
 
-import dotenv from 'dotenv'
-import { fileURLToPath } from 'url'
-import { dirname, join } from 'path'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-
-dotenv.config({ path: join(__dirname, '..', '..', '.env') })
-
-import { initDatabase } from '../api/db/index.js'
-import { initializeCronJobs } from '../api/cron/index.js'
-import { getQueue, stopQueue } from '../api/jobs/queue.js'
-import { JOB } from '../api/jobs/jobNames.js'
-import { processAudiobookJobs } from '../api/jobs/audiobookWorker.js'
-import pool from '../api/db/index.js'
+import 'dotenv/config'
 
 async function main() {
+  const [
+    { default: pool },
+    { runMigrations },
+    { initializeCronJobs },
+    { getQueue, stopQueue },
+    { JOB },
+    { processAudiobookJobs }
+  ] = await Promise.all([
+    import('../api/db/index.js'),
+    import('../api/db/runner.js'),
+    import('../api/cron/index.js'),
+    import('../api/jobs/queue.js'),
+    import('../api/jobs/jobNames.js'),
+    import('../api/jobs/audiobookWorker.js')
+  ])
+
   console.log('Worker starting...')
-  await initDatabase()
+  await runMigrations(pool)
 
   // ─── Cron jobs ──────────────────────────────────────────────────────────
   initializeCronJobs()
@@ -45,10 +47,27 @@ async function main() {
   console.log('Worker started — cron jobs and job queue active')
 
   // ─── Graceful shutdown ───────────────────────────────────────────────────
+  let shuttingDown = false
   async function shutdown(signal) {
+    if (shuttingDown) return
+    shuttingDown = true
     console.log(`Worker ${signal} — shutting down...`)
-    await stopQueue()
-    process.exit(0)
+    const forceTimer = setTimeout(() => {
+      console.error('Worker forced shutdown after timeout')
+      process.exit(1)
+    }, 10000)
+    forceTimer.unref()
+
+    try {
+      await stopQueue()
+      await pool.end()
+      clearTimeout(forceTimer)
+      process.exitCode = 0
+    } catch (error) {
+      clearTimeout(forceTimer)
+      console.error('Worker shutdown failed:', error)
+      process.exitCode = 1
+    }
   }
 
   process.on('SIGTERM', () => shutdown('SIGTERM'))

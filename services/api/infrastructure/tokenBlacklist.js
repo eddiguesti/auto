@@ -14,33 +14,25 @@ export async function blacklistToken(decoded) {
   const expiresAt = new Date(decoded.exp * 1000)
   if (expiresAt <= new Date()) return false
 
-  try {
-    await pool.query(
-      `INSERT INTO token_blacklist (jti, user_id, expires_at)
-       VALUES ($1, $2, $3)
-       ON CONFLICT (jti) DO NOTHING`,
-      [decoded.jti, decoded.id, expiresAt]
-    )
-    return true
-  } catch {
-    return false
-  }
+  await pool.query(
+    `INSERT INTO token_blacklist (jti, user_id, expires_at)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (jti) DO NOTHING`,
+    [decoded.jti, decoded.id, expiresAt]
+  )
+  return true
 }
 
 /**
  * Check if a token's JTI has been blacklisted.
  */
 export async function isTokenBlacklisted(jti) {
-  if (!pool) return false
-  try {
-    const result = await pool.query(
-      `SELECT 1 FROM token_blacklist WHERE jti = $1 AND expires_at > NOW()`,
-      [jti]
-    )
-    return result.rows.length > 0
-  } catch {
-    return false
-  }
+  if (!pool) throw new Error('Token revocation store unavailable')
+  const result = await pool.query(
+    `SELECT 1 FROM token_blacklist WHERE jti = $1 AND expires_at > NOW()`,
+    [jti]
+  )
+  return result.rows.length > 0
 }
 
 /**
@@ -48,18 +40,14 @@ export async function isTokenBlacklisted(jti) {
  * Any token issued before this timestamp will be rejected.
  */
 export async function blacklistAllUserTokens(userId) {
-  if (!pool) return false
-  try {
-    await pool.query(
-      `INSERT INTO user_token_invalidation (user_id, invalidated_at)
-       VALUES ($1, NOW())
-       ON CONFLICT (user_id) DO UPDATE SET invalidated_at = NOW()`,
-      [userId]
-    )
-    return true
-  } catch {
-    return false
-  }
+  if (!pool) throw new Error('Token revocation store unavailable')
+  await pool.query(
+    `INSERT INTO user_token_invalidation (user_id, invalidated_at)
+     VALUES ($1, NOW())
+     ON CONFLICT (user_id) DO UPDATE SET invalidated_at = NOW()`,
+    [userId]
+  )
+  return true
 }
 
 /**
@@ -67,18 +55,14 @@ export async function blacklistAllUserTokens(userId) {
  * Returns true if the token was issued before the user-level invalidation timestamp.
  */
 export async function isUserTokenBlacklisted(userId, tokenIssuedAt) {
-  if (!pool) return false
-  try {
-    const result = await pool.query(
-      `SELECT invalidated_at FROM user_token_invalidation WHERE user_id = $1`,
-      [userId]
-    )
-    if (result.rows.length === 0) return false
-    const invalidatedAt = Math.floor(new Date(result.rows[0].invalidated_at).getTime() / 1000)
-    return tokenIssuedAt <= invalidatedAt
-  } catch {
-    return false
-  }
+  if (!pool) throw new Error('Token revocation store unavailable')
+  const result = await pool.query(
+    `SELECT invalidated_at FROM user_token_invalidation WHERE user_id = $1`,
+    [userId]
+  )
+  if (result.rows.length === 0) return false
+  const invalidatedAt = Math.floor(new Date(result.rows[0].invalidated_at).getTime() / 1000)
+  return tokenIssuedAt <= invalidatedAt
 }
 
 /**

@@ -74,7 +74,7 @@ export class ConfigurationError extends AppError {
 
 export class ExternalServiceError extends AppError {
   constructor(service, originalError = null) {
-    super(`${service} temporarily unavailable`, 503, 'EXTERNAL_SERVICE_ERROR')
+    super(`${service} temporarily unavailable`, 502, 'EXTERNAL_SERVICE_ERROR')
     this.name = 'ExternalServiceError'
     this.originalError = originalError
   }

@@ -20,6 +20,7 @@ import { audiobookRepository } from '../repositories/audiobookRepository.js'
 import { storyRepository } from '../repositories/storyRepository.js'
 import { createLogger } from '../utils/logger.js'
 import { JOB } from './jobNames.js'
+import { r2GetBuffer, r2Upload } from '../utils/r2.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -55,14 +56,17 @@ export async function processAudiobookJobs(jobs, boss, db) {
  * @returns {Promise<{filename: string}>}
  */
 async function _processOne(job, db) {
-  const { userId, useOwnVoice } = job.data
+  return generateAudiobook(job.data, db, job.id)
+}
 
+/** Runtime-neutral audiobook generator used by pg-boss and Cloudflare Queues. */
+export async function generateAudiobook({ userId, useOwnVoice }, db, jobId = 'direct') {
   const apiKey = process.env.FISH_AUDIO_API_KEY
   if (!apiKey) {
     throw new Error('FISH_AUDIO_API_KEY not configured')
   }
 
-  logger.info('Processing audiobook job', { jobId: job.id, userId })
+  logger.info('Processing audiobook job', { jobId, userId })
 
   // Get user settings for name
   const settings = await storyRepository.getSettings(db, userId)
@@ -73,17 +77,20 @@ async function _processOne(job, db) {
   if (useOwnVoice) {
     const voiceModel = await audiobookRepository.findVoiceSampleWithConsent(db, userId)
     if (voiceModel?.fish_model_id) {
-      const voicePath = join(
-        __dirname,
-        '..',
-        '..',
-        '..',
-        'uploads',
-        'voices',
-        voiceModel.fish_model_id
-      )
-      if (existsSync(voicePath)) {
-        voiceSampleBuffer = await readFile(voicePath)
+      const storedVoice = await r2GetBuffer(`voices/${voiceModel.fish_model_id}`)
+      if (storedVoice) {
+        voiceSampleBuffer = storedVoice.body
+      } else {
+        const voicePath = join(
+          __dirname,
+          '..',
+          '..',
+          '..',
+          'uploads',
+          'voices',
+          voiceModel.fish_model_id
+        )
+        if (existsSync(voicePath)) voiceSampleBuffer = await readFile(voicePath)
       }
     }
   }
@@ -143,25 +150,23 @@ async function _processOne(job, db) {
 
   if (!audioResponse.ok) {
     const errText = await audioResponse.text()
-    logger.error('Fish.audio TTS failed', { jobId: job.id, status: audioResponse.status, errText })
+    logger.error('Fish.audio TTS failed', { jobId, status: audioResponse.status, errText })
     throw new Error('Fish.audio TTS request failed')
   }
 
   const audioBuffer = await audioResponse.arrayBuffer()
 
-  // Save to uploads/audiobooks/
-  const uploadsDir = join(__dirname, '..', '..', '..', 'uploads', 'audiobooks')
-  if (!existsSync(uploadsDir)) {
-    await mkdir(uploadsDir, { recursive: true })
-  }
-
   const safeName = userName.replace(/[^a-zA-Z0-9]/g, '_')
   const filename = `${safeName}_Life_Story_${Date.now()}.mp3`
-  const filepath = join(uploadsDir, basename(filename))
-  await writeFile(filepath, Buffer.from(audioBuffer))
+  const uploaded = await r2Upload(`audiobooks/${filename}`, Buffer.from(audioBuffer), 'audio/mpeg')
+  if (!uploaded) {
+    const uploadsDir = join(__dirname, '..', '..', '..', 'uploads', 'audiobooks')
+    if (!existsSync(uploadsDir)) await mkdir(uploadsDir, { recursive: true })
+    await writeFile(join(uploadsDir, basename(filename)), Buffer.from(audioBuffer))
+  }
 
   await audiobookRepository.saveAudiobook(db, userId, filename, useOwnVoice ? 'custom' : 'default')
 
-  logger.info('Audiobook job complete', { jobId: job.id, filename })
+  logger.info('Audiobook job complete', { jobId, filename })
   return { filename }
 }

@@ -12,25 +12,20 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 
 // Patterns that should NEVER appear in client bundles
 const FORBIDDEN_PATTERNS = [
-  /sk_live_[a-zA-Z0-9]+/,           // Stripe live secret key
-  /sk_test_[a-zA-Z0-9]{20,}/,       // Stripe test secret key (long form)
-  /AKIA[0-9A-Z]{16}/,               // AWS Access Key ID
-  /whsec_[a-zA-Z0-9]+/,             // Stripe webhook secret
-  /postgresql:\/\/[^:]+:[^@]+@/,    // Database connection with password
-  /JWT_SECRET/,                      // JWT secret variable name
-  /GROK_API_KEY/,                    // Grok API key variable name
-  /REPLICATE_API_TOKEN/,            // Replicate token variable name
-  /TELEGRAM_BOT_TOKEN/,             // Telegram bot token variable name
-  /password['"]\s*:\s*['"][^'"]+['"]/i,  // Hardcoded passwords
+  /sk_live_[a-zA-Z0-9]+/, // Stripe live secret key
+  /sk_test_[a-zA-Z0-9]{20,}/, // Stripe test secret key (long form)
+  /AKIA[0-9A-Z]{16}/, // AWS Access Key ID
+  /whsec_[a-zA-Z0-9]+/, // Stripe webhook secret
+  /postgresql:\/\/[^:]+:[^@]+@/, // Database connection with password
+  /JWT_SECRET/, // JWT secret variable name
+  /GROK_API_KEY/, // Grok API key variable name
+  /REPLICATE_API_TOKEN/, // Replicate token variable name
+  /TELEGRAM_BOT_TOKEN/, // Telegram bot token variable name
+  /password['"]\s*:\s*['"][^'"]+['"]/i // Hardcoded passwords
 ]
 
 // Patterns that are warnings (might be okay, but should be reviewed)
-const WARNING_PATTERNS = [
-  /api[_-]?key/i,
-  /secret/i,
-  /credential/i,
-  /private[_-]?key/i,
-]
+const WARNING_PATTERNS = [/api[_-]?key/i, /secret/i, /credential/i, /private[_-]?key/i]
 
 let foundIssues = 0
 let warnings = 0

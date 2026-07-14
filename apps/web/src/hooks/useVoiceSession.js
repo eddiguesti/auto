@@ -6,6 +6,7 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useSettings } from '../context/SettingsContext'
 import { base64ToArrayBuffer, arrayBufferToBase64 } from '../utils/audio'
+import { getAiVoiceTap } from '../utils/aiVoiceTap'
 import { buildInstructions } from '../utils/voiceInstructions'
 import { VOICE_CONFIG } from '../data/voiceConfig'
 
@@ -110,7 +111,7 @@ export function useVoiceSession({ chapter, initialQuestionIndex = 0, photoContex
           buf.getChannelData(0).set(float32)
           const source = playbackCtxRef.current.createBufferSource()
           source.buffer = buf
-          source.connect(playbackCtxRef.current.destination)
+          source.connect(getAiVoiceTap(playbackCtxRef.current))
           currentSourceRef.current = source
           await new Promise(resolve => {
             source.onended = resolve

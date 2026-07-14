@@ -12,8 +12,8 @@ import { ExternalServiceError } from '../utils/errors.js'
 import { audiobookRepository } from '../repositories/audiobookRepository.js'
 import { paymentRepository } from '../repositories/paymentRepository.js'
 import { storyRepository } from '../repositories/storyRepository.js'
-import { getQueue } from '../jobs/queue.js'
-import { JOB } from '../jobs/jobNames.js'
+import { enqueueAudiobook, getAudiobookJob } from '../jobs/audiobookQueue.js'
+import { r2Delete, r2GetBuffer, r2Upload } from '../utils/r2.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -67,17 +67,15 @@ router.post(
         .json({ error: 'Invalid audio format. Supported: WAV, MP3, OGG, FLAC, M4A' })
     }
 
-    // Save voice sample locally
-    const voicesDir = join(__dirname, '..', '..', '..', 'uploads', 'voices')
-    if (!existsSync(voicesDir)) {
-      await mkdir(voicesDir, { recursive: true })
-    }
-
     // Sanitize filename to prevent path traversal
     const safeUserId = String(userId).replace(/[^0-9]/g, '')
     const filename = `voice_${safeUserId}_${Date.now()}.wav`
-    const filepath = join(voicesDir, basename(filename))
-    await writeFile(filepath, audioBuffer)
+    const uploaded = await r2Upload(`voices/${filename}`, audioBuffer, 'audio/wav')
+    if (!uploaded) {
+      const voicesDir = join(__dirname, '..', '..', '..', 'uploads', 'voices')
+      if (!existsSync(voicesDir)) await mkdir(voicesDir, { recursive: true })
+      await writeFile(join(voicesDir, basename(filename)), audioBuffer)
+    }
 
     await audiobookRepository.saveVoiceSample(db, userId, filename, consentGiven)
 
@@ -99,6 +97,7 @@ router.delete(
     const filename = await audiobookRepository.deleteVoiceSample(db, userId)
 
     if (filename) {
+      await r2Delete(`voices/${filename}`)
       const filepath = join(__dirname, '..', '..', '..', 'uploads', 'voices', filename)
       if (existsSync(filepath)) {
         await unlink(filepath)
@@ -147,16 +146,10 @@ router.post(
       return res.status(400).json({ error: 'No stories to convert to audiobook' })
     }
 
-    const boss = await getQueue()
-    const jobId = await boss.send(
-      JOB.AUDIOBOOK_GENERATE,
-      { userId, useOwnVoice: Boolean(useOwnVoice) },
-      {
-        retryLimit: 2,
-        retryDelay: 60,
-        expireInSeconds: 900 // 15 min max per job
-      }
-    )
+    const jobId = await enqueueAudiobook(db, {
+      userId,
+      useOwnVoice: Boolean(useOwnVoice)
+    })
 
     logger.info('Audiobook job enqueued', { jobId, userId, requestId: req.id })
     res.status(202).json({ jobId, message: 'Audiobook generation started' })
@@ -169,11 +162,11 @@ router.get(
   '/jobs/:jobId',
   requireDb,
   asyncHandler(async (req, res) => {
+    const db = req.app.locals.db
     const { jobId } = req.params
     const userId = req.user.id
 
-    const boss = await getQueue()
-    const job = await boss.getJobById(JOB.AUDIOBOOK_GENERATE, jobId)
+    const job = await getAudiobookJob(db, jobId)
 
     if (!job) {
       return res.status(404).json({ error: 'Job not found' })
@@ -274,6 +267,13 @@ router.get(
 
     if (!audiobook) {
       return res.status(404).json({ error: 'Audiobook not found' })
+    }
+
+    const stored = await r2GetBuffer(`audiobooks/${filename}`)
+    if (stored) {
+      res.setHeader('Content-Type', stored.contentType)
+      res.setHeader('Content-Disposition', `attachment; filename="${basename(filename)}"`)
+      return res.send(stored.body)
     }
 
     const filepath = join(__dirname, '..', '..', '..', 'uploads', 'audiobooks', filename)

@@ -8,7 +8,7 @@ import { asyncHandler } from '../middleware/asyncHandler.js'
 import { requireDb } from '../middleware/requireDb.js'
 import { authenticateToken } from '../middleware/auth.js'
 import { createLogger } from '../utils/logger.js'
-import { r2Upload, r2Get, r2Delete } from '../utils/r2.js'
+import { r2Upload, r2GetBuffer, r2Delete } from '../utils/r2.js'
 import { photoRepository } from '../repositories/photoRepository.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -19,7 +19,7 @@ const logger = createLogger('photos')
 
 // Local uploads directory (fallback when R2 is not configured)
 const uploadsDir = join(__dirname, '..', '..', '..', 'uploads')
-if (!existsSync(uploadsDir)) {
+if (!globalThis.__CLOUDFLARE_BINDINGS__ && !existsSync(uploadsDir)) {
   mkdirSync(uploadsDir, { recursive: true })
   logger.info('Created uploads directory', { path: uploadsDir })
 }
@@ -149,21 +149,10 @@ router.get(
     }
 
     // Try R2 first
-    const r2File = await r2Get(sanitizedFilename)
+    const r2File = await r2GetBuffer(sanitizedFilename)
     if (r2File) {
       res.set('Content-Type', r2File.contentType)
-      r2File.body.on('error', err => {
-        logger.error('R2 stream error', {
-          filename: sanitizedFilename,
-          error: err.message,
-          requestId: req.id
-        })
-        if (!res.headersSent) {
-          res.status(500).json({ error: 'Failed to stream photo' })
-        }
-      })
-      r2File.body.pipe(res)
-      return
+      return res.send(r2File.body)
     }
 
     // Fall back to local file

@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import { IconAlertCircle, IconCircleCheck, IconClock } from '@tabler/icons-react'
 import { API_URL } from '../../config'
 import { AudioVisualizer } from '../../components/AudioVisualizer'
+import { getAiVoiceTap } from '../../utils/aiVoiceTap'
 import { Button, Skeleton } from '../../components/ui'
 
 /**
@@ -128,7 +129,7 @@ export default function Talk() {
 
         const source = playbackContextRef.current.createBufferSource()
         source.buffer = audioBuffer
-        source.connect(playbackContextRef.current.destination)
+        source.connect(getAiVoiceTap(playbackContextRef.current))
         currentSourceRef.current = source
 
         await new Promise(resolve => {
