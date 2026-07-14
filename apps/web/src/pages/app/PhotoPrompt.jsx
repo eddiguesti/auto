@@ -1,8 +1,18 @@
 import { useState, useRef } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
+import { IconAlertCircle, IconPhoto, IconPhotoPlus } from '@tabler/icons-react'
 import { useAuth } from '../../context/AuthContext'
 import { usePremium } from '../../hooks/usePremium'
 import { chapters } from '../../data/chapters'
+import AppShell from '../../components/layout/AppShell'
+import { Button, Card, Field, Skeleton } from '../../components/ui'
+
+const SELECT_CLASSES = [
+  'w-full px-4 py-3 rounded-xl text-base text-ink bg-surface',
+  'border border-sepia-200 hover:border-sepia-300',
+  'focus:border-bronze-400 focus:ring-4 focus:ring-bronze-500/10 focus:outline-none',
+  'transition-colors duration-150'
+].join(' ')
 
 export default function PhotoPrompt() {
   const { authFetch } = useAuth()
@@ -86,174 +96,152 @@ export default function PhotoPrompt() {
   }
 
   return (
-    <div className="max-w-lg mx-auto px-4 py-8 page-enter">
-      <Link
-        to="/home"
-        className="flex items-center gap-2 text-sepia/60 hover:text-sepia transition mb-6"
-      >
-        <span>←</span> Back
-      </Link>
+    <AppShell back="/home" title="Share a photo">
+      <div className="max-w-lg mx-auto py-8 page-enter">
+        <header className="text-center mb-8">
+          <div className="w-11 h-11 bg-bronze-100 text-bronze-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+            <IconPhoto size={24} stroke={1.5} />
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-display text-ink mb-2">Share a Photo</h1>
+          <p className="text-sepia-600">
+            Upload a photo and Clio will ask you about the memories behind it.
+          </p>
+        </header>
 
-      <div className="text-center mb-8">
-        <div className="w-16 h-16 bg-violet-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <svg
-            className="w-8 h-8 text-violet-600"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+        {error && (
+          <div
+            role="alert"
+            className="mb-6 p-4 bg-error-soft text-error-strong rounded-xl text-sm flex items-center gap-3"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.5}
-              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+            <IconAlertCircle size={20} stroke={1.75} className="shrink-0" />
+            {error}
+          </div>
+        )}
+
+        {/* Upload phase */}
+        {phase === 'upload' && (
+          <div className="space-y-5">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full aspect-[4/3] border-2 border-dashed border-sepia-300 bg-sepia-50 hover:bg-sepia-100 rounded-2xl flex flex-col items-center justify-center gap-3 transition-colors duration-200 cursor-pointer overflow-hidden"
+            >
+              {preview ? (
+                <img
+                  src={preview}
+                  alt="Selected photo"
+                  className="w-full h-full object-cover rounded-2xl"
+                />
+              ) : (
+                <>
+                  <IconPhotoPlus size={40} stroke={1.5} className="text-sepia-400" />
+                  <p className="text-sepia-600 text-base font-medium">Tap to choose a photo</p>
+                  <p className="text-sepia-500 text-sm">JPEG, PNG or WebP up to 10MB</p>
+                </>
+              )}
+            </button>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              onChange={handleFileSelect}
+              className="hidden"
             />
-          </svg>
-        </div>
-        <h1 className="text-2xl sm:text-3xl font-display text-ink mb-2">Share a Photo</h1>
-        <p className="text-sepia/60">
-          Upload a photo and Clio will ask you about the memories behind it.
-        </p>
-      </div>
 
-      {error && <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>}
+            <Field label="Which chapter does this relate to?">
+              {id => (
+                <select
+                  id={id}
+                  value={selectedChapter}
+                  onChange={e => setSelectedChapter(e.target.value)}
+                  className={SELECT_CLASSES}
+                >
+                  <option value="">Let Clio decide</option>
+                  {unlockedChapters.map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.title}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </Field>
+          </div>
+        )}
 
-      {/* Upload phase */}
-      {phase === 'upload' && (
-        <div className="space-y-4">
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="w-full aspect-[4/3] border-2 border-dashed border-sepia/20 rounded-2xl flex flex-col items-center justify-center gap-3 hover:border-sepia/40 hover:bg-sepia/5 transition cursor-pointer"
-          >
-            {preview ? (
+        {/* Analyzing phase */}
+        {phase === 'analyzing' && (
+          <div className="text-center py-12">
+            {preview && (
               <img
                 src={preview}
-                alt="Selected photo"
-                className="w-full h-full object-cover rounded-2xl"
+                alt="Analyzing"
+                className="w-48 h-48 object-cover rounded-2xl shadow-soft mx-auto mb-6 opacity-80"
               />
-            ) : (
-              <>
-                <svg
-                  className="w-12 h-12 text-sepia/30"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                  />
-                </svg>
-                <p className="text-sepia/50 text-sm">Tap to choose a photo</p>
-                <p className="text-sepia/30 text-xs">JPEG, PNG or WebP up to 10MB</p>
-              </>
             )}
-          </button>
-
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
-            onChange={handleFileSelect}
-            className="hidden"
-          />
-
-          <div>
-            <label className="block text-sm text-sepia/60 mb-1">
-              Which chapter does this relate to?
-            </label>
-            <select
-              value={selectedChapter}
-              onChange={e => setSelectedChapter(e.target.value)}
-              className="w-full px-3 py-2 border border-sepia/15 rounded-xl bg-white text-ink focus:border-sepia/40 focus:outline-none"
-            >
-              <option value="">Let Clio decide</option>
-              {unlockedChapters.map(c => (
-                <option key={c.id} value={c.id}>
-                  {c.title}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      )}
-
-      {/* Analyzing phase */}
-      {phase === 'analyzing' && (
-        <div className="text-center py-12">
-          {preview && (
-            <img
-              src={preview}
-              alt="Analyzing"
-              className="w-48 h-48 object-cover rounded-2xl mx-auto mb-6 opacity-80"
-            />
-          )}
-          <div className="w-8 h-8 border-2 border-sepia/20 border-t-sepia rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-sepia/60">Clio is looking at your photo...</p>
-        </div>
-      )}
-
-      {/* Result phase */}
-      {phase === 'result' && analysis && (
-        <div className="space-y-6">
-          {preview && (
-            <img src={preview} alt="Your photo" className="w-full rounded-2xl shadow-md" />
-          )}
-
-          <div className="bg-white border border-sepia/10 rounded-2xl p-5">
-            <p className="text-ink leading-relaxed mb-3">{analysis.description}</p>
-            {analysis.era && analysis.era !== 'unknown' && (
-              <p className="text-sepia/50 text-sm">Estimated era: {analysis.era}</p>
-            )}
-          </div>
-
-          {analysis.questions?.length > 0 && (
-            <div className="bg-amber-50/50 border border-amber-200/30 rounded-xl p-4">
-              <p className="text-amber-800/70 text-sm font-medium mb-2">
-                Clio would love to ask you about:
-              </p>
-              <ul className="space-y-1.5">
-                {analysis.questions.slice(0, 3).map((q, i) => (
-                  <li key={i} className="text-amber-800/60 text-sm flex gap-2">
-                    <span className="text-amber-500 mt-0.5">•</span>
-                    {q}
-                  </li>
-                ))}
-              </ul>
+            <div className="max-w-xs mx-auto space-y-2.5 mb-5">
+              <Skeleton className="h-3.5 w-full" />
+              <Skeleton className="h-3.5 w-4/5 mx-auto" />
             </div>
-          )}
+            <p className="text-sepia-600">Clio is looking at your photo...</p>
+          </div>
+        )}
 
-          <button
-            onClick={handleTalkAboutPhoto}
-            className="w-full py-4 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-xl font-medium text-lg hover:shadow-lg transition-all"
-          >
-            Talk About This Photo
-          </button>
+        {/* Result phase */}
+        {phase === 'result' && analysis && (
+          <div className="space-y-5">
+            <Card padding="none" className="overflow-hidden">
+              {preview && <img src={preview} alt="Your photo" className="w-full object-cover" />}
+              <div className="p-5 sm:p-6">
+                <p className="font-serif text-ink-soft leading-relaxed mb-3">
+                  {analysis.description}
+                </p>
+                {analysis.era && analysis.era !== 'unknown' && (
+                  <p className="text-sepia-500 text-sm">Estimated era: {analysis.era}</p>
+                )}
+              </div>
+            </Card>
 
-          <button
-            onClick={handleReset}
-            className="w-full py-3 text-sepia/50 hover:text-sepia transition text-sm"
-          >
-            Choose a different photo
-          </button>
-        </div>
-      )}
+            {analysis.questions?.length > 0 && (
+              <div className="bg-sepia-50 rounded-xl p-4">
+                <p className="text-sepia-700 text-sm font-medium mb-2">
+                  Clio would love to ask you about:
+                </p>
+                <ul className="space-y-1.5">
+                  {analysis.questions.slice(0, 3).map((q, i) => (
+                    <li key={i} className="text-sepia-600 text-sm flex gap-2">
+                      <span className="text-bronze-500 mt-0.5">•</span>
+                      {q}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
-      {/* Tips */}
-      {phase === 'upload' && (
-        <div className="mt-8 p-4 bg-sepia/5 rounded-xl">
-          <p className="text-sepia/60 text-sm font-medium mb-2">Great photos for your memoir:</p>
-          <ul className="space-y-1 text-sepia/50 text-sm">
-            <li>• Family gatherings, weddings, holidays</li>
-            <li>• Childhood homes, schools, workplaces</li>
-            <li>• Candid moments (more powerful than posed portraits)</li>
-            <li>• Old documents, letters, postcards</li>
-            <li>• Cherished objects and heirlooms</li>
-          </ul>
-        </div>
-      )}
-    </div>
+            <Button size="xl" onClick={handleTalkAboutPhoto}>
+              Talk About This Photo
+            </Button>
+
+            <Button variant="ghost" className="w-full" onClick={handleReset}>
+              Choose a different photo
+            </Button>
+          </div>
+        )}
+
+        {/* Tips */}
+        {phase === 'upload' && (
+          <div className="mt-8 p-5 bg-cream rounded-2xl">
+            <p className="text-ink-soft text-sm font-medium mb-2">Great photos for your memoir:</p>
+            <ul className="space-y-1 text-sepia-600 text-sm">
+              <li>• Family gatherings, weddings, holidays</li>
+              <li>• Childhood homes, schools, workplaces</li>
+              <li>• Candid moments (more powerful than posed portraits)</li>
+              <li>• Old documents, letters, postcards</li>
+              <li>• Cherished objects and heirlooms</li>
+            </ul>
+          </div>
+        )}
+      </div>
+    </AppShell>
   )
 }

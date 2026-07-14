@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
+import { IconAlertCircle, IconArrowLeft } from '@tabler/icons-react'
 import { useAuth } from '../../context/AuthContext'
+import { Button, Card, Badge, Skeleton } from '../../components/ui'
 
 function formatDate(dateStr) {
   if (!dateStr) return '-'
@@ -21,29 +23,25 @@ function formatCurrency(pence) {
 
 function InfoRow({ label, value }) {
   return (
-    <div className="flex justify-between py-2 border-b border-warm-brown/5">
-      <span className="text-warm-brown/60 text-sm">{label}</span>
-      <span className="text-warm-brown text-sm font-medium">{value}</span>
+    <div className="flex justify-between gap-4 py-2 border-b border-sepia-100 last:border-0">
+      <span className="text-sepia-600 text-sm">{label}</span>
+      <span className="text-ink text-sm font-medium text-right break-all">{value}</span>
     </div>
   )
 }
 
-function StatusBadge({ status }) {
-  const colors = {
-    completed: 'bg-green-100 text-green-700',
-    pending: 'bg-yellow-100 text-yellow-700',
-    failed: 'bg-red-100 text-red-700',
-    refunded: 'bg-blue-100 text-blue-700'
-  }
-
-  return (
-    <span
-      className={`inline-block px-2 py-0.5 rounded text-xs ${colors[status] || 'bg-gray-100 text-gray-500'}`}
-    >
-      {status}
-    </span>
-  )
+const STATUS_VARIANTS = {
+  completed: 'success',
+  pending: 'warning',
+  failed: 'error',
+  refunded: 'info'
 }
+
+function StatusBadge({ status }) {
+  return <Badge variant={STATUS_VARIANTS[status] || 'neutral'}>{status}</Badge>
+}
+
+const TH_CLASSES = 'px-6 py-3 text-xs font-medium text-sepia-500 uppercase tracking-caps'
 
 export default function AdminUserDetail() {
   const { id } = useParams()
@@ -111,23 +109,29 @@ export default function AdminUserDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-parchment flex items-center justify-center">
-        <div className="animate-pulse text-warm-brown">Loading user...</div>
+      <div className="min-h-screen bg-parchment">
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          <Skeleton className="h-5 w-32 mb-3" />
+          <Skeleton className="h-10 w-64 mb-8" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <Skeleton className="h-72" />
+            <Skeleton className="h-72" />
+          </div>
+          <Skeleton className="h-56" />
+        </div>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-parchment flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-600 mb-4">{error}</p>
-          <Link
-            to="/admin/users"
-            className="px-4 py-2 bg-warm-brown text-white rounded-lg hover:bg-warm-brown/90 transition"
-          >
-            Back to Users
-          </Link>
+      <div className="min-h-screen bg-parchment flex items-center justify-center px-4">
+        <div className="text-center max-w-md w-full">
+          <div className="mb-6 p-4 bg-error-soft text-error-strong rounded-xl text-sm flex items-center gap-3 text-left">
+            <IconAlertCircle size={20} stroke={1.75} className="shrink-0" />
+            {error}
+          </div>
+          <Button to="/admin/users">Back to Users</Button>
         </div>
       </div>
     )
@@ -138,26 +142,25 @@ export default function AdminUserDetail() {
 
   return (
     <div className="min-h-screen bg-parchment">
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto px-4 py-8 page-enter">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <Link
-              to="/admin/users"
-              className="text-sm text-warm-brown/60 hover:text-warm-brown transition"
-            >
-              &larr; Back to Users
-            </Link>
-            <h1 className="text-3xl font-serif text-warm-brown mt-1">
-              {user.name || 'Unnamed User'}
-            </h1>
-          </div>
+        <div className="mb-8">
+          <Button
+            to="/admin/users"
+            variant="ghost"
+            size="sm"
+            className="-ml-2 mb-2"
+            icon={<IconArrowLeft size={18} stroke={1.75} />}
+          >
+            Back to Users
+          </Button>
+          <h1 className="text-3xl font-display text-ink">{user.name || 'Unnamed User'}</h1>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* User info card */}
-          <div className="bg-white rounded-xl shadow-sm border border-warm-brown/10 p-6">
-            <h2 className="text-lg font-serif text-warm-brown mb-4">User Info</h2>
+          <Card>
+            <h2 className="text-lg font-display text-ink mb-4">User Info</h2>
             <InfoRow label="ID" value={user.id} />
             <InfoRow label="Email" value={user.email} />
             <InfoRow label="Name" value={user.name || '-'} />
@@ -166,84 +169,77 @@ export default function AdminUserDetail() {
             <InfoRow label="Admin" value={user.is_admin ? 'Yes' : 'No'} />
             <InfoRow label="Stories" value={user.storyCount} />
             <InfoRow label="Joined" value={formatDate(user.created_at)} />
-          </div>
+          </Card>
 
           {/* Premium management card */}
-          <div className="bg-white rounded-xl shadow-sm border border-warm-brown/10 p-6">
-            <h2 className="text-lg font-serif text-warm-brown mb-4">Premium Status</h2>
-            <div className="mb-4">
+          <Card>
+            <h2 className="text-lg font-display text-ink mb-4">Premium Status</h2>
+            <div className="mb-5">
               {isPremium ? (
-                <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                  <p className="text-green-700 font-medium">Premium Active</p>
-                  <p className="text-green-600 text-sm mt-1">
+                <div className="p-4 bg-success-soft rounded-xl">
+                  <p className="text-success-strong font-medium">Premium Active</p>
+                  <p className="text-success-strong text-sm mt-1">
                     Expires: {formatDate(user.premium_until)}
                   </p>
                 </div>
               ) : (
-                <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                  <p className="text-gray-600 font-medium">Free Plan</p>
+                <div className="p-4 bg-sepia-50 rounded-xl">
+                  <p className="text-sepia-700 font-medium">Free Plan</p>
                   {user.premium_until && (
-                    <p className="text-gray-500 text-sm mt-1">
+                    <p className="text-sepia-500 text-sm mt-1">
                       Expired: {formatDate(user.premium_until)}
                     </p>
                   )}
                 </div>
               )}
             </div>
-            <button
-              onClick={handleGrantPremium}
-              disabled={premiumLoading}
-              className="w-full px-4 py-2 bg-warm-brown text-white rounded-lg hover:bg-warm-brown/90 transition text-sm disabled:opacity-50"
-            >
+            <Button size="xl" onClick={handleGrantPremium} disabled={premiumLoading}>
               {premiumLoading ? 'Granting...' : 'Grant / Extend Premium'}
-            </button>
-          </div>
+            </Button>
+          </Card>
         </div>
 
         {/* Payment history */}
-        <div className="mt-6 bg-white rounded-xl shadow-sm border border-warm-brown/10 overflow-hidden">
-          <div className="px-6 py-4 border-b border-warm-brown/10">
-            <h2 className="text-lg font-serif text-warm-brown">Payment History</h2>
+        <Card padding="none" className="mt-6 overflow-hidden">
+          <div className="px-6 py-4 border-b border-sepia-100">
+            <h2 className="text-lg font-display text-ink">Payment History</h2>
           </div>
           {payments.length === 0 ? (
-            <div className="px-6 py-8 text-center text-warm-brown/50">No payments</div>
+            <div className="px-6 py-8 text-center text-sepia-500 text-sm">No payments</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-warm-brown/10 text-left">
-                    <th className="px-6 py-3 text-warm-brown/60 font-medium">ID</th>
-                    <th className="px-6 py-3 text-warm-brown/60 font-medium">Product</th>
-                    <th className="px-6 py-3 text-warm-brown/60 font-medium">Amount</th>
-                    <th className="px-6 py-3 text-warm-brown/60 font-medium">Status</th>
-                    <th className="px-6 py-3 text-warm-brown/60 font-medium">Date</th>
+                  <tr className="text-left border-b border-sepia-100">
+                    <th className={TH_CLASSES}>ID</th>
+                    <th className={TH_CLASSES}>Product</th>
+                    <th className={TH_CLASSES}>Amount</th>
+                    <th className={TH_CLASSES}>Status</th>
+                    <th className={TH_CLASSES}>Date</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-sepia-100">
                   {payments.map(p => (
-                    <tr
-                      key={p.id}
-                      className="border-b border-warm-brown/5 hover:bg-warm-brown/[0.02] transition"
-                    >
-                      <td className="px-6 py-3 text-warm-brown/50 font-mono text-xs">{p.id}</td>
-                      <td className="px-6 py-3 text-warm-brown">
+                    <tr key={p.id} className="hover:bg-sepia-50 transition-colors">
+                      <td className="px-6 py-3 text-sepia-500 font-mono text-xs">{p.id}</td>
+                      <td className="px-6 py-3 text-ink">
                         {p.product_type}
                         {p.product_id && (
-                          <span className="text-warm-brown/50 ml-1">({p.product_id})</span>
+                          <span className="text-sepia-500 ml-1">({p.product_id})</span>
                         )}
                       </td>
-                      <td className="px-6 py-3 text-warm-brown">{formatCurrency(p.amount)}</td>
+                      <td className="px-6 py-3 text-ink">{formatCurrency(p.amount)}</td>
                       <td className="px-6 py-3">
                         <StatusBadge status={p.status} />
                       </td>
-                      <td className="px-6 py-3 text-warm-brown/60">{formatDate(p.created_at)}</td>
+                      <td className="px-6 py-3 text-sepia-500">{formatDate(p.created_at)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           )}
-        </div>
+        </Card>
       </div>
     </div>
   )

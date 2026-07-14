@@ -2,36 +2,38 @@
  * AudioVisualizer Configuration
  *
  * Customize colors, sizes, and particle counts
+ * Palette is harmonized with the Keepsake system: sepia (#9C7E5D),
+ * bronze (#B88336 / #CC9C52) and ink (#292420) only.
  */
 
 export const defaultColorSchemes = {
-  // Idle state - warm sepia tones
+  // Idle state - quiet warm sepia
   idle: {
-    primary: '#9B8B7A',
-    secondary: '#B8A99A',
-    glow: 'rgba(155, 139, 122, 0.4)',
-    center: 'rgba(155, 139, 122, 0.15)'
+    primary: '#9C7E5D',
+    secondary: 'rgba(156, 126, 93, 0.65)',
+    glow: 'rgba(156, 126, 93, 0.4)',
+    center: 'rgba(156, 126, 93, 0.15)'
   },
-  // Active/listening - subtle green, ready to receive
+  // Active/listening - soft bronze, ready to receive
   active: {
-    primary: '#5A9B6B',
-    secondary: '#7AB88A',
-    glow: 'rgba(90, 155, 107, 0.45)',
-    center: 'rgba(90, 155, 107, 0.18)'
+    primary: '#CC9C52',
+    secondary: 'rgba(204, 156, 82, 0.75)',
+    glow: 'rgba(204, 156, 82, 0.45)',
+    center: 'rgba(204, 156, 82, 0.18)'
   },
-  // AI/Clio speaking - soft blue/violet
+  // AI/Clio speaking - deep ink
   speaking: {
-    primary: '#6B8DD9',
-    secondary: '#8BA8E8',
-    glow: 'rgba(107, 141, 217, 0.55)',
-    center: 'rgba(107, 141, 217, 0.22)'
+    primary: '#292420',
+    secondary: 'rgba(41, 36, 32, 0.7)',
+    glow: 'rgba(41, 36, 32, 0.45)',
+    center: 'rgba(41, 36, 32, 0.18)'
   },
-  // User speaking detected - vibrant emerald green
+  // User speaking detected - burnished bronze
   detected: {
-    primary: '#10B981',
-    secondary: '#34D399',
-    glow: 'rgba(16, 185, 129, 0.6)',
-    center: 'rgba(16, 185, 129, 0.25)'
+    primary: '#B88336',
+    secondary: '#CC9C52',
+    glow: 'rgba(184, 131, 54, 0.6)',
+    center: 'rgba(184, 131, 54, 0.25)'
   }
 }
 

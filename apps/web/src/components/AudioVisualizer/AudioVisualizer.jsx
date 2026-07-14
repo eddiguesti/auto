@@ -10,14 +10,14 @@ import { defaultColorSchemes, defaultSizes } from './config'
  *
  * Color states:
  * - Idle: Warm sepia tones
- * - Active (listening): Subtle green
- * - Speaking (AI): Soft blue/violet
- * - Detected (user speaking): Vibrant emerald
+ * - Active (listening): Soft bronze
+ * - Speaking (AI): Deep ink
+ * - Detected (user speaking): Burnished bronze
  *
  * @param {MediaStream} stream - Microphone stream to visualize
  * @param {boolean} isActive - Whether recording/listening is active
- * @param {boolean} isSpeaking - Whether AI is speaking (blue)
- * @param {boolean} isSpeechDetected - Whether user speech is detected (green)
+ * @param {boolean} isSpeaking - Whether AI is speaking (ink)
+ * @param {boolean} isSpeechDetected - Whether user speech is detected (bronze)
  * @param {string} size - 'sm' | 'md' | 'lg'
  * @param {object} colorSchemes - Custom color schemes (optional)
  * @param {boolean} showIcon - Whether to show center icon (default: false)
@@ -68,7 +68,7 @@ export default function AudioVisualizer({
         a: match[4] ? parseFloat(match[4]) : 1
       }
     }
-    return { r: 155, g: 139, b: 122, a: 1 } // fallback sepia
+    return { r: 156, g: 126, b: 93, a: 1 } // fallback sepia (#9C7E5D)
   }
 
   // Helper to interpolate between two colors
@@ -338,19 +338,19 @@ export default function AudioVisualizer({
   // Calculate glow effect based on state (matches config colors)
   const getGlowStyle = () => {
     if (isSpeechDetected) {
-      // User speaking - vibrant emerald
-      return 'drop-shadow(0 0 20px rgba(16, 185, 129, 0.4)) drop-shadow(0 0 40px rgba(16, 185, 129, 0.15))'
+      // User speaking - burnished bronze (#B88336)
+      return 'drop-shadow(0 0 20px rgba(184, 131, 54, 0.4)) drop-shadow(0 0 40px rgba(184, 131, 54, 0.15))'
     }
     if (isSpeaking) {
-      // AI/Clio speaking - soft blue
-      return 'drop-shadow(0 0 18px rgba(107, 141, 217, 0.35)) drop-shadow(0 0 35px rgba(107, 141, 217, 0.12))'
+      // AI/Clio speaking - deep ink (#292420)
+      return 'drop-shadow(0 0 18px rgba(41, 36, 32, 0.35)) drop-shadow(0 0 35px rgba(41, 36, 32, 0.12))'
     }
     if (isActive) {
-      // Active/listening - subtle green
-      return 'drop-shadow(0 0 12px rgba(90, 155, 107, 0.3)) drop-shadow(0 0 25px rgba(90, 155, 107, 0.1))'
+      // Active/listening - soft bronze (#CC9C52)
+      return 'drop-shadow(0 0 12px rgba(204, 156, 82, 0.3)) drop-shadow(0 0 25px rgba(204, 156, 82, 0.1))'
     }
-    // Idle - warm sepia
-    return 'drop-shadow(0 0 8px rgba(155, 139, 122, 0.2))'
+    // Idle - warm sepia (#9C7E5D)
+    return 'drop-shadow(0 0 8px rgba(156, 126, 93, 0.2))'
   }
 
   return (

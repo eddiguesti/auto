@@ -6,22 +6,26 @@ export default function ImageUnlockAnimation({ imageUrl, chapterTitle, onComplet
   const hasSkipped = useRef(false)
 
   // Generate stable particle positions
-  const particles = useMemo(() =>
-    [...Array(30)].map((_, i) => ({
-      left: Math.random() * 100,
-      top: Math.random() * 100,
-      delay: Math.random() * 2,
-      duration: 1 + Math.random() * 2,
-      size: 1 + Math.random() * 3
-    })), []
+  const particles = useMemo(
+    () =>
+      [...Array(30)].map((_, i) => ({
+        left: Math.random() * 100,
+        top: Math.random() * 100,
+        delay: Math.random() * 2,
+        duration: 1 + Math.random() * 2,
+        size: 1 + Math.random() * 3
+      })),
+    []
   )
 
   // Light ray positions
-  const rays = useMemo(() =>
-    [...Array(8)].map((_, i) => ({
-      rotation: i * 45,
-      delay: i * 0.1
-    })), []
+  const rays = useMemo(
+    () =>
+      [...Array(8)].map((_, i) => ({
+        rotation: i * 45,
+        delay: i * 0.1
+      })),
+    []
   )
 
   useEffect(() => {
@@ -70,27 +74,28 @@ export default function ImageUnlockAnimation({ imageUrl, chapterTitle, onComplet
       ref={containerRef}
       onClick={handleSkip}
       className={`fixed inset-0 z-[100] flex items-center justify-center cursor-pointer transition-all duration-700 ${
-        phase === 'enter' ? 'bg-black/0' : 'bg-black/95'
+        phase === 'enter' ? 'bg-ink/0' : 'bg-ink/95'
       }`}
     >
-      {/* Radial light burst from center */}
+      {/* Radial light glow from center */}
       <div
-        className={`absolute inset-0 transition-opacity duration-1000 ${
+        className={`absolute inset-0 flex items-center justify-center transition-opacity duration-1000 ${
           phase === 'reveal' || phase === 'hold' ? 'opacity-100' : 'opacity-0'
         }`}
-        style={{
-          background: 'radial-gradient(circle at center, rgba(217,164,65,0.15) 0%, transparent 60%)'
-        }}
-      />
+      >
+        <div className="w-[90vmin] h-[90vmin] rounded-full bg-bronze-400/15 blur-3xl" />
+      </div>
 
       {/* Animated light rays */}
-      <div className={`absolute inset-0 flex items-center justify-center overflow-hidden transition-opacity duration-500 ${
-        phase === 'reveal' ? 'opacity-100' : 'opacity-0'
-      }`}>
+      <div
+        className={`absolute inset-0 flex items-center justify-center overflow-hidden transition-opacity duration-500 ${
+          phase === 'reveal' ? 'opacity-100' : 'opacity-0'
+        }`}
+      >
         {rays.map((ray, i) => (
           <div
             key={i}
-            className="absolute w-1 bg-gradient-to-t from-amber-400/40 via-amber-300/20 to-transparent"
+            className="absolute w-1 bg-gradient-to-t from-bronze-400/40 via-bronze-300/20 to-transparent"
             style={{
               height: '150vh',
               transform: `rotate(${ray.rotation}deg)`,
@@ -105,7 +110,7 @@ export default function ImageUnlockAnimation({ imageUrl, chapterTitle, onComplet
         {particles.map((p, i) => (
           <div
             key={i}
-            className={`absolute rounded-full transition-all duration-1000 ${
+            className={`absolute rounded-full bg-bronze-300 transition-all duration-1000 ${
               phase === 'hold' || phase === 'reveal' ? 'opacity-80' : 'opacity-0'
             }`}
             style={{
@@ -113,9 +118,10 @@ export default function ImageUnlockAnimation({ imageUrl, chapterTitle, onComplet
               top: `${p.top}%`,
               width: `${p.size}px`,
               height: `${p.size}px`,
-              background: 'radial-gradient(circle, #fcd34d 0%, #f59e0b 100%)',
-              boxShadow: '0 0 6px 2px rgba(252,211,77,0.5)',
-              animation: phase !== 'enter' ? `sparkleFloat ${p.duration}s ease-in-out ${p.delay}s infinite` : 'none'
+              animation:
+                phase !== 'enter'
+                  ? `sparkleFloat ${p.duration}s ease-in-out ${p.delay}s infinite`
+                  : 'none'
             }}
           />
         ))}
@@ -127,49 +133,49 @@ export default function ImageUnlockAnimation({ imageUrl, chapterTitle, onComplet
           phase === 'enter'
             ? 'duration-500 opacity-0 scale-50'
             : phase === 'reveal'
-            ? 'duration-700 opacity-100 scale-100'
-            : phase === 'hold'
-            ? 'duration-300 opacity-100 scale-100'
-            : 'duration-600 opacity-0 scale-90 translate-y-8'
+              ? 'duration-700 opacity-100 scale-100'
+              : phase === 'hold'
+                ? 'duration-300 opacity-100 scale-100'
+                : 'duration-600 opacity-0 scale-90 translate-y-8'
         }`}
         style={{
-          transform: phase === 'enter' ? 'scale(0.5) rotateX(30deg)' :
-                     phase === 'exit' ? 'scale(0.9) translateY(32px)' : 'scale(1)'
+          transform:
+            phase === 'enter'
+              ? 'scale(0.5) rotateX(30deg)'
+              : phase === 'exit'
+                ? 'scale(0.9) translateY(32px)'
+                : 'scale(1)'
         }}
       >
         {/* Outer animated glow */}
         <div
-          className={`absolute -inset-6 rounded-3xl transition-opacity duration-700 ${
+          className={`absolute -inset-6 rounded-3xl bg-bronze-500/25 blur-2xl transition-opacity duration-700 ${
             phase === 'hold' || phase === 'reveal' ? 'opacity-100' : 'opacity-0'
           }`}
           style={{
-            background: 'radial-gradient(ellipse at center, rgba(245,158,11,0.4) 0%, rgba(180,83,9,0.2) 40%, transparent 70%)',
             animation: phase === 'hold' ? 'glowPulse 2s ease-in-out infinite' : 'none'
           }}
         />
 
         {/* Book page frame */}
         <div
-          className="relative bg-gradient-to-br from-cream via-amber-50 to-cream rounded-xl shadow-2xl overflow-hidden"
+          className="relative bg-gradient-to-br from-cream via-parchment to-cream rounded-xl shadow-modal overflow-hidden"
           style={{
             width: 'min(85vw, 900px)',
-            aspectRatio: '16/10',
-            boxShadow: phase === 'hold'
-              ? '0 0 60px 20px rgba(245,158,11,0.3), 0 25px 50px -12px rgba(0,0,0,0.5)'
-              : '0 25px 50px -12px rgba(0,0,0,0.5)'
+            aspectRatio: '16/10'
           }}
         >
           {/* Page texture overlay */}
-          <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-black/5 pointer-events-none z-10" />
+          <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-ink/5 pointer-events-none z-10" />
 
-          {/* Gold border effect */}
-          <div className="absolute inset-0 rounded-xl border-2 border-amber-400/30 pointer-events-none z-20" />
+          {/* Bronze border effect */}
+          <div className="absolute inset-0 rounded-xl border-2 border-bronze-400/30 pointer-events-none z-20" />
 
           {/* Decorative corners */}
-          <div className="absolute top-0 left-0 w-16 h-16 border-t-4 border-l-4 border-amber-500/50 rounded-tl-xl z-20" />
-          <div className="absolute top-0 right-0 w-16 h-16 border-t-4 border-r-4 border-amber-500/50 rounded-tr-xl z-20" />
-          <div className="absolute bottom-0 left-0 w-16 h-16 border-b-4 border-l-4 border-amber-500/50 rounded-bl-xl z-20" />
-          <div className="absolute bottom-0 right-0 w-16 h-16 border-b-4 border-r-4 border-amber-500/50 rounded-br-xl z-20" />
+          <div className="absolute top-0 left-0 w-16 h-16 border-t-4 border-l-4 border-bronze-500/50 rounded-tl-xl z-20" />
+          <div className="absolute top-0 right-0 w-16 h-16 border-t-4 border-r-4 border-bronze-500/50 rounded-tr-xl z-20" />
+          <div className="absolute bottom-0 left-0 w-16 h-16 border-b-4 border-l-4 border-bronze-500/50 rounded-bl-xl z-20" />
+          <div className="absolute bottom-0 right-0 w-16 h-16 border-b-4 border-r-4 border-bronze-500/50 rounded-br-xl z-20" />
 
           {/* Image with elegant frame */}
           <div className="p-3 sm:p-5">
@@ -178,19 +184,21 @@ export default function ImageUnlockAnimation({ imageUrl, chapterTitle, onComplet
                 src={imageUrl}
                 alt={chapterTitle}
                 className={`w-full h-full object-cover transition-all duration-1000 ${
-                  phase === 'reveal' || phase === 'hold' ? 'brightness-100 saturate-100' : 'brightness-50 saturate-50'
+                  phase === 'reveal' || phase === 'hold'
+                    ? 'brightness-100 saturate-100'
+                    : 'brightness-50 saturate-50'
                 }`}
                 style={{ aspectRatio: '16/9' }}
               />
 
               {/* Vignette overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/10 pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-t from-ink/40 via-transparent to-ink/10 pointer-events-none" />
 
               {/* Inner corner ornaments */}
-              <div className="absolute top-3 left-3 w-10 h-10 border-t-2 border-l-2 border-amber-300/60 rounded-tl" />
-              <div className="absolute top-3 right-3 w-10 h-10 border-t-2 border-r-2 border-amber-300/60 rounded-tr" />
-              <div className="absolute bottom-3 left-3 w-10 h-10 border-b-2 border-l-2 border-amber-300/60 rounded-bl" />
-              <div className="absolute bottom-3 right-3 w-10 h-10 border-b-2 border-r-2 border-amber-300/60 rounded-br" />
+              <div className="absolute top-3 left-3 w-10 h-10 border-t-2 border-l-2 border-bronze-300/60 rounded-tl" />
+              <div className="absolute top-3 right-3 w-10 h-10 border-t-2 border-r-2 border-bronze-300/60 rounded-tr" />
+              <div className="absolute bottom-3 left-3 w-10 h-10 border-b-2 border-l-2 border-bronze-300/60 rounded-bl" />
+              <div className="absolute bottom-3 right-3 w-10 h-10 border-b-2 border-r-2 border-bronze-300/60 rounded-br" />
             </div>
           </div>
         </div>
@@ -202,11 +210,11 @@ export default function ImageUnlockAnimation({ imageUrl, chapterTitle, onComplet
           }`}
         >
           <div className="flex items-center justify-center gap-3 mb-3">
-            <div className="w-8 h-px bg-gradient-to-r from-transparent to-amber-400/60" />
-            <p className="text-amber-300/90 text-xs uppercase tracking-[0.4em] font-medium">
+            <div className="w-8 h-px bg-gradient-to-r from-transparent to-bronze-400/60" />
+            <p className="text-bronze-300/90 text-xs uppercase tracking-[0.4em] font-medium">
               ✦ Chapter Unlocked ✦
             </p>
-            <div className="w-8 h-px bg-gradient-to-l from-transparent to-amber-400/60" />
+            <div className="w-8 h-px bg-gradient-to-l from-transparent to-bronze-400/60" />
           </div>
           <h2 className="text-white font-display text-2xl sm:text-4xl tracking-wide drop-shadow-lg">
             {chapterTitle}
@@ -220,9 +228,7 @@ export default function ImageUnlockAnimation({ imageUrl, chapterTitle, onComplet
           phase === 'hold' ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
         }`}
       >
-        <p className="text-white/30 text-sm animate-pulse">
-          Tap anywhere to continue
-        </p>
+        <p className="text-white/40 text-sm">Tap anywhere to continue</p>
       </div>
 
       {/* CSS Keyframes */}

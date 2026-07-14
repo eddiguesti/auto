@@ -1,9 +1,11 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { GoogleLogin } from '@react-oauth/google'
+import { IconAlertCircle } from '@tabler/icons-react'
 import { useAuth } from '../../context/AuthContext'
 import { API_URL } from '../../config'
 import { registerSchema } from '../../lib/authSchemas'
+import { Button, Card, Field, Input } from '../../components/ui'
 
 export default function Register() {
   const [name, setName] = useState('')
@@ -131,17 +133,23 @@ export default function Register() {
         <div className="text-center mb-8">
           <Link
             to="/"
-            className="text-sepia/30 text-2xl tracking-[0.3em] hover:text-sepia/50 transition"
+            className="font-display text-xl text-ink hover:text-bronze-700 transition-colors"
           >
-            ❧
+            Easy&nbsp;Memoir
           </Link>
-          <h1 className="text-3xl text-ink mt-4 mb-2">Create Account</h1>
-          <p className="text-sepia/70">Start capturing your life story</p>
+          <h1 className="text-3xl sm:text-4xl font-display text-ink mt-6 mb-2">Create Account</h1>
+          <p className="text-sepia-600">Start capturing your life story</p>
         </div>
 
-        <div className="bg-white/80 backdrop-blur rounded-2xl p-8 border border-sepia/20 shadow-lg">
+        <Card padding="lg">
           {error && (
-            <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>
+            <div
+              role="alert"
+              className="mb-5 p-3.5 bg-error-soft text-error-strong rounded-xl text-sm flex items-center gap-2.5"
+            >
+              <IconAlertCircle size={18} stroke={1.75} className="shrink-0" />
+              {error}
+            </div>
           )}
 
           {/* Google Sign-In */}
@@ -152,16 +160,16 @@ export default function Register() {
               theme="outline"
               size="large"
               text="signup_with"
-              shape="rectangular"
+              shape="pill"
             />
           </div>
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-sepia/20" />
+              <div className="w-full border-t border-sepia-200" />
             </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white/80 text-sepia/60">or sign up with email</span>
+            <div className="relative flex justify-center">
+              <span className="px-3 bg-surface text-sepia-500 text-sm">or sign up with email</span>
             </div>
           </div>
 
@@ -181,75 +189,78 @@ export default function Register() {
               />
             </div>
 
-            <div>
-              <label className="block text-sm text-sepia/70 mb-1">Your Name</label>
-              <input
-                type="text"
-                value={name}
-                onChange={e => setName(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-sepia/30 bg-white focus:outline-none focus:ring-2 focus:ring-sepia/30 focus:border-sepia"
-                placeholder="First name"
-                required
-                autoComplete="name"
-                maxLength={100}
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-sepia/70 mb-1">Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-sepia/30 bg-white focus:outline-none focus:ring-2 focus:ring-sepia/30 focus:border-sepia"
-                placeholder="you@example.com"
-                required
-                autoComplete="email"
-                maxLength={255}
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-sepia/70 mb-1">Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                className={`w-full px-4 py-3 rounded-lg border bg-white focus:outline-none focus:ring-2 ${
-                  password && !isPasswordValid
-                    ? 'border-red-300 focus:ring-red-200 focus:border-red-400'
-                    : password && isPasswordValid
-                      ? 'border-green-300 focus:ring-green-200 focus:border-green-400'
-                      : 'border-sepia/30 focus:ring-sepia/30 focus:border-sepia'
-                }`}
-                placeholder="At least 8 characters"
-                required
-                minLength={8}
-                autoComplete="new-password"
-              />
-              {password && passwordErrors.length > 0 && (
-                <p className="mt-1 text-xs text-red-600">
-                  Must include: {passwordErrors.join(', ')}
-                </p>
+            <Field label="Your Name">
+              {(id, describedBy) => (
+                <Input
+                  id={id}
+                  aria-describedby={describedBy}
+                  type="text"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  placeholder="First name"
+                  required
+                  autoComplete="name"
+                  maxLength={100}
+                />
               )}
-              {password && isPasswordValid && (
-                <p className="mt-1 text-xs text-green-600">Password meets requirements</p>
+            </Field>
+
+            <Field label="Email">
+              {(id, describedBy) => (
+                <Input
+                  id={id}
+                  aria-describedby={describedBy}
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  required
+                  autoComplete="email"
+                  maxLength={255}
+                />
               )}
-            </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 bg-sepia text-white rounded-lg hover:bg-sepia/90 transition disabled:opacity-50 tap-bounce"
+            </Field>
+
+            <Field
+              label="Password"
+              error={
+                password && passwordErrors.length > 0
+                  ? `Must include: ${passwordErrors.join(', ')}`
+                  : undefined
+              }
+              hint={password && isPasswordValid ? 'Password meets requirements' : undefined}
             >
+              {(id, describedBy) => (
+                <Input
+                  id={id}
+                  aria-describedby={describedBy}
+                  type="password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  invalid={Boolean(password) && !isPasswordValid}
+                  placeholder="At least 8 characters"
+                  required
+                  minLength={8}
+                  autoComplete="new-password"
+                />
+              )}
+            </Field>
+
+            <Button type="submit" size="xl" loading={loading} className="mt-2">
               {loading ? 'Creating account...' : 'Create Account'}
-            </button>
+            </Button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-sepia/70">
+          <p className="mt-6 text-center text-sm text-sepia-600">
             Already have an account?{' '}
-            <Link to="/login" className="text-sepia hover:underline font-medium">
+            <Link
+              to="/login"
+              className="text-bronze-700 hover:text-bronze-800 hover:underline font-medium"
+            >
               Sign in
             </Link>
           </p>
-        </div>
+        </Card>
       </div>
     </div>
   )

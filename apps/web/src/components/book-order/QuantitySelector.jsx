@@ -1,5 +1,7 @@
 import { IconMinus, IconPlus, IconCheck, IconInfoCircle, IconCoin } from '@tabler/icons-react'
 import { QUANTITY_PRESETS, DISCOUNT_TIERS, getSavingsLabel } from '../../data/bookColors'
+import Button from '../ui/Button'
+import Badge from '../ui/Badge'
 
 /**
  * Step-1 section: Quantity selector with bulk-discount banner,
@@ -8,8 +10,8 @@ import { QUANTITY_PRESETS, DISCOUNT_TIERS, getSavingsLabel } from '../../data/bo
 export default function QuantitySelector({ config, onConfigChange }) {
   return (
     <div>
-      <h3 className="text-base sm:text-lg font-medium text-ink mb-3 sm:mb-4 flex items-center gap-2">
-        <span className="w-7 h-7 sm:w-8 sm:h-8 bg-sepia/10 rounded-full flex items-center justify-center text-sepia text-sm">
+      <h3 className="text-base sm:text-lg font-display text-ink mb-3 sm:mb-4 flex items-center gap-2">
+        <span className="w-7 h-7 sm:w-8 sm:h-8 bg-sepia-100 text-sepia-600 rounded-full flex items-center justify-center text-sm font-sans">
           7
         </span>
         Quantity
@@ -27,35 +29,28 @@ export default function QuantitySelector({ config, onConfigChange }) {
 
 function BulkOfferBanner({ onConfigChange }) {
   return (
-    <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl sm:rounded-2xl relative overflow-hidden">
-      <div className="absolute top-0 right-0 w-24 sm:w-32 h-24 sm:h-32 bg-amber-400/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-      <div className="absolute bottom-0 left-0 w-16 sm:w-24 h-16 sm:h-24 bg-orange-400/10 rounded-full translate-y-1/2 -translate-x-1/2" />
-      <div className="relative flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+    <div className="mb-4 sm:mb-6 p-4 sm:p-5 bg-bronze-50 border border-bronze-200/60 rounded-2xl">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
         <div className="flex items-center gap-3 sm:gap-4">
-          <div className="flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center shadow-lg">
-            <IconCoin size={24} className="text-white sm:hidden" stroke={2} />
-            <IconCoin size={28} className="text-white hidden sm:block" stroke={2} />
+          <div className="flex-shrink-0 w-11 h-11 bg-bronze-100 text-bronze-600 rounded-xl flex items-center justify-center">
+            <IconCoin size={24} stroke={1.5} />
           </div>
           <div className="flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-amber-800 font-bold text-base sm:text-lg">
-                Special Family Offer
-              </span>
-              <span className="px-2 py-0.5 bg-amber-500 text-white text-[10px] sm:text-xs font-bold rounded-full">
-                40% OFF
-              </span>
+              <span className="text-ink font-medium text-base">Special Family Offer</span>
+              <Badge variant="bronze">40% OFF</Badge>
             </div>
-            <p className="text-amber-700 text-xs sm:text-sm mt-0.5">
-              Order 10+ books and save 40%!
-            </p>
+            <p className="text-sepia-600 text-sm mt-0.5">Order 10+ books and save 40%!</p>
           </div>
         </div>
-        <button
+        <Button
+          variant="accent"
+          size="sm"
           onClick={() => onConfigChange(prev => ({ ...prev, quantity: 10 }))}
-          className="w-full sm:w-auto flex-shrink-0 px-4 py-2.5 sm:py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-medium rounded-lg hover:from-amber-600 hover:to-orange-600 transition shadow-md hover:shadow-lg text-sm"
+          className="w-full sm:w-auto flex-shrink-0 whitespace-nowrap"
         >
           Get 10 Books
-        </button>
+        </Button>
       </div>
     </div>
   )
@@ -66,30 +61,40 @@ function BulkOfferBanner({ onConfigChange }) {
 function QuickSelectButtons({ config, onConfigChange }) {
   return (
     <div className="mb-3 sm:mb-4">
-      <span className="text-xs sm:text-sm text-sepia/60 mb-2 block">Quick select:</span>
+      <span className="text-sm text-sepia-500 mb-2 block">Quick select:</span>
       <div className="grid grid-cols-3 sm:flex sm:flex-wrap gap-2">
         {QUANTITY_PRESETS.map(({ qty, label, discount, popular }) => (
           <button
             key={qty}
+            type="button"
             onClick={() => onConfigChange(prev => ({ ...prev, quantity: qty }))}
-            className={`relative px-2 sm:px-4 py-2 sm:py-2.5 border-2 rounded-lg sm:rounded-xl font-medium transition-all ${
+            aria-pressed={config.quantity === qty}
+            className={`relative px-2 sm:px-4 py-2.5 min-h-[44px] border rounded-xl font-medium bg-surface transition-all duration-200 ${
               config.quantity === qty
-                ? 'border-sepia bg-sepia text-white shadow-md scale-105'
+                ? 'border-bronze-400 ring-4 ring-bronze-500/10 shadow-soft text-ink'
                 : popular
-                  ? 'border-amber-400 bg-amber-50 text-amber-800 hover:bg-amber-100'
-                  : 'border-sepia/20 bg-white text-ink hover:border-sepia/40 hover:bg-sepia/5'
+                  ? 'border-bronze-200 bg-bronze-50 text-bronze-700 hover:border-bronze-300'
+                  : 'border-sepia-200 text-ink hover:border-sepia-300 hover:bg-sepia-50'
             }`}
           >
             {popular && config.quantity !== qty && (
-              <span className="absolute -top-2 -right-2 px-1 sm:px-1.5 py-0.5 bg-amber-500 text-white text-[8px] sm:text-[10px] font-bold rounded-full">
+              <span className="absolute -top-2 -right-2 px-1.5 py-0.5 bg-bronze-500 text-white text-[10px] font-semibold rounded-full">
                 BEST
+              </span>
+            )}
+            {config.quantity === qty && (
+              <span
+                className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-bronze-500 text-white flex items-center justify-center"
+                aria-hidden="true"
+              >
+                <IconCheck size={12} stroke={3} />
               </span>
             )}
             <span className="block text-xs sm:text-sm">{label}</span>
             {discount && (
               <span
-                className={`block text-[10px] sm:text-xs mt-0.5 ${
-                  config.quantity === qty ? 'text-white/80' : 'text-green-600 font-semibold'
+                className={`block text-xs mt-0.5 ${
+                  config.quantity === qty ? 'text-bronze-700' : 'text-success-strong font-semibold'
                 }`}
               >
                 Save {discount}
@@ -108,20 +113,23 @@ function CustomQuantityInput({ config, onConfigChange }) {
   const savingsLabel = getSavingsLabel(config.quantity)
 
   return (
-    <div className="flex flex-wrap items-center gap-2 sm:gap-4 p-3 sm:p-4 bg-white border border-sepia/10 rounded-xl">
-      <span className="text-xs sm:text-sm text-sepia/60 w-full sm:w-auto">Custom quantity:</span>
+    <div className="flex flex-wrap items-center gap-2 sm:gap-4 p-3 sm:p-4 bg-surface border border-sepia-200/70 rounded-2xl">
+      <span className="text-sm text-sepia-500 w-full sm:w-auto">Custom quantity:</span>
       <button
+        type="button"
         onClick={() =>
           onConfigChange(prev => ({ ...prev, quantity: Math.max(1, prev.quantity - 1) }))
         }
-        className="w-10 h-10 border-2 border-sepia/20 rounded-lg hover:bg-sepia/10 hover:border-sepia/40 text-lg font-medium text-sepia flex items-center justify-center transition"
+        aria-label="Decrease quantity"
+        className="w-11 h-11 border border-sepia-200 bg-surface rounded-xl hover:bg-sepia-50 hover:border-sepia-300 text-sepia-600 flex items-center justify-center transition-colors"
       >
-        <IconMinus size={16} stroke={2.5} />
+        <IconMinus size={20} stroke={1.75} />
       </button>
       <input
         type="number"
         min="1"
         max="999"
+        aria-label="Quantity"
         value={config.quantity}
         onChange={e =>
           onConfigChange(prev => ({
@@ -129,19 +137,21 @@ function CustomQuantityInput({ config, onConfigChange }) {
             quantity: Math.max(1, Math.min(999, parseInt(e.target.value) || 1))
           }))
         }
-        className="w-20 text-2xl font-semibold text-ink text-center border-2 border-sepia/20 rounded-lg py-2 focus:outline-none focus:border-sepia/40"
+        className="w-20 text-2xl font-semibold text-ink text-center bg-surface border border-sepia-200 rounded-xl py-2 hover:border-sepia-300 focus:border-bronze-400 focus:ring-4 focus:ring-bronze-500/10 focus:outline-none transition-colors duration-150"
       />
       <button
+        type="button"
         onClick={() => onConfigChange(prev => ({ ...prev, quantity: prev.quantity + 1 }))}
-        className="w-10 h-10 border-2 border-sepia/20 rounded-lg hover:bg-sepia/10 hover:border-sepia/40 text-lg font-medium text-sepia flex items-center justify-center transition"
+        aria-label="Increase quantity"
+        className="w-11 h-11 border border-sepia-200 bg-surface rounded-xl hover:bg-sepia-50 hover:border-sepia-300 text-sepia-600 flex items-center justify-center transition-colors"
       >
-        <IconPlus size={16} stroke={2.5} />
+        <IconPlus size={20} stroke={1.75} />
       </button>
 
       {savingsLabel && (
-        <div className="ml-auto flex items-center gap-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg">
-          <IconCheck size={16} className="text-green-600" stroke={2} />
-          <span className="text-sm font-medium text-green-700">{savingsLabel}</span>
+        <div className="ml-auto flex items-center gap-2 px-3 py-1.5 bg-success-soft rounded-xl">
+          <IconCheck size={16} className="text-success" stroke={2} />
+          <span className="text-sm font-medium text-success-strong">{savingsLabel}</span>
         </div>
       )}
     </div>
@@ -152,9 +162,9 @@ function CustomQuantityInput({ config, onConfigChange }) {
 
 function DiscountTiersTable({ quantity }) {
   return (
-    <div className="mt-4 p-4 bg-sepia/5 rounded-xl">
+    <div className="mt-4 p-4 bg-sepia-50 rounded-2xl">
       <div className="flex items-center gap-2 mb-3">
-        <IconInfoCircle size={20} className="text-sepia" stroke={2} />
+        <IconInfoCircle size={20} className="text-sepia-500" stroke={1.75} />
         <span className="text-sm font-medium text-ink">Bulk Discount Tiers</span>
       </div>
       <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-center text-xs">
@@ -166,10 +176,10 @@ function DiscountTiersTable({ quantity }) {
               key={tier.min}
               className={`p-2 rounded-lg transition ${
                 isActive
-                  ? 'bg-sepia text-white'
+                  ? 'bg-bronze-500 text-white'
                   : tier.highlight
-                    ? 'bg-amber-100 text-amber-800 border border-amber-300'
-                    : 'bg-white text-sepia/70 border border-sepia/10'
+                    ? 'bg-bronze-100 text-bronze-700 border border-bronze-200'
+                    : 'bg-surface text-sepia-600 border border-sepia-200/60'
               }`}
             >
               <div className="font-semibold">{tier.discount}</div>

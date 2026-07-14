@@ -1,13 +1,21 @@
+import Skeleton from '../ui/Skeleton'
+
 /**
- * Skeleton for the Home page progress section shown while story progress loads.
- * Mimics: large percentage number + subtitle line + progress bar.
+ * Skeleton for the Home page progress card shown while story progress loads.
+ * Mimics: progress ring + heading and subtitle lines.
  */
 export default function HomeProgressSkeleton() {
   return (
-    <div className="animate-pulse mb-10 text-center" aria-hidden="true">
-      <div className="h-14 w-24 bg-stone-200 rounded-lg mx-auto mb-2" />
-      <div className="h-4 w-48 bg-stone-200 rounded mx-auto mb-3" />
-      <div className="w-full h-2 bg-stone-200 rounded-full" />
+    <div
+      className="mb-10 bg-surface border border-sepia-200/70 rounded-2xl shadow-soft p-6 flex items-center gap-6"
+      aria-hidden="true"
+    >
+      <Skeleton className="w-[104px] h-[104px] rounded-full shrink-0" />
+      <div className="flex-1 space-y-2.5">
+        <Skeleton className="h-5 w-36" />
+        <Skeleton className="h-4 w-48" />
+        <Skeleton className="h-4 w-28" />
+      </div>
     </div>
   )
 }

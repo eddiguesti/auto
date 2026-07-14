@@ -1,9 +1,12 @@
 import { useMemo } from 'react'
-import { Link, useSearchParams, useNavigate } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
+import { IconAlertCircle, IconBook2, IconCircleCheck } from '@tabler/icons-react'
 import { usePremium } from '../../hooks/usePremium'
 import { useVoiceSession } from '../../hooks/useVoiceSession'
 import { AudioVisualizer } from '../../components/AudioVisualizer'
 import { chapters } from '../../data/chapters'
+import AppShell from '../../components/layout/AppShell'
+import { Button } from '../../components/ui'
 
 /**
  * VoiceChat - Multi-question voice interview experience
@@ -63,46 +66,35 @@ export default function VoiceChat() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-parchment">
-      {/* Header */}
-      <header className="p-4">
-        <div className="max-w-2xl mx-auto flex items-center justify-between">
-          <Link to="/" className="text-sepia/60 hover:text-sepia transition text-sm">
-            ← Back
-          </Link>
-          <div className="flex items-center gap-4">
-            {phase === 'active' && (
-              <span className="text-sm text-sepia/50">
-                Question {questionIndex + 1} of {totalQuestions}
-                {answeredCount > 0 && ` (${answeredCount} saved)`}
-              </span>
-            )}
-            {phase === 'active' && (
-              <button
-                onClick={endConversation}
-                className="text-sm text-sepia/60 hover:text-sepia transition"
-              >
-                End & Save
-              </button>
-            )}
-          </div>
-        </div>
-      </header>
+    <AppShell back="/home" title={chapter.title}>
+      <div className="min-h-[70vh] py-10 page-enter flex flex-col items-center justify-center text-center">
+        <div className="max-w-md w-full">
+          {phase === 'active' && (
+            <p className="eyebrow mb-3">
+              Question {questionIndex + 1} of {totalQuestions}
+              {answeredCount > 0 && ` (${answeredCount} saved)`}
+            </p>
+          )}
 
-      {/* Main content */}
-      <main className="flex-1 flex flex-col items-center justify-center p-6">
-        <div className="max-w-md w-full text-center">
-          <p className="text-sepia/40 text-sm mb-2 uppercase tracking-wider">{chapter.title}</p>
-          <h2 className="text-xl text-ink/80 leading-relaxed mb-12 font-light">
+          <h2 className="font-serif text-xl sm:text-2xl text-ink leading-relaxed mb-12">
             {question?.question}
           </h2>
 
           {error && (
-            <div className="mb-8 p-4 bg-red-50 text-red-600 rounded-xl text-sm">
-              {error}
-              <button onClick={resetError} className="ml-3 underline">
-                Try again
-              </button>
+            <div
+              role="alert"
+              className="mb-8 p-4 bg-error-soft text-error-strong rounded-xl text-sm flex items-center justify-center gap-2.5"
+            >
+              <IconAlertCircle size={18} stroke={1.75} className="shrink-0" />
+              <span>
+                {error}
+                <button
+                  onClick={resetError}
+                  className="ml-3 font-medium underline hover:no-underline"
+                >
+                  Try again
+                </button>
+              </span>
             </div>
           )}
 
@@ -114,14 +106,19 @@ export default function VoiceChat() {
 
           {phase === 'active' && (
             <>
-              <AudioVisualizer
-                stream={stream}
-                isActive={isRecording}
-                isSpeaking={isSpeaking}
-                isSpeechDetected={isSpeechDetected}
-                size="lg"
-              />
-              <p className="text-sepia/50 text-sm mt-6 h-6">{getStatusText()}</p>
+              <div className={`inline-flex rounded-full ${isRecording ? 'pulse-gentle' : ''}`}>
+                <AudioVisualizer
+                  stream={stream}
+                  isActive={isRecording}
+                  isSpeaking={isSpeaking}
+                  isSpeechDetected={isSpeechDetected}
+                  size="lg"
+                />
+              </div>
+              <p className="text-sepia-600 text-base mt-6 h-7">{getStatusText()}</p>
+              <Button variant="ghost" className="mt-8" onClick={endConversation}>
+                End & Save
+              </Button>
             </>
           )}
 
@@ -131,8 +128,8 @@ export default function VoiceChat() {
             <EndedState answeredCount={answeredCount} onContinue={() => navigate('/')} />
           )}
         </div>
-      </main>
-    </div>
+      </div>
+    </AppShell>
   )
 }
 
@@ -148,10 +145,10 @@ function ReadyState({ onStart, answeredCount }) {
           size="lg"
         />
       </div>
-      <p className="text-sepia/60 text-lg font-light mt-6 mb-2">
+      <p className="text-ink text-lg mt-6 mb-1">
         {answeredCount > 0 ? 'Continue your interview' : 'Say hello to begin'}
       </p>
-      <p className="text-sepia/40 text-sm">Click to start</p>
+      <p className="text-sepia-500 text-sm">Click to start</p>
     </div>
   )
 }
@@ -166,7 +163,7 @@ function ConnectingState() {
         isSpeechDetected={false}
         size="lg"
       />
-      <p className="text-sepia/50 mt-6">Connecting...</p>
+      <p className="text-sepia-600 mt-6">Connecting...</p>
     </div>
   )
 }
@@ -174,24 +171,12 @@ function ConnectingState() {
 function CompilingState() {
   return (
     <div className="space-y-6">
-      <div className="w-32 h-32 mx-auto rounded-full bg-amber-50 flex items-center justify-center">
-        <svg
-          className="w-12 h-12 text-amber-600 animate-pulse"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={1.5}
-            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-          />
-        </svg>
+      <div className="w-32 h-32 mx-auto rounded-full bg-bronze-50 text-bronze-600 flex items-center justify-center pulse-soft">
+        <IconBook2 size={44} stroke={1.5} />
       </div>
       <div>
         <p className="text-ink text-lg mb-2">Writing your story...</p>
-        <p className="text-sepia/60 text-sm">Turning your memories into beautiful prose</p>
+        <p className="text-sepia-600 text-sm">Turning your memories into beautiful prose</p>
       </div>
     </div>
   )
@@ -200,30 +185,20 @@ function CompilingState() {
 function EndedState({ answeredCount, onContinue }) {
   return (
     <div className="space-y-6">
-      <div className="w-32 h-32 mx-auto rounded-full bg-green-50 flex items-center justify-center">
-        <svg
-          className="w-12 h-12 text-green-500"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-        </svg>
+      <div className="w-32 h-32 mx-auto rounded-full bg-success-soft text-success flex items-center justify-center">
+        <IconCircleCheck size={48} stroke={1.5} />
       </div>
       <div>
         <p className="text-ink text-lg mb-2">Interview saved</p>
-        <p className="text-sepia/60 text-sm">
+        <p className="text-sepia-600 text-sm">
           {answeredCount > 0
             ? `${answeredCount} memories captured and compiled`
             : 'Your story has been recorded'}
         </p>
       </div>
-      <button
-        onClick={onContinue}
-        className="px-8 py-3 bg-sepia text-white rounded-xl hover:bg-sepia/90 transition"
-      >
+      <Button size="lg" onClick={onContinue}>
         Continue
-      </button>
+      </Button>
     </div>
   )
 }

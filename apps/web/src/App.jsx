@@ -19,7 +19,9 @@ const NotFound = lazy(() => import('./pages/NotFound'))
 // Minimal loading fallback — keeps UI feel consistent
 const PageLoader = () => (
   <div className="min-h-screen bg-parchment flex items-center justify-center">
-    <div className="animate-pulse text-warm-brown">Loading...</div>
+    <div className="flex flex-col items-center gap-3 animate-fade-in">
+      <span className="font-display text-xl text-sepia-500 animate-shimmer">Easy Memoir</span>
+    </div>
   </div>
 )
 

@@ -1,17 +1,17 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
-import { chapters } from '../../data/chapters'
-import StyleSelector from '../../components/StyleSelector'
-import StylePreviewModal from '../../components/StylePreviewModal'
 import {
-  IconArrowLeft,
   IconLoader2,
   IconCheck,
   IconRotate,
   IconSparkles,
-  IconAlertTriangle
+  IconAlertCircle
 } from '@tabler/icons-react'
+import { useAuth } from '../../context/AuthContext'
+import { chapters } from '../../data/chapters'
+import StyleSelector from '../../components/StyleSelector'
+import StylePreviewModal from '../../components/StylePreviewModal'
+import AppShell from '../../components/layout/AppShell'
+import { Button, Card, Badge, Modal, ProgressBar, Skeleton, EmptyState } from '../../components/ui'
 
 export default function PreviewStyle() {
   const { user, authFetch } = useAuth()
@@ -255,242 +255,232 @@ export default function PreviewStyle() {
 
   if (loading) {
     return (
-      <div className="max-w-6xl mx-auto px-4 py-8 flex items-center justify-center min-h-[60vh]">
-        <IconLoader2 size={32} className="text-accent animate-spin" />
-      </div>
+      <AppShell back="/home" title="Style your memoir" wide>
+        <div className="py-8">
+          <Skeleton className="h-10 w-72 mb-3" />
+          <Skeleton className="h-5 w-96 max-w-full mb-10" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Skeleton className="h-[420px]" />
+            <Skeleton className="h-[420px]" />
+          </div>
+        </div>
+      </AppShell>
     )
   }
 
   const hasContent = Object.keys(stories).length > 0
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6 page-enter">
-      {/* Header */}
-      <header className="mb-6">
-        <Link
-          to="/home"
-          className="text-sepia hover:text-ink transition inline-flex items-center gap-1 mb-4"
-        >
-          <IconArrowLeft size={16} />
-          Back to Chapters
-        </Link>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <AppShell back="/home" title="Style your memoir" wide>
+      <div className="py-8 page-enter">
+        {/* Heading */}
+        <header className="mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-ink flex items-center gap-2">
-              <IconSparkles size={28} className="text-accent" />
-              Style Your Memoir
-            </h1>
-            <p className="text-sepia text-sm sm:text-base">
+            <h1 className="text-3xl sm:text-4xl font-display text-ink">Style Your Memoir</h1>
+            <p className="text-sepia-600 mt-1">
               Choose a writing style and see your story transformed
             </p>
           </div>
 
           {hasStyleApplied() && (
-            <button
+            <Button
+              variant="secondary"
+              icon={<IconRotate size={20} stroke={1.75} />}
               onClick={() => setShowRevertConfirm(true)}
-              className="flex items-center gap-2 px-4 py-2 border border-sepia/30 text-sepia rounded-lg hover:bg-sepia/10 transition"
+              className="shrink-0"
             >
-              <IconRotate size={18} />
               Revert to Original
-            </button>
+            </Button>
           )}
-        </div>
-      </header>
+        </header>
 
-      {error && (
-        <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-xl flex items-center gap-3">
-          <IconAlertTriangle size={20} />
-          {error}
-          <button
-            onClick={() => setError(null)}
-            className="ml-auto text-red-500 hover:text-red-700"
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
-
-      {!hasContent ? (
-        <div className="text-center py-16 bg-white rounded-xl">
-          <p className="text-sepia text-lg mb-4">No stories written yet</p>
-          <Link to="/home" className="text-ink underline">
-            Start writing your story
-          </Link>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Left: Style Selector */}
-          <div className="bg-white rounded-2xl shadow-sm p-6 order-2 lg:order-1">
-            <StyleSelector
-              selectedTones={selectedTones}
-              selectedNarrative={selectedNarrative}
-              selectedAuthor={selectedAuthor}
-              onTonesChange={handleTonesChange}
-              onNarrativeChange={handleNarrativeChange}
-              onAuthorChange={handleAuthorChange}
-              onPreviewSample={hasSelections ? handlePreviewSample : null}
-            />
-
-            {/* Apply All Button */}
-            {hasSelections && (
-              <div className="mt-6 pt-6 border-t border-sepia/10">
-                <button
-                  onClick={handleApplyAll}
-                  disabled={applying}
-                  className="w-full py-4 bg-ink hover:bg-ink/90 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {applying ? (
-                    <>
-                      <IconLoader2 size={20} className="animate-spin" />
-                      Transforming Stories...
-                    </>
-                  ) : (
-                    <>
-                      <IconCheck size={20} />
-                      Apply Style to All Stories
-                    </>
-                  )}
-                </button>
-                <p className="text-xs text-sepia/50 text-center mt-2">
-                  This will transform all your stories. Original versions are saved and can be
-                  reverted.
-                </p>
-              </div>
-            )}
+        {error && (
+          <div className="mb-6 p-4 bg-error-soft text-error-strong rounded-xl text-sm flex items-center gap-3">
+            <IconAlertCircle size={20} stroke={1.75} className="shrink-0" />
+            <span className="flex-1">{error}</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="shrink-0 text-error-strong"
+              onClick={() => setError(null)}
+            >
+              Dismiss
+            </Button>
           </div>
+        )}
 
-          {/* Right: Memoir Reader */}
-          <div className="bg-white rounded-2xl shadow-sm overflow-hidden order-1 lg:order-2">
-            {/* Chapter tabs */}
-            <div className="border-b border-sepia/10 overflow-x-auto">
-              <div className="flex">
-                {chapters.map(chapter => {
-                  const chapterStories = stories[chapter.id]
-                  const hasStories =
-                    chapterStories && Object.values(chapterStories).some(s => s.answer?.trim())
-                  if (!hasStories) return null
+        {!hasContent ? (
+          <Card padding="lg">
+            <EmptyState
+              icon={<IconSparkles size={28} stroke={1.5} />}
+              title="No stories written yet"
+              action={
+                <Button variant="secondary" to="/home">
+                  Start writing your story
+                </Button>
+              }
+            />
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Left: Style Selector */}
+            <Card className="order-2 lg:order-1 stagger-item">
+              <StyleSelector
+                selectedTones={selectedTones}
+                selectedNarrative={selectedNarrative}
+                selectedAuthor={selectedAuthor}
+                onTonesChange={handleTonesChange}
+                onNarrativeChange={handleNarrativeChange}
+                onAuthorChange={handleAuthorChange}
+                onPreviewSample={hasSelections ? handlePreviewSample : null}
+              />
 
-                  return (
-                    <button
-                      key={chapter.id}
-                      onClick={() => setActiveChapter(chapter.id)}
-                      className={`px-4 py-3 text-sm font-medium whitespace-nowrap transition ${
-                        activeChapter === chapter.id
-                          ? 'text-accent border-b-2 border-accent bg-accent/5'
-                          : 'text-sepia/60 hover:text-sepia hover:bg-sepia/5'
-                      }`}
-                    >
-                      {chapter.title}
-                    </button>
-                  )
-                })}
+              {/* Apply All Button */}
+              {hasSelections && (
+                <div className="mt-8 pt-6 border-t border-sepia-100">
+                  <Button
+                    size="xl"
+                    loading={applying}
+                    disabled={applying}
+                    onClick={handleApplyAll}
+                    icon={!applying ? <IconCheck size={20} stroke={1.75} /> : null}
+                  >
+                    {applying ? 'Transforming Stories...' : 'Apply Style to All Stories'}
+                  </Button>
+                  <p className="text-xs text-sepia-500 text-center mt-3">
+                    This will transform all your stories. Original versions are saved and can be
+                    reverted.
+                  </p>
+                </div>
+              )}
+            </Card>
+
+            {/* Right: Memoir Reader */}
+            <Card padding="none" className="order-1 lg:order-2 overflow-hidden stagger-item">
+              {/* Chapter tabs */}
+              <div className="border-b border-sepia-100 overflow-x-auto">
+                <div className="flex">
+                  {chapters.map(chapter => {
+                    const chapterStories = stories[chapter.id]
+                    const hasStories =
+                      chapterStories && Object.values(chapterStories).some(s => s.answer?.trim())
+                    if (!hasStories) return null
+
+                    return (
+                      <button
+                        key={chapter.id}
+                        type="button"
+                        onClick={() => setActiveChapter(chapter.id)}
+                        className={`px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors ${
+                          activeChapter === chapter.id
+                            ? 'text-bronze-700 border-b-2 border-bronze-500 bg-bronze-50/60'
+                            : 'text-sepia-500 hover:text-ink hover:bg-sepia-50'
+                        }`}
+                      >
+                        {chapter.title}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
-            </div>
 
-            {/* Stories content */}
-            <div className="p-6 max-h-[600px] overflow-y-auto">
-              {activeChapter && stories[activeChapter] ? (
-                <div className="space-y-8">
-                  {Object.values(stories[activeChapter])
-                    .filter(story => story.answer?.trim())
-                    .sort((a, b) => a.question_id.localeCompare(b.question_id))
-                    .map(story => (
-                      <div key={story.id} className="relative">
-                        {story.style_applied && (
-                          <div className="absolute -top-2 -right-2 px-2 py-0.5 bg-accent/10 text-accent text-xs rounded-full">
-                            Styled
-                          </div>
-                        )}
-                        <div className="prose prose-sepia max-w-none">
-                          <p className="whitespace-pre-wrap leading-relaxed text-sepia">
+              {/* Stories content */}
+              <div className="p-6 max-h-[600px] overflow-y-auto">
+                {activeChapter && stories[activeChapter] ? (
+                  <div className="space-y-8">
+                    {Object.values(stories[activeChapter])
+                      .filter(story => story.answer?.trim())
+                      .sort((a, b) => a.question_id.localeCompare(b.question_id))
+                      .map(story => (
+                        <div key={story.id} className="relative">
+                          {story.style_applied && (
+                            <span className="absolute -top-2 -right-2">
+                              <Badge variant="bronze">Styled</Badge>
+                            </span>
+                          )}
+                          <p className="whitespace-pre-wrap leading-relaxed font-serif text-ink-soft">
                             {story.answer}
                           </p>
+                          {story !== Object.values(stories[activeChapter]).slice(-1)[0] && (
+                            <hr className="mt-8 border-sepia-100" />
+                          )}
                         </div>
-                        {story !== Object.values(stories[activeChapter]).slice(-1)[0] && (
-                          <hr className="mt-8 border-sepia/10" />
-                        )}
-                      </div>
-                    ))}
-                </div>
-              ) : (
-                <p className="text-center text-sepia/50 py-8">Select a chapter to view</p>
+                      ))}
+                  </div>
+                ) : (
+                  <p className="text-center text-sepia-500 py-8">Select a chapter to view</p>
+                )}
+              </div>
+            </Card>
+          </div>
+        )}
+
+        {/* Preview Modal */}
+        <StylePreviewModal
+          isOpen={showPreview}
+          onClose={() => setShowPreview(false)}
+          originalText={previewOriginal}
+          transformedText={previewTransformed}
+          isLoading={previewLoading}
+          error={previewError}
+          styleDescription={getStyleDescription()}
+          onApply={handleApplyAll}
+          onRetry={handlePreviewSample}
+        />
+
+        {/* Apply Progress Overlay */}
+        {applying && (
+          <Modal dismissable={false} size="sm">
+            <div className="text-center pt-2">
+              <IconLoader2
+                size={40}
+                stroke={1.75}
+                className="text-bronze-500 animate-spin mx-auto mb-4"
+              />
+              <h3 className="text-2xl font-display text-ink mb-2">Transforming Your Stories</h3>
+              <p className="text-sm text-sepia-600 mb-5">
+                Please wait while we apply your selected style to all stories...
+              </p>
+              {applyProgress && applyProgress.total > 0 && (
+                <ProgressBar
+                  value={(applyProgress.current / applyProgress.total) * 100}
+                  label="Style transformation progress"
+                />
               )}
             </div>
-          </div>
-        </div>
-      )}
+          </Modal>
+        )}
 
-      {/* Preview Modal */}
-      <StylePreviewModal
-        isOpen={showPreview}
-        onClose={() => setShowPreview(false)}
-        originalText={previewOriginal}
-        transformedText={previewTransformed}
-        isLoading={previewLoading}
-        error={previewError}
-        styleDescription={getStyleDescription()}
-        onApply={handleApplyAll}
-        onRetry={handlePreviewSample}
-      />
-
-      {/* Apply Progress Overlay */}
-      {applying && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-8 max-w-sm w-full mx-4 text-center">
-            <IconLoader2 size={48} className="text-accent animate-spin mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-ink mb-2">Transforming Your Stories</h3>
-            <p className="text-sm text-sepia/60 mb-4">
-              Please wait while we apply your selected style to all stories...
-            </p>
-            {applyProgress && applyProgress.total > 0 && (
-              <div className="w-full bg-sepia/10 rounded-full h-2 mb-2">
-                <div
-                  className="bg-accent h-2 rounded-full transition-all"
-                  style={{ width: `${(applyProgress.current / applyProgress.total) * 100}%` }}
-                />
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Revert Confirmation */}
-      {showRevertConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full">
-            <h3 className="text-lg font-semibold text-ink mb-2">Revert to Original?</h3>
-            <p className="text-sm text-sepia/70 mb-6">
+        {/* Revert Confirmation */}
+        {showRevertConfirm && (
+          <Modal onClose={() => setShowRevertConfirm(false)} title="Revert to Original?" size="md">
+            <p className="text-sepia-600 mb-6">
               This will restore all your stories to their original versions before any style was
               applied.
             </p>
             <div className="flex gap-3">
-              <button
+              <Button
+                variant="secondary"
+                size="lg"
+                className="flex-1"
                 onClick={() => setShowRevertConfirm(false)}
-                className="flex-1 py-3 border border-sepia/20 text-sepia rounded-xl hover:bg-sepia/5 transition"
               >
                 Cancel
-              </button>
-              <button
-                onClick={handleRevert}
+              </Button>
+              <Button
+                size="lg"
+                className="flex-1"
+                loading={reverting}
                 disabled={reverting}
-                className="flex-1 py-3 bg-sepia text-white rounded-xl hover:bg-sepia/90 transition disabled:opacity-50 flex items-center justify-center gap-2"
+                onClick={handleRevert}
+                icon={!reverting ? <IconRotate size={20} stroke={1.75} /> : null}
               >
-                {reverting ? (
-                  <>
-                    <IconLoader2 size={18} className="animate-spin" />
-                    Reverting...
-                  </>
-                ) : (
-                  <>
-                    <IconRotate size={18} />
-                    Revert All
-                  </>
-                )}
-              </button>
+                {reverting ? 'Reverting...' : 'Revert All'}
+              </Button>
             </div>
-          </div>
-        </div>
-      )}
-    </div>
+          </Modal>
+        )}
+      </div>
+    </AppShell>
   )
 }

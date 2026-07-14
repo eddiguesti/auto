@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Link, useSearchParams, useNavigate } from 'react-router-dom'
+import { IconAlertCircle, IconAlertTriangle, IconCheck } from '@tabler/icons-react'
 import { API_URL } from '../../config'
+import { Button, Card, Field, Input, Skeleton } from '../../components/ui'
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams()
@@ -94,9 +96,16 @@ export default function ResetPassword() {
   if (verifying) {
     return (
       <div className="min-h-screen flex items-center justify-center px-4 py-12">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-sepia/20 border-t-sepia rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-sepia/70">Verifying reset link...</p>
+        <div className="w-full max-w-md">
+          <Card padding="lg" className="text-center">
+            <Skeleton className="w-16 h-16 rounded-full mx-auto mb-6" />
+            <Skeleton className="h-7 w-2/3 mx-auto mb-4" />
+            <Skeleton className="h-4 w-full mb-2" />
+            <Skeleton className="h-4 w-3/4 mx-auto" />
+            <p className="sr-only" role="status">
+              Verifying reset link...
+            </p>
+          </Card>
         </div>
       </div>
     )
@@ -110,49 +119,34 @@ export default function ResetPassword() {
           <div className="text-center mb-8">
             <Link
               to="/"
-              className="text-sepia/30 text-2xl tracking-[0.3em] hover:text-sepia/50 transition"
+              className="font-display text-xl text-ink hover:text-bronze-700 transition-colors"
             >
-              &#10087;
+              Easy&nbsp;Memoir
             </Link>
           </div>
 
-          <div className="bg-white/80 backdrop-blur rounded-2xl p-8 border border-sepia/20 shadow-lg text-center">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <svg
-                className="w-8 h-8 text-red-600"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                />
-              </svg>
+          <Card padding="lg" className="text-center">
+            <div className="w-16 h-16 bg-error-soft text-error-strong rounded-full flex items-center justify-center mx-auto mb-6">
+              <IconAlertTriangle size={32} stroke={1.5} />
             </div>
 
-            <h1 className="text-2xl text-ink mb-4">Link Expired</h1>
-            <p className="text-sepia/70 mb-8">
+            <h1 className="text-2xl font-display text-ink mb-4">Link Expired</h1>
+            <p className="text-sepia-600 mb-8">
               This password reset link is invalid or has expired. Reset links are only valid for 1
               hour.
             </p>
 
-            <Link
-              to="/forgot-password"
-              className="block w-full py-3 bg-sepia text-white rounded-lg hover:bg-sepia/90 transition"
-            >
+            <Button to="/forgot-password" size="xl">
               Request New Reset Link
-            </Link>
+            </Button>
 
-            <p className="mt-6 text-sm text-sepia/60">
+            <p className="mt-6 text-sm text-sepia-600">
               Remember your password?{' '}
-              <Link to="/login" className="text-sepia hover:underline">
+              <Link to="/login" className="text-bronze-700 hover:text-bronze-800 hover:underline">
                 Sign in
               </Link>
             </p>
-          </div>
+          </Card>
         </div>
       </div>
     )
@@ -166,41 +160,26 @@ export default function ResetPassword() {
           <div className="text-center mb-8">
             <Link
               to="/"
-              className="text-sepia/30 text-2xl tracking-[0.3em] hover:text-sepia/50 transition"
+              className="font-display text-xl text-ink hover:text-bronze-700 transition-colors"
             >
-              &#10087;
+              Easy&nbsp;Memoir
             </Link>
           </div>
 
-          <div className="bg-white/80 backdrop-blur rounded-2xl p-8 border border-sepia/20 shadow-lg text-center">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <svg
-                className="w-8 h-8 text-green-600"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
+          <Card padding="lg" className="text-center">
+            <div className="w-16 h-16 bg-success-soft text-success-strong rounded-full flex items-center justify-center mx-auto mb-6">
+              <IconCheck size={32} stroke={1.5} />
             </div>
 
-            <h1 className="text-2xl text-ink mb-4">Password Reset!</h1>
-            <p className="text-sepia/70 mb-8">
+            <h1 className="text-2xl font-display text-ink mb-4">Password Reset!</h1>
+            <p className="text-sepia-600 mb-8">
               Your password has been successfully reset. You can now sign in with your new password.
             </p>
 
-            <button
-              onClick={() => navigate('/login')}
-              className="w-full py-3 bg-sepia text-white rounded-lg hover:bg-sepia/90 transition"
-            >
+            <Button size="xl" onClick={() => navigate('/login')}>
               Sign In Now
-            </button>
-          </div>
+            </Button>
+          </Card>
         </div>
       </div>
     )
@@ -213,88 +192,90 @@ export default function ResetPassword() {
         <div className="text-center mb-8">
           <Link
             to="/"
-            className="text-sepia/30 text-2xl tracking-[0.3em] hover:text-sepia/50 transition"
+            className="font-display text-xl text-ink hover:text-bronze-700 transition-colors"
           >
-            &#10087;
+            Easy&nbsp;Memoir
           </Link>
-          <h1 className="text-3xl text-ink mt-4 mb-2">Create New Password</h1>
-          <p className="text-sepia/70">Choose a strong password to protect your account.</p>
+          <h1 className="text-3xl sm:text-4xl font-display text-ink mt-6 mb-2">
+            Create New Password
+          </h1>
+          <p className="text-sepia-600">Choose a strong password to protect your account.</p>
         </div>
 
-        <div className="bg-white/80 backdrop-blur rounded-2xl p-8 border border-sepia/20 shadow-lg">
+        <Card padding="lg">
           {status.message && (
             <div
-              className={`mb-4 p-3 rounded-lg text-sm ${
-                status.type === 'error' ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'
+              role="alert"
+              className={`mb-5 p-3.5 rounded-xl text-sm flex items-center gap-2.5 ${
+                status.type === 'error'
+                  ? 'bg-error-soft text-error-strong'
+                  : 'bg-success-soft text-success-strong'
               }`}
             >
+              {status.type === 'error' && (
+                <IconAlertCircle size={18} stroke={1.75} className="shrink-0" />
+              )}
               {status.message}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm text-sepia/70 mb-1">New Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                className={`w-full px-4 py-3 rounded-lg border bg-white focus:outline-none focus:ring-2 ${
-                  password && !isPasswordValid
-                    ? 'border-red-300 focus:ring-red-200 focus:border-red-400'
-                    : password && isPasswordValid
-                      ? 'border-green-300 focus:ring-green-200 focus:border-green-400'
-                      : 'border-sepia/30 focus:ring-sepia/30 focus:border-sepia'
-                }`}
-                placeholder="At least 8 characters"
-                required
-                autoComplete="new-password"
-                autoFocus
-              />
-              {password && passwordErrors.length > 0 && (
-                <p className="mt-1 text-xs text-red-600">
-                  Must include: {passwordErrors.join(', ')}
-                </p>
+            <Field
+              label="New Password"
+              error={
+                password && passwordErrors.length > 0
+                  ? `Must include: ${passwordErrors.join(', ')}`
+                  : undefined
+              }
+              hint={password && isPasswordValid ? 'Password meets requirements' : undefined}
+            >
+              {(id, describedBy) => (
+                <Input
+                  id={id}
+                  aria-describedby={describedBy}
+                  type="password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  invalid={Boolean(password) && !isPasswordValid}
+                  placeholder="At least 8 characters"
+                  required
+                  autoComplete="new-password"
+                  autoFocus
+                />
               )}
-              {password && isPasswordValid && (
-                <p className="mt-1 text-xs text-green-600">Password meets requirements</p>
-              )}
-            </div>
+            </Field>
 
-            <div>
-              <label className="block text-sm text-sepia/70 mb-1">Confirm Password</label>
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={e => setConfirmPassword(e.target.value)}
-                className={`w-full px-4 py-3 rounded-lg border bg-white focus:outline-none focus:ring-2 ${
-                  confirmPassword && !passwordsMatch
-                    ? 'border-red-300 focus:ring-red-200 focus:border-red-400'
-                    : confirmPassword && passwordsMatch
-                      ? 'border-green-300 focus:ring-green-200 focus:border-green-400'
-                      : 'border-sepia/30 focus:ring-sepia/30 focus:border-sepia'
-                }`}
-                placeholder="Re-enter your password"
-                required
-                autoComplete="new-password"
-              />
-              {confirmPassword && !passwordsMatch && (
-                <p className="mt-1 text-xs text-red-600">Passwords do not match</p>
+            <Field
+              label="Confirm Password"
+              error={confirmPassword && !passwordsMatch ? 'Passwords do not match' : undefined}
+              hint={confirmPassword && passwordsMatch ? 'Passwords match' : undefined}
+            >
+              {(id, describedBy) => (
+                <Input
+                  id={id}
+                  aria-describedby={describedBy}
+                  type="password"
+                  value={confirmPassword}
+                  onChange={e => setConfirmPassword(e.target.value)}
+                  invalid={Boolean(confirmPassword) && !passwordsMatch}
+                  placeholder="Re-enter your password"
+                  required
+                  autoComplete="new-password"
+                />
               )}
-              {confirmPassword && passwordsMatch && (
-                <p className="mt-1 text-xs text-green-600">Passwords match</p>
-              )}
-            </div>
+            </Field>
 
-            <button
+            <Button
               type="submit"
+              size="xl"
+              loading={loading}
               disabled={loading || !isPasswordValid || !passwordsMatch}
-              className="w-full py-3 bg-sepia text-white rounded-lg hover:bg-sepia/90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="mt-2"
             >
               {loading ? 'Resetting...' : 'Reset Password'}
-            </button>
+            </Button>
           </form>
-        </div>
+        </Card>
       </div>
     </div>
   )

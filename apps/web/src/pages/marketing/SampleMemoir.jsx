@@ -1,6 +1,14 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
+import {
+  IconChevronLeft,
+  IconChevronRight,
+  IconPhoto,
+  IconBook2,
+  IconArrowRight
+} from '@tabler/icons-react'
 import SEO, { breadcrumbSchema } from '../../components/SEO'
+import { Button, Badge } from '../../components/ui'
 
 export default function SampleMemoir() {
   const [currentPage, setCurrentPage] = useState(0)
@@ -129,21 +137,21 @@ And finally, tell your stories. Don't let them die with you. Every life is a boo
     switch (page.type) {
       case 'cover':
         return (
-          <div className="h-full flex flex-col items-center justify-center text-center p-8 bg-gradient-to-br from-heritage-sepia to-heritage-sepia-dark text-white rounded-r-lg">
+          <div className="h-full flex flex-col items-center justify-center text-center p-8 bg-gradient-to-br from-bronze-700 to-bronze-900 text-white rounded-r-lg">
             <div className="border-4 border-white/30 p-8 sm:p-12">
               <h1 className="font-display text-3xl sm:text-4xl mb-4">{page.content.title}</h1>
               <div className="w-24 h-0.5 bg-white/50 mx-auto mb-4" />
               <p className="font-serif text-lg sm:text-xl italic mb-2">{page.content.subtitle}</p>
-              <p className="font-sans text-sm opacity-70">{page.content.year}</p>
+              <p className="text-sm opacity-70">{page.content.year}</p>
             </div>
           </div>
         )
 
       case 'dedication':
         return (
-          <div className="h-full flex items-center justify-center p-8 sm:p-12 bg-heritage-cream">
+          <div className="h-full flex items-center justify-center p-8 sm:p-12 bg-cream">
             <div className="text-center max-w-sm">
-              <p className="font-serif text-lg sm:text-xl text-heritage-text italic leading-relaxed whitespace-pre-line">
+              <p className="font-serif text-lg sm:text-xl text-ink-soft italic whitespace-pre-line">
                 {page.content.text}
               </p>
             </div>
@@ -152,23 +160,14 @@ And finally, tell your stories. Don't let them die with you. Every life is a boo
 
       case 'chapter':
         return (
-          <div className="h-full p-6 sm:p-10 bg-heritage-cream overflow-auto">
-            <p className="font-sans text-xs text-heritage-sepia uppercase tracking-[0.3em] mb-2">
-              {page.content.chapter}
-            </p>
-            <h2 className="font-display text-2xl sm:text-3xl text-heritage-ink mb-6">
+          <div className="h-full p-6 sm:p-10 bg-cream overflow-auto">
+            <p className="eyebrow mb-2">{page.content.chapter}</p>
+            <h2 className="font-display text-2xl sm:text-3xl text-ink mb-6">
               {page.content.title}
             </h2>
-            <div className="font-serif text-sm sm:text-base text-heritage-text leading-relaxed space-y-4">
+            <div className="prose-memoir space-y-4">
               {page.content.text.split('\n\n').map((para, i) => (
-                <p
-                  key={i}
-                  className={
-                    i === 0
-                      ? 'first-letter:text-4xl first-letter:font-display first-letter:float-left first-letter:mr-2 first-letter:text-heritage-sepia'
-                      : ''
-                  }
-                >
+                <p key={i} className={i === 0 ? 'drop-cap' : ''}>
                   {para}
                 </p>
               ))}
@@ -178,22 +177,22 @@ And finally, tell your stories. Don't let them die with you. Every life is a boo
 
       case 'chapter-continued':
         return (
-          <div className="h-full p-6 sm:p-10 bg-heritage-cream overflow-auto">
-            <div className="font-serif text-sm sm:text-base text-heritage-text leading-relaxed space-y-4">
+          <div className="h-full p-6 sm:p-10 bg-cream overflow-auto">
+            <div className="prose-memoir space-y-4">
               {page.content.text.split('\n\n').map((para, i) => (
                 <p key={i}>{para}</p>
               ))}
             </div>
             {page.content.image && (
-              <div className="mt-6 bg-heritage-sepia-light/20 rounded-lg p-4 text-center">
-                <div className="w-full h-32 bg-heritage-sepia-light/30 rounded flex items-center justify-center mb-2">
-                  <span className="text-4xl">📷</span>
+              <div className="mt-6 bg-sepia-100 rounded-xl p-4 text-center">
+                <div className="w-full h-32 bg-sepia-200/60 rounded-lg flex items-center justify-center mb-2">
+                  <IconPhoto size={36} stroke={1.5} className="text-sepia-400" />
                 </div>
-                <p className="font-sans text-xs text-heritage-text italic">{page.content.image}</p>
+                <p className="text-xs text-sepia-600 italic">{page.content.image}</p>
               </div>
             )}
             {page.content.quote && (
-              <blockquote className="mt-6 border-l-4 border-heritage-cta pl-4 italic text-heritage-sepia">
+              <blockquote className="mt-6 border-l-4 border-bronze-400 pl-4 font-serif italic text-sepia-600">
                 {page.content.quote}
               </blockquote>
             )}
@@ -202,25 +201,18 @@ And finally, tell your stories. Don't let them die with you. Every life is a boo
 
       case 'photos':
         return (
-          <div className="h-full p-6 sm:p-10 bg-heritage-cream">
-            <h2 className="font-display text-2xl text-heritage-ink text-center mb-6">
+          <div className="h-full p-6 sm:p-10 bg-cream">
+            <h2 className="font-display text-2xl text-ink text-center mb-6">
               {page.content.title}
             </h2>
             <div className="grid grid-cols-2 gap-4">
               {page.content.photos.map((photo, i) => (
-                <div
-                  key={i}
-                  className="bg-white p-2 shadow-md rotate-[-1deg] hover:rotate-0 transition-transform"
-                >
-                  <div className="aspect-square bg-heritage-sepia-light/30 flex items-center justify-center mb-2">
-                    <span className="text-3xl">📷</span>
+                <div key={i} className="bg-surface p-2 rounded-lg shadow-soft">
+                  <div className="aspect-square bg-sepia-100 rounded flex items-center justify-center mb-2">
+                    <IconPhoto size={28} stroke={1.5} className="text-sepia-400" />
                   </div>
-                  <p className="font-sans text-xs text-heritage-text text-center">
-                    {photo.caption}
-                  </p>
-                  <p className="font-sans text-[10px] text-heritage-text/60 text-center">
-                    {photo.year}
-                  </p>
+                  <p className="text-xs text-sepia-600 text-center">{photo.caption}</p>
+                  <p className="text-[10px] text-sepia-500 text-center">{photo.year}</p>
                 </div>
               ))}
             </div>
@@ -233,7 +225,7 @@ And finally, tell your stories. Don't let them die with you. Every life is a boo
   }
 
   return (
-    <div className="min-h-screen bg-heritage-ink">
+    <div className="min-h-screen bg-ink">
       <SEO
         title="Sample Memoir — See What Your Book Could Look Like"
         description="Preview a beautifully written sample memoir created with Easy Memoir. See how AI transforms spoken memories into eloquent prose. Flip through a real memoir and imagine your own life story."
@@ -241,7 +233,7 @@ And finally, tell your stories. Don't let them die with you. Every life is a boo
         jsonLd={[breadcrumbSchema([{ name: 'Home', url: '/' }, { name: 'Sample Memoir' }])]}
       />
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-heritage-ink/95 backdrop-blur-sm border-b border-white/10">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-ink/95 backdrop-blur-sm border-b border-white/10">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link to="/" className="font-display text-2xl text-white">
             Easy Memoir
@@ -249,22 +241,16 @@ And finally, tell your stories. Don't let them die with you. Every life is a boo
           <div className="flex items-center gap-6">
             <Link
               to="/pricing"
-              className="font-sans text-sm text-white/70 hover:text-white transition-colors"
+              className="text-sm text-white/70 hover:text-white transition-colors"
             >
               Pricing
             </Link>
-            <Link
-              to="/gift"
-              className="font-sans text-sm text-white/70 hover:text-white transition-colors"
-            >
+            <Link to="/gift" className="text-sm text-white/70 hover:text-white transition-colors">
               Gift
             </Link>
-            <Link
-              to="/register"
-              className="font-sans bg-heritage-cta text-white px-5 py-2 rounded-full text-sm hover:bg-heritage-cta-hover transition-colors"
-            >
+            <Button to="/register" variant="secondary" size="sm">
               Create Yours
-            </Link>
+            </Button>
           </div>
         </div>
       </nav>
@@ -272,20 +258,17 @@ And finally, tell your stories. Don't let them die with you. Every life is a boo
       {/* Hero */}
       <section className="pt-28 pb-8 px-6">
         <div
-          className={`max-w-4xl mx-auto text-center transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
+          className={`max-w-4xl mx-auto text-center transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/20 mb-6">
-            <span className="text-lg">📖</span>
-            <p className="font-sans uppercase tracking-[0.3em] text-xs text-white/70">
-              Sample Memoir
-            </p>
-          </div>
+          <p className="uppercase tracking-caps text-xs font-semibold text-bronze-300 mb-4">
+            Sample Memoir
+          </p>
 
           <h1 className="font-display text-4xl sm:text-5xl text-white mb-4">
             See what your memoir could look like
           </h1>
 
-          <p className="font-serif text-lg text-white/70 max-w-2xl mx-auto">
+          <p className="text-lg text-white/70 max-w-2xl mx-auto">
             This is a sample from "A Life Well Lived" by Margaret Thompson. Every memoir we create
             is as unique as the life it celebrates.
           </p>
@@ -297,73 +280,46 @@ And finally, tell your stories. Don't let them die with you. Every life is a boo
         <div className="max-w-4xl mx-auto">
           <div
             ref={bookRef}
-            className={`relative transition-all duration-1000 delay-300 ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
+            className={`relative transition-all duration-700 delay-150 ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
           >
             {/* Book Container */}
-            <div className="relative bg-heritage-sepia-dark rounded-lg shadow-2xl p-2 sm:p-3">
+            <div className="relative bg-sepia-900 rounded-lg shadow-modal p-2 sm:p-3">
               {/* Book spine effect */}
-              <div className="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-black/30 to-transparent rounded-l-lg" />
+              <div className="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-ink/40 to-transparent rounded-l-lg" />
 
               {/* Page */}
               <div
-                className={`bg-heritage-cream rounded-r-lg min-h-[500px] sm:min-h-[600px] transition-all duration-300 ${
+                className={`bg-cream rounded-r-lg min-h-[500px] sm:min-h-[600px] transition-all duration-300 ${
                   isFlipping ? 'transform scale-[0.98] opacity-80' : ''
                 }`}
               >
                 {renderPage(pages[currentPage])}
               </div>
-
-              {/* Page curl effect */}
-              <div className="absolute bottom-2 right-2 w-12 h-12 bg-gradient-to-tl from-heritage-sepia-light/30 to-transparent rounded-bl-xl pointer-events-none" />
             </div>
 
             {/* Navigation Arrows */}
             <button
               onClick={() => flipPage('prev')}
               disabled={currentPage === 0}
-              className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 sm:-translate-x-16 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white shadow-lg flex items-center justify-center transition-all ${
-                currentPage === 0
-                  ? 'opacity-30 cursor-not-allowed'
-                  : 'hover:scale-110 hover:shadow-xl'
+              aria-label="Previous page"
+              className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 sm:-translate-x-16 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-surface shadow-lifted flex items-center justify-center transition-all ${
+                currentPage === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:shadow-modal'
               }`}
             >
-              <svg
-                className="w-6 h-6 text-heritage-ink"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
+              <IconChevronLeft size={24} stroke={1.75} className="text-ink" />
             </button>
 
             <button
               onClick={() => flipPage('next')}
               disabled={currentPage === pages.length - 1}
-              className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 sm:translate-x-16 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white shadow-lg flex items-center justify-center transition-all ${
+              aria-label="Next page"
+              className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 sm:translate-x-16 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-surface shadow-lifted flex items-center justify-center transition-all ${
                 currentPage === pages.length - 1
                   ? 'opacity-30 cursor-not-allowed'
-                  : 'hover:scale-110 hover:shadow-xl'
+                  : 'hover:shadow-modal'
               }`}
             >
-              <svg
-                className="w-6 h-6 text-heritage-ink"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
+              <IconChevronRight size={24} stroke={1.75} className="text-ink" />
             </button>
           </div>
 
@@ -372,6 +328,7 @@ And finally, tell your stories. Don't let them die with you. Every life is a boo
             {pages.map((_, index) => (
               <button
                 key={index}
+                aria-label={`Go to page ${index + 1}`}
                 onClick={() => {
                   if (!isFlipping) {
                     setIsFlipping(true)
@@ -382,69 +339,66 @@ And finally, tell your stories. Don't let them die with you. Every life is a boo
                   }
                 }}
                 className={`w-2 h-2 rounded-full transition-all ${
-                  index === currentPage ? 'bg-heritage-cta w-6' : 'bg-white/30 hover:bg-white/50'
+                  index === currentPage ? 'bg-bronze-400 w-6' : 'bg-white/30 hover:bg-white/50'
                 }`}
               />
             ))}
           </div>
 
-          <p className="text-center text-white/50 font-sans text-sm mt-4">
+          <p className="text-center text-white/50 text-sm mt-4">
             Page {currentPage + 1} of {pages.length}
           </p>
         </div>
       </section>
 
       {/* Book Options */}
-      <section className="py-20 px-6 bg-gradient-to-b from-heritage-ink to-heritage-sepia-dark">
+      <section className="py-16 sm:py-20 px-6">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-16">
+          <div className="text-center mb-12">
             <h2 className="font-display text-3xl sm:text-4xl text-white mb-4">
               Choose your format
             </h2>
-            <p className="font-serif text-lg text-white/70 max-w-2xl mx-auto">
+            <p className="text-lg text-white/70 max-w-2xl mx-auto">
               Every memoir is available as a digital PDF or a beautifully printed book.
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-3 gap-8">
+          <div className="grid sm:grid-cols-3 gap-6 sm:gap-8">
             {[
               {
                 name: 'Softcover',
                 price: '£29',
-                image: '📘',
                 features: ['Perfect bound', '200gsm paper', 'Matte finish']
               },
               {
                 name: 'Hardcover',
                 price: '£49',
-                image: '📕',
                 features: ['Cloth bound', 'Dust jacket', 'Archival paper'],
                 popular: true
               },
               {
                 name: 'Premium',
                 price: '£79',
-                image: '📗',
                 features: ['Leather-look', 'Gold foil', 'Gift box']
               }
-            ].map((book, i) => (
+            ].map(book => (
               <div
                 key={book.name}
-                className={`relative bg-white/10 backdrop-blur rounded-3xl p-8 text-center transition-all duration-500 hover:-translate-y-2 ${
-                  book.popular ? 'ring-2 ring-heritage-cta' : ''
+                className={`relative bg-white/10 rounded-3xl p-8 text-center ${
+                  book.popular ? 'ring-2 ring-bronze-400' : ''
                 }`}
               >
                 {book.popular && (
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-heritage-cta text-white font-sans text-xs font-bold px-4 py-1.5 rounded-full">
-                    Most Popular
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <Badge variant="bronze">Most Popular</Badge>
                   </div>
                 )}
-                <span className="text-6xl mb-4 block">{book.image}</span>
+                <IconBook2 size={44} stroke={1.5} className="text-white/80 mx-auto mb-4" />
                 <h3 className="font-display text-2xl text-white mb-2">{book.name}</h3>
-                <p className="font-display text-3xl text-heritage-cta mb-4">{book.price}</p>
+                <p className="font-display text-3xl text-bronze-300 mb-4">{book.price}</p>
                 <ul className="space-y-2">
                   {book.features.map((feature, j) => (
-                    <li key={j} className="font-sans text-sm text-white/70">
+                    <li key={j} className="text-sm text-white/70">
                       {feature}
                     </li>
                   ))}
@@ -456,45 +410,24 @@ And finally, tell your stories. Don't let them die with you. Every life is a boo
       </section>
 
       {/* CTA */}
-      <section className="py-24 px-6 bg-heritage-cream">
+      <section className="py-16 sm:py-20 px-6 bg-parchment">
         <div className="max-w-3xl mx-auto text-center">
-          <h2 className="font-display text-4xl sm:text-5xl text-heritage-ink mb-6">
+          <h2 className="font-display text-4xl sm:text-5xl text-ink mb-6">
             Ready to write your story?
           </h2>
-          <p className="font-serif text-xl text-heritage-text mb-10">
+          <p className="text-lg text-sepia-600 mb-10">
             Start today and create a memoir as beautiful as this one.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              to="/register"
-              className="group font-sans bg-heritage-cta text-white px-10 py-4 rounded-full text-lg font-medium hover:bg-heritage-cta-hover transition-all shadow-lg hover:shadow-xl hover:scale-[1.02]"
-            >
+            <Button to="/register" size="lg" iconRight={<IconArrowRight size={20} stroke={1.75} />}>
               Write My First Chapter — Free
-              <span className="inline-block ml-2 transition-transform group-hover:translate-x-1">
-                →
-              </span>
-            </Link>
-            <Link
-              to="/gift"
-              className="font-sans border-2 border-heritage-sepia-light text-heritage-ink px-10 py-4 rounded-full text-lg font-medium hover:bg-heritage-sepia-light/20 transition-all"
-            >
+            </Button>
+            <Button to="/gift" variant="secondary" size="lg">
               Gift a Memoir
-            </Link>
+            </Button>
           </div>
         </div>
       </section>
-
-      {/* Custom styles */}
-      <style>{`
-        .first-letter\\:text-4xl::first-letter {
-          font-size: 2.5rem;
-          font-family: 'Boska', Georgia, serif;
-          float: left;
-          margin-right: 0.5rem;
-          line-height: 1;
-          color: #9C7B5C;
-        }
-      `}</style>
     </div>
   )
 }

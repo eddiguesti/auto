@@ -1,3 +1,4 @@
+import { IconCheck } from '@tabler/icons-react'
 import { LINEN_COLOR_MAP, FOIL_SWATCH_MAP, HARDCOVER_BINDINGS } from '../../data/bookColors'
 import { OptionCard } from './FormatSelector'
 
@@ -28,7 +29,7 @@ export default function ColorSelector({ config, options, onConfigChange }) {
 function LinenColorPicker({ config, options, onConfigChange }) {
   return (
     <div>
-      <h3 className="text-lg font-medium text-ink mb-4">Linen Color</h3>
+      <h3 className="text-lg font-display text-ink mb-4">Linen Color</h3>
       <div className="flex flex-wrap gap-4 pb-6">
         {options.linenColors
           .filter(l => l.id !== 'X')
@@ -51,7 +52,7 @@ function LinenColorPicker({ config, options, onConfigChange }) {
 function FoilPicker({ config, options, onConfigChange }) {
   return (
     <div>
-      <h3 className="text-lg font-medium text-ink mb-4">Foil Stamping</h3>
+      <h3 className="text-lg font-display text-ink mb-4">Foil Stamping</h3>
       <div className="flex flex-wrap gap-4 pb-6">
         {options.foilOptions.map(foil => (
           <ColorSwatch
@@ -100,24 +101,26 @@ function PrintColorPicker({ config, options, onConfigChange }) {
         {options.printColors.map(color => (
           <button
             key={color.id}
+            type="button"
             onClick={() => onConfigChange(prev => ({ ...prev, color: color.id }))}
-            className={`relative p-6 border rounded-xl transition ${
+            className={`relative p-6 bg-surface border rounded-2xl transition-all duration-200 ${
               config.color === color.id
-                ? 'border-sepia bg-sepia/10 shadow-md'
-                : 'border-sepia/20 hover:border-sepia/40'
+                ? 'border-bronze-400 ring-4 ring-bronze-500/10 shadow-soft'
+                : 'border-sepia-200 hover:border-sepia-300'
             }`}
           >
+            {config.color === color.id && <SelectedCheck />}
             <div className="flex items-center gap-4">
               <div
-                className={`w-16 h-20 rounded border ${
+                className={`w-16 h-20 rounded border border-sepia-200/70 ${
                   color.id === 'FC'
-                    ? 'bg-gradient-to-br from-red-200 via-yellow-200 to-blue-200'
-                    : 'bg-gradient-to-b from-gray-100 to-gray-300'
+                    ? 'bg-gradient-to-br from-bronze-200 via-bronze-300 to-bronze-500'
+                    : 'bg-gradient-to-b from-sepia-50 to-sepia-300'
                 }`}
               />
               <div className="text-left">
                 <div className="font-medium text-ink text-lg">{color.name}</div>
-                <div className="text-sm text-sepia/60">{color.description}</div>
+                <div className="text-sm text-sepia-600">{color.description}</div>
               </div>
             </div>
           </button>
@@ -137,16 +140,18 @@ function CoverFinishPicker({ config, options, onConfigChange }) {
         {options.coverFinishes.map(finish => (
           <button
             key={finish.id}
+            type="button"
             onClick={() => onConfigChange(prev => ({ ...prev, finish: finish.id }))}
-            className={`p-4 border rounded-xl transition ${
+            className={`relative p-4 bg-surface border rounded-2xl transition-all duration-200 ${
               config.finish === finish.id
-                ? 'border-sepia bg-sepia/10 shadow-md'
-                : 'border-sepia/20 hover:border-sepia/40'
+                ? 'border-bronze-400 ring-4 ring-bronze-500/10 shadow-soft'
+                : 'border-sepia-200 hover:border-sepia-300'
             }`}
           >
+            {config.finish === finish.id && <SelectedCheck />}
             <FinishPreview finishId={finish.id} />
             <div className="font-medium text-ink">{finish.name}</div>
-            <div className="text-xs text-sepia/60">{finish.description}</div>
+            <div className="text-xs text-sepia-500">{finish.description}</div>
           </button>
         ))}
       </div>
@@ -158,8 +163,8 @@ function CoverFinishPicker({ config, options, onConfigChange }) {
 
 function SectionHeading({ number, label }) {
   return (
-    <h3 className="text-lg font-medium text-ink mb-4 flex items-center gap-2">
-      <span className="w-8 h-8 bg-sepia/10 rounded-full flex items-center justify-center text-sepia">
+    <h3 className="text-lg font-display text-ink mb-4 flex items-center gap-2">
+      <span className="w-8 h-8 bg-sepia-100 text-sepia-600 rounded-full flex items-center justify-center text-sm font-sans">
         {number}
       </span>
       {label}
@@ -167,29 +172,43 @@ function SectionHeading({ number, label }) {
   )
 }
 
+function SelectedCheck() {
+  return (
+    <span
+      className="absolute top-2 right-2 w-5 h-5 rounded-full bg-bronze-500 text-white flex items-center justify-center"
+      aria-hidden="true"
+    >
+      <IconCheck size={12} stroke={3} />
+    </span>
+  )
+}
+
 function ColorSwatch({ color, selected, onClick, name }) {
-  const bg = FOIL_SWATCH_MAP[color] || LINEN_COLOR_MAP[color] || '#gray'
+  // Fallback swatch tone: system sepia hex (#9C7E5D)
+  const bg = FOIL_SWATCH_MAP[color] || LINEN_COLOR_MAP[color] || '#9C7E5D'
 
   return (
     <button
+      type="button"
       onClick={onClick}
       className={`relative group ${selected ? 'scale-110 z-10' : 'hover:scale-105'} transition-transform`}
+      aria-pressed={selected}
     >
       <div
-        className={`w-10 h-10 rounded-full border-2 ${
-          selected ? 'border-sepia shadow-lg' : 'border-sepia/20'
-        } ${color === 'X' ? 'bg-gray-100' : ''}`}
+        className={`w-11 h-11 rounded-full border-2 ${
+          selected ? 'border-bronze-400 ring-4 ring-bronze-500/10' : 'border-sepia-200'
+        } ${color === 'X' ? 'bg-sepia-50' : ''}`}
         style={{ background: color === 'X' ? undefined : bg }}
       >
         {color === 'X' && (
-          <div className="absolute inset-0 flex items-center justify-center text-sepia/40 text-lg">
+          <div className="absolute inset-0 flex items-center justify-center text-sepia-400 text-lg">
             /
           </div>
         )}
       </div>
       <div
-        className={`absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] whitespace-nowrap ${
-          selected ? 'text-sepia font-medium' : 'text-sepia/60'
+        className={`absolute -bottom-5 left-1/2 -translate-x-1/2 text-xs whitespace-nowrap ${
+          selected ? 'text-bronze-700 font-medium' : 'text-sepia-500'
         }`}
       >
         {name}
@@ -204,17 +223,13 @@ function PaperPreview({ paper }) {
 
   return (
     <div
-      className={`w-12 h-16 rounded border shadow-sm ${
-        isCoated ? 'bg-gradient-to-br from-white to-gray-50' : ''
-      }`}
-      style={{
-        backgroundColor: isCream ? '#faf5e8' : '#ffffff',
-        boxShadow: isCoated ? 'inset 0 0 10px rgba(255,255,255,0.8)' : 'none'
-      }}
+      className={`w-12 h-16 rounded border border-sepia-200/70 shadow-xs ${
+        isCream ? 'bg-cream' : 'bg-surface'
+      } ${isCoated ? 'bg-gradient-to-br from-surface to-sepia-50 shadow-inner' : ''}`}
     >
       <div className="h-full flex flex-col justify-center px-1">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="h-0.5 bg-sepia/10 mb-1 last:mb-0" />
+          <div key={i} className="h-0.5 bg-sepia-200/50 mb-1 last:mb-0" />
         ))}
       </div>
     </div>
@@ -222,18 +237,14 @@ function PaperPreview({ paper }) {
 }
 
 function FinishPreview({ finishId }) {
+  const finishClasses =
+    finishId === 'G'
+      ? 'bg-gradient-to-br from-surface via-sepia-100 to-surface shadow-inner'
+      : finishId === 'M'
+        ? 'bg-sepia-50'
+        : 'bg-parchment'
+
   return (
-    <div
-      className="w-full h-16 rounded-lg mb-3"
-      style={{
-        background:
-          finishId === 'G'
-            ? 'linear-gradient(135deg, #fff 0%, #e0e0e0 50%, #fff 100%)'
-            : finishId === 'M'
-              ? '#f5f5f5'
-              : '#faf8f5',
-        boxShadow: finishId === 'G' ? 'inset 0 0 20px rgba(255,255,255,0.8)' : 'none'
-      }}
-    />
+    <div className={`w-full h-16 rounded-lg mb-3 border border-sepia-200/50 ${finishClasses}`} />
   )
 }

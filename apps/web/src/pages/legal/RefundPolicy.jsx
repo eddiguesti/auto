@@ -2,27 +2,27 @@ import { Link } from 'react-router-dom'
 
 export default function RefundPolicy() {
   return (
-    <div className="min-h-screen bg-cream">
+    <div className="min-h-screen bg-parchment">
       {/* Header */}
-      <nav className="bg-cream border-b border-sepia/10">
-        <div className="max-w-4xl mx-auto px-6 py-4">
+      <nav className="bg-parchment border-b border-sepia-200/60">
+        <div className="max-w-reading mx-auto px-6 py-4">
           <Link to="/" className="font-display text-2xl text-ink tracking-wide">
-            Easy<span className="text-sepia">Memoir</span>
+            Easy<span className="text-sepia-500">Memoir</span>
           </Link>
         </div>
       </nav>
 
       {/* Content */}
-      <main className="max-w-4xl mx-auto px-6 py-12">
-        <h1 className="font-display text-4xl text-ink mb-2">
+      <main className="max-w-reading mx-auto px-6 py-12 page-enter">
+        <h1 className="font-display text-3xl sm:text-4xl text-ink mb-2">
           Refund Policy &amp; Money-Back Guarantee
         </h1>
-        <p className="text-warmgray mb-8">Last updated: February 12, 2026</p>
+        <p className="text-sepia-500 text-sm mb-10">Last updated: February 12, 2026</p>
 
         {/* Guarantee Summary Banner */}
-        <div className="bg-sepia/5 border border-sepia/20 rounded-xl p-6 mb-10">
+        <div className="bg-sepia-50 border border-sepia-200/70 rounded-2xl p-6 mb-10">
           <h2 className="font-display text-2xl text-ink mb-3">Our 30-Day Money-Back Guarantee</h2>
-          <p className="text-warmgray leading-relaxed">
+          <p className="text-ink-soft leading-relaxed">
             We are confident that Easy Memoir will help you preserve your life stories beautifully.
             If you are not completely satisfied with your purchase, we offer a
             <strong> 30-day money-back guarantee</strong> on eligible products, subject to the
@@ -31,13 +31,13 @@ export default function RefundPolicy() {
           </p>
         </div>
 
-        <div className="prose prose-sepia max-w-none space-y-8">
+        <div className="space-y-10">
           {/* 1. Your Statutory Rights */}
           <section>
             <h2 className="font-display text-2xl text-ink mb-4">
               1. Your Statutory Rights Under UK Law
             </h2>
-            <p className="text-warmgray leading-relaxed">
+            <p className="text-ink-soft leading-relaxed">
               As a consumer in the United Kingdom, you have statutory rights under the
               <strong> Consumer Rights Act 2015</strong> and the
               <strong>
@@ -48,7 +48,7 @@ export default function RefundPolicy() {
               . Nothing in this policy affects, limits, or overrides your statutory rights. In
               particular:
             </p>
-            <ul className="list-disc list-inside text-warmgray mt-2 space-y-2">
+            <ul className="list-disc list-inside text-ink-soft mt-2 space-y-2">
               <li>
                 <strong>Digital content</strong> must be of satisfactory quality, fit for a
                 particular purpose, and as described.
@@ -65,13 +65,13 @@ export default function RefundPolicy() {
                 repair, replacement, or refund regardless of this policy.
               </li>
             </ul>
-            <p className="text-warmgray leading-relaxed mt-4">
+            <p className="text-ink-soft leading-relaxed mt-4">
               For further information about your statutory rights, visit{' '}
               <a
                 href="https://www.citizensadvice.org.uk"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sepia hover:underline"
+                className="text-bronze-700 hover:underline"
               >
                 Citizens Advice
               </a>{' '}
@@ -84,7 +84,7 @@ export default function RefundPolicy() {
             <h2 className="font-display text-2xl text-ink mb-4">
               2. 14-Day Cooling-Off Period (Distance Selling)
             </h2>
-            <p className="text-warmgray leading-relaxed">
+            <p className="text-ink-soft leading-relaxed">
               Under the Consumer Contracts Regulations 2013, when you purchase online (a "distance
               contract"), you have a statutory right to cancel within <strong>14 days</strong> of
               purchase without giving any reason. This is your "cooling-off period."
@@ -93,11 +93,11 @@ export default function RefundPolicy() {
             <h3 className="font-display text-xl text-ink mb-2 mt-6">
               2.1 Digital Content &amp; Subscriptions
             </h3>
-            <p className="text-warmgray leading-relaxed">
+            <p className="text-ink-soft leading-relaxed">
               For digital content (eBook exports, audiobook exports, style packs, and subscription
               services), please note:
             </p>
-            <ul className="list-disc list-inside text-warmgray mt-2 space-y-2">
+            <ul className="list-disc list-inside text-ink-soft mt-2 space-y-2">
               <li>
                 If you request <strong>immediate access</strong> to digital content during the
                 cooling-off period and acknowledge that you will lose your right to cancel, the
@@ -115,7 +115,7 @@ export default function RefundPolicy() {
             </ul>
 
             <h3 className="font-display text-xl text-ink mb-2 mt-6">2.2 Printed Books</h3>
-            <p className="text-warmgray leading-relaxed">
+            <p className="text-ink-soft leading-relaxed">
               For printed books (physical goods), the 14-day cooling-off period begins the day after
               you receive the book. You may cancel and return the book within this period for a full
               refund, provided the book is in its original, unused condition.
@@ -124,9 +124,9 @@ export default function RefundPolicy() {
             <h3 className="font-display text-xl text-ink mb-2 mt-6">
               2.3 How to Exercise Your Cooling-Off Rights
             </h3>
-            <p className="text-warmgray leading-relaxed">
+            <p className="text-ink-soft leading-relaxed">
               To cancel within the cooling-off period, contact us at{' '}
-              <a href="mailto:refunds@easymemoir.co.uk" className="text-sepia hover:underline">
+              <a href="mailto:refunds@easymemoir.co.uk" className="text-bronze-700 hover:underline">
                 refunds@easymemoir.co.uk
               </a>{' '}
               with your order details. You may also use the model cancellation form at the end of
@@ -138,17 +138,17 @@ export default function RefundPolicy() {
           {/* 3. 30-Day Money-Back Guarantee */}
           <section>
             <h2 className="font-display text-2xl text-ink mb-4">3. 30-Day Money-Back Guarantee</h2>
-            <p className="text-warmgray leading-relaxed">
+            <p className="text-ink-soft leading-relaxed">
               In addition to your statutory rights, Easy Memoir offers a voluntary
               <strong> 30-day money-back guarantee</strong> on the following products:
             </p>
-            <ul className="list-disc list-inside text-warmgray mt-2 space-y-1">
+            <ul className="list-disc list-inside text-ink-soft mt-2 space-y-1">
               <li>Premium Monthly Subscription (£9.99/month)</li>
               <li>Premium Yearly Subscription (£99.99/year)</li>
               <li>Premium Bundle — Full Memoir + Printed Book + Audiobook (£299.00)</li>
               <li>Welcome Bundle — Full Memoir + Printed Book + Audiobook (£299.00)</li>
             </ul>
-            <p className="text-warmgray leading-relaxed mt-4">
+            <p className="text-ink-soft leading-relaxed mt-4">
               If you are not satisfied with the Service for any reason, you may request a full
               refund within <strong>30 days from the date of purchase</strong>, provided the
               eligibility conditions in Section 4 are met.
@@ -157,7 +157,7 @@ export default function RefundPolicy() {
             <h3 className="font-display text-xl text-ink mb-2 mt-6">
               3.1 What the Guarantee Covers
             </h3>
-            <ul className="list-disc list-inside text-warmgray mt-2 space-y-2">
+            <ul className="list-disc list-inside text-ink-soft mt-2 space-y-2">
               <li>
                 <strong>Subscription plans:</strong> Full refund of the subscription fee paid.
               </li>
@@ -170,13 +170,16 @@ export default function RefundPolicy() {
             </ul>
 
             <h3 className="font-display text-xl text-ink mb-2 mt-6">3.2 How to Claim</h3>
-            <p className="text-warmgray leading-relaxed">
+            <p className="text-ink-soft leading-relaxed">
               To request a refund under the guarantee:
             </p>
-            <ol className="list-decimal list-inside text-warmgray mt-2 space-y-2">
+            <ol className="list-decimal list-inside text-ink-soft mt-2 space-y-2">
               <li>
                 Email{' '}
-                <a href="mailto:refunds@easymemoir.co.uk" className="text-sepia hover:underline">
+                <a
+                  href="mailto:refunds@easymemoir.co.uk"
+                  className="text-bronze-700 hover:underline"
+                >
                   refunds@easymemoir.co.uk
                 </a>{' '}
                 within 30 days of your purchase.
@@ -202,18 +205,18 @@ export default function RefundPolicy() {
             <h2 className="font-display text-2xl text-ink mb-4">
               4. Guarantee Eligibility &amp; Usage Threshold
             </h2>
-            <p className="text-warmgray leading-relaxed">
+            <p className="text-ink-soft leading-relaxed">
               To ensure the guarantee is used fairly, the following conditions apply. The money-back
               guarantee is <strong>void</strong> if:
             </p>
 
             <h3 className="font-display text-xl text-ink mb-2 mt-6">4.1 The 25% Usage Threshold</h3>
-            <p className="text-warmgray leading-relaxed">
+            <p className="text-ink-soft leading-relaxed">
               The guarantee is no longer available if you have used{' '}
               <strong>more than 25% of the Service's core features</strong>. Usage is measured
               objectively by the following criteria:
             </p>
-            <ul className="list-disc list-inside text-warmgray mt-2 space-y-2">
+            <ul className="list-disc list-inside text-ink-soft mt-2 space-y-2">
               <li>
                 <strong>Chapters completed:</strong> You have written content in more than 3 of the
                 12 available chapters (i.e., more than 25%).
@@ -231,7 +234,7 @@ export default function RefundPolicy() {
                 platform.
               </li>
             </ul>
-            <p className="text-warmgray leading-relaxed mt-4">
+            <p className="text-ink-soft leading-relaxed mt-4">
               Usage is determined at the time we receive your refund request. If{' '}
               <strong>any one</strong> of the above thresholds has been exceeded, the guarantee is
               considered void. You can check your current usage in your account settings at any
@@ -241,7 +244,7 @@ export default function RefundPolicy() {
             <h3 className="font-display text-xl text-ink mb-2 mt-6">
               4.2 Other Conditions That Void the Guarantee
             </h3>
-            <ul className="list-disc list-inside text-warmgray mt-2 space-y-2">
+            <ul className="list-disc list-inside text-ink-soft mt-2 space-y-2">
               <li>
                 The refund request is made <strong>after 30 days</strong> from the date of purchase.
               </li>
@@ -255,7 +258,7 @@ export default function RefundPolicy() {
               </li>
               <li>
                 Your account has been suspended or terminated for breach of our{' '}
-                <Link to="/terms" className="text-sepia hover:underline">
+                <Link to="/terms" className="text-bronze-700 hover:underline">
                   Terms and Conditions
                 </Link>
                 .
@@ -267,19 +270,19 @@ export default function RefundPolicy() {
             </ul>
 
             <h3 className="font-display text-xl text-ink mb-2 mt-6">4.3 Partial Refunds</h3>
-            <p className="text-warmgray leading-relaxed">
+            <p className="text-ink-soft leading-relaxed">
               Even if the money-back guarantee is void due to exceeding the usage threshold, we may
               at our discretion offer a <strong>partial refund</strong> or{' '}
               <strong>service credit</strong> on a case-by-case basis, particularly where:
             </p>
-            <ul className="list-disc list-inside text-warmgray mt-2 space-y-2">
+            <ul className="list-disc list-inside text-ink-soft mt-2 space-y-2">
               <li>The Service did not perform as described or was materially defective.</li>
               <li>Technical issues prevented you from using the Service as intended.</li>
               <li>
                 Exceptional personal circumstances apply (e.g., bereavement, serious illness).
               </li>
             </ul>
-            <p className="text-warmgray leading-relaxed mt-4">
+            <p className="text-ink-soft leading-relaxed mt-4">
               <strong>Important:</strong> Nothing in this section limits your statutory right to a
               full refund where digital content or services are faulty or not as described under the
               Consumer Rights Act 2015.
@@ -295,7 +298,7 @@ export default function RefundPolicy() {
             <h3 className="font-display text-xl text-ink mb-2 mt-6">
               5.1 Subscriptions (Monthly &amp; Yearly)
             </h3>
-            <ul className="list-disc list-inside text-warmgray mt-2 space-y-2">
+            <ul className="list-disc list-inside text-ink-soft mt-2 space-y-2">
               <li>
                 You may cancel your subscription at any time from your account settings or by
                 emailing us.
@@ -319,16 +322,16 @@ export default function RefundPolicy() {
             <h3 className="font-display text-xl text-ink mb-2 mt-6">
               5.2 One-Off Digital Purchases
             </h3>
-            <p className="text-warmgray leading-relaxed">
+            <p className="text-ink-soft leading-relaxed">
               Individual digital purchases (eBook export at £7.99, audiobook export at £14.99, style
               pack at £4.99) are generally <strong>non-refundable</strong> once the digital content
               has been delivered, as permitted under the Consumer Contracts Regulations 2013 where
               you have consented to immediate delivery and acknowledged loss of the right to cancel.
             </p>
-            <p className="text-warmgray leading-relaxed mt-4">
+            <p className="text-ink-soft leading-relaxed mt-4">
               However, we will provide a full refund if:
             </p>
-            <ul className="list-disc list-inside text-warmgray mt-2 space-y-2">
+            <ul className="list-disc list-inside text-ink-soft mt-2 space-y-2">
               <li>The digital content is faulty, corrupted, or unreadable.</li>
               <li>The product was not as described at the point of sale.</li>
               <li>A technical error prevented delivery of the content.</li>
@@ -337,7 +340,7 @@ export default function RefundPolicy() {
             <h3 className="font-display text-xl text-ink mb-2 mt-6">
               5.3 Printed Books (Physical Goods)
             </h3>
-            <ul className="list-disc list-inside text-warmgray mt-2 space-y-2">
+            <ul className="list-disc list-inside text-ink-soft mt-2 space-y-2">
               <li>
                 <strong>Before dispatch:</strong> Full refund available if you cancel before the
                 book enters production (typically within 24 hours of order).
@@ -363,11 +366,11 @@ export default function RefundPolicy() {
             <h3 className="font-display text-xl text-ink mb-2 mt-6">
               5.4 Bundles (Premium Bundle &amp; Welcome Bundle)
             </h3>
-            <p className="text-warmgray leading-relaxed">
+            <p className="text-ink-soft leading-relaxed">
               Bundle purchases (£299.00) include digital access plus a printed book and audiobook.
               Refund terms depend on which components have been used:
             </p>
-            <ul className="list-disc list-inside text-warmgray mt-2 space-y-2">
+            <ul className="list-disc list-inside text-ink-soft mt-2 space-y-2">
               <li>
                 <strong>No components used:</strong> Full refund within the 30-day guarantee period
                 (subject to Section 4).
@@ -392,11 +395,14 @@ export default function RefundPolicy() {
             <h2 className="font-display text-2xl text-ink mb-4">
               6. Returns Process for Printed Books
             </h2>
-            <p className="text-warmgray leading-relaxed">To return a printed book:</p>
-            <ol className="list-decimal list-inside text-warmgray mt-2 space-y-2">
+            <p className="text-ink-soft leading-relaxed">To return a printed book:</p>
+            <ol className="list-decimal list-inside text-ink-soft mt-2 space-y-2">
               <li>
                 Email{' '}
-                <a href="mailto:refunds@easymemoir.co.uk" className="text-sepia hover:underline">
+                <a
+                  href="mailto:refunds@easymemoir.co.uk"
+                  className="text-bronze-700 hover:underline"
+                >
                   refunds@easymemoir.co.uk
                 </a>{' '}
                 within 14 days of receiving the book (or 30 days if the book is faulty).
@@ -418,7 +424,7 @@ export default function RefundPolicy() {
           {/* 7. How Refunds Are Processed */}
           <section>
             <h2 className="font-display text-2xl text-ink mb-4">7. How Refunds Are Processed</h2>
-            <ul className="list-disc list-inside text-warmgray mt-2 space-y-2">
+            <ul className="list-disc list-inside text-ink-soft mt-2 space-y-2">
               <li>
                 Refunds are returned to the <strong>original payment method</strong> used at
                 checkout (via Stripe).
@@ -444,7 +450,7 @@ export default function RefundPolicy() {
             <h2 className="font-display text-2xl text-ink mb-4">
               8. What Happens to Your Account After a Refund
             </h2>
-            <ul className="list-disc list-inside text-warmgray mt-2 space-y-2">
+            <ul className="list-disc list-inside text-ink-soft mt-2 space-y-2">
               <li>
                 <strong>Subscription refund:</strong> Your premium access will be revoked
                 immediately upon refund approval. You will retain access to free features and any
@@ -461,7 +467,7 @@ export default function RefundPolicy() {
               </li>
               <li>
                 You may download or export your data at any time. See our{' '}
-                <Link to="/privacy" className="text-sepia hover:underline">
+                <Link to="/privacy" className="text-bronze-700 hover:underline">
                   Privacy Policy
                 </Link>{' '}
                 for data portability rights.
@@ -472,13 +478,13 @@ export default function RefundPolicy() {
           {/* 9. Disputes and Complaints */}
           <section>
             <h2 className="font-display text-2xl text-ink mb-4">9. Disputes and Complaints</h2>
-            <p className="text-warmgray leading-relaxed">
+            <p className="text-ink-soft leading-relaxed">
               If you are unhappy with our decision regarding a refund request:
             </p>
-            <ol className="list-decimal list-inside text-warmgray mt-2 space-y-2">
+            <ol className="list-decimal list-inside text-ink-soft mt-2 space-y-2">
               <li>
                 <strong>Contact us first:</strong> Email{' '}
-                <a href="mailto:legal@easymemoir.co.uk" className="text-sepia hover:underline">
+                <a href="mailto:legal@easymemoir.co.uk" className="text-bronze-700 hover:underline">
                   legal@easymemoir.co.uk
                 </a>{' '}
                 and we will review your case at a senior level within 10 working days.
@@ -491,7 +497,7 @@ export default function RefundPolicy() {
                   href="https://ec.europa.eu/consumers/odr"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sepia hover:underline"
+                  className="text-bronze-700 hover:underline"
                 >
                   ec.europa.eu/consumers/odr
                 </a>
@@ -511,7 +517,7 @@ export default function RefundPolicy() {
           {/* 10. Chargeback Policy */}
           <section>
             <h2 className="font-display text-2xl text-ink mb-4">10. Chargeback Policy</h2>
-            <p className="text-warmgray leading-relaxed">
+            <p className="text-ink-soft leading-relaxed">
               We kindly ask that you contact us before initiating a chargeback with your bank or
               card issuer. Chargebacks are costly and time-consuming for both parties. We are
               committed to resolving refund requests quickly and fairly. If you initiate a
@@ -523,35 +529,35 @@ export default function RefundPolicy() {
           {/* 11. Model Cancellation Form */}
           <section>
             <h2 className="font-display text-2xl text-ink mb-4">11. Model Cancellation Form</h2>
-            <p className="text-warmgray leading-relaxed">
+            <p className="text-ink-soft leading-relaxed">
               As required by the Consumer Contracts Regulations 2013, you may use the following
               model form to cancel your contract within the cooling-off period. This form is
               optional — you may also contact us by email.
             </p>
-            <div className="bg-sepia/5 border border-sepia/20 rounded-lg p-6 mt-4">
-              <p className="text-warmgray leading-relaxed">
+            <div className="bg-sepia-50 border border-sepia-200/70 rounded-2xl p-6 mt-4">
+              <p className="text-ink-soft leading-relaxed">
                 <strong>To:</strong> Easy Memoir Ltd, refunds@easymemoir.co.uk
               </p>
-              <p className="text-warmgray leading-relaxed mt-2">
+              <p className="text-ink-soft leading-relaxed mt-2">
                 I hereby give notice that I cancel my contract for the supply of the following
                 service/digital content:
               </p>
-              <p className="text-warmgray leading-relaxed mt-2">
+              <p className="text-ink-soft leading-relaxed mt-2">
                 <em>[Description of product/service purchased]</em>
               </p>
-              <p className="text-warmgray leading-relaxed mt-2">
+              <p className="text-ink-soft leading-relaxed mt-2">
                 Ordered on: <em>[Date]</em>
               </p>
-              <p className="text-warmgray leading-relaxed mt-2">
+              <p className="text-ink-soft leading-relaxed mt-2">
                 Name: <em>[Your name]</em>
               </p>
-              <p className="text-warmgray leading-relaxed mt-2">
+              <p className="text-ink-soft leading-relaxed mt-2">
                 Email address: <em>[Your registered email]</em>
               </p>
-              <p className="text-warmgray leading-relaxed mt-2">
+              <p className="text-ink-soft leading-relaxed mt-2">
                 Date: <em>[Today's date]</em>
               </p>
-              <p className="text-warmgray leading-relaxed mt-2">
+              <p className="text-ink-soft leading-relaxed mt-2">
                 Signature (if sent by post): <em>[Your signature]</em>
               </p>
             </div>
@@ -560,7 +566,7 @@ export default function RefundPolicy() {
           {/* 12. Changes to This Policy */}
           <section>
             <h2 className="font-display text-2xl text-ink mb-4">12. Changes to This Policy</h2>
-            <p className="text-warmgray leading-relaxed">
+            <p className="text-ink-soft leading-relaxed">
               We may update this Refund Policy from time to time. Any changes will be posted on this
               page with an updated "Last updated" date. If we make significant changes that affect
               your rights, we will notify you by email. Changes do not apply retrospectively — if
@@ -572,17 +578,17 @@ export default function RefundPolicy() {
           {/* 13. Contact */}
           <section>
             <h2 className="font-display text-2xl text-ink mb-4">13. Contact Us</h2>
-            <p className="text-warmgray leading-relaxed">
+            <p className="text-ink-soft leading-relaxed">
               For refund requests, guarantee claims, or questions about this policy:
             </p>
-            <p className="text-warmgray mt-2">
+            <p className="text-ink-soft mt-2">
               Email:{' '}
-              <a href="mailto:refunds@easymemoir.co.uk" className="text-sepia hover:underline">
+              <a href="mailto:refunds@easymemoir.co.uk" className="text-bronze-700 hover:underline">
                 refunds@easymemoir.co.uk
               </a>
               <br />
               General enquiries:{' '}
-              <a href="mailto:legal@easymemoir.co.uk" className="text-sepia hover:underline">
+              <a href="mailto:legal@easymemoir.co.uk" className="text-bronze-700 hover:underline">
                 legal@easymemoir.co.uk
               </a>
               <br />
@@ -593,17 +599,17 @@ export default function RefundPolicy() {
           </section>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-sepia/20 flex flex-wrap gap-6">
-          <Link to="/" className="text-sepia hover:underline">
+        <div className="mt-12 pt-8 border-t border-sepia-200 flex flex-wrap gap-6">
+          <Link to="/" className="text-bronze-700 hover:underline">
             ← Back to Home
           </Link>
-          <Link to="/terms" className="text-sepia hover:underline">
+          <Link to="/terms" className="text-bronze-700 hover:underline">
             Terms and Conditions
           </Link>
-          <Link to="/cancellation" className="text-sepia hover:underline">
+          <Link to="/cancellation" className="text-bronze-700 hover:underline">
             Cancellation Policy
           </Link>
-          <Link to="/privacy" className="text-sepia hover:underline">
+          <Link to="/privacy" className="text-bronze-700 hover:underline">
             Privacy Policy
           </Link>
         </div>

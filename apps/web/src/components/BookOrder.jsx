@@ -6,6 +6,14 @@ import BookMockup from './book-order/BookMockup'
 import FormatSelector from './book-order/FormatSelector'
 import ColorSelector from './book-order/ColorSelector'
 import QuantitySelector from './book-order/QuantitySelector'
+import { Button, Card, Field, Input, ProgressBar, Skeleton } from './ui'
+
+const SELECT_CLASSES = [
+  'w-full px-4 py-3 rounded-xl text-base text-ink bg-surface',
+  'border border-sepia-200 hover:border-sepia-300',
+  'focus:border-bronze-400 focus:ring-4 focus:ring-bronze-500/10 focus:outline-none',
+  'transition-colors duration-150'
+].join(' ')
 
 const makeShippingState = userName => ({
   name: '',
@@ -110,8 +118,8 @@ export default function BookOrder({ userName, pageCount, onClose }) {
   if (loading) return <LoadingOverlay />
 
   return (
-    <div className="fixed inset-0 bg-ink/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 sm:p-4">
-      <div className="bg-gradient-to-b from-[#fdfcf9] to-[#f8f5ef] rounded-t-2xl sm:rounded-2xl w-full max-w-5xl max-h-[95vh] sm:max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 bg-ink/40 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 sm:p-4">
+      <div className="bg-parchment rounded-t-3xl sm:rounded-3xl w-full max-w-5xl max-h-[95vh] sm:max-h-[90vh] flex flex-col shadow-modal overflow-hidden">
         <WizardHeader step={step} onClose={onClose} />
         <div className="flex-1 overflow-hidden flex">
           {step === 1 && options && (
@@ -149,11 +157,15 @@ export default function BookOrder({ userName, pageCount, onClose }) {
 
 function LoadingOverlay() {
   return (
-    <div className="fixed inset-0 bg-ink/40 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl p-8 text-center shadow-2xl">
-        <div className="animate-spin w-10 h-10 border-3 border-sepia border-t-transparent rounded-full mx-auto mb-4" />
-        <p className="text-sepia">Preparing your book studio...</p>
-      </div>
+    <div className="fixed inset-0 bg-ink/40 backdrop-blur-sm flex items-center justify-center z-50 p-6">
+      <Card className="w-full max-w-sm">
+        <p className="text-sepia-600 text-sm mb-4">Preparing your book studio...</p>
+        <div className="space-y-3">
+          <Skeleton className="h-6 w-3/4" />
+          <Skeleton className="h-6" />
+          <Skeleton className="h-6 w-1/2" />
+        </div>
+      </Card>
     </div>
   )
 }
@@ -166,40 +178,25 @@ function WizardHeader({ step, onClose }) {
   const labels = ['Design', 'Shipping', 'Review', 'Done']
 
   return (
-    <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-sepia/10 flex justify-between items-center bg-white/50">
+    <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-sepia-100 flex justify-between items-start gap-4 bg-surface/60">
       <div className="min-w-0 flex-1">
-        <h2 className="text-xl sm:text-2xl font-serif text-ink">Create Your Book</h2>
-        <div className="flex items-center gap-1 sm:gap-2 mt-1 overflow-x-auto">
-          {labels.map((label, i) => (
-            <div key={i} className="flex items-center flex-shrink-0">
-              <div
-                className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-medium ${
-                  step > i + 1
-                    ? 'bg-green-500 text-white'
-                    : step === i + 1
-                      ? 'bg-sepia text-white'
-                      : 'bg-sepia/20 text-sepia/60'
-                }`}
-              >
-                {step > i + 1 ? '\u2713' : i + 1}
-              </div>
-              <span
-                className={`ml-1 text-[10px] sm:text-xs hidden xs:inline ${
-                  step === i + 1 ? 'text-ink font-medium' : 'text-sepia/60'
-                }`}
-              >
-                {label}
-              </span>
-              {i < 3 && <div className="w-4 sm:w-8 h-0.5 mx-1 sm:mx-2 bg-sepia/20" />}
-            </div>
-          ))}
-        </div>
+        <p className="eyebrow mb-1">
+          Step {step} of {labels.length} &middot; {labels[step - 1]}
+        </p>
+        <h2 className="text-xl sm:text-2xl font-display text-ink">Create Your Book</h2>
+        <ProgressBar
+          value={(step / labels.length) * 100}
+          className="mt-3 max-w-xs"
+          label="Order progress"
+        />
       </div>
       <button
+        type="button"
         onClick={onClose}
-        className="flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full hover:bg-sepia/10 text-sepia/60 hover:text-sepia transition ml-2"
+        aria-label="Close"
+        className="shrink-0 -mr-1 p-2 rounded-full text-sepia-400 hover:text-ink hover:bg-sepia-100/70 transition-colors"
       >
-        <IconX size={22} stroke={2} />
+        <IconX size={20} stroke={1.75} />
       </button>
     </div>
   )
@@ -207,46 +204,46 @@ function WizardHeader({ step, onClose }) {
 
 function WizardFooter({ step, cost, calculating, shippingValid, onBack, onNext, onOrder }) {
   const priceEl = calculating ? (
-    <span className="hidden sm:block text-sm text-sepia/60 animate-pulse">
+    <span className="hidden sm:block text-sm text-sepia-500 animate-pulse">
       Calculating price...
     </span>
   ) : cost ? (
     <div className="hidden sm:block">
-      <span className="text-2xl font-medium text-ink">${cost.breakdown.total.toFixed(2)}</span>
-      <span className="text-sm text-sepia/60 ml-2">estimated total</span>
+      <span className="text-2xl font-display text-ink">${cost.breakdown.total.toFixed(2)}</span>
+      <span className="text-sm text-sepia-500 ml-2">estimated total</span>
     </div>
   ) : (
     <div className="hidden sm:block" />
   )
 
   return (
-    <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-sepia/10 bg-white/50">
+    <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-sepia-100 bg-surface/60">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         {priceEl}
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
           {step > 1 && (
-            <button
+            <Button
+              variant="ghost"
+              size="lg"
               onClick={onBack}
-              className="w-full sm:w-auto px-6 py-3 border border-sepia/30 text-sepia rounded-xl hover:bg-sepia/5 transition font-medium order-2 sm:order-1"
+              className="w-full sm:w-auto order-2 sm:order-1"
             >
               Back
-            </button>
+            </Button>
           )}
           {step < 3 ? (
-            <button
+            <Button
+              size="lg"
               onClick={onNext}
               disabled={step === 2 && !shippingValid}
-              className="w-full sm:w-auto px-8 py-3.5 sm:py-3 bg-sepia text-white rounded-xl hover:bg-sepia/90 disabled:opacity-40 transition font-medium order-1 sm:order-2"
+              className="w-full sm:w-auto order-1 sm:order-2"
             >
               Continue
-            </button>
+            </Button>
           ) : (
-            <button
-              onClick={onOrder}
-              className="w-full sm:w-auto px-8 py-3.5 sm:py-3 bg-ink text-white rounded-xl hover:bg-ink/90 transition font-medium order-1 sm:order-2"
-            >
+            <Button size="lg" onClick={onOrder} className="w-full sm:w-auto order-1 sm:order-2">
               Complete Order Preview
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -261,19 +258,19 @@ function WizardFooter({ step, cost, calculating, shippingValid, onBack, onNext, 
 function StepDesign({ config, options, shipping, cost, onConfigChange }) {
   return (
     <>
-      <div className="hidden lg:flex w-80 bg-gradient-to-br from-sepia/5 to-sepia/10 flex-col items-center justify-center p-8 border-r border-sepia/10">
+      <div className="hidden lg:flex w-80 bg-sepia-50 flex-col items-center justify-center p-8 border-r border-sepia-100">
         <BookMockup config={config} options={options} title={shipping.bookTitle} />
         <div className="mt-8 text-center">
-          <div className="text-2xl font-serif text-ink">{shipping.bookTitle}</div>
-          <div className="text-sm text-sepia/60 mt-1">
+          <div className="text-2xl font-display text-ink">{shipping.bookTitle}</div>
+          <div className="text-sm text-sepia-500 mt-1">
             {options.trimSizes.find(s => s.id === config.trimSize)?.width}" x{' '}
             {options.trimSizes.find(s => s.id === config.trimSize)?.height}"
           </div>
-          <div className="text-sm text-sepia/60">
+          <div className="text-sm text-sepia-500">
             {options.bindingTypes.find(b => b.id === config.binding)?.name}
           </div>
           {cost && (
-            <div className="mt-4 text-3xl font-medium text-ink">
+            <div className="mt-4 text-3xl font-display text-ink">
               ${cost.breakdown.total.toFixed(2)}
             </div>
           )}
@@ -349,58 +346,70 @@ function StepShipping({ options, shipping, onShippingChange }) {
 
 function CountrySelect({ countries, value, onChange }) {
   return (
-    <div>
-      <label className="block text-sm font-medium text-ink mb-2">Country *</label>
-      <select
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        className="w-full px-4 py-3 border border-sepia/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-sepia/30 bg-white"
-      >
-        {countries.map(c => (
-          <option key={c.code} value={c.code}>
-            {c.name}
-          </option>
-        ))}
-      </select>
-    </div>
+    <Field label="Country *">
+      {id => (
+        <select
+          id={id}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          className={SELECT_CLASSES}
+        >
+          {countries.map(c => (
+            <option key={c.code} value={c.code}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+      )}
+    </Field>
   )
 }
 
 function ShippingSpeedPicker({ levels, selected, onSelect }) {
   return (
-    <div>
-      <label className="block text-sm font-medium text-ink mb-3">Shipping Speed</label>
-      <div className="grid grid-cols-2 gap-4">
-        {levels.map(level => (
-          <button
-            key={level.id}
-            onClick={() => onSelect(level.id)}
-            className={`p-4 border rounded-xl transition text-left ${
-              selected === level.id
-                ? 'border-sepia bg-sepia/10 shadow-md'
-                : 'border-sepia/20 hover:border-sepia/40'
-            }`}
-          >
-            <div className="font-medium text-ink">{level.name}</div>
-            <div className="text-sm text-sepia/60">{level.days}</div>
-          </button>
-        ))}
-      </div>
-    </div>
+    <Field label="Shipping Speed">
+      {() => (
+        <div className="grid grid-cols-2 gap-4">
+          {levels.map(level => (
+            <button
+              key={level.id}
+              type="button"
+              onClick={() => onSelect(level.id)}
+              className={`relative p-4 min-h-[44px] border rounded-2xl text-left transition-all duration-200 bg-surface ${
+                selected === level.id
+                  ? 'border-bronze-400 ring-4 ring-bronze-500/10'
+                  : 'border-sepia-200 hover:border-sepia-300'
+              }`}
+            >
+              {selected === level.id && (
+                <span className="absolute top-3 right-3 w-5 h-5 rounded-full bg-bronze-500 text-white flex items-center justify-center">
+                  <IconCheck size={12} stroke={3} />
+                </span>
+              )}
+              <div className="font-medium text-ink">{level.name}</div>
+              <div className="text-sm text-sepia-600">{level.days}</div>
+            </button>
+          ))}
+        </div>
+      )}
+    </Field>
   )
 }
 
 function ShippingField({ label, value, onChange, type = 'text', className = '' }) {
   return (
-    <div>
-      <label className="block text-sm font-medium text-ink mb-2">{label}</label>
-      <input
-        type={type}
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        className={`w-full px-4 py-3 border border-sepia/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-sepia/30 ${className}`}
-      />
-    </div>
+    <Field label={label}>
+      {(id, describedBy) => (
+        <Input
+          id={id}
+          aria-describedby={describedBy}
+          type={type}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          className={className}
+        />
+      )}
+    </Field>
   )
 }
 
@@ -412,8 +421,8 @@ function StepReview({ config, options, shipping, cost }) {
   return (
     <div className="flex-1 overflow-y-auto p-6">
       <div className="max-w-3xl mx-auto grid md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-2xl p-6 shadow-sm">
-          <h3 className="font-medium text-ink mb-4 text-lg">Your Book</h3>
+        <Card>
+          <h3 className="font-display text-ink mb-4 text-lg">Your Book</h3>
           <div className="flex justify-center mb-6">
             <BookMockup config={config} options={options} title={shipping.bookTitle} />
           </div>
@@ -425,10 +434,10 @@ function StepReview({ config, options, shipping, cost }) {
             <DLRow label="Cover" value={find(options?.coverFinishes, config.finish)?.name} />
             <DLRow label="Quantity" value={config.quantity} />
           </dl>
-        </div>
+        </Card>
         <div className="space-y-6">
-          <div className="bg-white rounded-2xl p-6 shadow-sm">
-            <h3 className="font-medium text-ink mb-4 text-lg">Shipping To</h3>
+          <Card>
+            <h3 className="font-display text-ink mb-4 text-lg">Shipping To</h3>
             <p className="text-ink">
               {shipping.name}
               <br />
@@ -438,10 +447,10 @@ function StepReview({ config, options, shipping, cost }) {
               <br />
               {countryName}
             </p>
-            <p className="text-sm text-sepia/70 mt-3">
+            <p className="text-sm text-sepia-600 mt-3">
               {shLevel?.name} - {shLevel?.days}
             </p>
-          </div>
+          </Card>
           {cost && <CostSummary cost={cost} />}
         </div>
       </div>
@@ -452,7 +461,7 @@ function StepReview({ config, options, shipping, cost }) {
 function DLRow({ label, value }) {
   return (
     <div className="flex justify-between">
-      <dt className="text-sepia/70">{label}</dt>
+      <dt className="text-sepia-600">{label}</dt>
       <dd className="text-ink font-medium">{value}</dd>
     </div>
   )
@@ -461,18 +470,18 @@ function DLRow({ label, value }) {
 function CostSummary({ cost }) {
   const { printing, shipping, tax, total } = cost.breakdown
   return (
-    <div className="bg-gradient-to-br from-sepia/5 to-sepia/10 rounded-2xl p-6 border border-sepia/20">
-      <h3 className="font-medium text-ink mb-4 text-lg">Order Total</h3>
+    <Card>
+      <h3 className="font-display text-ink mb-4 text-lg">Order Total</h3>
       <dl className="space-y-2">
         <DLRow label="Printing" value={`$${printing.toFixed(2)}`} />
         <DLRow label="Shipping" value={`$${shipping.toFixed(2)}`} />
         <DLRow label="Tax" value={`$${tax.toFixed(2)}`} />
-        <div className="flex justify-between pt-3 border-t border-sepia/20 text-xl font-medium">
-          <dt className="text-ink">Total</dt>
-          <dd className="text-ink">${total.toFixed(2)}</dd>
+        <div className="flex justify-between items-baseline pt-3 border-t border-sepia-200/70">
+          <dt className="text-ink font-medium">Total</dt>
+          <dd className="text-2xl font-display text-ink">${total.toFixed(2)}</dd>
         </div>
       </dl>
-    </div>
+    </Card>
   )
 }
 
@@ -480,20 +489,17 @@ function StepComplete({ onClose }) {
   return (
     <div className="flex-1 flex items-center justify-center p-6">
       <div className="text-center max-w-md">
-        <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-          <IconCheck size={48} className="text-green-600" stroke={2} />
+        <div className="w-16 h-16 bg-success-soft text-success rounded-full flex items-center justify-center mx-auto mb-6">
+          <IconCheck size={32} stroke={1.5} />
         </div>
-        <h3 className="text-3xl font-serif text-ink mb-4">Configuration Saved!</h3>
-        <p className="text-sepia/70 mb-8">
+        <h3 className="text-3xl font-display text-ink mb-4">Configuration Saved!</h3>
+        <p className="text-sepia-600 mb-8">
           Your book configuration has been saved. Full PDF generation and payment processing coming
           soon.
         </p>
-        <button
-          onClick={onClose}
-          className="px-8 py-4 bg-ink text-white rounded-xl hover:bg-ink/90 transition text-lg font-medium"
-        >
+        <Button size="lg" onClick={onClose}>
           Return to Export
-        </button>
+        </Button>
       </div>
     </div>
   )

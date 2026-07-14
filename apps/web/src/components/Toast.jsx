@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, createContext, useContext } from 'react'
+import { IconCircleCheck, IconAlertCircle, IconInfoCircle, IconX } from '@tabler/icons-react'
 
 const ToastContext = createContext(null)
 
@@ -43,12 +44,22 @@ function ToastContainer({ toasts, onDismiss }) {
   if (toasts.length === 0) return null
 
   return (
-    <div className="fixed bottom-4 right-4 z-[9999] flex flex-col gap-2 max-w-sm">
+    <div
+      className="fixed bottom-4 right-4 left-4 sm:left-auto z-[9999] flex flex-col gap-2 sm:max-w-sm pb-safe"
+      role="region"
+      aria-label="Notifications"
+    >
       {toasts.map(toast => (
         <ToastItem key={toast.id} toast={toast} onDismiss={() => onDismiss(toast.id)} />
       ))}
     </div>
   )
+}
+
+const TOAST_ICONS = {
+  success: <IconCircleCheck size={20} stroke={1.75} className="text-success" />,
+  error: <IconAlertCircle size={20} stroke={1.75} className="text-error" />,
+  info: <IconInfoCircle size={20} stroke={1.75} className="text-info" />
 }
 
 function ToastItem({ toast, onDismiss }) {
@@ -58,25 +69,22 @@ function ToastItem({ toast, onDismiss }) {
     requestAnimationFrame(() => setVisible(true))
   }, [])
 
-  const bgColor =
-    {
-      success: 'bg-green-50 border-green-200 text-green-800',
-      error: 'bg-red-50 border-red-200 text-red-800',
-      info: 'bg-blue-50 border-blue-200 text-blue-800'
-    }[toast.type] || 'bg-white border-sepia/20 text-ink'
-
   return (
     <div
-      className={`${bgColor} border rounded-xl px-4 py-3 shadow-lg flex items-center gap-3 transition-all duration-300 ${
-        visible ? 'translate-x-0 opacity-100' : 'translate-x-8 opacity-0'
+      role="status"
+      className={`bg-surface border border-sepia-200/70 rounded-2xl px-4 py-3.5 shadow-lifted flex items-center gap-3 transition-all duration-300 ease-spring ${
+        visible ? 'translate-y-0 opacity-100' : 'translate-y-3 opacity-0'
       }`}
     >
-      <p className="text-sm flex-1">{toast.message}</p>
+      <span className="shrink-0">{TOAST_ICONS[toast.type] || TOAST_ICONS.info}</span>
+      <p className="text-sm text-ink flex-1">{toast.message}</p>
       <button
+        type="button"
         onClick={onDismiss}
-        className="text-current/50 hover:text-current/80 text-lg leading-none"
+        aria-label="Dismiss"
+        className="shrink-0 p-1 -mr-1 rounded-full text-sepia-400 hover:text-ink hover:bg-sepia-100/70 transition-colors"
       >
-        &times;
+        <IconX size={16} stroke={2} />
       </button>
     </div>
   )

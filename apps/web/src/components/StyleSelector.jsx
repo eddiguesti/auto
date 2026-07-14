@@ -1,6 +1,14 @@
 import { useState } from 'react'
-import { IconBook, IconFeather, IconSun, IconAnchor, IconCheck, IconSparkles } from '@tabler/icons-react'
+import {
+  IconBook,
+  IconFeather,
+  IconSun,
+  IconAnchor,
+  IconCheck,
+  IconSparkles
+} from '@tabler/icons-react'
 import { styleOptions } from '../data/styleOptions'
+import { Button } from './ui'
 
 const authorIcons = {
   hemingway: IconBook,
@@ -8,6 +16,11 @@ const authorIcons = {
   angelou: IconSun,
   twain: IconAnchor
 }
+
+const SELECTABLE_BASE =
+  'w-full text-left rounded-2xl border bg-surface transition-all cursor-pointer'
+const SELECTED = 'border-bronze-400 ring-4 ring-bronze-500/10'
+const UNSELECTED = 'border-sepia-200 hover:border-sepia-300'
 
 function StyleSelector({
   selectedTones = [],
@@ -20,7 +33,7 @@ function StyleSelector({
 }) {
   const [expandedSample, setExpandedSample] = useState(null)
 
-  const toggleTone = (toneId) => {
+  const toggleTone = toneId => {
     if (selectedTones.includes(toneId)) {
       onTonesChange(selectedTones.filter(t => t !== toneId))
     } else {
@@ -29,14 +42,14 @@ function StyleSelector({
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       {/* Tone Selection - Multi-select */}
       <section>
-        <h3 className="text-lg font-semibold text-sepia mb-2 flex items-center gap-2">
-          <IconSparkles size={20} className="text-accent" />
+        <h3 className="text-lg font-display text-ink mb-1 flex items-center gap-2">
+          <IconSparkles size={20} stroke={1.75} className="text-bronze-500" />
           Writing Tone
         </h3>
-        <p className="text-sm text-sepia/60 mb-4">Select one or more tones to blend together</p>
+        <p className="text-sm text-sepia-600 mb-4">Select one or more tones to blend together</p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {styleOptions.tones.map(tone => {
@@ -46,42 +59,29 @@ function StyleSelector({
                 <button
                   type="button"
                   onClick={() => toggleTone(tone.id)}
-                  className={`w-full text-left p-4 rounded-xl border-2 transition-all cursor-pointer ${
-                    isSelected
-                      ? 'border-accent bg-accent/10'
-                      : 'border-sepia/20 hover:border-sepia/40 bg-white'
-                  }`}
+                  className={`${SELECTABLE_BASE} p-4 ${isSelected ? SELECTED : UNSELECTED}`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                      isSelected ? 'border-accent bg-accent' : 'border-sepia/30'
-                    }`}>
-                      {isSelected && <IconCheck size={14} className="text-white" />}
+                    <div
+                      className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 mt-0.5 ${
+                        isSelected ? 'border-bronze-500 bg-bronze-500' : 'border-sepia-300'
+                      }`}
+                    >
+                      {isSelected && <IconCheck size={14} stroke={2.5} className="text-white" />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-sepia">{tone.name}</h4>
-                      <p className="text-sm text-sepia/60 mt-0.5">{tone.description}</p>
+                      <h4 className="font-medium text-ink">{tone.name}</h4>
+                      <p className="text-sm text-sepia-600 mt-0.5">{tone.description}</p>
                     </div>
                   </div>
                 </button>
 
-                {/* Sample preview toggle */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setExpandedSample(expandedSample === tone.id ? null : tone.id)
-                  }}
-                  className="absolute top-3 right-3 text-xs text-accent hover:underline z-10"
-                >
-                  {expandedSample === tone.id ? 'Hide sample' : 'See sample'}
-                </button>
-
-                {/* Sample text */}
-                {expandedSample === tone.id && (
-                  <div className="mt-2 p-3 bg-cream/50 rounded-lg text-sm text-sepia/80 italic border border-sepia/10">
-                    "{tone.sample}"
-                  </div>
-                )}
+                <SampleToggle
+                  id={tone.id}
+                  expandedSample={expandedSample}
+                  onToggle={setExpandedSample}
+                />
+                {expandedSample === tone.id && <SampleWell text={tone.sample} />}
               </div>
             )
           })}
@@ -90,8 +90,8 @@ function StyleSelector({
 
       {/* Narrative Style - Single select */}
       <section>
-        <h3 className="text-lg font-semibold text-sepia mb-2">Narrative Style</h3>
-        <p className="text-sm text-sepia/60 mb-4">Choose how the story is told</p>
+        <h3 className="text-lg font-display text-ink mb-1">Narrative Style</h3>
+        <p className="text-sm text-sepia-600 mb-4">Choose how the story is told</p>
 
         <div className="space-y-3">
           {styleOptions.narratives.map(narrative => {
@@ -101,40 +101,29 @@ function StyleSelector({
                 <button
                   type="button"
                   onClick={() => onNarrativeChange(isSelected ? null : narrative.id)}
-                  className={`w-full text-left p-4 rounded-xl border-2 transition-all cursor-pointer ${
-                    isSelected
-                      ? 'border-accent bg-accent/10'
-                      : 'border-sepia/20 hover:border-sepia/40 bg-white'
-                  }`}
+                  className={`${SELECTABLE_BASE} p-4 ${isSelected ? SELECTED : UNSELECTED}`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                      isSelected ? 'border-accent' : 'border-sepia/30'
-                    }`}>
-                      {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-accent" />}
+                    <div
+                      className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 mt-0.5 ${
+                        isSelected ? 'border-bronze-500' : 'border-sepia-300'
+                      }`}
+                    >
+                      {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-bronze-500" />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-sepia">{narrative.name}</h4>
-                      <p className="text-sm text-sepia/60 mt-0.5">{narrative.description}</p>
+                      <h4 className="font-medium text-ink">{narrative.name}</h4>
+                      <p className="text-sm text-sepia-600 mt-0.5">{narrative.description}</p>
                     </div>
                   </div>
                 </button>
 
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setExpandedSample(expandedSample === narrative.id ? null : narrative.id)
-                  }}
-                  className="absolute top-3 right-3 text-xs text-accent hover:underline z-10"
-                >
-                  {expandedSample === narrative.id ? 'Hide sample' : 'See sample'}
-                </button>
-
-                {expandedSample === narrative.id && (
-                  <div className="mt-2 p-3 bg-cream/50 rounded-lg text-sm text-sepia/80 italic border border-sepia/10">
-                    "{narrative.sample}"
-                  </div>
-                )}
+                <SampleToggle
+                  id={narrative.id}
+                  expandedSample={expandedSample}
+                  onToggle={setExpandedSample}
+                />
+                {expandedSample === narrative.id && <SampleWell text={narrative.sample} />}
               </div>
             )
           })}
@@ -143,8 +132,10 @@ function StyleSelector({
 
       {/* Author Style - Single select with cards */}
       <section>
-        <h3 className="text-lg font-semibold text-sepia mb-2">Author Inspiration</h3>
-        <p className="text-sm text-sepia/60 mb-4">Optional: Write in the style of a famous author</p>
+        <h3 className="text-lg font-display text-ink mb-1">Author Inspiration</h3>
+        <p className="text-sm text-sepia-600 mb-4">
+          Optional: Write in the style of a famous author
+        </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {styleOptions.authors.map(author => {
@@ -156,45 +147,34 @@ function StyleSelector({
                 <button
                   type="button"
                   onClick={() => onAuthorChange(isSelected ? null : author.id)}
-                  className={`w-full text-left p-5 rounded-xl border-2 transition-all cursor-pointer ${
-                    isSelected
-                      ? 'border-accent bg-gradient-to-br from-accent/10 to-accent/5'
-                      : 'border-sepia/20 hover:border-sepia/40 bg-white hover:bg-cream/30'
-                  }`}
+                  className={`${SELECTABLE_BASE} p-5 ${isSelected ? SELECTED : UNSELECTED}`}
                 >
                   <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                      isSelected ? 'bg-accent text-white' : 'bg-sepia/10 text-sepia/60'
-                    }`}>
+                    <div
+                      className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${
+                        isSelected ? 'bg-bronze-500 text-white' : 'bg-sepia-100 text-sepia-600'
+                      }`}
+                    >
                       <Icon size={24} stroke={1.5} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-sepia">{author.name}</h4>
-                      <p className="text-sm text-sepia/60">{author.description}</p>
+                      <h4 className="font-medium text-ink">{author.name}</h4>
+                      <p className="text-sm text-sepia-600">{author.description}</p>
                     </div>
                     {isSelected && (
-                      <div className="w-6 h-6 rounded-full bg-accent flex items-center justify-center flex-shrink-0">
-                        <IconCheck size={16} className="text-white" />
+                      <div className="w-6 h-6 rounded-full bg-bronze-500 flex items-center justify-center shrink-0">
+                        <IconCheck size={16} stroke={2.5} className="text-white" />
                       </div>
                     )}
                   </div>
                 </button>
 
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setExpandedSample(expandedSample === author.id ? null : author.id)
-                  }}
-                  className="absolute top-3 right-3 text-xs text-accent hover:underline z-10"
-                >
-                  {expandedSample === author.id ? 'Hide sample' : 'See sample'}
-                </button>
-
-                {expandedSample === author.id && (
-                  <div className="mt-2 p-3 bg-cream/50 rounded-lg text-sm text-sepia/80 italic border border-sepia/10">
-                    "{author.sample}"
-                  </div>
-                )}
+                <SampleToggle
+                  id={author.id}
+                  expandedSample={expandedSample}
+                  onToggle={setExpandedSample}
+                />
+                {expandedSample === author.id && <SampleWell text={author.sample} />}
               </div>
             )
           })}
@@ -203,19 +183,43 @@ function StyleSelector({
 
       {/* Preview button */}
       {onPreviewSample && (selectedTones.length > 0 || selectedNarrative || selectedAuthor) && (
-        <div className="pt-4 border-t border-sepia/10">
-          <button
+        <div className="pt-6 border-t border-sepia-100">
+          <Button
+            variant="secondary"
+            size="xl"
             onClick={onPreviewSample}
-            className="w-full py-3 px-6 bg-accent hover:bg-accent/90 text-white font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
+            icon={<IconSparkles size={20} stroke={1.75} />}
           >
-            <IconSparkles size={20} />
             Preview Style on My Story
-          </button>
-          <p className="text-xs text-sepia/50 text-center mt-2">
+          </Button>
+          <p className="text-xs text-sepia-500 text-center mt-3">
             See how your selections will transform a sample from your memoir
           </p>
         </div>
       )}
+    </div>
+  )
+}
+
+function SampleToggle({ id, expandedSample, onToggle }) {
+  return (
+    <button
+      type="button"
+      onClick={e => {
+        e.stopPropagation()
+        onToggle(expandedSample === id ? null : id)
+      }}
+      className="absolute top-3 right-3 text-xs font-medium text-bronze-700 hover:underline z-10"
+    >
+      {expandedSample === id ? 'Hide sample' : 'See sample'}
+    </button>
+  )
+}
+
+function SampleWell({ text }) {
+  return (
+    <div className="mt-2 p-4 bg-sepia-50 border border-sepia-100 rounded-xl text-sm text-sepia-700 font-serif italic">
+      "{text}"
     </div>
   )
 }

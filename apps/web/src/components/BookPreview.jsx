@@ -1,4 +1,5 @@
 import { useEffect, memo } from 'react'
+import { IconChevronLeft, IconChevronRight, IconX } from '@tabler/icons-react'
 import { useBookRenderer } from '../hooks/useBookRenderer'
 import { STYLES } from './BookPreview.styles'
 
@@ -102,45 +103,16 @@ function Header({
       </div>
       <div className="bp3-nav">
         <button className="bp3-btn" onClick={onPrev} disabled={view === 0}>
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-          >
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
+          <IconChevronLeft size={14} stroke={2} />
           Prev
         </button>
         <span className="bp3-cnt">{viewLabels[view] || ''}</span>
         <button className="bp3-btn" onClick={onNext} disabled={view >= sheetCount}>
           Next
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-          >
-            <path d="M9 18l6-6-6-6" />
-          </svg>
+          <IconChevronRight size={14} stroke={2} />
         </button>
         <button className="bp3-x" onClick={onClose} aria-label="Close">
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-          >
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
+          <IconX size={16} stroke={2} />
         </button>
       </div>
     </div>

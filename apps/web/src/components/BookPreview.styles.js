@@ -3,7 +3,7 @@ export const STYLES = `
   position: fixed; inset: 0; z-index: 9999;
   display: flex; align-items: center; justify-content: center;
   padding: 14px;
-  background: rgba(0,0,0,.92);
+  background: rgba(41,36,32,.94);
   backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
   animation: bp3In .3s;
 }
@@ -27,12 +27,12 @@ export const STYLES = `
   border: 1px solid rgba(255,255,255,.08);
   background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
   backdrop-filter: blur(8px);
-  box-shadow: 0 2px 8px rgba(0,0,0,.2);
+  box-shadow: 0 2px 8px rgba(41,36,32,.25);
 }
 .bp3-dot {
   width: 9px; height: 9px; border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #d4a574, rgba(180,140,90,.4));
-  box-shadow: 0 0 0 2.5px rgba(212,165,116,.1);
+  background: radial-gradient(circle at 35% 35%, #CC9C52, rgba(156,126,93,.4));
+  box-shadow: 0 0 0 2.5px rgba(204,156,82,.1);
 }
 .bp3-bname { font-weight: 700; color: rgba(255,255,255,.9); font-size: 13px; letter-spacing: -.01em }
 .bp3-bmeta { color: rgba(255,255,255,.4); font-size: 10px; margin-top: 1px }
@@ -45,7 +45,7 @@ export const STYLES = `
   color: rgba(255,255,255,.75);
   font-size: 12px; font-weight: 500;
   cursor: pointer; transition: .15s; font-family: inherit;
-  box-shadow: 0 2px 8px rgba(0,0,0,.2);
+  box-shadow: 0 2px 8px rgba(41,36,32,.25);
   backdrop-filter: blur(8px);
 }
 .bp3-btn:hover:not(:disabled) { background: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.08)); color: #fff }
@@ -64,11 +64,11 @@ export const STYLES = `
   background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
   color: rgba(255,255,255,.55);
   cursor: pointer; transition: .15s;
-  box-shadow: 0 2px 8px rgba(0,0,0,.2);
+  box-shadow: 0 2px 8px rgba(41,36,32,.25);
   backdrop-filter: blur(8px);
   margin-left: 2px;
 }
-.bp3-x:hover { background: rgba(255,70,70,.2); border-color: rgba(255,70,70,.25); color: #fff }
+.bp3-x:hover { background: rgba(176,68,44,.3); border-color: rgba(176,68,44,.4); color: #fff }
 .bp3-shell {
   width: min(1200px, 98vw);
   height: min(780px, 78vh);
@@ -86,8 +86,8 @@ export const STYLES = `
 .bp3-loader p { color: rgba(255,255,255,.45); font-size: 12px }
 .bp3-spin {
   width: 28px; height: 28px;
-  border: 2px solid rgba(212,165,116,.12);
-  border-top-color: #d4a574;
+  border: 2px solid rgba(204,156,82,.15);
+  border-top-color: #CC9C52;
   border-radius: 50%;
   animation: bp3Spin .7s linear infinite;
 }
@@ -101,7 +101,7 @@ export const STYLES = `
 }
 .bp3-prog-fill {
   height: 100%;
-  background: linear-gradient(90deg, #8B7355, #d4a574);
+  background: linear-gradient(90deg, #B88336, #CC9C52);
   border-radius: 99px;
   transition: width .5s;
 }

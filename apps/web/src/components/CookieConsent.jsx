@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import { IconArrowLeft, IconCookie } from '@tabler/icons-react'
+import { Badge, Button, Card } from './ui'
 
 export default function CookieConsent() {
   const [visible, setVisible] = useState(false)
@@ -43,136 +45,124 @@ export default function CookieConsent() {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 p-4 sm:p-6">
-      <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl border border-sepia/20 overflow-hidden">
+      <Card padding="md" className="max-w-2xl mx-auto !shadow-lifted">
         {!showPreferences ? (
           // Simple view
-          <div className="p-6">
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                <svg className="w-6 h-6 text-amber-600" viewBox="0 0 24 24" fill="currentColor">
-                  <circle cx="12" cy="12" r="10" fill="currentColor" fillOpacity={0.2} stroke="currentColor" strokeWidth={1.5} />
-                  <circle cx="8" cy="10" r="1.5" />
-                  <circle cx="14" cy="8" r="1" />
-                  <circle cx="16" cy="13" r="1.5" />
-                  <circle cx="10" cy="15" r="1" />
-                  <circle cx="6" cy="14" r="0.75" />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <h3 className="font-display text-xl text-ink mb-2">We value your privacy</h3>
-                <p className="text-sm text-warmgray leading-relaxed mb-4">
-                  We use cookies to enhance your experience, analyse site traffic, and for marketing purposes.
-                  By clicking "Accept All", you consent to our use of cookies.
-                  Read our <a href="/privacy" className="text-sepia underline">Privacy Policy</a> and{' '}
-                  <a href="/cookies" className="text-sepia underline">Cookie Policy</a> for more information.
-                </p>
-                <div className="flex flex-wrap gap-3">
-                  <button
-                    onClick={acceptAll}
-                    className="px-6 py-2.5 bg-ink text-white rounded-full text-sm font-medium hover:bg-sepia transition"
-                  >
-                    Accept All
-                  </button>
-                  <button
-                    onClick={rejectAll}
-                    className="px-6 py-2.5 border border-sepia/30 text-ink rounded-full text-sm font-medium hover:bg-sepia/5 transition"
-                  >
-                    Reject All
-                  </button>
-                  <button
-                    onClick={() => setShowPreferences(true)}
-                    className="px-6 py-2.5 text-sepia text-sm font-medium hover:underline transition"
-                  >
-                    Manage Preferences
-                  </button>
-                </div>
+          <div className="flex items-start gap-4">
+            <div className="w-11 h-11 bg-sepia-100 text-sepia-600 rounded-xl flex items-center justify-center shrink-0">
+              <IconCookie size={24} stroke={1.5} />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-display text-lg text-ink mb-1.5">We value your privacy</h3>
+              <p className="text-sm text-sepia-600 leading-relaxed mb-4">
+                We use cookies to enhance your experience, analyse site traffic, and for marketing
+                purposes. By clicking "Accept All", you consent to our use of cookies. Read our{' '}
+                <a href="/privacy" className="text-bronze-700 hover:text-bronze-800 underline">
+                  Privacy Policy
+                </a>{' '}
+                and{' '}
+                <a href="/cookies" className="text-bronze-700 hover:text-bronze-800 underline">
+                  Cookie Policy
+                </a>{' '}
+                for more information.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button size="md" onClick={acceptAll}>
+                  Accept All
+                </Button>
+                <Button variant="ghost" size="md" onClick={rejectAll}>
+                  Reject All
+                </Button>
+                <Button variant="ghost" size="md" onClick={() => setShowPreferences(true)}>
+                  Manage Preferences
+                </Button>
               </div>
             </div>
           </div>
         ) : (
           // Detailed preferences view
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="font-display text-xl text-ink">Cookie Preferences</h3>
-              <button
+          <div>
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="font-display text-lg text-ink">Cookie Preferences</h3>
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => setShowPreferences(false)}
-                className="text-warmgray hover:text-ink"
+                icon={<IconArrowLeft size={20} stroke={1.75} />}
               >
-                ← Back
-              </button>
+                Back
+              </Button>
             </div>
 
-            <div className="space-y-4 mb-6">
+            <div className="space-y-3 mb-5">
               {/* Necessary Cookies */}
-              <div className="p-4 bg-sepia/5 rounded-xl">
+              <div className="p-4 bg-sepia-50 rounded-xl">
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="font-medium text-ink">Necessary Cookies</h4>
-                  <span className="text-xs bg-sepia/20 text-sepia px-2 py-1 rounded">Always Active</span>
+                  <Badge>Always Active</Badge>
                 </div>
-                <p className="text-sm text-warmgray">
-                  These cookies are essential for the website to function properly. They enable basic features
-                  like page navigation, secure areas access, and remembering your login status.
+                <p className="text-sm text-sepia-600">
+                  These cookies are essential for the website to function properly. They enable
+                  basic features like page navigation, secure areas access, and remembering your
+                  login status.
                 </p>
               </div>
 
               {/* Analytics Cookies */}
-              <div className="p-4 border border-sepia/20 rounded-xl">
+              <div className="p-4 border border-sepia-200 rounded-xl">
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="font-medium text-ink">Analytics Cookies</h4>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
                       type="checkbox"
                       checked={preferences.analytics}
-                      onChange={(e) => setPreferences(p => ({ ...p, analytics: e.target.checked }))}
+                      onChange={e => setPreferences(p => ({ ...p, analytics: e.target.checked }))}
                       className="sr-only peer"
+                      aria-label="Enable analytics cookies"
                     />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sepia"></div>
+                    <div className="w-11 h-6 bg-sepia-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-bronze-500/10 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface after:border-sepia-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-bronze-500 peer-checked:after:border-surface"></div>
                   </label>
                 </div>
-                <p className="text-sm text-warmgray">
-                  These cookies help us understand how visitors interact with our website by collecting
-                  and reporting information anonymously. This helps us improve our service.
+                <p className="text-sm text-sepia-600">
+                  These cookies help us understand how visitors interact with our website by
+                  collecting and reporting information anonymously. This helps us improve our
+                  service.
                 </p>
               </div>
 
               {/* Marketing Cookies */}
-              <div className="p-4 border border-sepia/20 rounded-xl">
+              <div className="p-4 border border-sepia-200 rounded-xl">
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="font-medium text-ink">Marketing Cookies</h4>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
                       type="checkbox"
                       checked={preferences.marketing}
-                      onChange={(e) => setPreferences(p => ({ ...p, marketing: e.target.checked }))}
+                      onChange={e => setPreferences(p => ({ ...p, marketing: e.target.checked }))}
                       className="sr-only peer"
+                      aria-label="Enable marketing cookies"
                     />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sepia"></div>
+                    <div className="w-11 h-6 bg-sepia-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-bronze-500/10 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface after:border-sepia-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-bronze-500 peer-checked:after:border-surface"></div>
                   </label>
                 </div>
-                <p className="text-sm text-warmgray">
-                  These cookies are used to track visitors across websites. The intention is to display
-                  ads that are relevant and engaging for the individual user.
+                <p className="text-sm text-sepia-600">
+                  These cookies are used to track visitors across websites. The intention is to
+                  display ads that are relevant and engaging for the individual user.
                 </p>
               </div>
             </div>
 
-            <div className="flex gap-3">
-              <button
-                onClick={acceptSelected}
-                className="flex-1 px-6 py-2.5 bg-ink text-white rounded-full text-sm font-medium hover:bg-sepia transition"
-              >
+            <div className="flex gap-2">
+              <Button size="md" onClick={acceptSelected} className="flex-1">
                 Save Preferences
-              </button>
-              <button
-                onClick={acceptAll}
-                className="px-6 py-2.5 border border-sepia/30 text-ink rounded-full text-sm font-medium hover:bg-sepia/5 transition"
-              >
+              </Button>
+              <Button variant="secondary" size="md" onClick={acceptAll}>
                 Accept All
-              </button>
+              </Button>
             </div>
           </div>
         )}
-      </div>
+      </Card>
     </div>
   )
 }

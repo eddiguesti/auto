@@ -1,6 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import {
+  IconMessageCircle,
+  IconMicrophone,
+  IconPencil,
+  IconBook2,
+  IconChevronLeft,
+  IconChevronRight
+} from '@tabler/icons-react'
 import { useAuth } from '../context/AuthContext'
+import { Button, Card } from './ui'
 
 export default function HowItWorksCarousel() {
   const { user } = useAuth()
@@ -18,26 +27,15 @@ export default function HowItWorksCarousel() {
       title: 'Clio interviews you',
       description:
         'Questions designed using reminiscence therapy techniques—sensory cues, spatial memory, and emotional anchors that unlock stories you forgot you had.',
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={1.5}
-            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-          />
-        </svg>
-      ),
+      icon: <IconMessageCircle size={24} stroke={1.5} aria-hidden="true" />,
       media: (
-        <div className="w-full max-w-sm mx-auto bg-[#f5f2ed] rounded-3xl shadow-xl overflow-hidden border border-heritage-sepia-light/30">
+        <Card padding="none" className="w-full max-w-sm mx-auto shadow-lifted overflow-hidden">
           <div className="px-8 pt-10 pb-8 flex flex-col items-center text-center">
-            <p className="font-sans uppercase tracking-[0.3em] text-[10px] text-heritage-sepia/60 mb-2">
-              Earliest Memories
-            </p>
-            <h4 className="font-display text-xl text-heritage-ink mb-8">Where were you born?</h4>
+            <p className="eyebrow mb-2">Earliest memories</p>
+            <h4 className="font-display text-xl text-ink mb-8">Where were you born?</h4>
             {/* Particle circle */}
             <div className="relative w-40 h-40 mb-8">
-              <div className="absolute inset-0 rounded-full bg-heritage-sepia-light/20" />
+              <div className="absolute inset-0 rounded-full bg-sepia-100/70" />
               {/* Scattered dots */}
               {[...Array(40)].map((_, i) => {
                 const angle = (i / 40) * Math.PI * 2 + (i % 3) * 0.3
@@ -48,7 +46,7 @@ export default function HowItWorksCarousel() {
                 return (
                   <div
                     key={i}
-                    className="absolute rounded-full bg-heritage-sepia/30"
+                    className="absolute rounded-full bg-sepia-400/40"
                     style={{
                       width: `${size}px`,
                       height: `${size}px`,
@@ -59,54 +57,31 @@ export default function HowItWorksCarousel() {
                 )
               })}
             </div>
-            <p className="font-display text-lg text-heritage-sepia/70 mb-1">Say hello to begin</p>
-            <p className="font-sans text-xs text-heritage-sepia/40">Click to start</p>
+            <p className="font-display text-lg text-sepia-500 mb-1">Say hello to begin</p>
+            <p className="text-xs text-sepia-400">Click to start</p>
           </div>
-        </div>
+        </Card>
       )
     },
     {
       title: 'Just talk naturally',
       description:
         'No typing needed—just speak. Clio asks about smells, sounds, and places that trigger vivid memories. "Walk me through the front door of your childhood home..."',
-      icon: (
-        <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5z" />
-          <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
-        </svg>
-      ),
+      icon: <IconMicrophone size={24} stroke={1.5} aria-hidden="true" />,
       media: null
     },
     {
       title: 'AI writes your chapter',
       description:
         'Your spoken words become beautifully written prose. Your voice, your personality, your stories—polished and preserved exactly as you told them.',
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={1.5}
-            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-          />
-        </svg>
-      ),
+      icon: <IconPencil size={24} stroke={1.5} aria-hidden="true" />,
       media: null
     },
     {
       title: 'Print your book',
       description:
         'Download as a PDF or order a professionally printed hardcover. A beautiful keepsake your family will treasure for generations.',
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={1.5}
-            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-          />
-        </svg>
-      ),
+      icon: <IconBook2 size={24} stroke={1.5} aria-hidden="true" />,
       media: null
     }
   ]
@@ -165,65 +140,39 @@ export default function HowItWorksCarousel() {
   const isAtEnd = activeStep === steps.length - 1
 
   return (
-    <section
-      ref={containerRef}
-      id="how-it-works"
-      className="py-20 sm:py-28 bg-gradient-to-b from-heritage-cream via-white to-heritage-cream overflow-hidden relative"
-    >
-      {/* Decorative background elements - heritage sepia tones */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-heritage-sepia-light/30 blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full bg-heritage-sepia-light/20 blur-3xl" />
-      </div>
-
+    <section ref={containerRef} id="how-it-works" className="py-20 sm:py-28 bg-parchment">
       {/* Header */}
-      <div className="relative max-w-6xl mx-auto px-6 text-center mb-16">
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-heritage-sepia-light/30 border border-heritage-sepia-light/50 mb-6">
-          <span className="w-2 h-2 rounded-full bg-heritage-cta" />
-          <p className="font-sans uppercase tracking-[0.3em] text-xs text-heritage-sepia">
-            How It Works
-          </p>
-        </div>
-        <h2 className="font-display text-4xl sm:text-5xl text-heritage-ink">Four simple steps</h2>
+      <div className="max-w-6xl mx-auto px-6 text-center mb-16">
+        <p className="eyebrow mb-4">How it works</p>
+        <h2 className="font-display text-4xl sm:text-5xl text-ink">Four simple steps</h2>
       </div>
 
       {/* Carousel */}
       <div className="relative max-w-6xl mx-auto px-6">
         {/* Navigation Arrows */}
-        <button
+        <Button
+          variant="secondary"
           onClick={prevStep}
-          className={`hidden md:flex absolute -left-4 lg:-left-16 top-1/2 -translate-y-1/2 z-20 w-14 h-14 items-center justify-center rounded-full bg-white border-2 border-heritage-sepia-light/50 text-heritage-sepia hover:text-heritage-ink hover:border-heritage-sepia transition-all shadow-md ${
-            isAtStart ? 'opacity-30 cursor-not-allowed' : 'opacity-100'
-          }`}
           disabled={isAtStart}
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-        </button>
-        <button
+          aria-label="Previous step"
+          icon={<IconChevronLeft size={22} stroke={1.75} />}
+          className="hidden md:inline-flex absolute -left-4 lg:-left-16 top-1/2 -translate-y-1/2 z-20 !w-12 !h-12 !p-0"
+        />
+        <Button
+          variant="secondary"
           onClick={nextStep}
-          className={`hidden md:flex absolute -right-4 lg:-right-16 top-1/2 -translate-y-1/2 z-20 w-14 h-14 items-center justify-center rounded-full bg-white border-2 border-heritage-sepia-light/50 text-heritage-sepia hover:text-heritage-ink hover:border-heritage-sepia transition-all shadow-md ${
-            isAtEnd ? 'opacity-30 cursor-not-allowed' : 'opacity-100'
-          }`}
           disabled={isAtEnd}
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
+          aria-label="Next step"
+          icon={<IconChevronRight size={22} stroke={1.75} />}
+          className="hidden md:inline-flex absolute -right-4 lg:-right-16 top-1/2 -translate-y-1/2 z-20 !w-12 !h-12 !p-0"
+        />
 
         {/* Slides - Fade only */}
         <div className="relative min-h-[450px]">
           {steps.map((step, index) => (
             <div
               key={index}
-              className={`absolute inset-0 transition-opacity duration-150 ease-out ${
+              className={`absolute inset-0 transition-opacity duration-200 ease-out ${
                 index === activeStep ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
               }`}
             >
@@ -232,20 +181,14 @@ export default function HowItWorksCarousel() {
                 <div>
                   {/* Step badge with icon */}
                   <div className="flex items-center gap-4 mb-6">
-                    <div className="w-14 h-14 rounded-2xl bg-heritage-cta text-white flex items-center justify-center shadow-lg">
+                    <div className="w-12 h-12 rounded-xl bg-bronze-100 text-bronze-600 flex items-center justify-center">
                       {step.icon}
                     </div>
-                    <span className="font-sans text-sm font-semibold uppercase tracking-wider text-heritage-cta">
-                      Step {index + 1}
-                    </span>
+                    <span className="eyebrow !text-bronze-600">Step {index + 1}</span>
                   </div>
 
-                  <h3 className="font-display text-3xl sm:text-4xl text-heritage-ink mb-6">
-                    {step.title}
-                  </h3>
-                  <p className="font-serif text-lg text-heritage-text leading-relaxed">
-                    {step.description}
-                  </p>
+                  <h3 className="font-display text-3xl sm:text-4xl text-ink mb-5">{step.title}</h3>
+                  <p className="text-lg text-sepia-600 leading-relaxed">{step.description}</p>
                 </div>
 
                 {/* Right: Media */}
@@ -253,31 +196,12 @@ export default function HowItWorksCarousel() {
                   {step.media ? (
                     <div className="w-full max-w-md">{step.media}</div>
                   ) : (
-                    // Heritage-styled placeholder
-                    <div className="w-full max-w-md aspect-[4/3] bg-gradient-to-br from-heritage-sepia-light/30 to-heritage-sepia-light/10 rounded-3xl border-2 border-dashed border-heritage-sepia-light flex items-center justify-center relative overflow-hidden shadow-xl">
-                      {/* Decorative circles */}
-                      <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-heritage-cta/10 blur-2xl" />
-                      <div className="absolute -bottom-10 -left-10 w-32 h-32 rounded-full bg-heritage-sepia/10 blur-2xl" />
-
-                      <div className="text-center relative z-10">
-                        <div className="w-20 h-20 rounded-3xl bg-heritage-sepia text-white flex items-center justify-center mx-auto mb-4 shadow-lg">
-                          <svg
-                            className="w-10 h-10"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={1.5}
-                              d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
-                            />
-                          </svg>
+                    <div className="w-full max-w-md aspect-[4/3] bg-cream rounded-3xl border border-sepia-200/70 flex items-center justify-center shadow-soft">
+                      <div className="text-center">
+                        <div className="w-14 h-14 rounded-xl bg-sepia-100 text-sepia-600 flex items-center justify-center mx-auto mb-4">
+                          {step.icon}
                         </div>
-                        <p className="text-sm font-medium text-heritage-sepia">
-                          Step {index + 1} media
-                        </p>
+                        <p className="text-sm text-sepia-500">Step {index + 1} media</p>
                       </div>
                     </div>
                   )}
@@ -287,24 +211,27 @@ export default function HowItWorksCarousel() {
           ))}
         </div>
 
-        {/* Step Indicators - Heritage style */}
+        {/* Step Indicators */}
         <div className="flex justify-center items-end gap-6 sm:gap-10 mt-12">
           {steps.map((_, index) => (
             <button
               key={index}
+              type="button"
               onClick={() => goToStep(index)}
-              className="group flex flex-col items-center gap-3"
+              aria-label={`Go to step ${index + 1}`}
+              aria-current={index === activeStep ? 'step' : undefined}
+              className="group flex flex-col items-center gap-3 py-2"
             >
               {/* Progress bar */}
               <div
-                className={`w-16 sm:w-20 h-2 rounded-full transition-all duration-300 ${
-                  index <= activeStep ? 'bg-heritage-cta shadow-sm' : 'bg-heritage-sepia-light/50'
+                className={`w-16 sm:w-20 h-1.5 rounded-full transition-colors duration-300 ${
+                  index <= activeStep ? 'bg-bronze-500' : 'bg-sepia-200'
                 }`}
               />
               {/* Label */}
               <span
-                className={`font-sans text-[10px] sm:text-xs font-medium uppercase tracking-wider transition-colors duration-150 ${
-                  index <= activeStep ? 'text-heritage-cta' : 'text-heritage-text/50'
+                className={`text-xs font-medium uppercase tracking-caps transition-colors duration-150 ${
+                  index <= activeStep ? 'text-bronze-600' : 'text-sepia-400'
                 }`}
               >
                 Step {index + 1}
@@ -315,16 +242,10 @@ export default function HowItWorksCarousel() {
       </div>
 
       {/* CTA */}
-      <div className="relative max-w-6xl mx-auto px-6 text-center mt-16">
-        <button
-          onClick={handleGetStarted}
-          className="group font-sans bg-heritage-cta text-white px-10 py-4 rounded-full text-lg font-medium hover:bg-heritage-cta-hover hover:shadow-xl hover:scale-[1.02] transition-all shadow-lg"
-        >
-          {user ? 'Continue Your Story' : 'Start Your Memoir'}
-          <span className="inline-block ml-2 group-hover:translate-x-1 transition-transform">
-            →
-          </span>
-        </button>
+      <div className="max-w-6xl mx-auto px-6 text-center mt-16">
+        <Button variant="primary" size="lg" onClick={handleGetStarted}>
+          {user ? 'Continue your story' : 'Start your memoir'}
+        </Button>
       </div>
     </section>
   )

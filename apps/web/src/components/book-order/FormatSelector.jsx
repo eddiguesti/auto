@@ -1,4 +1,5 @@
-import { IconBook, IconStar, IconPhoto, IconGift } from '@tabler/icons-react'
+import { IconBook, IconStar, IconPhoto, IconGift, IconCheck } from '@tabler/icons-react'
+import Badge from '../ui/Badge'
 
 const PRESET_ICONS = {
   memoir: <IconBook size={40} stroke={1.5} />,
@@ -30,14 +31,15 @@ function QuickStartPresets({ options, onConfigChange }) {
         {Object.entries(options.recommended).map(([key, preset]) => (
           <button
             key={key}
+            type="button"
             onClick={() => onConfigChange(prev => ({ ...prev, ...preset }))}
-            className="p-4 text-center border border-sepia/20 rounded-xl hover:border-sepia/40 hover:bg-white/50 transition group"
+            className="p-4 text-center bg-surface border border-sepia-200 rounded-2xl hover:border-sepia-300 hover:shadow-soft transition-all duration-200 group"
           >
-            <div className="flex justify-center mb-2 text-sepia group-hover:text-ink group-hover:scale-110 transition-all">
+            <div className="flex justify-center mb-2 text-sepia-500 group-hover:text-ink group-hover:scale-110 transition-all">
               {PRESET_ICONS[key] || PRESET_ICONS.gift}
             </div>
             <div className="font-medium text-ink capitalize">{key.replace(/([A-Z])/g, ' $1')}</div>
-            <div className="text-[10px] text-sepia/60 mt-1 line-clamp-2">{preset.description}</div>
+            <div className="text-xs text-sepia-500 mt-1 line-clamp-2">{preset.description}</div>
           </button>
         ))}
       </div>
@@ -55,20 +57,22 @@ function BookSizeSelector({ config, options, onConfigChange }) {
         {options.trimSizes.map(size => (
           <button
             key={size.id}
+            type="button"
             onClick={() => onConfigChange(prev => ({ ...prev, trimSize: size.id }))}
-            className={`relative p-3 border rounded-xl transition group ${
+            className={`relative p-3 min-w-[44px] min-h-[44px] bg-surface border rounded-2xl transition-all duration-200 ${
               config.trimSize === size.id
-                ? 'border-sepia bg-sepia/10 shadow-md'
-                : 'border-sepia/20 hover:border-sepia/40'
-            } ${size.popular ? 'ring-2 ring-amber-400/50' : ''}`}
+                ? 'border-bronze-400 ring-4 ring-bronze-500/10 shadow-soft'
+                : 'border-sepia-200 hover:border-sepia-300'
+            }`}
           >
             {size.popular && (
-              <span className="absolute -top-2 -right-2 bg-amber-400 text-amber-900 text-[9px] px-1.5 py-0.5 rounded-full">
+              <Badge variant="bronze" className="absolute -top-2.5 -right-2">
                 Popular
-              </span>
+              </Badge>
             )}
+            {config.trimSize === size.id && <SelectedCheck className="top-1.5 left-1.5" />}
             <div
-              className="mx-auto mb-2 bg-sepia/20 rounded-sm"
+              className="mx-auto mb-2 bg-sepia-200 rounded-sm"
               style={{
                 width: size.width * 6,
                 height: size.height * 6,
@@ -120,8 +124,8 @@ function BindingSelector({ config, options, onConfigChange }) {
 
 function SectionHeading({ number, label }) {
   return (
-    <h3 className="text-base sm:text-lg font-medium text-ink mb-3 sm:mb-4 flex items-center gap-2">
-      <span className="w-7 h-7 sm:w-8 sm:h-8 bg-sepia/10 rounded-full flex items-center justify-center text-sepia text-sm">
+    <h3 className="text-base sm:text-lg font-display text-ink mb-3 sm:mb-4 flex items-center gap-2">
+      <span className="w-7 h-7 sm:w-8 sm:h-8 bg-sepia-100 text-sepia-600 rounded-full flex items-center justify-center text-sm font-sans">
         {number}
       </span>
       {label}
@@ -129,27 +133,40 @@ function SectionHeading({ number, label }) {
   )
 }
 
+function SelectedCheck({ className = 'top-2 right-2' }) {
+  return (
+    <span
+      className={`absolute ${className} w-5 h-5 rounded-full bg-bronze-500 text-white flex items-center justify-center`}
+      aria-hidden="true"
+    >
+      <IconCheck size={12} stroke={3} />
+    </span>
+  )
+}
+
 export function OptionCard({ selected, onClick, title, subtitle, icon, preview, popular }) {
   return (
     <button
+      type="button"
       onClick={onClick}
-      className={`relative p-3 text-left border rounded-xl transition-all duration-200 ${
+      className={`relative p-3 min-h-[44px] text-left bg-surface border rounded-2xl transition-all duration-200 ${
         selected
-          ? 'border-sepia bg-sepia/10 shadow-md scale-[1.02]'
-          : 'border-sepia/20 hover:border-sepia/40 hover:shadow-sm'
-      } ${popular ? 'ring-2 ring-amber-400/50' : ''}`}
+          ? 'border-bronze-400 ring-4 ring-bronze-500/10 shadow-soft'
+          : 'border-sepia-200 hover:border-sepia-300 hover:shadow-soft'
+      }`}
     >
       {popular && (
-        <span className="absolute -top-2 -right-2 bg-amber-400 text-amber-900 text-[10px] px-2 py-0.5 rounded-full font-medium">
+        <Badge variant="bronze" className="absolute -top-2.5 -right-2">
           Popular
-        </span>
+        </Badge>
       )}
+      {selected && <SelectedCheck className="bottom-2 right-2" />}
       <div className="flex items-start gap-3">
         {preview && <div className="flex-shrink-0">{preview}</div>}
         {icon && <div className="text-2xl flex-shrink-0">{icon}</div>}
         <div className="min-w-0">
           <div className="font-medium text-ink text-sm truncate">{title}</div>
-          {subtitle && <div className="text-xs text-sepia/60 mt-0.5">{subtitle}</div>}
+          {subtitle && <div className="text-xs text-sepia-500 mt-0.5">{subtitle}</div>}
         </div>
       </div>
     </button>
@@ -166,53 +183,53 @@ function BindingIcon({ type }) {
   const icons = {
     PB: (
       <div className={w}>
-        <div className="absolute inset-0 bg-sepia/80 rounded-r" />
-        <div className="absolute inset-y-0 left-0 w-1.5 bg-sepia/60" />
+        <div className="absolute inset-0 bg-sepia-500/80 rounded-r" />
+        <div className="absolute inset-y-0 left-0 w-1.5 bg-sepia-500/60" />
       </div>
     ),
     CW: (
       <div className={w}>
-        <div className="absolute inset-0 bg-sepia rounded-r border-2 border-sepia" />
-        <div className="absolute inset-y-0 left-0 w-2 bg-sepia/80" />
+        <div className="absolute inset-0 bg-sepia-500 rounded-r border-2 border-sepia-500" />
+        <div className="absolute inset-y-0 left-0 w-2 bg-sepia-500/80" />
       </div>
     ),
     DJ: (
       <div className={w}>
-        <div className="absolute inset-0 bg-sepia rounded-r" />
+        <div className="absolute inset-0 bg-sepia-500 rounded-r" />
         <div className="absolute inset-1 bg-white/90 rounded-r" />
-        <div className="absolute inset-y-0 left-0 w-2 bg-sepia/80" />
+        <div className="absolute inset-y-0 left-0 w-2 bg-sepia-500/80" />
       </div>
     ),
     LW: (
       <div className={w}>
         <div
-          className="absolute inset-0 bg-gradient-to-r from-amber-700 to-amber-600 rounded-r"
+          className="absolute inset-0 bg-gradient-to-r from-bronze-700 to-bronze-600 rounded-r"
           style={{ backgroundImage: LINEN_SVG }}
         />
-        <div className="absolute inset-y-0 left-0 w-2 bg-amber-800/80" />
+        <div className="absolute inset-y-0 left-0 w-2 bg-bronze-800/80" />
       </div>
     ),
     CO: (
       <div className="w-8 h-12 relative flex">
         <div className="w-2 flex flex-col justify-around py-1">
           {[...Array(5)].map((_, i) => (
-            <div key={i} className="w-1.5 h-1.5 rounded-full border border-gray-400" />
+            <div key={i} className="w-1.5 h-1.5 rounded-full border border-sepia-300" />
           ))}
         </div>
-        <div className="flex-1 bg-sepia/80 rounded-r" />
+        <div className="flex-1 bg-sepia-500/80 rounded-r" />
       </div>
     ),
     SS: (
       <div className={w}>
-        <div className="absolute inset-0 bg-sepia/80 rounded-r" />
-        <div className="absolute left-1 top-1/3 w-1 h-1 bg-gray-400 rounded-full" />
-        <div className="absolute left-1 top-2/3 w-1 h-1 bg-gray-400 rounded-full" />
+        <div className="absolute inset-0 bg-sepia-500/80 rounded-r" />
+        <div className="absolute left-1 top-1/3 w-1 h-1 bg-sepia-300 rounded-full" />
+        <div className="absolute left-1 top-2/3 w-1 h-1 bg-sepia-300 rounded-full" />
       </div>
     ),
     WI: (
       <div className="w-8 h-12 relative flex">
-        <div className="w-2 border-l-2 border-gray-400" style={{ borderStyle: 'double' }} />
-        <div className="flex-1 bg-sepia/80 rounded-r" />
+        <div className="w-2 border-l-2 border-sepia-300" style={{ borderStyle: 'double' }} />
+        <div className="flex-1 bg-sepia-500/80 rounded-r" />
       </div>
     )
   }

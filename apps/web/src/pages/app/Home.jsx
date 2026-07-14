@@ -1,11 +1,23 @@
 import { useState, useEffect, useMemo, lazy, Suspense } from 'react'
-import { Link } from 'react-router-dom'
+import {
+  IconPencil,
+  IconMicrophone,
+  IconPhone,
+  IconPhoto,
+  IconBook2,
+  IconChevronRight,
+  IconAlertCircle,
+  IconCircleCheck,
+  IconSparkles
+} from '@tabler/icons-react'
 import { chapters } from '../../data/chapters'
 import { useAuth } from '../../context/AuthContext'
 import { usePremium } from '../../hooks/usePremium'
 import { useDashboardProgress } from '../../features/memoir/queries/storyQueries'
 import EmailVerificationBanner from '../../components/EmailVerificationBanner'
 import HomeProgressSkeleton from '../../components/skeletons/HomeProgressSkeleton'
+import AppShell from '../../components/layout/AppShell'
+import { Button, Card, Modal, ProgressRing, ProgressBar } from '../../components/ui'
 
 const ExportModal = lazy(() => import('../../components/ExportModal'))
 const OnboardingModal = lazy(() => import('../../components/OnboardingModal'))
@@ -98,253 +110,174 @@ export default function Home() {
     return chapters[0]
   }, [progress])
 
+  const nextChapterAnswered = progress[nextChapter.id] || 0
+  const nextChapterProgress = Math.round((nextChapterAnswered / nextChapter.questions.length) * 100)
+
   return (
     <>
       <EmailVerificationBanner />
-      <div className="max-w-lg mx-auto px-4 py-8 sm:py-12 page-enter">
-        {/* Header */}
-        <header className="text-center mb-10 relative">
-          <Link
-            to="/settings"
-            className="absolute top-0 right-0 flex items-center gap-2 px-3 py-2 rounded-xl bg-sepia/5 hover:bg-sepia/10 text-sepia/60 hover:text-sepia transition text-sm"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-              />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-              />
-            </svg>
-          </Link>
+      <AppShell>
+        <div className="py-8 sm:py-12 page-enter">
+          {/* Greeting */}
+          <header className="mb-8">
+            <p className="eyebrow mb-2">{formattedDate}</p>
+            <h1 className="text-3xl sm:text-4xl font-display text-ink">
+              {greeting}, {firstName}
+            </h1>
+          </header>
 
-          <h1 className="text-3xl sm:text-4xl font-display text-ink mb-1">
-            {greeting}, {firstName}
-          </h1>
-          <p className="text-sepia/50 text-sm">{formattedDate}</p>
-        </header>
-
-        {/* Error */}
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-xl text-sm text-center">
-            {error}
-          </div>
-        )}
-
-        {/* Progress */}
-        {loading ? (
-          <HomeProgressSkeleton />
-        ) : (
-          <div className="mb-10 text-center">
-            <div className="text-5xl font-semibold text-ink mb-1">{totalProgress}%</div>
-            <p className="text-sepia/60 text-sm mb-3">
-              {totalAnswered} of {totalQuestions} stories captured
-            </p>
-            <div className="w-full h-2 bg-sepia/10 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-sepia to-amber-600 rounded-full transition-all duration-700"
-                style={{ width: `${totalProgress}%` }}
-              />
+          {/* Error */}
+          {error && (
+            <div className="mb-6 p-4 bg-error-soft text-error-strong rounded-xl text-sm flex items-center gap-3">
+              <IconAlertCircle size={20} stroke={1.75} className="shrink-0" />
+              {error}
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Primary Actions */}
-        <div className="space-y-4 mb-8">
-          {/* Tell a Story - Primary CTA */}
-          <Link
-            to="/quick-story"
-            className="block w-full p-6 bg-gradient-to-br from-sepia to-amber-700 text-white rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all"
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                  />
-                </svg>
+          {/* Progress overview */}
+          {loading ? (
+            <HomeProgressSkeleton />
+          ) : (
+            <Card className="mb-10 flex items-center gap-6" padding="md">
+              <ProgressRing value={totalProgress} size={104} label="Overall story progress">
+                <span className="text-2xl font-semibold text-ink leading-none">
+                  {totalProgress}%
+                </span>
+              </ProgressRing>
+              <div className="min-w-0">
+                <h2 className="text-lg font-display text-ink mb-0.5">Your story so far</h2>
+                <p className="text-sepia-600 text-sm">
+                  {totalAnswered} of {totalQuestions} memories captured
+                </p>
+                {totalAnswered > 0 && (
+                  <p className="text-sepia-500 text-sm mt-1.5">
+                    Every memory you add brings your book closer to life.
+                  </p>
+                )}
               </div>
-              <div>
-                <p className="text-lg font-medium">Tell a Story</p>
-                <p className="text-white/70 text-sm">Write whatever's on your mind</p>
-              </div>
-            </div>
-          </Link>
+            </Card>
+          )}
 
-          {/* Call Me */}
-          <Link
-            to="/call-me"
-            className="block w-full p-5 bg-white border border-sepia/15 rounded-2xl hover:border-sepia/30 hover:shadow-md hover:-translate-y-0.5 transition-all"
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-11 h-11 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                <svg
-                  className="w-5 h-5 text-green-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-                  />
-                </svg>
-              </div>
-              <div>
-                <p className="text-ink font-medium">Call Me</p>
-                <p className="text-sepia/60 text-sm">Get a phone call to chat about your life</p>
-              </div>
-              <svg
-                className="w-5 h-5 text-sepia/30 ml-auto flex-shrink-0"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+          {/* Capture a memory */}
+          <section className="mb-10">
+            <p className="eyebrow mb-3">Capture a memory</p>
+            <div className="space-y-3">
+              {/* Tell a Story — the primary action */}
+              <Card
+                interactive
+                to="/quick-story"
+                padding="none"
+                className="stagger-item !bg-ink !border-ink hover:!border-ink"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
-            </div>
-          </Link>
+                <div className="flex items-center gap-4 p-5 sm:p-6">
+                  <div className="w-12 h-12 bg-bronze-500/25 text-bronze-300 rounded-xl flex items-center justify-center shrink-0">
+                    <IconPencil size={24} stroke={1.5} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-lg font-medium text-white">Tell a story</p>
+                    <p className="text-white/60 text-sm">Write whatever&rsquo;s on your mind</p>
+                  </div>
+                  <IconChevronRight size={20} stroke={1.75} className="text-white/40 shrink-0" />
+                </div>
+              </Card>
 
-          {/* Talk (Voice Mode) */}
-          <Link
-            to={`/voice?chapter=${nextChapter.id}`}
-            className="block w-full p-5 bg-white border border-sepia/15 rounded-2xl hover:border-sepia/30 hover:shadow-md hover:-translate-y-0.5 transition-all"
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-11 h-11 bg-amber-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                <svg
-                  className="w-5 h-5 text-amber-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
-                  />
-                </svg>
+              {/* Voice modalities */}
+              <div className="grid sm:grid-cols-2 gap-3">
+                <Card interactive to={`/voice?chapter=${nextChapter.id}`} className="stagger-item">
+                  <div className="flex items-center gap-4">
+                    <div className="w-11 h-11 bg-sepia-100 text-sepia-600 rounded-xl flex items-center justify-center shrink-0">
+                      <IconMicrophone size={22} stroke={1.5} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-ink font-medium">Talk</p>
+                      <p className="text-sepia-600 text-sm">Speak your memories aloud</p>
+                    </div>
+                  </div>
+                </Card>
+
+                <Card interactive to="/call-me" className="stagger-item">
+                  <div className="flex items-center gap-4">
+                    <div className="w-11 h-11 bg-sepia-100 text-sepia-600 rounded-xl flex items-center justify-center shrink-0">
+                      <IconPhone size={22} stroke={1.5} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-ink font-medium">Call me</p>
+                      <p className="text-sepia-600 text-sm">We ring you for a chat</p>
+                    </div>
+                  </div>
+                </Card>
               </div>
-              <div>
-                <p className="text-ink font-medium">Talk</p>
-                <p className="text-sepia/60 text-sm">Voice conversation to capture memories</p>
+            </div>
+          </section>
+
+          {/* Continue where you left off */}
+          <section className="mb-10">
+            <p className="eyebrow mb-3">Continue your book</p>
+            <Card interactive to={`/chapter/${nextChapter.id}`} className="stagger-item">
+              <div className="flex items-center gap-4">
+                <div className="min-w-0 flex-1">
+                  <p className="text-ink font-medium mb-1">{nextChapter.title}</p>
+                  <div className="flex items-center gap-3">
+                    <ProgressBar
+                      value={nextChapterProgress}
+                      className="max-w-[160px]"
+                      label={`${nextChapter.title} progress`}
+                    />
+                    <span className="text-sepia-500 text-xs whitespace-nowrap">
+                      {nextChapterAnswered} of {nextChapter.questions.length}
+                    </span>
+                  </div>
+                </div>
+                <IconChevronRight size={20} stroke={1.75} className="text-sepia-400 shrink-0" />
               </div>
-              <svg
-                className="w-5 h-5 text-sepia/30 ml-auto flex-shrink-0"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+            </Card>
+          </section>
+
+          {/* More ways to enrich your story */}
+          <section className="mb-10">
+            <div className="grid grid-cols-2 gap-3">
+              <Card interactive to="/photo" padding="sm" className="stagger-item text-center">
+                <IconPhoto size={22} stroke={1.5} className="text-sepia-500 mx-auto mb-1.5" />
+                <p className="text-ink text-sm font-medium">Share a photo</p>
+              </Card>
+
+              <Card
+                interactive
+                onClick={() => setShowExportModal(true)}
+                padding="sm"
+                className="stagger-item text-center"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
+                <IconBook2 size={22} stroke={1.5} className="text-sepia-500 mx-auto mb-1.5" />
+                <p className="text-ink text-sm font-medium">Preview your book</p>
+              </Card>
             </div>
-          </Link>
-        </div>
+          </section>
 
-        {/* Secondary Actions */}
-        <div className="grid grid-cols-3 gap-3 mb-10">
-          <Link
-            to="/photo"
-            className="p-4 bg-white border border-sepia/10 rounded-xl hover:border-sepia/25 hover:shadow-sm transition text-center"
-          >
-            <svg
-              className="w-5 h-5 text-violet-500 mx-auto mb-1.5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-              />
-            </svg>
-            <p className="text-ink text-sm font-medium">Share Photo</p>
-          </Link>
-
-          <button
-            onClick={() => setShowExportModal(true)}
-            className="p-4 bg-white border border-sepia/10 rounded-xl hover:border-sepia/25 hover:shadow-sm transition text-center"
-          >
-            <svg
-              className="w-5 h-5 text-sepia/50 mx-auto mb-1.5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-              />
-            </svg>
-            <p className="text-ink text-sm font-medium">Preview Book</p>
-          </button>
-
-          <Link
-            to={`/chapter/${nextChapter.id}`}
-            className="p-4 bg-white border border-sepia/10 rounded-xl hover:border-sepia/25 hover:shadow-sm transition text-center"
-          >
-            <svg
-              className="w-5 h-5 text-sepia/50 mx-auto mb-1.5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M4 6h16M4 12h16M4 18h7"
-              />
-            </svg>
-            <p className="text-ink text-sm font-medium">Write by Chapter</p>
-          </Link>
-        </div>
-
-        {/* Upgrade nudge for free users */}
-        {!isPremium && totalAnswered > 0 && (
-          <div className="mb-8 p-4 bg-gradient-to-r from-amber-50/60 to-orange-50/40 rounded-xl border border-amber-200/40 flex items-center justify-between gap-4">
-            <div>
-              <p className="text-ink font-medium text-sm">Unlock your full story</p>
-              <p className="text-sepia/60 text-xs">All chapters + a printed book</p>
+          {/* Upgrade nudge for free users */}
+          {!isPremium && totalAnswered > 0 && (
+            <div className="mb-8 p-5 bg-bronze-50 border border-bronze-200/60 rounded-2xl flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <IconSparkles size={22} stroke={1.5} className="text-bronze-600 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-ink font-medium text-sm">Unlock your full story</p>
+                  <p className="text-sepia-600 text-sm">All chapters, plus a printed book</p>
+                </div>
+              </div>
+              <Button
+                variant="accent"
+                size="sm"
+                className="whitespace-nowrap shrink-0"
+                onClick={() => {
+                  setUpgradeVariant('default')
+                  setShowUpgradeModal(true)
+                }}
+              >
+                See offer
+              </Button>
             </div>
-            <button
-              onClick={() => {
-                setUpgradeVariant('default')
-                setShowUpgradeModal(true)
-              }}
-              className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 transition whitespace-nowrap"
-            >
-              See Offer
-            </button>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      </AppShell>
 
       {/* Modals — lazy-loaded to reduce Home chunk size */}
       <Suspense fallback={null}>
@@ -362,42 +295,21 @@ export default function Home() {
       </Suspense>
 
       {showPremiumCelebration && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-          onClick={() => setShowPremiumCelebration(false)}
-        >
-          <div
-            className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-8 text-center"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-5 shadow-lg">
-              <svg
-                className="w-8 h-8 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
+        <Modal onClose={() => setShowPremiumCelebration(false)} size="sm">
+          <div className="text-center pt-2">
+            <div className="w-16 h-16 bg-success-soft text-success rounded-full flex items-center justify-center mx-auto mb-5">
+              <IconCircleCheck size={32} stroke={1.5} />
             </div>
-            <h3 className="text-xl font-display text-ink mb-2">Welcome to Premium!</h3>
-            <p className="text-sepia/70 text-sm mb-5">
+            <h3 className="text-2xl font-display text-ink mb-2">Welcome to Premium</h3>
+            <p className="text-sepia-600 text-sm mb-6">
               All chapters are now unlocked. Your printed book is included when you complete your
               story.
             </p>
-            <button
-              onClick={() => setShowPremiumCelebration(false)}
-              className="px-6 py-3 bg-ink text-white rounded-xl font-medium hover:bg-ink/90 transition"
-            >
-              Start Writing
-            </button>
+            <Button size="lg" onClick={() => setShowPremiumCelebration(false)}>
+              Start writing
+            </Button>
           </div>
-        </div>
+        </Modal>
       )}
 
       <Suspense fallback={null}>

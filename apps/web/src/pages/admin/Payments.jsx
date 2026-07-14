@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
+import { IconAlertCircle, IconReceipt } from '@tabler/icons-react'
 import { useAuth } from '../../context/AuthContext'
+import { Button, Card, Badge, Skeleton, EmptyState } from '../../components/ui'
 
 function formatDate(dateStr) {
   return new Date(dateStr).toLocaleDateString('en-GB', {
@@ -20,21 +22,15 @@ function formatCurrency(pence) {
   }).format(pence / 100)
 }
 
-function StatusBadge({ status }) {
-  const colors = {
-    completed: 'bg-green-100 text-green-700',
-    pending: 'bg-yellow-100 text-yellow-700',
-    failed: 'bg-red-100 text-red-700',
-    refunded: 'bg-blue-100 text-blue-700'
-  }
+const STATUS_VARIANTS = {
+  completed: 'success',
+  pending: 'warning',
+  failed: 'error',
+  refunded: 'info'
+}
 
-  return (
-    <span
-      className={`inline-block px-2 py-0.5 rounded text-xs ${colors[status] || 'bg-gray-100 text-gray-500'}`}
-    >
-      {status}
-    </span>
-  )
+function StatusBadge({ status }) {
+  return <Badge variant={STATUS_VARIANTS[status] || 'neutral'}>{status}</Badge>
 }
 
 function Pagination({ meta, onPageChange }) {
@@ -43,31 +39,35 @@ function Pagination({ meta, onPageChange }) {
   if (totalPages <= 1) return null
 
   return (
-    <div className="flex items-center justify-between px-6 py-3 border-t border-warm-brown/10">
-      <p className="text-sm text-warm-brown/60">
+    <div className="flex items-center justify-between px-6 py-3 border-t border-sepia-100">
+      <p className="text-sm text-sepia-600">
         Showing {(meta.page - 1) * meta.limit + 1}
         {' - '}
         {Math.min(meta.page * meta.limit, meta.total)} of {meta.total}
       </p>
       <div className="flex gap-2">
-        <button
+        <Button
+          variant="secondary"
+          size="sm"
           onClick={() => onPageChange(meta.page - 1)}
           disabled={meta.page <= 1}
-          className="px-3 py-1 text-sm border border-warm-brown/20 rounded hover:bg-warm-brown/5 transition disabled:opacity-30 disabled:cursor-not-allowed"
         >
           Previous
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
           onClick={() => onPageChange(meta.page + 1)}
           disabled={meta.page >= totalPages}
-          className="px-3 py-1 text-sm border border-warm-brown/20 rounded hover:bg-warm-brown/5 transition disabled:opacity-30 disabled:cursor-not-allowed"
         >
           Next
-        </button>
+        </Button>
       </div>
     </div>
   )
 }
+
+const TH_CLASSES = 'px-6 py-3 text-xs font-medium text-sepia-500 uppercase tracking-caps'
 
 export default function AdminPayments() {
   const { authFetch } = useAuth()
@@ -134,100 +134,98 @@ export default function AdminPayments() {
 
   return (
     <div className="min-h-screen bg-parchment">
-      <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="max-w-6xl mx-auto px-4 py-8 page-enter">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-serif text-warm-brown">Payments</h1>
-            <p className="text-warm-brown/60 mt-1">{meta.total} total payments</p>
+            <h1 className="text-3xl font-display text-ink">Payments</h1>
+            <p className="text-sepia-600 mt-1">{meta.total} total payments</p>
           </div>
-          <Link
-            to="/admin"
-            className="px-4 py-2 border border-warm-brown/20 text-warm-brown rounded-lg hover:bg-warm-brown/5 transition text-sm"
-          >
+          <Button to="/admin" variant="secondary" size="sm">
             Back to Dashboard
-          </Link>
+          </Button>
         </div>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          <div className="mb-6 p-4 bg-error-soft text-error-strong rounded-xl text-sm flex items-center gap-3">
+            <IconAlertCircle size={20} stroke={1.75} className="shrink-0" />
             {error}
           </div>
         )}
 
         {/* Payments table */}
-        <div className="bg-white rounded-xl shadow-sm border border-warm-brown/10 overflow-hidden">
+        <Card padding="none" className="overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-warm-brown/10 text-left">
-                  <th className="px-6 py-3 text-warm-brown/60 font-medium">ID</th>
-                  <th className="px-6 py-3 text-warm-brown/60 font-medium">User</th>
-                  <th className="px-6 py-3 text-warm-brown/60 font-medium">Product</th>
-                  <th className="px-6 py-3 text-warm-brown/60 font-medium">Amount</th>
-                  <th className="px-6 py-3 text-warm-brown/60 font-medium">Status</th>
-                  <th className="px-6 py-3 text-warm-brown/60 font-medium">Date</th>
-                  <th className="px-6 py-3 text-warm-brown/60 font-medium">Actions</th>
+                <tr className="text-left border-b border-sepia-100">
+                  <th className={TH_CLASSES}>ID</th>
+                  <th className={TH_CLASSES}>User</th>
+                  <th className={TH_CLASSES}>Product</th>
+                  <th className={TH_CLASSES}>Amount</th>
+                  <th className={TH_CLASSES}>Status</th>
+                  <th className={TH_CLASSES}>Date</th>
+                  <th className={TH_CLASSES}>Actions</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-sepia-100">
                 {loading ? (
-                  <tr>
-                    <td colSpan={7} className="px-6 py-8 text-center text-warm-brown/50">
-                      Loading...
-                    </td>
-                  </tr>
+                  [...Array(5)].map((_, i) => (
+                    <tr key={i}>
+                      <td colSpan={7} className="px-6 py-3">
+                        <Skeleton className="h-6" />
+                      </td>
+                    </tr>
+                  ))
                 ) : payments.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-8 text-center text-warm-brown/50">
-                      No payments found
+                    <td colSpan={7}>
+                      <EmptyState
+                        icon={<IconReceipt size={24} stroke={1.5} />}
+                        title="No payments found"
+                        description="Payments will appear here as customers purchase."
+                      />
                     </td>
                   </tr>
                 ) : (
                   payments.map(p => (
-                    <tr
-                      key={p.id}
-                      className="border-b border-warm-brown/5 hover:bg-warm-brown/[0.02] transition"
-                    >
-                      <td className="px-6 py-3 text-warm-brown/50 font-mono text-xs">{p.id}</td>
+                    <tr key={p.id} className="hover:bg-sepia-50 transition-colors">
+                      <td className="px-6 py-3 text-sepia-500 font-mono text-xs">{p.id}</td>
                       <td className="px-6 py-3">
-                        <Link
-                          to={`/admin/users/${p.user_id}`}
-                          className="text-warm-brown hover:underline"
-                        >
+                        <Link to={`/admin/users/${p.user_id}`} className="text-ink hover:underline">
                           {p.user_name || p.user_email || `User #${p.user_id}`}
                         </Link>
                         {p.user_email && p.user_name && (
-                          <p className="text-warm-brown/50 text-xs">{p.user_email}</p>
+                          <p className="text-sepia-500 text-xs">{p.user_email}</p>
                         )}
                       </td>
-                      <td className="px-6 py-3 text-warm-brown">
+                      <td className="px-6 py-3 text-ink">
                         {p.product_type}
                         {p.product_id && (
-                          <span className="text-warm-brown/50 ml-1 text-xs">({p.product_id})</span>
+                          <span className="text-sepia-500 ml-1 text-xs">({p.product_id})</span>
                         )}
                       </td>
-                      <td className="px-6 py-3 text-warm-brown font-medium">
-                        {formatCurrency(p.amount)}
-                      </td>
+                      <td className="px-6 py-3 text-ink font-medium">{formatCurrency(p.amount)}</td>
                       <td className="px-6 py-3">
                         <StatusBadge status={p.status} />
                       </td>
-                      <td className="px-6 py-3 text-warm-brown/60 text-xs">
+                      <td className="px-6 py-3 text-sepia-500 text-xs">
                         {formatDate(p.created_at)}
                       </td>
                       <td className="px-6 py-3">
                         {p.status === 'completed' && (
-                          <button
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-error hover:text-error-strong hover:bg-error-soft"
                             onClick={() => handleProcessRefund(p.id)}
                             disabled={refundLoading === p.id}
-                            className="px-3 py-1 text-xs border border-red-200 text-red-600 rounded hover:bg-red-50 transition disabled:opacity-50"
                           >
                             {refundLoading === p.id ? 'Processing...' : 'Refund'}
-                          </button>
+                          </Button>
                         )}
                         {p.status === 'refunded' && (
-                          <span className="text-xs text-warm-brown/40">Refunded</span>
+                          <span className="text-xs text-sepia-400">Refunded</span>
                         )}
                       </td>
                     </tr>
@@ -237,7 +235,7 @@ export default function AdminPayments() {
             </table>
           </div>
           {!loading && <Pagination meta={meta} onPageChange={handlePageChange} />}
-        </div>
+        </Card>
       </div>
     </div>
   )

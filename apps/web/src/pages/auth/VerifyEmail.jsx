@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Link, useSearchParams, useNavigate } from 'react-router-dom'
+import { IconAlertTriangle, IconCheck, IconMail } from '@tabler/icons-react'
 import { API_URL } from '../../config'
+import { Button, Card } from '../../components/ui'
 
 export default function VerifyEmail() {
   const [searchParams] = useSearchParams()
@@ -49,10 +51,23 @@ export default function VerifyEmail() {
   // Loading state
   if (verifying) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-gradient-to-b from-[#faf8f5] to-white">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-sepia/20 border-t-sepia rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-sepia/70 font-serif">Verifying your email...</p>
+      <div className="min-h-screen flex items-center justify-center px-4 py-12">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <Link
+              to="/"
+              className="font-display text-xl text-ink hover:text-bronze-700 transition-colors"
+            >
+              Easy&nbsp;Memoir
+            </Link>
+          </div>
+
+          <Card padding="lg" className="text-center">
+            <div className="w-16 h-16 bg-sepia-100 text-sepia-600 rounded-full flex items-center justify-center mx-auto mb-6">
+              <IconMail size={32} stroke={1.5} />
+            </div>
+            <h1 className="text-2xl font-display text-ink">Verifying your email...</h1>
+          </Card>
         </div>
       </div>
     )
@@ -61,46 +76,31 @@ export default function VerifyEmail() {
   // Success state
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-gradient-to-b from-[#faf8f5] to-white page-enter">
+      <div className="min-h-screen flex items-center justify-center px-4 py-12 page-enter">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <Link
               to="/"
-              className="text-sepia/30 text-2xl tracking-[0.3em] hover:text-sepia/50 transition"
+              className="font-display text-xl text-ink hover:text-bronze-700 transition-colors"
             >
-              &#10087;
+              Easy&nbsp;Memoir
             </Link>
           </div>
 
-          <div className="bg-white/80 backdrop-blur rounded-2xl p-8 border border-sepia/20 shadow-lg text-center">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <svg
-                className="w-8 h-8 text-green-600"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
+          <Card padding="lg" className="text-center">
+            <div className="w-16 h-16 bg-success-soft text-success-strong rounded-full flex items-center justify-center mx-auto mb-6">
+              <IconCheck size={32} stroke={1.5} />
             </div>
 
             <h1 className="text-2xl font-display text-ink mb-4">Email Verified!</h1>
-            <p className="text-sepia/70 font-serif mb-8">
+            <p className="text-sepia-600 mb-8">
               Your email address has been successfully verified. Redirecting you to your memoir...
             </p>
 
-            <button
-              onClick={() => navigate('/home')}
-              className="w-full py-3 bg-sepia text-white rounded-lg hover:bg-sepia/90 transition font-medium"
-            >
+            <Button size="xl" onClick={() => navigate('/home')}>
               Continue to App
-            </button>
-          </div>
+            </Button>
+          </Card>
         </div>
       </div>
     )
@@ -108,48 +108,33 @@ export default function VerifyEmail() {
 
   // Error state
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-gradient-to-b from-[#faf8f5] to-white page-enter">
+    <div className="min-h-screen flex items-center justify-center px-4 py-12 page-enter">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link
             to="/"
-            className="text-sepia/30 text-2xl tracking-[0.3em] hover:text-sepia/50 transition"
+            className="font-display text-xl text-ink hover:text-bronze-700 transition-colors"
           >
-            &#10087;
+            Easy&nbsp;Memoir
           </Link>
         </div>
 
-        <div className="bg-white/80 backdrop-blur rounded-2xl p-8 border border-sepia/20 shadow-lg text-center">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <svg
-              className="w-8 h-8 text-red-600"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-              />
-            </svg>
+        <Card padding="lg" className="text-center">
+          <div className="w-16 h-16 bg-error-soft text-error-strong rounded-full flex items-center justify-center mx-auto mb-6">
+            <IconAlertTriangle size={32} stroke={1.5} />
           </div>
 
           <h1 className="text-2xl font-display text-ink mb-4">Verification Failed</h1>
-          <p className="text-sepia/70 font-serif mb-8">{error}</p>
+          <p className="text-sepia-600 mb-8">{error}</p>
 
-          <Link
-            to="/home"
-            className="block w-full py-3 bg-sepia text-white rounded-lg hover:bg-sepia/90 transition font-medium text-center mb-3"
-          >
+          <Button to="/home" size="xl" className="mb-3">
             Go to App
-          </Link>
+          </Button>
 
-          <p className="text-sm text-sepia/60">
+          <p className="text-sm text-sepia-500">
             You can request a new verification email from your account settings.
           </p>
-        </div>
+        </Card>
       </div>
     </div>
   )

@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
+import { IconCheck, IconFeather, IconLoader2, IconPencil, IconX } from '@tabler/icons-react'
 import { useAuth } from '../context/AuthContext'
+import { Button, Input } from './ui'
 
 export default function AIAssistant({ context, onClose, onInsertText }) {
   const { authFetch } = useAuth()
@@ -212,13 +214,16 @@ export default function AIAssistant({ context, onClose, onInsertText }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-ink/40 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 sm:p-4">
-      <div className="bg-[#faf8f3] rounded-t-xl sm:rounded-lg w-full max-w-2xl h-[90vh] sm:h-auto sm:max-h-[85vh] flex flex-col shadow-2xl border border-sepia/20">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-6 bg-ink/40 backdrop-blur-sm animate-fade-in">
+      <div className="w-full max-w-2xl bg-surface shadow-modal animate-scale-in rounded-t-3xl sm:rounded-3xl h-[90vh] sm:h-auto sm:max-h-[85vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="p-4 border-b border-sepia/20 flex justify-between items-center rounded-t-xl sm:rounded-t-lg flex-shrink-0 bg-sepia/5">
-          <div className="min-w-0 flex-1 mr-2">
-            <h3 className="font-medium text-base sm:text-lg text-ink">✒️ Writing Assistant</h3>
-            <p className="text-sm text-sepia/70 truncate italic">
+        <div className="px-6 pt-5 pb-4 border-b border-sepia-100 flex justify-between items-start gap-4 flex-shrink-0">
+          <div className="min-w-0 flex-1">
+            <h3 className="font-display text-xl text-ink flex items-center gap-2">
+              <IconFeather size={20} stroke={1.75} className="text-bronze-600 shrink-0" />
+              Writing Assistant
+            </h3>
+            <p className="text-sm text-sepia-500 truncate mt-0.5">
               {closing && 'Saving your draft...'}
               {!closing && phase === 'start' && 'Ready to help craft your story'}
               {!closing && phase === 'interview' && 'Gathering your memories...'}
@@ -228,54 +233,44 @@ export default function AIAssistant({ context, onClose, onInsertText }) {
             </p>
           </div>
           <button
+            type="button"
             onClick={handleClose}
             disabled={closing}
-            className="w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center rounded-full hover:bg-sepia/10 active:bg-sepia/20 transition flex-shrink-0 text-sepia/60 hover:text-sepia disabled:opacity-50"
+            aria-label="Close"
+            className="shrink-0 -mr-2 -mt-1 p-2 rounded-full text-sepia-400 hover:text-ink hover:bg-sepia-100/70 transition-colors disabled:opacity-50"
           >
-            {closing ? <span className="text-xs">...</span> : <span className="text-xl">×</span>}
+            {closing ? (
+              <IconLoader2 size={20} stroke={1.75} className="animate-spin" />
+            ) : (
+              <IconX size={20} stroke={1.75} />
+            )}
           </button>
         </div>
 
         {/* Context Preview */}
-        <div className="p-3 border-b border-sepia/10 flex-shrink-0">
-          <p className="text-sm text-sepia/80 line-clamp-2 italic">"{context.question.question}"</p>
+        <div className="px-6 py-3 border-b border-sepia-100 bg-cream/50 flex-shrink-0">
+          <p className="text-sm text-sepia-600 line-clamp-2 font-serif italic">
+            "{context.question.question}"
+          </p>
         </div>
 
         {/* Start Screen */}
         {phase === 'start' && (
-          <div className="flex-1 p-4 sm:p-6 flex flex-col items-center justify-center text-center overflow-y-auto">
-            <div className="w-14 h-14 bg-sepia/10 rounded-2xl flex items-center justify-center mb-4">
-              <svg
-                className="w-8 h-8 text-sepia"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                />
-              </svg>
+          <div className="flex-1 p-6 sm:p-8 flex flex-col items-center justify-center text-center overflow-y-auto">
+            <div className="w-14 h-14 bg-bronze-100 text-bronze-600 rounded-2xl flex items-center justify-center mb-5">
+              <IconFeather size={24} stroke={1.5} />
             </div>
-            <h3 className="text-lg sm:text-xl text-ink mb-2 font-medium">
-              Let's Write Your Story Together
-            </h3>
-            <p className="text-sepia/70 mb-6 max-w-md text-sm sm:text-base leading-relaxed">
+            <h3 className="font-display text-2xl text-ink mb-2">Let's Write Your Story Together</h3>
+            <p className="text-sepia-600 mb-8 max-w-md text-base leading-relaxed">
               I'll ask questions to draw out the details of your memory. Once we've gathered enough,
               I'll compose it into a beautifully written passage for your autobiography.
             </p>
-            <button
-              onClick={startInterview}
-              disabled={loading}
-              className="w-full sm:w-auto px-8 py-4 sm:py-3 bg-ink text-white/90 rounded hover:bg-ink/90 transition"
-            >
+            <Button size="lg" onClick={startInterview} disabled={loading} loading={loading}>
               Begin Conversation
-            </button>
+            </Button>
 
             {context.answer && context.answer.trim() && (
-              <p className="text-sm text-sepia/50 mt-4 italic">
+              <p className="text-sm text-sepia-500 mt-4">
                 I'll build upon what you've already written.
               </p>
             )}
@@ -284,39 +279,35 @@ export default function AIAssistant({ context, onClose, onInsertText }) {
 
         {/* Chat Messages */}
         {phase !== 'start' && (
-          <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 min-h-0">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3 sm:space-y-4 min-h-0">
             {messages.map((msg, idx) => (
               <div
                 key={idx}
                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[90%] sm:max-w-[85%] p-3 sm:p-4 rounded ${
-                    msg.role === 'user'
-                      ? 'bg-sepia/10 text-ink border border-sepia/20'
-                      : 'bg-white/70 text-ink border border-sepia/10'
+                  className={`max-w-[90%] sm:max-w-[85%] px-4 py-3 rounded-2xl ${
+                    msg.role === 'user' ? 'bg-sepia-100 text-ink' : 'bg-cream text-ink-soft'
                   }`}
                 >
-                  <p className="whitespace-pre-wrap leading-relaxed text-sm sm:text-base">
-                    {msg.content}
-                  </p>
+                  <p className="whitespace-pre-wrap leading-relaxed text-base">{msg.content}</p>
                 </div>
               </div>
             ))}
             {loading && (
               <div className="flex justify-start">
-                <div className="bg-white/70 p-3 rounded border border-sepia/10">
+                <div className="bg-cream px-4 py-3 rounded-2xl">
                   <div className="flex gap-1.5">
                     <span
-                      className="w-2 h-2 bg-sepia/40 rounded-full animate-bounce"
+                      className="w-2 h-2 bg-sepia-300 rounded-full animate-bounce"
                       style={{ animationDelay: '0ms' }}
                     />
                     <span
-                      className="w-2 h-2 bg-sepia/40 rounded-full animate-bounce"
+                      className="w-2 h-2 bg-sepia-300 rounded-full animate-bounce"
                       style={{ animationDelay: '150ms' }}
                     />
                     <span
-                      className="w-2 h-2 bg-sepia/40 rounded-full animate-bounce"
+                      className="w-2 h-2 bg-sepia-300 rounded-full animate-bounce"
                       style={{ animationDelay: '300ms' }}
                     />
                   </div>
@@ -329,49 +320,30 @@ export default function AIAssistant({ context, onClose, onInsertText }) {
 
         {/* Input Area */}
         {phase !== 'start' && (
-          <div className="p-3 sm:p-4 border-t border-sepia/15 space-y-3 flex-shrink-0 pb-safe bg-sepia/5">
+          <div className="p-4 sm:p-5 border-t border-sepia-100 space-y-3 flex-shrink-0 pb-safe bg-cream/40">
             {/* Action Buttons */}
             {phase === 'interview' && gatheredContent.length >= 2 && !loading && (
-              <button
-                onClick={markReady}
-                className="w-full py-3 sm:py-2.5 text-sm text-sepia border border-sepia/30 rounded hover:bg-white/50 transition"
-              >
+              <Button variant="secondary" size="xl" onClick={markReady}>
                 I've shared enough — compose my story
-              </button>
+              </Button>
             )}
 
             {phase === 'ready' && !loading && (
-              <button
-                onClick={writeStory}
-                className="w-full py-4 sm:py-3 bg-ink text-white/90 rounded hover:bg-ink/90 transition flex items-center justify-center gap-2"
-              >
-                <span>✒️</span>
-                <span>Compose My Story</span>
-              </button>
+              <Button size="xl" onClick={writeStory} icon={<IconFeather size={20} stroke={1.75} />}>
+                Compose My Story
+              </Button>
             )}
 
             {(phase === 'writing' || phase === 'review') && !loading && editableStory && (
               <div className="space-y-3">
                 {/* Editable story review */}
-                <div className="bg-white rounded-lg border border-sepia/20 overflow-hidden">
-                  <div className="px-3 py-2 bg-amber-50 border-b border-amber-200/50 flex items-center gap-2">
-                    <svg
-                      className="w-4 h-4 text-amber-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                      />
-                    </svg>
-                    <span className="text-sm text-amber-800 font-medium">
+                <div className="bg-surface rounded-2xl border border-sepia-200 overflow-hidden">
+                  <div className="px-4 py-2.5 bg-bronze-50 border-b border-bronze-200/50 flex items-center gap-2">
+                    <IconPencil size={16} stroke={1.75} className="text-bronze-600 shrink-0" />
+                    <span className="text-sm text-bronze-700 font-medium">
                       Review & edit before saving
                     </span>
-                    <span className="text-xs text-amber-600/70 ml-auto">
+                    <span className="text-xs text-bronze-600 ml-auto">
                       Fix any names, dates or details
                     </span>
                   </div>
@@ -379,7 +351,7 @@ export default function AIAssistant({ context, onClose, onInsertText }) {
                     ref={storyTextareaRef}
                     value={editableStory}
                     onChange={e => setEditableStory(e.target.value)}
-                    className="w-full p-4 text-ink leading-relaxed text-sm sm:text-base resize-none focus:outline-none min-h-[120px] max-h-[200px]"
+                    className="w-full p-4 bg-surface font-serif text-ink leading-relaxed text-base resize-none focus:outline-none min-h-[120px] max-h-[200px]"
                     style={{
                       height:
                         Math.min(200, Math.max(120, editableStory.split('\n').length * 24)) + 'px'
@@ -387,24 +359,29 @@ export default function AIAssistant({ context, onClose, onInsertText }) {
                   />
                 </div>
 
-                <button
+                <Button
+                  size="xl"
                   onClick={insertStory}
-                  className="w-full py-4 sm:py-3 bg-sepia text-white rounded hover:bg-sepia/90 transition flex items-center justify-center gap-2 font-medium"
+                  icon={<IconCheck size={20} stroke={1.75} />}
                 >
-                  <span>✓</span>
-                  <span>Save to My Story</span>
-                </button>
+                  Save to My Story
+                </Button>
                 <div className="flex gap-2">
-                  <button
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="flex-1"
                     onClick={() => {
                       setPhase('ready')
                       setEditableStory('')
                     }}
-                    className="flex-1 py-2 text-sm text-sepia/60 hover:text-sepia transition border border-sepia/15 rounded"
                   >
                     Regenerate
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="flex-1"
                     onClick={() => {
                       localStorage.removeItem(storageKey)
                       setMessages([])
@@ -412,10 +389,9 @@ export default function AIAssistant({ context, onClose, onInsertText }) {
                       setEditableStory('')
                       setPhase('start')
                     }}
-                    className="flex-1 py-2 text-sm text-sepia/60 hover:text-sepia transition border border-sepia/15 rounded"
                   >
                     Start over
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
@@ -424,32 +400,34 @@ export default function AIAssistant({ context, onClose, onInsertText }) {
             {(phase === 'interview' || phase === 'ready') && (
               <div className="space-y-2">
                 <div className="flex gap-2">
-                  <input
+                  <Input
                     type="text"
                     value={input}
                     onChange={e => setInput(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && handleUserResponse()}
                     placeholder="Share more details..."
-                    className="flex-1 px-4 py-3 sm:py-2.5 border border-sepia/20 rounded bg-white/70 focus:outline-none focus:ring-1 focus:ring-sepia/30 focus:border-sepia/40 text-base"
+                    className="flex-1"
                     disabled={loading || closing}
                   />
-                  <button
+                  <Button
+                    variant="secondary"
                     onClick={handleUserResponse}
                     disabled={loading || closing || !input.trim()}
-                    className="px-5 sm:px-4 py-3 sm:py-2.5 bg-ink text-white/90 rounded hover:bg-ink/90 transition disabled:opacity-40"
+                    className="shrink-0"
                   >
                     Send
-                  </button>
+                  </Button>
                 </div>
                 {messages.length > 2 && (
                   <button
+                    type="button"
                     onClick={() => {
                       localStorage.removeItem(storageKey)
                       setMessages([])
                       setGatheredContent([])
                       setPhase('start')
                     }}
-                    className="text-xs text-sepia/40 hover:text-sepia/60 transition"
+                    className="text-xs text-sepia-500 hover:text-sepia-700 transition-colors"
                   >
                     Start over
                   </button>

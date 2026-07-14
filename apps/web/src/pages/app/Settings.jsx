@@ -1,13 +1,24 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import {
+  IconCircleCheck,
+  IconChevronRight,
+  IconMail,
+  IconFileText,
+  IconShieldLock,
+  IconLogout,
+  IconTrash,
+  IconCookie
+} from '@tabler/icons-react'
 import { useAuth } from '../../context/AuthContext'
 import { useSettings, SPEAKING_PACE, VOICE_OPTIONS } from '../../context/SettingsContext'
+import AppShell from '../../components/layout/AppShell'
+import { Button, Card, Field, Input, Badge } from '../../components/ui'
 
 export default function Settings() {
   const navigate = useNavigate()
   const { user, logout, authFetch, refreshUser } = useAuth()
   const { speakingPace, setSpeakingPace, voiceGender, setVoiceGender } = useSettings()
-  const [activeTab, setActiveTab] = useState('account')
 
   // Profile editing state - always editable
   const [profileName, setProfileName] = useState(user?.name || '')
@@ -26,12 +37,6 @@ export default function Settings() {
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [deleteError, setDeleteError] = useState(null)
-
-  const tabs = [
-    { id: 'account', label: 'Account', icon: '👤' },
-    { id: 'speaking', label: 'Speaking', icon: '🎤' },
-    { id: 'privacy', label: 'Privacy', icon: '🔒' }
-  ]
 
   const handleLogout = async () => {
     await logout()
@@ -100,530 +105,436 @@ export default function Settings() {
     }
   }
 
+  const handleResendVerification = async () => {
+    setResendingVerification(true)
+    setVerificationMessage('')
+    try {
+      const res = await authFetch('/api/auth/resend-verification', {
+        method: 'POST'
+      })
+      const data = await res.json()
+      setVerificationMessage(res.ok ? 'Verification email sent!' : data.error || 'Failed')
+      if (res.ok) setTimeout(() => refreshUser(), 2000)
+    } catch {
+      setVerificationMessage('Failed to send email')
+    } finally {
+      setResendingVerification(false)
+    }
+  }
+
+  const handleManageCookies = () => {
+    localStorage.removeItem('cookie-consent')
+    localStorage.removeItem('cookie-consent-date')
+    window.location.reload()
+  }
+
   return (
-    <div className="min-h-screen bg-cream">
-      {/* Header */}
-      <header className="bg-white border-b border-sepia/10 sticky top-0 z-10">
-        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-4">
-          <Link to="/home" className="text-sepia hover:text-ink transition">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-          </Link>
-          <h1 className="text-xl font-display text-ink">Settings</h1>
-        </div>
-      </header>
+    <AppShell back="/home" title="Settings">
+      <div className="py-8 page-enter">
+        <header className="mb-10">
+          <h1 className="text-3xl sm:text-4xl font-display text-ink">Settings</h1>
+          <p className="text-sepia-600 mt-1">Your account information and preferences</p>
+        </header>
 
-      <div className="max-w-2xl mx-auto px-4 py-6">
-        {/* Tabs */}
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-          {tabs.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition whitespace-nowrap ${
-                activeTab === tab.id
-                  ? 'bg-sepia text-white'
-                  : 'bg-white text-warmgray hover:bg-sepia/10'
-              }`}
-            >
-              <span>{tab.icon}</span>
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Account Tab */}
-        {activeTab === 'account' && (
-          <div className="space-y-6">
-            {/* Profile Section */}
-            <div className="bg-white rounded-xl border border-sepia/10 overflow-hidden">
-              <div className="p-5 border-b border-sepia/10">
-                <h2 className="text-lg font-display text-ink mb-1">Profile</h2>
-                <p className="text-sm text-warmgray">Your account information</p>
-              </div>
-
-              <div className="p-5">
-                {/* Avatar and email (non-editable) */}
-                <div className="flex items-center gap-4 mb-6">
-                  {user?.avatar_url ? (
-                    <img
-                      src={user.avatar_url}
-                      alt={user.name}
-                      className="w-16 h-16 rounded-full border-2 border-sepia/20"
-                    />
-                  ) : (
-                    <div className="w-16 h-16 rounded-full bg-sepia/10 flex items-center justify-center border-2 border-sepia/20">
-                      <span className="text-2xl text-sepia font-display">
-                        {profileName?.charAt(0)?.toUpperCase() || '?'}
-                      </span>
-                    </div>
-                  )}
-                  <div>
-                    <p className="text-sm text-warmgray">{user?.email}</p>
-                  </div>
+        {/* Account */}
+        <section className="mb-10">
+          <p className="eyebrow mb-3">Account</p>
+          <Card className="stagger-item">
+            {/* Avatar and email (non-editable) */}
+            <div className="flex items-center gap-4 mb-6">
+              {user?.avatar_url ? (
+                <img
+                  src={user.avatar_url}
+                  alt={user.name}
+                  className="w-16 h-16 rounded-full border border-sepia-200"
+                />
+              ) : (
+                <div className="w-16 h-16 rounded-full bg-sepia-100 border border-sepia-200 flex items-center justify-center">
+                  <span className="text-2xl text-sepia-600 font-display">
+                    {profileName?.charAt(0)?.toUpperCase() || '?'}
+                  </span>
                 </div>
+              )}
+              <p className="text-sm text-sepia-600">{user?.email}</p>
+            </div>
 
-                {profileSuccess && (
-                  <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-800 text-sm flex items-center gap-2">
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    Saved! Your memoir will use the updated details.
-                  </div>
+            {profileSuccess && (
+              <div className="mb-4 p-4 bg-success-soft text-success-strong rounded-xl text-sm flex items-center gap-2">
+                <IconCircleCheck size={20} stroke={1.75} className="shrink-0" />
+                Saved! Your memoir will use the updated details.
+              </div>
+            )}
+
+            {profileError && (
+              <div className="mb-4 p-4 bg-error-soft text-error-strong rounded-xl text-sm">
+                {profileError}
+              </div>
+            )}
+
+            {/* Always-visible editable fields */}
+            <div className="space-y-4">
+              <Field
+                label={
+                  <>
+                    Your Name{' '}
+                    <span className="text-sepia-500 font-normal">(appears on your book cover)</span>
+                  </>
+                }
+              >
+                {(id, describedBy) => (
+                  <Input
+                    id={id}
+                    aria-describedby={describedBy}
+                    type="text"
+                    value={profileName}
+                    onChange={e => handleProfileFieldChange('name', e.target.value)}
+                    placeholder="Your full name"
+                  />
                 )}
+              </Field>
 
-                {profileError && (
-                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">
-                    {profileError}
-                  </div>
+              <Field
+                label={
+                  <>
+                    Birth Year{' '}
+                    <span className="text-sepia-500 font-normal">(helps personalise prompts)</span>
+                  </>
+                }
+              >
+                {(id, describedBy) => (
+                  <Input
+                    id={id}
+                    aria-describedby={describedBy}
+                    type="number"
+                    value={profileBirthYear}
+                    onChange={e => handleProfileFieldChange('birthYear', e.target.value)}
+                    placeholder="e.g., 1950"
+                    min="1900"
+                    max={new Date().getFullYear()}
+                  />
                 )}
+              </Field>
 
-                {/* Always-visible editable fields */}
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-ink mb-1.5">
-                      Your Name
-                      <span className="text-warmgray font-normal ml-1">
-                        (appears on your book cover)
-                      </span>
-                    </label>
-                    <input
-                      type="text"
-                      value={profileName}
-                      onChange={e => handleProfileFieldChange('name', e.target.value)}
-                      className="w-full px-4 py-3 border border-sepia/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-sepia/30 text-ink text-lg"
-                      placeholder="Your full name"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-ink mb-1.5">
-                      Birth Year
-                      <span className="text-warmgray font-normal ml-1">
-                        (helps personalise prompts)
-                      </span>
-                    </label>
-                    <input
-                      type="number"
-                      value={profileBirthYear}
-                      onChange={e => handleProfileFieldChange('birthYear', e.target.value)}
-                      className="w-full px-4 py-3 border border-sepia/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-sepia/30 text-ink text-lg"
-                      placeholder="e.g., 1950"
-                      min="1900"
-                      max={new Date().getFullYear()}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-ink mb-1.5">Email</label>
-                    <input
-                      type="email"
-                      value={user?.email || ''}
-                      disabled
-                      className="w-full px-4 py-3 border border-sepia/10 rounded-lg bg-sepia/5 text-warmgray cursor-not-allowed"
-                    />
-                    {/* Email verification status */}
-                    <div className="mt-2">
-                      {user?.email_verified ? (
-                        <span className="inline-flex items-center gap-1.5 text-sm text-green-700">
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                            />
-                          </svg>
-                          Email verified
+              <div>
+                <Field label="Email">
+                  {id => <Input id={id} type="email" value={user?.email || ''} disabled />}
+                </Field>
+
+                {/* Email verification status */}
+                <div className="mt-2">
+                  {user?.email_verified ? (
+                    <Badge variant="success" icon={<IconCircleCheck size={16} stroke={1.75} />}>
+                      Email verified
+                    </Badge>
+                  ) : !user?.google_id ? (
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="text-sm text-warning-strong">Email not verified</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleResendVerification}
+                        disabled={resendingVerification}
+                        className="underline"
+                      >
+                        {resendingVerification ? 'Sending...' : 'Resend verification'}
+                      </Button>
+                      {verificationMessage && (
+                        <span
+                          className={`text-xs ${
+                            verificationMessage.includes('sent')
+                              ? 'text-success-strong'
+                              : 'text-error'
+                          }`}
+                        >
+                          {verificationMessage}
                         </span>
-                      ) : !user?.google_id ? (
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm text-amber-700">Email not verified</span>
-                          <button
-                            onClick={async () => {
-                              setResendingVerification(true)
-                              setVerificationMessage('')
-                              try {
-                                const res = await authFetch('/api/auth/resend-verification', {
-                                  method: 'POST'
-                                })
-                                const data = await res.json()
-                                setVerificationMessage(
-                                  res.ok ? 'Verification email sent!' : data.error || 'Failed'
-                                )
-                                if (res.ok) setTimeout(() => refreshUser(), 2000)
-                              } catch {
-                                setVerificationMessage('Failed to send email')
-                              } finally {
-                                setResendingVerification(false)
-                              }
-                            }}
-                            disabled={resendingVerification}
-                            className="text-sm text-sepia hover:text-ink underline disabled:opacity-50"
-                          >
-                            {resendingVerification ? 'Sending...' : 'Resend verification'}
-                          </button>
-                          {verificationMessage && (
-                            <span
-                              className={`text-xs ${verificationMessage.includes('sent') ? 'text-green-700' : 'text-red-600'}`}
-                            >
-                              {verificationMessage}
-                            </span>
-                          )}
-                        </div>
-                      ) : null}
+                      )}
                     </div>
-                  </div>
-
-                  {/* Save button - only shows when changes are made */}
-                  {hasProfileChanges && (
-                    <div className="flex gap-3 pt-2">
-                      <button
-                        onClick={handleProfileSave}
-                        disabled={profileLoading}
-                        className="flex-1 px-4 py-3 bg-sepia text-white rounded-lg hover:bg-ink transition disabled:opacity-50 font-medium"
-                      >
-                        {profileLoading ? 'Saving...' : 'Save Changes'}
-                      </button>
-                      <button
-                        onClick={() => {
-                          setProfileName(user?.name || '')
-                          setProfileBirthYear(user?.birth_year || '')
-                          setHasProfileChanges(false)
-                          setProfileError(null)
-                        }}
-                        className="px-4 py-3 border border-sepia/20 text-ink rounded-lg hover:bg-sepia/5 transition"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  )}
+                  ) : null}
                 </div>
               </div>
-            </div>
 
-            {/* Sign Out Section */}
-            <div className="bg-white rounded-xl border border-sepia/10 overflow-hidden">
-              <div className="p-5">
-                <button
-                  onClick={handleLogout}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-ink text-white rounded-lg hover:bg-sepia transition"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                    />
-                  </svg>
-                  Sign Out
-                </button>
-              </div>
+              {/* Save button - only shows when changes are made */}
+              {hasProfileChanges && (
+                <div className="flex gap-3 pt-2">
+                  <Button className="flex-1" loading={profileLoading} onClick={handleProfileSave}>
+                    {profileLoading ? 'Saving...' : 'Save Changes'}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      setProfileName(user?.name || '')
+                      setProfileBirthYear(user?.birth_year || '')
+                      setHasProfileChanges(false)
+                      setProfileError(null)
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              )}
             </div>
+          </Card>
+        </section>
 
-            {/* Help & Support */}
-            <div className="bg-white rounded-xl border border-sepia/10 overflow-hidden">
-              <div className="p-5 border-b border-sepia/10">
-                <h2 className="text-lg font-display text-ink mb-1">Help & Support</h2>
-              </div>
-              <div className="divide-y divide-sepia/10">
-                <a
-                  href="mailto:support@easymemoir.co.uk"
-                  className="flex items-center justify-between p-4 hover:bg-sepia/5 transition"
+        {/* Preferences */}
+        <section className="mb-10">
+          <p className="eyebrow mb-3">Preferences</p>
+
+          <Card className="stagger-item">
+            <h2 className="text-lg font-display text-ink mb-1">Conversation Pace</h2>
+            <p className="text-sm text-sepia-600 mb-4">
+              Choose how quickly Clio responds after you stop speaking
+            </p>
+
+            <div className="space-y-3">
+              {Object.entries(SPEAKING_PACE).map(([key, pace]) => (
+                <label
+                  key={key}
+                  className={`flex items-start gap-4 p-4 rounded-xl border cursor-pointer transition-all ${
+                    speakingPace === key
+                      ? 'border-bronze-400 ring-4 ring-bronze-500/10'
+                      : 'border-sepia-200 hover:border-sepia-300'
+                  }`}
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl">📧</span>
-                    <span className="text-ink">Contact Support</span>
+                  <input
+                    type="radio"
+                    name="speakingPace"
+                    value={key}
+                    checked={speakingPace === key}
+                    onChange={() => setSpeakingPace(key)}
+                    className="mt-1 accent-bronze-500"
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-ink">{pace.label}</span>
+                      {key === 'normal' && <Badge variant="bronze">Recommended</Badge>}
+                    </div>
+                    <p className="text-sm text-sepia-600 mt-1">{pace.description}</p>
+                    <p className="text-sm text-sepia-500 mt-0.5">
+                      Waits {pace.silence_duration_ms / 1000} seconds after you stop speaking
+                    </p>
                   </div>
-                  <svg
-                    className="w-5 h-5 text-warmgray"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </a>
-                <Link
-                  to="/terms"
-                  className="flex items-center justify-between p-4 hover:bg-sepia/5 transition"
+                </label>
+              ))}
+            </div>
+
+            <div className="mt-4 p-4 bg-cream rounded-xl">
+              <p className="text-sm text-sepia-700">
+                <span className="font-medium text-ink">Tip:</span> If Clio interrupts you often, try
+                "Slow". If conversations feel sluggish, try "Fast".
+              </p>
+            </div>
+          </Card>
+
+          <Card className="stagger-item mt-4">
+            <h2 className="text-lg font-display text-ink mb-1">Voice</h2>
+            <p className="text-sm text-sepia-600 mb-4">Choose your preferred voice for Clio</p>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              {Object.entries(VOICE_OPTIONS).map(([key, option]) => (
+                <label
+                  key={key}
+                  className={`flex-1 flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all ${
+                    voiceGender === key
+                      ? 'border-bronze-400 ring-4 ring-bronze-500/10'
+                      : 'border-sepia-200 hover:border-sepia-300'
+                  }`}
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl">📄</span>
-                    <span className="text-ink">Terms of Service</span>
+                  <input
+                    type="radio"
+                    name="voiceGender"
+                    value={key}
+                    checked={voiceGender === key}
+                    onChange={() => setVoiceGender(key)}
+                    className="accent-bronze-500"
+                  />
+                  <div>
+                    <span className="font-medium text-ink">{option.label}</span>
+                    <p className="text-sm text-sepia-600">{option.description}</p>
                   </div>
-                  <svg
-                    className="w-5 h-5 text-warmgray"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </Link>
-                <Link
-                  to="/privacy"
-                  className="flex items-center justify-between p-4 hover:bg-sepia/5 transition"
+                </label>
+              ))}
+            </div>
+          </Card>
+
+          <Card padding="none" className="stagger-item mt-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 sm:p-6">
+              <div className="flex items-center gap-4 min-w-0">
+                <div className="w-11 h-11 bg-sepia-100 text-sepia-600 rounded-xl flex items-center justify-center shrink-0">
+                  <IconCookie size={24} stroke={1.5} />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-medium text-ink">Cookie Preferences</p>
+                  <p className="text-sm text-sepia-600">
+                    Manage your cookie and tracking preferences
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="shrink-0"
+                onClick={handleManageCookies}
+              >
+                Manage Cookie Settings
+              </Button>
+            </div>
+          </Card>
+        </section>
+
+        {/* Help & Support */}
+        <section className="mb-10">
+          <p className="eyebrow mb-3">Help &amp; Support</p>
+          <Card padding="none" className="stagger-item">
+            <div className="divide-y divide-sepia-100">
+              <SupportRow
+                href="mailto:support@easymemoir.co.uk"
+                icon={<IconMail size={20} stroke={1.75} />}
+                label="Contact Support"
+              />
+              <SupportRow
+                to="/terms"
+                icon={<IconFileText size={20} stroke={1.75} />}
+                label="Terms of Service"
+              />
+              <SupportRow
+                to="/privacy"
+                icon={<IconShieldLock size={20} stroke={1.75} />}
+                label="Privacy Policy"
+              />
+            </div>
+          </Card>
+        </section>
+
+        {/* Sign out — quiet secondary */}
+        <div className="mb-12">
+          <Button
+            variant="secondary"
+            icon={<IconLogout size={20} stroke={1.75} />}
+            onClick={handleLogout}
+          >
+            Sign Out
+          </Button>
+        </div>
+
+        {/* Danger zone */}
+        <section className="mb-8">
+          <p className="eyebrow mb-3">Danger zone</p>
+          <Card className="stagger-item">
+            {!showDeleteConfirm ? (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <p className="font-medium text-ink">Delete My Account</p>
+                  <p className="text-sm text-sepia-600">Irreversible and destructive actions</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="shrink-0 self-start sm:self-auto text-error hover:text-error-strong hover:bg-error-soft"
+                  icon={<IconTrash size={20} stroke={1.75} />}
+                  onClick={() => setShowDeleteConfirm(true)}
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl">🔐</span>
-                    <span className="text-ink">Privacy Policy</span>
-                  </div>
-                  <svg
-                    className="w-5 h-5 text-warmgray"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </Link>
+                  Delete My Account
+                </Button>
               </div>
-            </div>
-          </div>
-        )}
+            ) : (
+              <div className="space-y-4">
+                <div className="p-4 bg-error-soft rounded-xl">
+                  <p className="text-error-strong font-medium mb-1">Are you absolutely sure?</p>
+                  <p className="text-sm text-error-strong">
+                    This action cannot be undone. This will permanently delete your account and
+                    remove all your data including your memoir stories, images, and personal
+                    information.
+                  </p>
+                </div>
 
-        {/* Speaking Tab */}
-        {activeTab === 'speaking' && (
-          <>
-            <div className="bg-white rounded-xl border border-sepia/10 overflow-hidden">
-              <div className="p-5 border-b border-sepia/10">
-                <h2 className="text-lg font-display text-ink mb-1">Conversation Pace</h2>
-                <p className="text-sm text-warmgray">
-                  Choose how quickly Clio responds after you stop speaking
-                </p>
-              </div>
-
-              <div className="p-5 space-y-3">
-                {Object.entries(SPEAKING_PACE).map(([key, pace]) => (
-                  <label
-                    key={key}
-                    className={`flex items-start gap-4 p-4 rounded-xl border-2 cursor-pointer transition ${
-                      speakingPace === key
-                        ? 'border-sepia bg-sepia/5'
-                        : 'border-sepia/10 hover:border-sepia/30'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="speakingPace"
-                      value={key}
-                      checked={speakingPace === key}
-                      onChange={() => setSpeakingPace(key)}
-                      className="mt-1 accent-sepia"
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-ink">{pace.label}</span>
-                        {key === 'normal' && (
-                          <span className="text-xs bg-sepia/10 text-sepia px-2 py-0.5 rounded-full">
-                            Recommended
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-warmgray mt-1">{pace.description}</p>
-                      <p className="text-xs text-warmgray/60 mt-1">
-                        Waits {pace.silence_duration_ms / 1000} seconds after you stop speaking
-                      </p>
-                    </div>
-                  </label>
-                ))}
-              </div>
-
-              <div className="px-5 py-4 bg-amber-50/50 border-t border-sepia/10">
-                <p className="text-sm text-warmgray">
-                  <span className="font-medium text-ink">Tip:</span> If Clio interrupts you often,
-                  try "Slow". If conversations feel sluggish, try "Fast".
-                </p>
-              </div>
-            </div>
-
-            {/* Voice Selection */}
-            <div className="bg-white rounded-xl border border-sepia/10 overflow-hidden mt-6">
-              <div className="p-5 border-b border-sepia/10">
-                <h2 className="text-lg font-display text-ink mb-1">Voice</h2>
-                <p className="text-sm text-warmgray">Choose your preferred voice for Clio</p>
-              </div>
-
-              <div className="p-5 flex gap-3">
-                {Object.entries(VOICE_OPTIONS).map(([key, option]) => (
-                  <label
-                    key={key}
-                    className={`flex-1 flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition ${
-                      voiceGender === key
-                        ? 'border-sepia bg-sepia/5'
-                        : 'border-sepia/10 hover:border-sepia/30'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="voiceGender"
-                      value={key}
-                      checked={voiceGender === key}
-                      onChange={() => setVoiceGender(key)}
-                      className="accent-sepia"
-                    />
-                    <div>
-                      <span className="font-medium text-ink">{option.label}</span>
-                      <p className="text-xs text-warmgray">{option.description}</p>
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* Privacy Tab */}
-        {activeTab === 'privacy' && (
-          <div className="space-y-6">
-            {/* Cookie Preferences */}
-            <div className="bg-white rounded-xl border border-sepia/10 overflow-hidden">
-              <div className="p-5 border-b border-sepia/10">
-                <h2 className="text-lg font-display text-ink mb-1">Cookie Preferences</h2>
-                <p className="text-sm text-warmgray">Manage your cookie and tracking preferences</p>
-              </div>
-              <div className="p-5">
-                <button
-                  onClick={() => {
-                    localStorage.removeItem('cookie-consent')
-                    localStorage.removeItem('cookie-consent-date')
-                    window.location.reload()
-                  }}
-                  className="flex items-center gap-2 px-4 py-2 border border-sepia/20 text-ink rounded-lg hover:bg-sepia/5 transition"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                    />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                    />
-                  </svg>
-                  Manage Cookie Settings
-                </button>
-              </div>
-            </div>
-
-            {/* Delete Account */}
-            <div className="bg-white rounded-xl border border-red-200 overflow-hidden">
-              <div className="p-5 border-b border-red-100">
-                <h2 className="text-lg font-display text-red-700 mb-1">Danger Zone</h2>
-                <p className="text-sm text-red-600/70">Irreversible and destructive actions</p>
-              </div>
-              <div className="p-5">
-                {!showDeleteConfirm ? (
-                  <button
-                    onClick={() => setShowDeleteConfirm(true)}
-                    className="flex items-center gap-2 px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                      />
-                    </svg>
-                    Delete My Account
-                  </button>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="p-4 bg-red-50 rounded-lg border border-red-200">
-                      <p className="text-red-700 font-medium mb-2">Are you absolutely sure?</p>
-                      <p className="text-sm text-red-600/80">
-                        This action cannot be undone. This will permanently delete your account and
-                        remove all your data including your memoir stories, images, and personal
-                        information.
-                      </p>
-                    </div>
-
-                    {deleteError && (
-                      <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">
-                        {deleteError}
-                      </div>
-                    )}
-
-                    <div>
-                      <label className="block text-sm font-medium text-ink mb-1">
-                        Type <span className="font-mono bg-red-100 px-1 rounded">DELETE</span> to
-                        confirm
-                      </label>
-                      <input
-                        type="text"
-                        value={deleteConfirmText}
-                        onChange={e => setDeleteConfirmText(e.target.value)}
-                        className="w-full px-4 py-2 border border-red-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-300"
-                        placeholder="DELETE"
-                      />
-                    </div>
-
-                    <div className="flex gap-3">
-                      <button
-                        onClick={handleDeleteAccount}
-                        disabled={deleteConfirmText !== 'DELETE' || deleteLoading}
-                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {deleteLoading ? 'Deleting...' : 'Permanently Delete Account'}
-                      </button>
-                      <button
-                        onClick={() => {
-                          setShowDeleteConfirm(false)
-                          setDeleteConfirmText('')
-                          setDeleteError(null)
-                        }}
-                        className="px-4 py-2 border border-sepia/20 text-ink rounded-lg hover:bg-sepia/5 transition"
-                      >
-                        Cancel
-                      </button>
-                    </div>
+                {deleteError && (
+                  <div className="p-4 bg-error-soft text-error-strong rounded-xl text-sm">
+                    {deleteError}
                   </div>
                 )}
+
+                <Field
+                  label={
+                    <>
+                      Type{' '}
+                      <span className="font-mono bg-error-soft text-error-strong px-1 rounded">
+                        DELETE
+                      </span>{' '}
+                      to confirm
+                    </>
+                  }
+                >
+                  {(id, describedBy) => (
+                    <Input
+                      id={id}
+                      aria-describedby={describedBy}
+                      type="text"
+                      value={deleteConfirmText}
+                      onChange={e => setDeleteConfirmText(e.target.value)}
+                      placeholder="DELETE"
+                    />
+                  )}
+                </Field>
+
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button
+                    variant="danger"
+                    disabled={deleteConfirmText !== 'DELETE' || deleteLoading}
+                    loading={deleteLoading}
+                    onClick={handleDeleteAccount}
+                  >
+                    {deleteLoading ? 'Deleting...' : 'Permanently Delete Account'}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      setShowDeleteConfirm(false)
+                      setDeleteConfirmText('')
+                      setDeleteError(null)
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
               </div>
-            </div>
-          </div>
-        )}
+            )}
+          </Card>
+        </section>
 
         {/* App Version */}
-        <div className="mt-8 text-center text-xs text-warmgray/60">
+        <div className="mt-4 pb-4 text-center text-xs text-sepia-500">
           <p>Easy Memoir v1.0</p>
         </div>
       </div>
-    </div>
+    </AppShell>
+  )
+}
+
+function SupportRow({ to, href, icon, label }) {
+  const content = (
+    <>
+      <div className="flex items-center gap-3 min-w-0">
+        <span className="text-sepia-500">{icon}</span>
+        <span className="text-ink">{label}</span>
+      </div>
+      <IconChevronRight size={20} stroke={1.75} className="text-sepia-400 shrink-0" />
+    </>
+  )
+  const classes =
+    'flex items-center justify-between gap-4 p-4 sm:px-6 hover:bg-sepia-50 transition-colors'
+
+  if (to) {
+    return (
+      <Link to={to} className={classes}>
+        {content}
+      </Link>
+    )
+  }
+  return (
+    <a href={href} className={classes}>
+      {content}
+    </a>
   )
 }

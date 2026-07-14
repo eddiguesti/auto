@@ -1,17 +1,31 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import {
+  IconBook2,
+  IconMicrophone,
+  IconBooks,
+  IconLock,
+  IconGift,
+  IconChevronDown,
+  IconHelpCircle,
+  IconMail,
+  IconPhone,
+  IconRocket,
+  IconCoin
+} from '@tabler/icons-react'
 import SEO, { faqSchema, breadcrumbSchema } from '../../components/SEO'
+import { Button, Card } from '../../components/ui'
 
 export default function FAQ() {
   const [openIndex, setOpenIndex] = useState(null)
   const [activeCategory, setActiveCategory] = useState('general')
 
   const categories = [
-    { id: 'general', name: 'General', icon: '📖' },
-    { id: 'recording', name: 'Recording', icon: '🎙️' },
-    { id: 'printing', name: 'Printing', icon: '📚' },
-    { id: 'privacy', name: 'Privacy', icon: '🔒' },
-    { id: 'gifting', name: 'Gifting', icon: '🎁' }
+    { id: 'general', name: 'General', icon: IconBook2 },
+    { id: 'recording', name: 'Recording', icon: IconMicrophone },
+    { id: 'printing', name: 'Printing', icon: IconBooks },
+    { id: 'privacy', name: 'Privacy', icon: IconLock },
+    { id: 'gifting', name: 'Gifting', icon: IconGift }
   ]
 
   const faqs = {
@@ -159,7 +173,7 @@ export default function FAQ() {
   }
 
   return (
-    <div className="min-h-screen bg-heritage-cream">
+    <div className="min-h-screen bg-parchment page-enter">
       <SEO
         title="Frequently Asked Questions — Easy Memoir Help Centre"
         description="Find answers to common questions about Easy Memoir. Learn about voice recording, AI memoir writing, book printing, privacy, gift vouchers, and more. Everything you need to get started."
@@ -170,30 +184,21 @@ export default function FAQ() {
         ]}
       />
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-heritage-cream/95 backdrop-blur-sm border-b border-heritage-sepia-light/30">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-parchment/90 backdrop-blur-sm border-b border-sepia-200">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link to="/" className="font-display text-2xl text-heritage-ink">
+          <Link to="/" className="font-display text-2xl text-ink">
             Easy Memoir
           </Link>
           <div className="flex items-center gap-6">
-            <Link
-              to="/pricing"
-              className="font-sans text-sm text-heritage-text hover:text-heritage-ink transition-colors"
-            >
+            <Link to="/pricing" className="text-sm text-sepia-600 hover:text-ink transition-colors">
               Pricing
             </Link>
-            <Link
-              to="/gift"
-              className="font-sans text-sm text-heritage-text hover:text-heritage-ink transition-colors"
-            >
+            <Link to="/gift" className="text-sm text-sepia-600 hover:text-ink transition-colors">
               Gift
             </Link>
-            <Link
-              to="/register"
-              className="font-sans bg-heritage-cta text-white px-5 py-2 rounded-full text-sm hover:bg-heritage-cta-hover transition-colors"
-            >
+            <Button to="/register" size="sm">
               Start Free
-            </Link>
+            </Button>
           </div>
         </div>
       </nav>
@@ -201,18 +206,13 @@ export default function FAQ() {
       {/* Hero */}
       <section className="pt-32 pb-16 px-6">
         <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-heritage-sepia-light/30 border border-heritage-sepia-light/50 mb-6 animate-fade-in">
-            <span className="text-lg">❓</span>
-            <p className="font-sans uppercase tracking-[0.3em] text-xs text-heritage-sepia">
-              Help Centre
-            </p>
-          </div>
+          <p className="eyebrow mb-4">Help Centre</p>
 
-          <h1 className="font-display text-5xl sm:text-6xl text-heritage-ink mb-6 animate-slide-up">
+          <h1 className="font-display text-4xl sm:text-5xl text-ink mb-6">
             Frequently asked questions
           </h1>
 
-          <p className="font-serif text-xl text-heritage-text max-w-2xl mx-auto animate-slide-up animation-delay-100">
+          <p className="text-lg text-sepia-600 max-w-2xl mx-auto">
             Everything you need to know about preserving your life story with Easy Memoir.
           </p>
         </div>
@@ -222,205 +222,137 @@ export default function FAQ() {
       <section className="px-6 mb-12">
         <div className="max-w-4xl mx-auto">
           <div className="flex flex-wrap justify-center gap-3">
-            {categories.map((cat, i) => (
-              <button
-                key={cat.id}
-                onClick={() => {
-                  setActiveCategory(cat.id)
-                  setOpenIndex(null)
-                }}
-                className={`flex items-center gap-2 px-5 py-3 rounded-full font-sans text-sm font-medium transition-all duration-300 animate-slide-up ${
-                  activeCategory === cat.id
-                    ? 'bg-heritage-cta text-white shadow-lg scale-105'
-                    : 'bg-heritage-card text-heritage-text hover:bg-heritage-sepia-light/30 border border-heritage-sepia-light/30'
-                }`}
-                style={{ animationDelay: `${i * 50 + 200}ms` }}
-              >
-                <span>{cat.icon}</span>
-                {cat.name}
-              </button>
-            ))}
+            {categories.map(cat => {
+              const Icon = cat.icon
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => {
+                    setActiveCategory(cat.id)
+                    setOpenIndex(null)
+                  }}
+                  className={`flex items-center gap-2 px-5 py-3 rounded-full text-sm font-medium transition-all duration-200 ${
+                    activeCategory === cat.id
+                      ? 'bg-ink text-white shadow-button'
+                      : 'bg-surface text-sepia-600 border border-sepia-200 hover:border-sepia-300 hover:text-ink'
+                  }`}
+                >
+                  <Icon size={18} stroke={1.75} />
+                  {cat.name}
+                </button>
+              )
+            })}
           </div>
         </div>
       </section>
 
       {/* FAQ Accordion */}
-      <section className="pb-24 px-6">
+      <section className="pb-16 sm:pb-20 px-6">
         <div className="max-w-3xl mx-auto">
-          <div className="space-y-4">
+          <Card padding="none" className="divide-y divide-sepia-100">
             {faqs[activeCategory].map((faq, index) => (
-              <div
-                key={index}
-                className={`bg-heritage-card rounded-2xl border border-heritage-sepia-light/30 overflow-hidden transition-all duration-500 animate-slide-up ${
-                  openIndex === index ? 'shadow-lg ring-2 ring-heritage-cta/20' : 'hover:shadow-md'
-                }`}
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
+              <div key={index}>
                 <button
                   onClick={() => toggleFAQ(index)}
-                  className="w-full flex items-center justify-between p-6 text-left group"
+                  aria-expanded={openIndex === index}
+                  className="w-full flex items-center justify-between gap-4 px-5 sm:px-6 py-5 text-left"
                 >
-                  <h3 className="font-display text-lg text-heritage-ink pr-8 group-hover:text-heritage-cta transition-colors">
-                    {faq.question}
-                  </h3>
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-300 ${
-                      openIndex === index
-                        ? 'bg-heritage-cta text-white rotate-180'
-                        : 'bg-heritage-sepia-light/30 text-heritage-sepia'
+                  <h3 className="font-medium text-ink text-base">{faq.question}</h3>
+                  <IconChevronDown
+                    size={20}
+                    stroke={1.75}
+                    className={`text-sepia-400 flex-shrink-0 transition-transform duration-300 ${
+                      openIndex === index ? 'rotate-180' : ''
                     }`}
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
-                  </div>
+                  />
                 </button>
 
                 <div
-                  className={`overflow-hidden transition-all duration-500 ease-in-out ${
-                    openIndex === index ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+                  className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                    openIndex === index ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'
                   }`}
                 >
-                  <div className="px-6 pb-6">
-                    <div className="pt-2 border-t border-heritage-sepia-light/20">
-                      <p className="font-serif text-heritage-text leading-relaxed pt-4">
-                        {faq.answer}
-                      </p>
-                    </div>
-                  </div>
+                  <p className="px-5 sm:px-6 pb-6 text-sepia-600">{faq.answer}</p>
                 </div>
               </div>
             ))}
-          </div>
+          </Card>
         </div>
       </section>
 
       {/* Still have questions */}
-      <section className="py-20 px-6 bg-gradient-to-b from-heritage-card to-heritage-cream">
+      <section className="py-16 sm:py-20 px-6 bg-cream">
         <div className="max-w-3xl mx-auto text-center">
-          <div className="bg-white rounded-3xl p-10 shadow-xl border border-heritage-sepia-light/20">
-            <div className="w-20 h-20 bg-heritage-cta/10 rounded-full flex items-center justify-center mx-auto mb-6">
-              <svg
-                className="w-10 h-10 text-heritage-cta"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
+          <Card padding="lg" className="rounded-3xl">
+            <div className="w-16 h-16 bg-bronze-100 text-bronze-700 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <IconHelpCircle size={32} stroke={1.5} />
             </div>
 
-            <h2 className="font-display text-3xl text-heritage-ink mb-4">Still have questions?</h2>
-            <p className="font-serif text-lg text-heritage-text mb-8">
+            <h2 className="font-display text-3xl text-ink mb-4">Still have questions?</h2>
+            <p className="text-lg text-sepia-600 mb-8">
               We're here to help. Reach out and we'll get back to you within 24 hours.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a
+              <Button
                 href="mailto:hello@easymemoir.co.uk"
-                className="inline-flex items-center justify-center gap-2 font-sans bg-heritage-cta text-white px-8 py-4 rounded-full text-lg font-medium hover:bg-heritage-cta-hover transition-all shadow-lg hover:shadow-xl hover:scale-[1.02]"
+                size="lg"
+                icon={<IconMail size={20} stroke={1.75} />}
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                  />
-                </svg>
                 Email Us
-              </a>
-              <a
+              </Button>
+              <Button
                 href="tel:+441onal"
-                className="inline-flex items-center justify-center gap-2 font-sans border-2 border-heritage-sepia-light text-heritage-ink px-8 py-4 rounded-full text-lg font-medium hover:bg-heritage-sepia-light/20 transition-all"
+                variant="secondary"
+                size="lg"
+                icon={<IconPhone size={20} stroke={1.75} />}
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-                  />
-                </svg>
                 Call Us
-              </a>
+              </Button>
             </div>
-          </div>
+          </Card>
         </div>
       </section>
 
       {/* Quick Links */}
       <section className="py-16 px-6">
         <div className="max-w-5xl mx-auto">
-          <h3 className="font-display text-2xl text-heritage-ink text-center mb-10">
-            Helpful resources
-          </h3>
+          <h3 className="font-display text-2xl text-ink text-center mb-10">Helpful resources</h3>
           <div className="grid sm:grid-cols-3 gap-6">
             {[
               {
                 title: 'Getting Started Guide',
                 desc: 'Step-by-step walkthrough for new users',
                 link: '/how-it-works',
-                icon: '🚀'
+                icon: IconRocket
               },
               {
                 title: 'Pricing & Plans',
                 desc: 'Find the perfect plan for your needs',
                 link: '/pricing',
-                icon: '💰'
+                icon: IconCoin
               },
               {
                 title: 'Gift a Memoir',
                 desc: 'Give the gift of preserved memories',
                 link: '/gift',
-                icon: '🎁'
+                icon: IconGift
               }
-            ].map((resource, i) => (
-              <Link
-                key={i}
-                to={resource.link}
-                className="group bg-heritage-card rounded-2xl p-6 border border-heritage-sepia-light/30 hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
-              >
-                <span className="text-3xl mb-4 block">{resource.icon}</span>
-                <h4 className="font-display text-lg text-heritage-ink mb-2 group-hover:text-heritage-cta transition-colors">
-                  {resource.title}
-                </h4>
-                <p className="font-sans text-sm text-heritage-text">{resource.desc}</p>
-              </Link>
-            ))}
+            ].map((resource, i) => {
+              const Icon = resource.icon
+              return (
+                <Card key={i} interactive to={resource.link} className="stagger-item">
+                  <div className="w-11 h-11 bg-sepia-100 text-sepia-600 rounded-xl flex items-center justify-center mb-4">
+                    <Icon size={24} stroke={1.5} />
+                  </div>
+                  <h4 className="font-display text-lg text-ink mb-2">{resource.title}</h4>
+                  <p className="text-sm text-sepia-600">{resource.desc}</p>
+                </Card>
+              )
+            })}
           </div>
         </div>
       </section>
-
-      {/* Custom animations */}
-      <style>{`
-        @keyframes fade-in {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes slide-up {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in {
-          animation: fade-in 0.6s ease-out forwards;
-        }
-        .animate-slide-up {
-          animation: slide-up 0.6s ease-out forwards;
-          opacity: 0;
-        }
-        .animation-delay-100 { animation-delay: 100ms; }
-      `}</style>
     </div>
   )
 }

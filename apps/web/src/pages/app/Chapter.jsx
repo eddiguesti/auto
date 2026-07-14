@@ -1,5 +1,17 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
+import {
+  IconAlertCircle,
+  IconArrowLeft,
+  IconArrowRight,
+  IconBook2,
+  IconBulb,
+  IconCheck,
+  IconChevronsRight,
+  IconLoader2,
+  IconLock,
+  IconPhoto
+} from '@tabler/icons-react'
 import { chapters } from '../../data/chapters'
 import QuestionCard from '../../components/QuestionCard'
 import AIAssistant from '../../components/AIAssistant'
@@ -11,6 +23,8 @@ import { useChapterStories } from '../../features/memoir/queries/storyQueries'
 import { useChapterAI } from '../../features/memoir/hooks/useChapterAI'
 import UpgradeModal from '../../components/UpgradeModal'
 import QuestionCardSkeleton from '../../components/skeletons/QuestionCardSkeleton'
+import AppShell from '../../components/layout/AppShell'
+import { Button, Badge, ProgressBar, EmptyState } from '../../components/ui'
 
 export default function Chapter() {
   const { chapterId } = useParams()
@@ -211,346 +225,314 @@ export default function Chapter() {
 
   if (!chapter) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-8 text-center">
-        <p className="text-sepia">Chapter not found</p>
-        <Link to="/" className="text-ink underline">
-          Go back home
-        </Link>
-      </div>
+      <AppShell back="/home">
+        <div className="py-8 page-enter">
+          <EmptyState
+            icon={<IconBook2 size={24} stroke={1.5} />}
+            title="Chapter not found"
+            action={
+              <Button variant="secondary" to="/">
+                Go back home
+              </Button>
+            }
+          />
+        </div>
+      </AppShell>
     )
   }
 
   const question = chapter.questions[currentQuestion]
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 page-enter">
-      {/* Header */}
-      <header className="mb-6 sm:mb-8">
-        <Link
-          to="/"
-          className="text-sepia/70 hover:text-sepia transition inline-flex items-center gap-2 mb-6 py-1 text-sm"
-        >
-          <span>←</span>
-          <span>Return to Contents</span>
-        </Link>
-        <div className="flex items-center gap-4 sm:gap-5">
-          {/* Chapter Number Circle */}
-          <div className="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center border-2 border-sepia/40 rounded-full flex-shrink-0">
-            <span className="text-sepia font-semibold">{chapter.icon}</span>
-          </div>
-          <div className="min-w-0">
-            <h1 className="text-2xl sm:text-3xl text-ink font-medium">{chapter.title}</h1>
-            <p className="text-sepia/70 text-sm sm:text-base italic">{chapter.subtitle}</p>
-          </div>
+    <AppShell back="/home" title={chapter.title}>
+      <div className="py-8 page-enter">
+        {/* Heading */}
+        <header className="mb-8">
+          <p className="eyebrow mb-2">Chapter {chapter.icon}</p>
+          <h1 className="text-3xl sm:text-4xl font-display text-ink">{chapter.title}</h1>
+          <p className="text-sepia-600 mt-1.5">{chapter.subtitle}</p>
+        </header>
+
+        {/* Chapter Illustration Toggle */}
+        <div className="mb-6">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="-ml-2"
+            onClick={() => setShowIllustration(!showIllustration)}
+            icon={<IconPhoto size={18} stroke={1.75} />}
+          >
+            {showIllustration ? 'Hide' : 'Show'} chapter illustration
+          </Button>
+
+          {showIllustration && (
+            <div className="mt-3">
+              <ChapterIllustration
+                chapterId={chapterId}
+                stories={Object.entries(answers).map(([qId, data]) => ({
+                  questionId: qId,
+                  answer: data.answer
+                }))}
+              />
+            </div>
+          )}
         </div>
-      </header>
 
-      {/* Chapter Illustration Toggle */}
-      <div className="mb-4">
-        <button
-          onClick={() => setShowIllustration(!showIllustration)}
-          className="text-sepia/60 hover:text-sepia text-sm flex items-center gap-2 transition"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.5}
-              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-            />
-          </svg>
-          {showIllustration ? 'Hide' : 'Show'} chapter illustration
-        </button>
-
-        {showIllustration && (
-          <div className="mt-3">
-            <ChapterIllustration
-              chapterId={chapterId}
-              stories={Object.entries(answers).map(([qId, data]) => ({
-                questionId: qId,
-                answer: data.answer
-              }))}
-            />
+        {/* Error Banner */}
+        {lastError && (
+          <div className="mb-6 p-4 bg-error-soft rounded-xl flex items-center justify-between gap-3">
+            <span className="text-error-strong text-sm flex items-center gap-2 min-w-0">
+              <IconAlertCircle size={20} stroke={1.75} className="shrink-0" />
+              {lastError}
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                // Retry saving the current answer
+                const currentAnswer = answers[question.id]?.answer || ''
+                if (currentAnswer) {
+                  setLastError(null)
+                  saveAnswer(question.id, currentAnswer)
+                }
+              }}
+              className="text-error-strong underline text-sm font-medium hover:no-underline shrink-0"
+            >
+              Retry
+            </button>
           </div>
         )}
-      </div>
 
-      {/* Error Banner */}
-      {lastError && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
-          <span className="text-red-700 text-sm">{lastError}</span>
-          <button
-            onClick={() => {
-              // Retry saving the current answer
-              const currentAnswer = answers[question.id]?.answer || ''
-              if (currentAnswer) {
-                setLastError(null)
-                saveAnswer(question.id, currentAnswer)
-              }
-            }}
-            className="text-red-700 underline text-sm hover:text-red-800"
-          >
-            Retry
-          </button>
-        </div>
-      )}
+        {/* Chapter Progress */}
+        <div className="mb-6">
+          <div className="flex justify-between items-center text-sm text-sepia-600 mb-2">
+            <span>
+              Question {currentQuestion + 1} of {chapter.questions.length}
+            </span>
+            <div className="flex items-center gap-3">
+              {/* Save Status Indicator */}
+              {saveStatus === 'saving' && (
+                <span className="flex items-center gap-1.5 text-sepia-500">
+                  <IconLoader2 size={14} stroke={2} className="animate-spin" />
+                  Saving...
+                </span>
+              )}
+              {saveStatus === 'saved' && (
+                <span className="flex items-center gap-1.5 text-success-strong">
+                  <IconCheck size={14} stroke={2.5} />
+                  Saved
+                </span>
+              )}
+              {saveStatus === 'error' && (
+                <span className="flex items-center gap-1.5 text-error-strong">
+                  <IconAlertCircle size={14} stroke={2} />
+                  Save failed
+                </span>
+              )}
+              <span className="text-sepia-500">{answeredCount} answered</span>
+            </div>
+          </div>
+          <ProgressBar
+            value={(answeredCount / chapter.questions.length) * 100}
+            label={`${chapter.title} progress`}
+            className="mb-2.5"
+          />
+          <div className="flex gap-1 sm:gap-1.5">
+            {chapter.questions.map((q, idx) => {
+              const isAnswered = answers[q.id]?.answer?.trim()
+              const isSkipped = skippedQuestions.includes(q.id) && !isAnswered
+              const isCurrent = idx === currentQuestion
 
-      {/* Progress Bar */}
-      <div className="bg-white/50 backdrop-blur-sm rounded-lg p-3 sm:p-4 border border-sepia/10 mb-4 sm:mb-6">
-        <div className="flex justify-between text-xs sm:text-sm text-sepia/70 mb-2">
-          <span>
-            Question {currentQuestion + 1} of {chapter.questions.length}
-          </span>
-          <div className="flex items-center gap-3">
-            {/* Save Status Indicator */}
-            {saveStatus === 'saving' && (
-              <span className="flex items-center gap-1 text-sepia/60">
-                <span className="w-2 h-2 bg-sepia/40 rounded-full animate-pulse" />
-                Saving...
-              </span>
-            )}
-            {saveStatus === 'saved' && (
-              <span className="flex items-center gap-1 text-green-600">
-                <span>✓</span>
-                Saved
-              </span>
-            )}
-            {saveStatus === 'error' && (
-              <span className="flex items-center gap-1 text-red-600">
-                <span>!</span>
-                Save failed
-              </span>
-            )}
-            <span>{answeredCount} answered</span>
+              return (
+                <button
+                  key={q.id}
+                  type="button"
+                  onClick={() => setCurrentQuestion(idx)}
+                  className={`flex-1 h-2 sm:h-1.5 rounded-full transition-colors min-w-[8px] ${
+                    isCurrent
+                      ? 'bg-bronze-500'
+                      : isAnswered
+                        ? 'bg-bronze-300'
+                        : isSkipped
+                          ? 'bg-warning/50'
+                          : 'bg-sepia-200 hover:bg-sepia-300'
+                  }`}
+                  title={`${q.question}${isSkipped ? ' (skipped)' : ''}`}
+                />
+              )
+            })}
           </div>
         </div>
-        <div className="flex gap-1 sm:gap-1.5">
-          {chapter.questions.map((q, idx) => {
-            const isAnswered = answers[q.id]?.answer?.trim()
-            const isSkipped = skippedQuestions.includes(q.id) && !isAnswered
-            const isCurrent = idx === currentQuestion
 
-            return (
-              <button
-                key={q.id}
-                onClick={() => setCurrentQuestion(idx)}
-                className={`flex-1 h-2 sm:h-1.5 rounded-full transition min-w-[8px] ${
-                  isCurrent
-                    ? 'bg-sepia'
-                    : isAnswered
-                      ? 'bg-sepia/40'
-                      : isSkipped
-                        ? 'bg-amber-300'
-                        : 'bg-sepia/15 hover:bg-sepia/25'
-                }`}
-                title={`${q.question}${isSkipped ? ' (skipped)' : ''}`}
-              />
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Question Card */}
-      {answersLoading ? (
-        <QuestionCardSkeleton />
-      ) : (
-        <QuestionCard
-          question={question}
-          answer={answers[question.id]?.answer || ''}
-          onAnswerChange={answer => saveAnswer(question.id, answer)}
-          onAskAI={() => openAIAssistant(question, answers[question.id]?.answer || '', chapterId)}
-          chapterId={chapterId}
-          storyId={answers[question.id]?.id}
-          photos={answers[question.id]?.photos || []}
-          onPhotosChange={() => refetchStories()}
-        />
-      )}
-
-      {/* Quick Actions Row */}
-      <div className="flex items-center justify-between mt-4 gap-3">
-        {/* Memory Triggers Toggle */}
-        <button
-          onClick={() => setShowMemoryTriggers(!showMemoryTriggers)}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition ${
-            showMemoryTriggers
-              ? 'bg-amber-100 text-amber-800 border border-amber-200'
-              : 'bg-sepia/5 text-sepia/70 hover:bg-sepia/10 border border-sepia/10'
-          }`}
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.5}
-              d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-            />
-          </svg>
-          {showMemoryTriggers ? 'Hide Tips' : 'Need Ideas?'}
-        </button>
-
-        {/* Skip Question */}
-        {!answers[question.id]?.answer?.trim() && !skippedQuestions.includes(question.id) && (
-          <button
-            onClick={() => {
-              setSkippedQuestions(prev => [...prev, question.id])
-              // Move to next question
-              if (currentQuestion < chapter.questions.length - 1) {
-                setCurrentQuestion(prev => prev + 1)
-              }
-            }}
-            className="flex items-center gap-2 px-4 py-2 text-sepia/50 hover:text-sepia/70 text-sm transition"
-          >
-            <span>Skip for now</span>
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M13 5l7 7-7 7M5 5l7 7-7 7"
-              />
-            </svg>
-          </button>
+        {/* Question Card */}
+        {answersLoading ? (
+          <QuestionCardSkeleton />
+        ) : (
+          <QuestionCard
+            question={question}
+            answer={answers[question.id]?.answer || ''}
+            onAnswerChange={answer => saveAnswer(question.id, answer)}
+            onAskAI={() => openAIAssistant(question, answers[question.id]?.answer || '', chapterId)}
+            chapterId={chapterId}
+            storyId={answers[question.id]?.id}
+            photos={answers[question.id]?.photos || []}
+            onPhotosChange={() => refetchStories()}
+          />
         )}
 
-        {/* Show if this was skipped */}
-        {skippedQuestions.includes(question.id) && !answers[question.id]?.answer?.trim() && (
-          <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded">
-            Skipped - you can answer anytime
-          </span>
-        )}
-      </div>
-
-      {/* Memory Triggers Panel */}
-      {showMemoryTriggers && (
-        <div className="mt-4">
-          <MemoryTriggers chapterId={chapterId} />
-        </div>
-      )}
-
-      {/* Chapter 1 Completion Celebration */}
-      {isLastQuestion && chapterId === 'earliest-memories' && !isPremium && answeredCount > 0 && (
-        <div className="mt-6 p-5 bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl border border-amber-200 text-center">
-          <h3 className="font-display text-lg text-ink mb-1">
-            Wonderful! Your First Chapter is Complete
-          </h3>
-          <p className="text-sepia/70 text-sm mb-2">
-            You've captured {answeredCount} precious memories. Your family is going to love reading
-            these.
-          </p>
-          <p className="text-amber-700 text-sm font-medium">
-            Ready to continue your story? Unlock all 10 chapters and get 4 printed books.
-          </p>
-        </div>
-      )}
-
-      {/* Review Chapter link — shown when enough questions are answered */}
-      {!isLastQuestion && answeredCount >= Math.ceil(chapter.questions.length * 0.7) && (
-        <div className="mt-4 text-center">
-          <Link
-            to={`/chapter/${chapterId}/review`}
-            className="inline-flex items-center gap-1.5 text-sm text-sepia/60 hover:text-sepia transition"
+        {/* Quick Actions Row */}
+        <div className="flex items-center justify-between mt-4 gap-3">
+          {/* Memory Triggers Toggle */}
+          <Button
+            variant={showMemoryTriggers ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setShowMemoryTriggers(!showMemoryTriggers)}
+            icon={<IconBulb size={18} stroke={1.75} />}
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-              />
-            </svg>
-            Review & polish this chapter
-          </Link>
-        </div>
-      )}
+            {showMemoryTriggers ? 'Hide Tips' : 'Need Ideas?'}
+          </Button>
 
-      {/* Navigation */}
-      <div className="flex justify-between mt-4 sm:mt-6 gap-4">
-        <button
-          onClick={() => setCurrentQuestion(prev => Math.max(0, prev - 1))}
-          disabled={currentQuestion === 0}
-          className="flex-1 sm:flex-none px-5 py-3 sm:py-2 text-sepia/70 hover:text-sepia disabled:opacity-30 disabled:cursor-not-allowed transition flex items-center justify-center gap-2 rounded border border-sepia/20 hover:border-sepia/40 hover:bg-white/50 tap-bounce"
-        >
-          <span>←</span>
-          <span>Previous</span>
-        </button>
-        {isLastQuestion ? (
-          nextChapter ? (
-            isChapterLocked(nextChapter.id) ? (
-              <button
-                onClick={() => setShowUpgradeModal(true)}
-                className="flex-1 sm:flex-none px-5 py-3 sm:py-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white transition flex items-center justify-center gap-2 rounded hover:shadow-lg tap-bounce"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                  />
-                </svg>
-                <span>Unlock Next Chapter</span>
-              </button>
-            ) : (
-              <Link
-                to={`/chapter/${nextChapter.id}`}
-                className="flex-1 sm:flex-none px-5 py-3 sm:py-2 bg-sepia text-white transition flex items-center justify-center gap-2 rounded hover:bg-sepia/90 tap-bounce"
-              >
-                <span>Next Chapter</span>
-                <span>→</span>
-              </Link>
-            )
-          ) : (
+          {/* Skip Question */}
+          {!answers[question.id]?.answer?.trim() && !skippedQuestions.includes(question.id) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSkippedQuestions(prev => [...prev, question.id])
+                // Move to next question
+                if (currentQuestion < chapter.questions.length - 1) {
+                  setCurrentQuestion(prev => prev + 1)
+                }
+              }}
+              iconRight={<IconChevronsRight size={18} stroke={1.75} />}
+            >
+              Skip for now
+            </Button>
+          )}
+
+          {/* Show if this was skipped */}
+          {skippedQuestions.includes(question.id) && !answers[question.id]?.answer?.trim() && (
+            <Badge variant="warning">Skipped - you can answer anytime</Badge>
+          )}
+        </div>
+
+        {/* Memory Triggers Panel */}
+        {showMemoryTriggers && (
+          <div className="mt-4">
+            <MemoryTriggers chapterId={chapterId} />
+          </div>
+        )}
+
+        {/* Chapter 1 Completion Celebration */}
+        {isLastQuestion && chapterId === 'earliest-memories' && !isPremium && answeredCount > 0 && (
+          <div className="mt-6 p-5 bg-bronze-50 border border-bronze-200/60 rounded-2xl text-center">
+            <h3 className="font-display text-lg text-ink mb-1">
+              Wonderful! Your First Chapter is Complete
+            </h3>
+            <p className="text-sepia-600 text-sm mb-2">
+              You've captured {answeredCount} precious memories. Your family is going to love
+              reading these.
+            </p>
+            <p className="text-bronze-700 text-sm font-medium">
+              Ready to continue your story? Unlock all 10 chapters and get 4 printed books.
+            </p>
+          </div>
+        )}
+
+        {/* Review Chapter link — shown when enough questions are answered */}
+        {!isLastQuestion && answeredCount >= Math.ceil(chapter.questions.length * 0.7) && (
+          <div className="mt-4 text-center">
             <Link
               to={`/chapter/${chapterId}/review`}
-              className="flex-1 sm:flex-none px-5 py-3 sm:py-2 bg-gradient-to-r from-sepia to-amber-700 text-white transition flex items-center justify-center gap-2 rounded hover:shadow-lg tap-bounce"
+              className="inline-flex items-center gap-1.5 text-sm text-sepia-500 hover:text-ink transition-colors"
             >
-              <span>Review & Polish</span>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                />
-              </svg>
+              <IconBook2 size={18} stroke={1.75} />
+              Review & polish this chapter
             </Link>
-          )
-        ) : (
-          <button
-            onClick={() =>
-              setCurrentQuestion(prev => Math.min(chapter.questions.length - 1, prev + 1))
-            }
-            className="flex-1 sm:flex-none px-5 py-3 sm:py-2 text-sepia/70 hover:text-sepia transition flex items-center justify-center gap-2 rounded border border-sepia/20 hover:border-sepia/40 hover:bg-white/50 tap-bounce"
+          </div>
+        )}
+
+        {/* Navigation */}
+        <div className="flex justify-between mt-8 gap-4">
+          <Button
+            variant="secondary"
+            size="lg"
+            className="flex-1 sm:flex-none"
+            onClick={() => setCurrentQuestion(prev => Math.max(0, prev - 1))}
+            disabled={currentQuestion === 0}
+            icon={<IconArrowLeft size={20} stroke={1.75} />}
           >
-            <span>Next</span>
-            <span>→</span>
-          </button>
+            Previous
+          </Button>
+          {isLastQuestion ? (
+            nextChapter ? (
+              isChapterLocked(nextChapter.id) ? (
+                <Button
+                  variant="accent"
+                  size="lg"
+                  className="flex-1 sm:flex-none"
+                  onClick={() => setShowUpgradeModal(true)}
+                  icon={<IconLock size={20} stroke={1.75} />}
+                >
+                  Unlock Next Chapter
+                </Button>
+              ) : (
+                <Button
+                  size="lg"
+                  className="flex-1 sm:flex-none"
+                  to={`/chapter/${nextChapter.id}`}
+                  iconRight={<IconArrowRight size={20} stroke={1.75} />}
+                >
+                  Next Chapter
+                </Button>
+              )
+            ) : (
+              <Button
+                size="lg"
+                className="flex-1 sm:flex-none"
+                to={`/chapter/${chapterId}/review`}
+                iconRight={<IconBook2 size={20} stroke={1.75} />}
+              >
+                Review & Polish
+              </Button>
+            )
+          ) : (
+            <Button
+              size="lg"
+              className="flex-1 sm:flex-none"
+              onClick={() =>
+                setCurrentQuestion(prev => Math.min(chapter.questions.length - 1, prev + 1))
+              }
+              iconRight={<IconArrowRight size={20} stroke={1.75} />}
+            >
+              Next
+            </Button>
+          )}
+        </div>
+
+        {/* AI Assistant Modal */}
+        {showAI && (
+          <AIAssistant
+            context={aiContext}
+            onClose={closeAIAssistant}
+            onInsertText={(text, replace = false) => {
+              if (replace) {
+                // Replace entire answer with polished story
+                saveAnswer(question.id, text)
+              } else {
+                // Append to existing
+                const currentAnswer = answers[question.id]?.answer || ''
+                saveAnswer(question.id, currentAnswer + '\n\n' + text)
+              }
+              closeAIAssistant()
+            }}
+          />
+        )}
+
+        {/* Upgrade Modal */}
+        {showUpgradeModal && (
+          <UpgradeModal onClose={() => setShowUpgradeModal(false)} memoriesCount={answeredCount} />
         )}
       </div>
-
-      {/* AI Assistant Modal */}
-      {showAI && (
-        <AIAssistant
-          context={aiContext}
-          onClose={closeAIAssistant}
-          onInsertText={(text, replace = false) => {
-            if (replace) {
-              // Replace entire answer with polished story
-              saveAnswer(question.id, text)
-            } else {
-              // Append to existing
-              const currentAnswer = answers[question.id]?.answer || ''
-              saveAnswer(question.id, currentAnswer + '\n\n' + text)
-            }
-            closeAIAssistant()
-          }}
-        />
-      )}
-
-      {/* Upgrade Modal */}
-      {showUpgradeModal && (
-        <UpgradeModal onClose={() => setShowUpgradeModal(false)} memoriesCount={answeredCount} />
-      )}
-    </div>
+    </AppShell>
   )
 }

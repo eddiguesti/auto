@@ -1,8 +1,10 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
+import { IconBook2, IconArrowRight, IconChevronRight, IconMail } from '@tabler/icons-react'
 import { useAuth } from '../../context/AuthContext'
 import { API_URL } from '../../config'
 import SEO, { breadcrumbSchema } from '../../components/SEO'
+import { Button, Card, Badge } from '../../components/ui'
 
 // All 25 blog posts - SEO optimized for memoir writing keywords
 export const blogPosts = [
@@ -94,7 +96,7 @@ export const blogPosts = [
     id: 8,
     slug: 'memoir-structure-outline-guide',
     title: 'How to Structure Your Memoir: A Complete Guide',
-    excerpt: 'From chaotic memories to organized narrative\u2014the outlining process demystified.',
+    excerpt: 'From chaotic memories to organized narrative—the outlining process demystified.',
     date: 'January 22, 2026',
     isoDate: '2026-01-22',
     category: 'Guide',
@@ -141,7 +143,7 @@ export const blogPosts = [
     slug: 'ethical-writing-about-family',
     title: 'The Ethics of Writing About Family Members',
     excerpt:
-      'How to tell your truth while respecting others\u2014a guide to the thorniest memoir challenge.',
+      'How to tell your truth while respecting others—a guide to the thorniest memoir challenge.',
     date: 'January 18, 2026',
     isoDate: '2026-01-18',
     category: 'Ethics',
@@ -175,7 +177,7 @@ export const blogPosts = [
     id: 15,
     slug: 'ai-memoir-writing-future',
     title: 'How AI is Transforming Memoir Writing',
-    excerpt: "AI isn't replacing human storytelling\u2014it's making it accessible to everyone.",
+    excerpt: "AI isn't replacing human storytelling—it's making it accessible to everyone.",
     date: 'January 15, 2026',
     isoDate: '2026-01-15',
     category: 'Technology',
@@ -198,7 +200,7 @@ export const blogPosts = [
     slug: 'self-publishing-memoir-guide',
     title: 'Self-Publishing Your Memoir: A Complete Guide',
     excerpt:
-      'From finished manuscript to printed book\u2014everything you need to know about self-publishing.',
+      'From finished manuscript to printed book—everything you need to know about self-publishing.',
     date: 'January 13, 2026',
     isoDate: '2026-01-13',
     category: 'Publishing',
@@ -233,7 +235,7 @@ export const blogPosts = [
     slug: 'preserving-family-stories',
     title: 'Preserving Family Stories for Future Generations',
     excerpt:
-      'Your memories are their heritage. Why documenting family history matters\u2014and how to do it.',
+      'Your memories are their heritage. Why documenting family history matters—and how to do it.',
     date: 'January 10, 2026',
     isoDate: '2026-01-10',
     category: 'Family',
@@ -268,8 +270,7 @@ export const blogPosts = [
     id: 23,
     slug: 'legacy-letters-alternative-memoir',
     title: 'Legacy Letters: An Alternative to Traditional Memoir',
-    excerpt:
-      'Direct messages to future generations\u2014a meaningful alternative to narrative memoir.',
+    excerpt: 'Direct messages to future generations—a meaningful alternative to narrative memoir.',
     date: 'January 7, 2026',
     isoDate: '2026-01-07',
     category: 'Alternatives',
@@ -319,24 +320,24 @@ const categories = [
   'Alternatives'
 ]
 
-// Category-based gradient fallbacks with editorial patterns
+// Category-based fallback tints — all within the Keepsake surface/bronze ramps
 const gradients = {
-  Guide: 'from-amber-900 via-amber-800 to-yellow-900',
-  'Tips & Guides': 'from-emerald-900 via-emerald-800 to-green-900',
-  Family: 'from-rose-900 via-rose-800 to-pink-900',
-  Inspiration: 'from-violet-900 via-purple-800 to-indigo-900',
-  Wellness: 'from-teal-900 via-teal-800 to-cyan-900',
-  Craft: 'from-indigo-900 via-blue-800 to-indigo-900',
-  Publishing: 'from-slate-800 via-gray-700 to-slate-900',
-  Technology: 'from-sky-900 via-cyan-800 to-blue-900',
-  Education: 'from-blue-900 via-blue-800 to-indigo-900',
-  Ethics: 'from-stone-800 via-stone-700 to-stone-900',
-  'Gift Ideas': 'from-red-900 via-red-800 to-rose-900',
-  Seniors: 'from-orange-900 via-amber-800 to-orange-900',
-  Alternatives: 'from-fuchsia-900 via-violet-800 to-purple-900'
+  Guide: 'from-sepia-200 to-sepia-300',
+  'Tips & Guides': 'from-cream to-sepia-200',
+  Family: 'from-bronze-100 to-bronze-200',
+  Inspiration: 'from-sepia-100 to-sepia-200',
+  Wellness: 'from-cream to-sepia-100',
+  Craft: 'from-sepia-200 to-sepia-300',
+  Publishing: 'from-sepia-100 to-sepia-200',
+  Technology: 'from-cream to-sepia-200',
+  Education: 'from-sepia-200 to-sepia-300',
+  Ethics: 'from-sepia-100 to-sepia-200',
+  'Gift Ideas': 'from-bronze-100 to-bronze-200',
+  Seniors: 'from-cream to-sepia-100',
+  Alternatives: 'from-sepia-100 to-sepia-200'
 }
 
-// Blog post image component — loads static images from /blog-images/, falls back to gradient
+// Blog post image component — loads static images from /blog-images/, falls back to tinted panel
 export function BlogImage({ slug, category, className = '', aspect = 'aspect-[16/9]' }) {
   const [loaded, setLoaded] = useState(false)
   const [hasImage, setHasImage] = useState(true)
@@ -346,35 +347,13 @@ export function BlogImage({ slug, category, className = '', aspect = 'aspect-[16
 
   return (
     <div className={`${aspect} ${className} overflow-hidden relative bg-gradient-to-br ${grad}`}>
-      {/* Gradient fallback (always rendered behind) */}
+      {/* Tinted fallback (always rendered behind) */}
       {!loaded && (
-        <>
-          <div
-            className="absolute inset-0 opacity-[0.07]"
-            style={{
-              backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)',
-              backgroundSize: '24px 24px'
-            }}
-          />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-14 h-14 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center">
-              <svg
-                className="w-7 h-7 text-white/60"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1.5}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                />
-              </svg>
-            </div>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-14 h-14 rounded-full bg-surface/60 flex items-center justify-center">
+            <IconBook2 size={28} stroke={1.5} className="text-sepia-500" />
           </div>
-          <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/30 to-transparent" />
-        </>
+        </div>
       )}
       {/* Actual image (loads on top when available) */}
       {hasImage && (
@@ -466,7 +445,7 @@ export default function Blog() {
   }
 
   return (
-    <div className="min-h-screen bg-[#faf8f5]">
+    <div className="min-h-screen bg-parchment">
       <SEO
         title="Memoir Writing Blog - Tips, Guides & Inspiration"
         description="Expert guides, writing prompts, and inspiration for crafting your autobiography. Learn memoir writing techniques, interview tips, and how to preserve family stories for generations."
@@ -481,45 +460,45 @@ export default function Blog() {
       />
 
       {/* Header */}
-      <header className="bg-[#1a1a1a] text-white">
+      <header className="bg-ink text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between py-3 border-b border-white/10">
-            <Link to="/" className="font-display text-lg hover:text-[#c4a77d] transition">
-              Easy<span className="text-[#c4a77d]">Memoir</span>
+            <Link
+              to="/"
+              className="font-display text-lg text-white hover:text-bronze-300 transition-colors"
+            >
+              Easy<span className="text-bronze-300">Memoir</span>
             </Link>
             <nav className="hidden sm:flex items-center gap-6 text-sm">
-              <Link to="/how-it-works" className="text-white/70 hover:text-white transition">
+              <Link to="/how-it-works" className="text-white/70 hover:text-white transition-colors">
                 How It Works
               </Link>
-              <Link to="/pricing" className="text-white/70 hover:text-white transition">
+              <Link to="/pricing" className="text-white/70 hover:text-white transition-colors">
                 Pricing
               </Link>
-              <Link to="/gift" className="text-white/70 hover:text-white transition">
+              <Link to="/gift" className="text-white/70 hover:text-white transition-colors">
                 Gift
               </Link>
             </nav>
-            <Link
-              to={user ? '/home' : '/register'}
-              className="bg-[#c4a77d] text-[#1a1a1a] px-4 py-1.5 rounded-full text-sm font-medium hover:bg-[#b39669] transition"
-            >
+            <Button to={user ? '/home' : '/register'} variant="secondary" size="sm">
               {user ? 'My Stories' : 'Start Writing Free'}
-            </Link>
+            </Button>
           </div>
 
           <div className="py-12 sm:py-16 text-center">
             <div className="flex items-center justify-center gap-4 mb-4">
-              <div className="h-px w-12 bg-[#c4a77d]" />
-              <p className="font-sans text-xs tracking-[0.3em] uppercase text-[#c4a77d]">
+              <div className="h-px w-12 bg-bronze-400" />
+              <p className="text-xs tracking-caps uppercase font-semibold text-bronze-300">
                 The Memoir Chronicle
               </p>
-              <div className="h-px w-12 bg-[#c4a77d]" />
+              <div className="h-px w-12 bg-bronze-400" />
             </div>
-            <h1 className="font-display text-4xl sm:text-6xl lg:text-7xl tracking-tight text-white mb-4">
+            <h1 className="font-display text-4xl sm:text-5xl text-white mb-4">
               Write Your Story,
               <br />
-              <span className="text-[#c4a77d]">Beautifully</span>
+              <span className="text-bronze-300">Beautifully</span>
             </h1>
-            <p className="font-serif text-lg text-white/60 max-w-2xl mx-auto">
+            <p className="text-lg text-white/60 max-w-2xl mx-auto">
               Expert guides, writing prompts, and inspiration for preserving your life story and
               creating a memoir your family will treasure.
             </p>
@@ -531,9 +510,11 @@ export default function Blog() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 -mt-6 relative z-10">
         <div className="grid lg:grid-cols-5 gap-6">
           {featuredPosts[0] && (
-            <Link
+            <Card
+              interactive
               to={`/blog/${featuredPosts[0].slug}`}
-              className="group lg:col-span-3 bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300"
+              padding="none"
+              className="group lg:col-span-3 overflow-hidden"
             >
               <BlogImage
                 slug={featuredPosts[0].slug}
@@ -542,42 +523,32 @@ export default function Blog() {
               />
               <div className="p-6 sm:p-8">
                 <div className="flex items-center gap-3 mb-4">
-                  <span className="px-3 py-1 bg-[#c4a77d] text-white text-xs font-semibold rounded-full uppercase tracking-wider">
-                    Featured
-                  </span>
-                  <span className="text-sm text-[#888]">{featuredPosts[0].readTime}</span>
+                  <Badge variant="bronze">Featured</Badge>
+                  <span className="text-sm text-sepia-500">{featuredPosts[0].readTime}</span>
                 </div>
-                <h2 className="font-display text-2xl sm:text-3xl text-[#1a1a1a] group-hover:text-[#8b7355] transition-colors mb-3 leading-tight">
+                <h2 className="font-display text-2xl sm:text-3xl text-ink group-hover:text-bronze-700 transition-colors mb-3">
                   {featuredPosts[0].title}
                 </h2>
-                <p className="font-serif text-[#666] leading-relaxed line-clamp-2">
-                  {featuredPosts[0].excerpt}
-                </p>
-                <div className="flex items-center gap-2 mt-5 text-sm text-[#c4a77d] font-medium">
+                <p className="text-sepia-600 line-clamp-2">{featuredPosts[0].excerpt}</p>
+                <div className="flex items-center gap-2 mt-5 text-sm text-bronze-600 font-medium">
                   Read article
-                  <svg
-                    className="w-4 h-4 group-hover:translate-x-1 transition-transform"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M17 8l4 4m0 0l-4 4m4-4H3"
-                    />
-                  </svg>
+                  <IconArrowRight
+                    size={16}
+                    stroke={2}
+                    className="group-hover:translate-x-1 transition-transform"
+                  />
                 </div>
               </div>
-            </Link>
+            </Card>
           )}
 
           <div className="lg:col-span-2 flex flex-col gap-6">
             {featuredPosts[1] && (
-              <Link
+              <Card
+                interactive
                 to={`/blog/${featuredPosts[1].slug}`}
-                className="group bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 flex-1"
+                padding="none"
+                className="group overflow-hidden flex-1"
               >
                 <BlogImage
                   slug={featuredPosts[1].slug}
@@ -586,36 +557,29 @@ export default function Blog() {
                 />
                 <div className="p-6">
                   <div className="flex items-center gap-2 mb-3">
-                    <span className="px-2.5 py-1 bg-[#f0ebe3] text-[#8b7355] text-xs font-medium rounded-full">
-                      {featuredPosts[1].category}
-                    </span>
-                    <span className="text-xs text-[#999]">{featuredPosts[1].readTime}</span>
+                    <Badge>{featuredPosts[1].category}</Badge>
+                    <span className="text-xs text-sepia-500">{featuredPosts[1].readTime}</span>
                   </div>
-                  <h3 className="font-display text-xl text-[#1a1a1a] group-hover:text-[#8b7355] transition-colors mb-2 leading-snug">
+                  <h3 className="font-display text-xl text-ink group-hover:text-bronze-700 transition-colors mb-2">
                     {featuredPosts[1].title}
                   </h3>
-                  <p className="font-serif text-sm text-[#666] line-clamp-2">
-                    {featuredPosts[1].excerpt}
-                  </p>
+                  <p className="text-sm text-sepia-600 line-clamp-2">{featuredPosts[1].excerpt}</p>
                 </div>
-              </Link>
+              </Card>
             )}
 
-            <div className="bg-gradient-to-br from-[#1a1a1a] via-[#2a2520] to-[#1a1a1a] rounded-2xl p-6 text-white relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-[#c4a77d]/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-              <div className="relative">
-                <h3 className="font-display text-xl mb-2">Ready to Write Your Story?</h3>
-                <p className="font-serif text-sm text-white/60 mb-5">
-                  Just talk about your memories. Our AI transforms your words into a beautiful
-                  memoir.
-                </p>
-                <button
-                  onClick={() => navigate(user ? '/voice' : '/register')}
-                  className="w-full bg-[#c4a77d] text-[#1a1a1a] py-3 rounded-full font-sans font-semibold hover:bg-[#b39669] transition-colors"
-                >
-                  {user ? 'Continue Your Memoir' : 'Start Free \u2014 No Card Required'}
-                </button>
-              </div>
+            <div className="bg-ink rounded-2xl p-6 text-white">
+              <h3 className="font-display text-xl text-white mb-2">Ready to Write Your Story?</h3>
+              <p className="text-sm text-white/60 mb-5">
+                Just talk about your memories. Our AI transforms your words into a beautiful memoir.
+              </p>
+              <Button
+                variant="accent"
+                size="xl"
+                onClick={() => navigate(user ? '/voice' : '/register')}
+              >
+                {user ? 'Continue Your Memoir' : 'Start Free — No Card Required'}
+              </Button>
             </div>
           </div>
         </div>
@@ -628,7 +592,11 @@ export default function Blog() {
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-4 py-2 rounded-full text-sm font-sans transition-all duration-200 ${selectedCategory === cat ? 'bg-[#1a1a1a] text-white shadow-md' : 'bg-white text-[#666] hover:bg-[#f0ebe3] hover:text-[#1a1a1a] border border-[#e5e0d8]'}`}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                selectedCategory === cat
+                  ? 'bg-ink text-white shadow-button'
+                  : 'bg-surface text-sepia-600 border border-sepia-200 hover:border-sepia-300 hover:text-ink'
+              }`}
             >
               {cat}
             </button>
@@ -639,61 +607,51 @@ export default function Blog() {
       {/* Articles Grid */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 pb-16">
         <div className="flex items-center justify-between mb-8">
-          <h2 className="font-display text-2xl text-[#1a1a1a]">
+          <h2 className="font-display text-2xl text-ink">
             {selectedCategory === 'All' ? 'All Articles' : selectedCategory}
           </h2>
-          <span className="text-sm text-[#999]">{filteredPosts.length} articles</span>
+          <span className="text-sm text-sepia-500">{filteredPosts.length} articles</span>
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredPosts.map(post => (
-            <Link
+            <Card
               key={post.id}
+              interactive
               to={`/blog/${post.slug}`}
-              className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col"
+              padding="none"
+              className="group overflow-hidden flex flex-col"
             >
               <BlogImage slug={post.slug} category={post.category} aspect="aspect-[16/10]" />
               <article className="p-5 flex flex-col flex-1">
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="px-2.5 py-0.5 bg-[#f0ebe3] text-[#8b7355] text-xs font-medium rounded-full">
-                    {post.category}
-                  </span>
-                  <span className="text-xs text-[#999]">{post.readTime}</span>
+                  <Badge>{post.category}</Badge>
+                  <span className="text-xs text-sepia-500">{post.readTime}</span>
                 </div>
-                <h3 className="font-display text-lg text-[#1a1a1a] group-hover:text-[#8b7355] transition-colors mb-2 leading-snug line-clamp-2">
+                <h3 className="font-display text-lg text-ink group-hover:text-bronze-700 transition-colors mb-2 line-clamp-2">
                   {post.title}
                 </h3>
-                <p className="font-serif text-sm text-[#666] line-clamp-3 flex-1 leading-relaxed">
-                  {post.excerpt}
-                </p>
-                <div className="flex items-center justify-between mt-4 pt-4 border-t border-[#f0ebe3]">
-                  <time className="text-xs text-[#999]" dateTime={post.isoDate}>
+                <p className="text-sm text-sepia-600 line-clamp-3 flex-1">{post.excerpt}</p>
+                <div className="flex items-center justify-between mt-4 pt-4 border-t border-sepia-100">
+                  <time className="text-xs text-sepia-500" dateTime={post.isoDate}>
                     {post.date}
                   </time>
-                  <span className="text-xs text-[#c4a77d] font-medium group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
+                  <span className="text-xs text-bronze-600 font-medium group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
                     Read more
-                    <svg
-                      className="w-3 h-3"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                    </svg>
+                    <IconChevronRight size={12} stroke={2} />
                   </span>
                 </div>
               </article>
-            </Link>
+            </Card>
           ))}
         </div>
 
         {filteredPosts.length === 0 && (
           <div className="text-center py-16">
-            <p className="text-[#999] font-serif">No articles in this category yet.</p>
+            <p className="text-sepia-500">No articles in this category yet.</p>
             <button
               onClick={() => setSelectedCategory('All')}
-              className="mt-4 text-[#c4a77d] hover:underline text-sm"
+              className="mt-4 text-bronze-600 hover:text-bronze-700 hover:underline text-sm font-medium transition-colors"
             >
               View all articles
             </button>
@@ -702,27 +660,15 @@ export default function Blog() {
       </section>
 
       {/* Newsletter */}
-      <section className="bg-[#1a1a1a] py-20">
+      <section className="bg-ink py-16 sm:py-20">
         <div className="max-w-2xl mx-auto px-4 text-center">
-          <div className="w-12 h-12 rounded-full bg-[#c4a77d]/20 flex items-center justify-center mx-auto mb-6">
-            <svg
-              className="w-6 h-6 text-[#c4a77d]"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={1.5}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"
-              />
-            </svg>
+          <div className="w-12 h-12 rounded-full bg-bronze-500/20 flex items-center justify-center mx-auto mb-6">
+            <IconMail size={24} stroke={1.5} className="text-bronze-300" />
           </div>
           <h2 className="font-display text-3xl sm:text-4xl text-white mb-4">
             Subscribe to The Chronicle
           </h2>
-          <p className="font-serif text-white/60 mb-8 leading-relaxed">
+          <p className="text-white/60 mb-8">
             Get weekly tips on memoir writing, inspiring stories, and exclusive content delivered to
             your inbox.
           </p>
@@ -745,28 +691,24 @@ export default function Blog() {
               placeholder="Your email address"
               value={newsletterEmail}
               onChange={e => setNewsletterEmail(e.target.value)}
-              className="flex-1 px-5 py-3.5 rounded-full bg-white/10 border border-white/20 text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-[#c4a77d] focus:border-transparent"
+              className="flex-1 px-5 py-3.5 rounded-full bg-white/10 border border-white/20 text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-bronze-400 focus:border-transparent"
               required
               aria-label="Email address for newsletter"
             />
-            <button
-              type="submit"
-              disabled={newsletterLoading}
-              className="px-8 py-3.5 bg-[#c4a77d] text-[#1a1a1a] rounded-full font-sans font-semibold hover:bg-[#b39669] transition-colors disabled:opacity-50"
-            >
+            <Button type="submit" variant="accent" size="lg" loading={newsletterLoading}>
               {newsletterLoading ? 'Subscribing...' : 'Subscribe'}
-            </button>
+            </Button>
           </form>
           {newsletterStatus.message && (
             <p
-              className={`text-sm mt-4 ${newsletterStatus.type === 'success' ? 'text-green-400' : 'text-red-400'}`}
+              className={`text-sm mt-4 ${newsletterStatus.type === 'success' ? 'text-success-soft' : 'text-error-soft'}`}
             >
               {newsletterStatus.message}
             </p>
           )}
           <p className="text-xs text-white/30 mt-5">
             No spam, unsubscribe anytime. Read our{' '}
-            <Link to="/privacy" className="underline hover:text-white/50 transition">
+            <Link to="/privacy" className="underline hover:text-white/50 transition-colors">
               Privacy Policy
             </Link>
             .
@@ -775,103 +717,99 @@ export default function Blog() {
       </section>
 
       {/* Final CTA */}
-      <section className="py-20 px-4 bg-gradient-to-b from-[#faf8f5] to-white">
+      <section className="py-16 sm:py-20 px-4 bg-cream">
         <div className="max-w-3xl mx-auto text-center">
-          <h2 className="font-display text-3xl sm:text-5xl text-[#1a1a1a] mb-6 leading-tight">
+          <h2 className="font-display text-3xl sm:text-5xl text-ink mb-6">
             Your Life Story Deserves
             <br />
             to Be Told
           </h2>
-          <p className="font-serif text-lg text-[#666] mb-10 leading-relaxed max-w-2xl mx-auto">
+          <p className="text-lg text-sepia-600 mb-10 max-w-2xl mx-auto">
             Don't let your memories fade away. Easy Memoir makes it simple to transform your
             experiences into a beautiful book your family will treasure forever.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button
-              onClick={() => navigate(user ? '/voice' : '/register')}
-              className="bg-[#1a1a1a] text-white px-10 py-4 rounded-full font-sans font-medium hover:bg-[#333] transition-colors text-lg"
-            >
+            <Button size="lg" onClick={() => navigate(user ? '/voice' : '/register')}>
               {user ? 'Continue Your Memoir' : 'Start Your Free Memoir'}
-            </button>
-            <Link
-              to="/sample"
-              className="border-2 border-[#1a1a1a] text-[#1a1a1a] px-10 py-4 rounded-full font-sans font-medium hover:bg-[#1a1a1a] hover:text-white transition-colors text-lg"
-            >
+            </Button>
+            <Button to="/sample" variant="secondary" size="lg">
               See a Sample
-            </Link>
+            </Button>
           </div>
-          <p className="text-sm text-[#999] mt-6">Free to start &bull; No credit card required</p>
+          <p className="text-sm text-sepia-500 mt-6">
+            Free to start &bull; No credit card required
+          </p>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-[#1a1a1a] text-white py-16">
+      <footer className="bg-ink text-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
             <div className="lg:col-span-2">
               <div className="font-display text-2xl mb-4">
-                Easy<span className="text-[#c4a77d]">Memoir</span>
+                Easy<span className="text-bronze-300">Memoir</span>
               </div>
-              <p className="font-sans text-sm text-white/50 max-w-sm leading-relaxed">
+              <p className="text-sm text-white/50 max-w-sm">
                 Helping families preserve their stories for future generations through AI-powered
                 memoir writing.
               </p>
             </div>
             <div>
-              <h4 className="font-sans text-sm font-semibold mb-4 text-white/80">Product</h4>
+              <h4 className="text-sm font-semibold mb-4 text-white/80">Product</h4>
               <ul className="space-y-3 text-sm text-white/50">
                 <li>
-                  <Link to="/how-it-works" className="hover:text-white transition">
+                  <Link to="/how-it-works" className="hover:text-white transition-colors">
                     How It Works
                   </Link>
                 </li>
                 <li>
-                  <Link to="/pricing" className="hover:text-white transition">
+                  <Link to="/pricing" className="hover:text-white transition-colors">
                     Pricing
                   </Link>
                 </li>
                 <li>
-                  <Link to="/sample" className="hover:text-white transition">
+                  <Link to="/sample" className="hover:text-white transition-colors">
                     Sample Memoir
                   </Link>
                 </li>
                 <li>
-                  <Link to="/gift" className="hover:text-white transition">
+                  <Link to="/gift" className="hover:text-white transition-colors">
                     Gift a Memoir
                   </Link>
                 </li>
                 <li>
-                  <Link to="/blog" className="hover:text-white transition">
+                  <Link to="/blog" className="hover:text-white transition-colors">
                     Blog
                   </Link>
                 </li>
               </ul>
             </div>
             <div>
-              <h4 className="font-sans text-sm font-semibold mb-4 text-white/80">Company</h4>
+              <h4 className="text-sm font-semibold mb-4 text-white/80">Company</h4>
               <ul className="space-y-3 text-sm text-white/50">
                 <li>
-                  <Link to="/about" className="hover:text-white transition">
+                  <Link to="/about" className="hover:text-white transition-colors">
                     About Us
                   </Link>
                 </li>
                 <li>
-                  <Link to="/faq" className="hover:text-white transition">
+                  <Link to="/faq" className="hover:text-white transition-colors">
                     FAQ
                   </Link>
                 </li>
                 <li>
-                  <Link to="/privacy" className="hover:text-white transition">
+                  <Link to="/privacy" className="hover:text-white transition-colors">
                     Privacy Policy
                   </Link>
                 </li>
                 <li>
-                  <Link to="/terms" className="hover:text-white transition">
+                  <Link to="/terms" className="hover:text-white transition-colors">
                     Terms of Service
                   </Link>
                 </li>
                 <li>
-                  <Link to="/cookies" className="hover:text-white transition">
+                  <Link to="/cookies" className="hover:text-white transition-colors">
                     Cookie Policy
                   </Link>
                 </li>
@@ -879,10 +817,10 @@ export default function Blog() {
             </div>
           </div>
           <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="font-sans text-sm text-white/30">
+            <p className="text-sm text-white/30">
               &copy; 2026 Easy Memoir Ltd. All rights reserved.
             </p>
-            <p className="font-sans text-xs text-white/20">Made with care in the United Kingdom</p>
+            <p className="text-xs text-white/20">Made with care in the United Kingdom</p>
           </div>
         </div>
       </footer>

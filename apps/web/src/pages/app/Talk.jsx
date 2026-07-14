@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
+import { IconAlertCircle, IconCircleCheck, IconClock } from '@tabler/icons-react'
 import { API_URL } from '../../config'
 import { AudioVisualizer } from '../../components/AudioVisualizer'
+import { Button, Skeleton } from '../../components/ui'
 
 /**
  * Talk - Senior-friendly voice recording page accessed via magic link (no login)
@@ -441,9 +443,13 @@ SAFETY — NON-NEGOTIABLE:
   // --- LOADING STATE ---
   if (loading) {
     return (
-      <div className="min-h-screen bg-parchment flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-pulse text-warm-brown text-xl">Loading...</div>
+      <div className="min-h-screen bg-parchment flex items-center justify-center p-6">
+        <div className="w-full max-w-xs text-center">
+          <span className="sr-only">Loading...</span>
+          <Skeleton className="h-5 w-32 mx-auto mb-10" />
+          <Skeleton className="h-4 w-40 mx-auto mb-3" />
+          <Skeleton className="h-8 w-full mb-10" />
+          <Skeleton className="w-40 h-40 rounded-full mx-auto" />
         </div>
       </div>
     )
@@ -452,25 +458,13 @@ SAFETY — NON-NEGOTIABLE:
   // --- EXPIRED STATE ---
   if (expired) {
     return (
-      <div className="min-h-screen bg-parchment flex items-center justify-center p-6">
+      <div className="min-h-screen bg-parchment flex items-center justify-center p-6 page-enter">
         <div className="text-center max-w-md">
-          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-amber-50 flex items-center justify-center">
-            <svg
-              className="w-10 h-10 text-amber-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
+          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-warning-soft text-warning-strong flex items-center justify-center">
+            <IconClock size={36} stroke={1.5} />
           </div>
           <h1 className="font-display text-3xl text-ink mb-4">Link Expired</h1>
-          <p className="text-warm-brown/70 text-lg leading-relaxed">
+          <p className="text-sepia-600 text-lg leading-relaxed">
             This link has expired or has already been used. Check your email for a new weekly topic.
           </p>
         </div>
@@ -481,10 +475,10 @@ SAFETY — NON-NEGOTIABLE:
   // --- ERROR STATE ---
   if (error && !prompt) {
     return (
-      <div className="min-h-screen bg-parchment flex items-center justify-center p-6">
+      <div className="min-h-screen bg-parchment flex items-center justify-center p-6 page-enter">
         <div className="text-center max-w-md">
           <h1 className="font-display text-3xl text-ink mb-4">Something went wrong</h1>
-          <p className="text-warm-brown/70 text-lg">{error}</p>
+          <p className="text-sepia-600 text-lg">{error}</p>
         </div>
       </div>
     )
@@ -492,12 +486,10 @@ SAFETY — NON-NEGOTIABLE:
 
   // --- MAIN UI ---
   return (
-    <div className="min-h-screen flex flex-col bg-parchment">
+    <div className="min-h-screen flex flex-col bg-parchment page-enter">
       {/* Minimal header */}
-      <header className="p-4 text-center">
-        <div className="font-display text-2xl text-ink">
-          Easy<span className="text-sepia">Memoir</span>
-        </div>
+      <header className="pt-8 pb-4 text-center">
+        <span className="font-display text-xl text-ink">Easy&nbsp;Memoir</span>
       </header>
 
       {/* Main content */}
@@ -505,15 +497,13 @@ SAFETY — NON-NEGOTIABLE:
         <div className="max-w-lg w-full text-center">
           {/* Greeting */}
           {userName && phase === 'ready' && (
-            <p className="text-sepia/60 text-lg mb-2">Hello{userName ? `, ${userName}` : ''}</p>
+            <p className="text-sepia-600 text-lg mb-2">Hello{userName ? `, ${userName}` : ''}</p>
           )}
 
           {/* Topic display */}
           {phase !== 'ended' && (
             <div className="mb-12">
-              <p className="text-sepia/40 text-sm uppercase tracking-wider mb-3">
-                This week's topic
-              </p>
+              <p className="eyebrow mb-3">This week's topic</p>
               <h1 className="font-display text-2xl sm:text-3xl text-ink leading-relaxed">
                 {prompt?.text}
               </h1>
@@ -522,17 +512,23 @@ SAFETY — NON-NEGOTIABLE:
 
           {/* Error inline */}
           {error && phase !== 'ready' && (
-            <div className="mb-8 p-4 bg-red-50 text-red-600 rounded-xl text-base">
-              {error}
-              <button
-                onClick={() => {
-                  setError(null)
-                  setPhase('ready')
-                }}
-                className="ml-3 underline"
-              >
-                Try again
-              </button>
+            <div
+              role="alert"
+              className="mb-8 p-4 bg-error-soft text-error-strong rounded-xl text-base flex items-center justify-center gap-2.5"
+            >
+              <IconAlertCircle size={20} stroke={1.75} className="shrink-0" />
+              <span>
+                {error}
+                <button
+                  onClick={() => {
+                    setError(null)
+                    setPhase('ready')
+                  }}
+                  className="ml-3 font-medium underline hover:no-underline"
+                >
+                  Try again
+                </button>
+              </span>
             </div>
           )}
 
@@ -549,11 +545,11 @@ SAFETY — NON-NEGOTIABLE:
                     size="lg"
                   />
                 </div>
-                <span className="inline-block bg-gradient-to-r from-amber-500 to-amber-600 text-white text-xl font-sans font-semibold px-12 py-5 rounded-full shadow-lg shadow-amber-500/30 transition-all duration-300 group-hover:shadow-xl group-hover:shadow-amber-500/40">
+                <span className="inline-block bg-ink text-white text-xl font-sans font-semibold px-12 py-5 rounded-full shadow-button transition-colors duration-200 group-hover:bg-ink-soft">
                   Start Talking
                 </span>
               </button>
-              <p className="text-sepia/40 text-base mt-6">
+              <p className="text-sepia-600 text-base mt-6">
                 Tap the button, then just start speaking
               </p>
             </div>
@@ -569,57 +565,44 @@ SAFETY — NON-NEGOTIABLE:
                 isSpeechDetected={false}
                 size="lg"
               />
-              <p className="text-sepia/50 text-lg mt-6">Connecting...</p>
+              <p className="text-sepia-600 text-lg mt-6">Connecting...</p>
             </div>
           )}
 
           {/* ACTIVE: Voice conversation */}
           {phase === 'active' && (
             <>
-              <AudioVisualizer
-                stream={streamRef.current}
-                isActive={isRecording}
-                isSpeaking={isSpeaking}
-                isSpeechDetected={isSpeechDetected}
-                size="lg"
-              />
-              <p className="text-sepia/50 text-lg mt-6 h-8">{getStatusText()}</p>
+              <div className={`inline-flex rounded-full ${isRecording ? 'pulse-gentle' : ''}`}>
+                <AudioVisualizer
+                  stream={streamRef.current}
+                  isActive={isRecording}
+                  isSpeaking={isSpeaking}
+                  isSpeechDetected={isSpeechDetected}
+                  size="lg"
+                />
+              </div>
+              <p className="text-sepia-600 text-lg mt-6 h-8">{getStatusText()}</p>
 
               {/* End button - visible but not dominant */}
-              <button
-                onClick={endConversation}
-                className="mt-12 px-8 py-4 bg-sepia/10 text-sepia rounded-full text-lg font-sans hover:bg-sepia/20 transition"
-              >
+              <Button variant="secondary" size="lg" onClick={endConversation} className="mt-12">
                 I'm Done
-              </button>
+              </Button>
             </>
           )}
 
           {/* ENDED: Thank you */}
           {phase === 'ended' && (
             <div className="space-y-8">
-              <div className="w-24 h-24 mx-auto rounded-full bg-green-50 flex items-center justify-center">
-                <svg
-                  className="w-12 h-12 text-green-500"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
+              <div className="w-24 h-24 mx-auto rounded-full bg-success-soft text-success flex items-center justify-center">
+                <IconCircleCheck size={44} stroke={1.5} />
               </div>
               <div>
                 <h2 className="font-display text-3xl text-ink mb-3">Thank you!</h2>
-                <p className="text-warm-brown/70 text-lg leading-relaxed">
+                <p className="text-sepia-600 text-lg leading-relaxed">
                   Your story has been saved. We'll send you another topic next week.
                 </p>
               </div>
-              <p className="text-sepia/40 text-base">You can close this page now.</p>
+              <p className="text-sepia-500 text-base">You can close this page now.</p>
             </div>
           )}
         </div>
@@ -627,7 +610,7 @@ SAFETY — NON-NEGOTIABLE:
 
       {/* Minimal footer */}
       <footer className="p-4 text-center">
-        <p className="text-sepia/30 text-xs">&copy; {new Date().getFullYear()} Easy Memoir</p>
+        <p className="text-sepia-400 text-xs">&copy; {new Date().getFullYear()} Easy Memoir</p>
       </footer>
     </div>
   )

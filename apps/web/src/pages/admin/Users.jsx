@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
+import { IconAlertCircle, IconUsers } from '@tabler/icons-react'
 import { useAuth } from '../../context/AuthContext'
+import { Button, Card, Badge, Input, Skeleton, EmptyState } from '../../components/ui'
 
 function formatDate(dateStr) {
   return new Date(dateStr).toLocaleDateString('en-GB', {
@@ -16,15 +18,9 @@ function isPremiumActive(premiumUntil) {
 
 function PremiumBadge({ premiumUntil }) {
   if (isPremiumActive(premiumUntil)) {
-    return (
-      <span className="inline-block px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs">
-        Premium until {formatDate(premiumUntil)}
-      </span>
-    )
+    return <Badge variant="success">Premium until {formatDate(premiumUntil)}</Badge>
   }
-  return (
-    <span className="inline-block px-2 py-0.5 bg-gray-100 text-gray-500 rounded text-xs">Free</span>
-  )
+  return <Badge variant="neutral">Free</Badge>
 }
 
 function Pagination({ meta, onPageChange }) {
@@ -33,31 +29,35 @@ function Pagination({ meta, onPageChange }) {
   if (totalPages <= 1) return null
 
   return (
-    <div className="flex items-center justify-between px-6 py-3 border-t border-warm-brown/10">
-      <p className="text-sm text-warm-brown/60">
+    <div className="flex items-center justify-between px-6 py-3 border-t border-sepia-100">
+      <p className="text-sm text-sepia-600">
         Showing {(meta.page - 1) * meta.limit + 1}
         {' - '}
         {Math.min(meta.page * meta.limit, meta.total)} of {meta.total}
       </p>
       <div className="flex gap-2">
-        <button
+        <Button
+          variant="secondary"
+          size="sm"
           onClick={() => onPageChange(meta.page - 1)}
           disabled={meta.page <= 1}
-          className="px-3 py-1 text-sm border border-warm-brown/20 rounded hover:bg-warm-brown/5 transition disabled:opacity-30 disabled:cursor-not-allowed"
         >
           Previous
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
           onClick={() => onPageChange(meta.page + 1)}
           disabled={meta.page >= totalPages}
-          className="px-3 py-1 text-sm border border-warm-brown/20 rounded hover:bg-warm-brown/5 transition disabled:opacity-30 disabled:cursor-not-allowed"
         >
           Next
-        </button>
+        </Button>
       </div>
     </div>
   )
 }
+
+const TH_CLASSES = 'px-6 py-3 text-xs font-medium text-sepia-500 uppercase tracking-caps'
 
 export default function AdminUsers() {
   const { authFetch } = useAuth()
@@ -138,112 +138,114 @@ export default function AdminUsers() {
 
   return (
     <div className="min-h-screen bg-parchment">
-      <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="max-w-6xl mx-auto px-4 py-8 page-enter">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-serif text-warm-brown">Users</h1>
-            <p className="text-warm-brown/60 mt-1">{meta.total} total users</p>
+            <h1 className="text-3xl font-display text-ink">Users</h1>
+            <p className="text-sepia-600 mt-1">{meta.total} total users</p>
           </div>
-          <Link
-            to="/admin"
-            className="px-4 py-2 border border-warm-brown/20 text-warm-brown rounded-lg hover:bg-warm-brown/5 transition text-sm"
-          >
+          <Button to="/admin" variant="secondary" size="sm">
             Back to Dashboard
-          </Link>
+          </Button>
         </div>
 
         {/* Search */}
         <form onSubmit={handleSearch} className="mb-6">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Search by name or email..."
-              className="flex-1 px-4 py-2 border border-warm-brown/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-warm-brown/30 bg-white text-warm-brown placeholder:text-warm-brown/40"
-            />
-            <button
-              type="submit"
-              className="px-6 py-2 bg-warm-brown text-white rounded-lg hover:bg-warm-brown/90 transition text-sm"
-            >
+          <div className="flex flex-wrap gap-2">
+            <div className="flex-1 min-w-[16rem]">
+              <Input
+                type="text"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Search by name or email..."
+                aria-label="Search users"
+              />
+            </div>
+            <Button type="submit" size="lg">
               Search
-            </button>
+            </Button>
             {search && (
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="lg"
                 onClick={() => {
                   setSearch('')
                   loadUsers(1, '')
                 }}
-                className="px-4 py-2 border border-warm-brown/20 text-warm-brown rounded-lg hover:bg-warm-brown/5 transition text-sm"
               >
                 Clear
-              </button>
+              </Button>
             )}
           </div>
         </form>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          <div className="mb-6 p-4 bg-error-soft text-error-strong rounded-xl text-sm flex items-center gap-3">
+            <IconAlertCircle size={20} stroke={1.75} className="shrink-0" />
             {error}
           </div>
         )}
 
         {/* Users table */}
-        <div className="bg-white rounded-xl shadow-sm border border-warm-brown/10 overflow-hidden">
+        <Card padding="none" className="overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-warm-brown/10 text-left">
-                  <th className="px-6 py-3 text-warm-brown/60 font-medium">ID</th>
-                  <th className="px-6 py-3 text-warm-brown/60 font-medium">Name</th>
-                  <th className="px-6 py-3 text-warm-brown/60 font-medium">Email</th>
-                  <th className="px-6 py-3 text-warm-brown/60 font-medium">Stories</th>
-                  <th className="px-6 py-3 text-warm-brown/60 font-medium">Status</th>
-                  <th className="px-6 py-3 text-warm-brown/60 font-medium">Joined</th>
-                  <th className="px-6 py-3 text-warm-brown/60 font-medium">Actions</th>
+                <tr className="text-left border-b border-sepia-100">
+                  <th className={TH_CLASSES}>ID</th>
+                  <th className={TH_CLASSES}>Name</th>
+                  <th className={TH_CLASSES}>Email</th>
+                  <th className={TH_CLASSES}>Stories</th>
+                  <th className={TH_CLASSES}>Status</th>
+                  <th className={TH_CLASSES}>Joined</th>
+                  <th className={TH_CLASSES}>Actions</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-sepia-100">
                 {loading ? (
-                  <tr>
-                    <td colSpan={7} className="px-6 py-8 text-center text-warm-brown/50">
-                      Loading...
-                    </td>
-                  </tr>
+                  [...Array(5)].map((_, i) => (
+                    <tr key={i}>
+                      <td colSpan={7} className="px-6 py-3">
+                        <Skeleton className="h-6" />
+                      </td>
+                    </tr>
+                  ))
                 ) : users.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-8 text-center text-warm-brown/50">
-                      No users found
+                    <td colSpan={7}>
+                      <EmptyState
+                        icon={<IconUsers size={24} stroke={1.5} />}
+                        title="No users found"
+                        description="Try a different name or email."
+                      />
                     </td>
                   </tr>
                 ) : (
                   users.map(u => (
-                    <tr
-                      key={u.id}
-                      className="border-b border-warm-brown/5 hover:bg-warm-brown/[0.02] transition"
-                    >
-                      <td className="px-6 py-3 text-warm-brown/50 font-mono text-xs">{u.id}</td>
-                      <td className="px-6 py-3 text-warm-brown font-medium">
+                    <tr key={u.id} className="hover:bg-sepia-50 transition-colors">
+                      <td className="px-6 py-3 text-sepia-500 font-mono text-xs">{u.id}</td>
+                      <td className="px-6 py-3 text-ink font-medium">
                         <Link to={`/admin/users/${u.id}`} className="hover:underline">
                           {u.name || 'Unnamed'}
                         </Link>
                       </td>
-                      <td className="px-6 py-3 text-warm-brown/70">{u.email}</td>
-                      <td className="px-6 py-3 text-warm-brown/70">{u.story_count}</td>
+                      <td className="px-6 py-3 text-sepia-600">{u.email}</td>
+                      <td className="px-6 py-3 text-sepia-600">{u.story_count}</td>
                       <td className="px-6 py-3">
                         <PremiumBadge premiumUntil={u.premium_until} />
                       </td>
-                      <td className="px-6 py-3 text-warm-brown/60">{formatDate(u.created_at)}</td>
+                      <td className="px-6 py-3 text-sepia-500">{formatDate(u.created_at)}</td>
                       <td className="px-6 py-3">
-                        <button
+                        <Button
+                          variant="secondary"
+                          size="sm"
                           onClick={() => handleGrantPremium(u.id)}
                           disabled={premiumLoading === u.id}
-                          className="px-3 py-1 text-xs border border-warm-brown/20 text-warm-brown rounded hover:bg-warm-brown/5 transition disabled:opacity-50"
                         >
                           {premiumLoading === u.id ? 'Granting...' : 'Grant Premium'}
-                        </button>
+                        </Button>
                       </td>
                     </tr>
                   ))
@@ -252,7 +254,7 @@ export default function AdminUsers() {
             </table>
           </div>
           {!loading && <Pagination meta={meta} onPageChange={handlePageChange} />}
-        </div>
+        </Card>
       </div>
     </div>
   )

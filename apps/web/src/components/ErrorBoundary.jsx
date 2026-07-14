@@ -27,13 +27,14 @@ export default class ErrorBoundary extends Component {
     if (this.state.hasError) {
       return (
         <div className="min-h-screen flex items-center justify-center bg-parchment">
-          <div className="text-center p-8 max-w-md">
-            <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-red-50 flex items-center justify-center">
+          <div className="text-center p-8 max-w-md page-enter">
+            <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-error-soft text-error flex items-center justify-center">
               <svg
-                className="w-8 h-8 text-red-400"
+                className="w-8 h-8"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
+                aria-hidden="true"
               >
                 <path
                   strokeLinecap="round"
@@ -43,24 +44,24 @@ export default class ErrorBoundary extends Component {
                 />
               </svg>
             </div>
-            <h2 className="text-2xl font-display text-ink mb-3">Something went wrong</h2>
-            <p className="text-sepia/70 mb-6">
+            <h2 className="text-3xl font-display text-ink mb-3">Something went wrong</h2>
+            <p className="text-sepia-600 mb-8">
               We're sorry for the inconvenience. Your stories are safe.
             </p>
             <div className="flex gap-3 justify-center">
               <button
                 onClick={this.handleReset}
-                className="px-6 py-3 border border-sepia/30 text-sepia rounded-xl hover:bg-sepia/5 transition"
+                className="px-6 py-3 bg-surface border border-sepia-200 text-ink rounded-full font-medium hover:border-sepia-300 hover:bg-sepia-50 transition-colors"
               >
-                Try Again
+                Try again
               </button>
               <button
                 onClick={() => {
                   window.location.href = '/home'
                 }}
-                className="px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary-dark transition"
+                className="px-6 py-3 bg-ink text-white rounded-full font-medium hover:bg-ink-soft transition-colors"
               >
-                Return Home
+                Return home
               </button>
             </div>
           </div>

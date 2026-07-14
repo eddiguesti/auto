@@ -1,4 +1,14 @@
 import { useState } from 'react'
+import { Button, Field, Input, Textarea } from '../ui'
+
+// Matches the kit Input styling for controls the kit doesn't provide (select)
+const SELECT_CLASSES = [
+  'w-full px-4 py-3 rounded-xl text-base text-ink bg-surface',
+  'border border-sepia-200',
+  'hover:border-sepia-300',
+  'focus:border-bronze-400 focus:ring-4 focus:ring-bronze-500/10 focus:outline-none',
+  'transition-colors duration-150'
+].join(' ')
 
 export default function OnboardingTypeForm({ onSubmit, onBack }) {
   const [name, setName] = useState('')
@@ -8,7 +18,7 @@ export default function OnboardingTypeForm({ onSubmit, onBack }) {
   const [additionalContext, setAdditionalContext] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault()
     setIsSubmitting(true)
 
@@ -29,101 +39,102 @@ export default function OnboardingTypeForm({ onSubmit, onBack }) {
       <h2 className="text-2xl font-display text-ink mb-2 text-center">
         Tell me a bit about yourself
       </h2>
-      <p className="text-warmgray mb-6 text-center">
+      <p className="text-sepia-600 text-base mb-6 text-center">
         This helps personalize your memoir journey
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Name */}
-        <div>
-          <label className="block text-sm font-medium text-ink mb-1">
-            What's your name?
-          </label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="e.g., Margaret, John, Elizabeth"
-            className="w-full px-4 py-3 rounded-xl border border-sepia/20 focus:border-sepia focus:outline-none"
-          />
-        </div>
+        <Field label="What's your name?">
+          {(id, describedBy) => (
+            <Input
+              id={id}
+              aria-describedby={describedBy}
+              type="text"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="e.g., Margaret, John, Elizabeth"
+            />
+          )}
+        </Field>
 
         {/* Birth Place */}
-        <div>
-          <label className="block text-sm font-medium text-ink mb-1">
-            Where were you born?
-          </label>
-          <input
-            type="text"
-            value={birthPlace}
-            onChange={(e) => setBirthPlace(e.target.value)}
-            placeholder="e.g., Manchester, London, Birmingham"
-            className="w-full px-4 py-3 rounded-xl border border-sepia/20 focus:border-sepia focus:outline-none"
-          />
-        </div>
+        <Field label="Where were you born?">
+          {(id, describedBy) => (
+            <Input
+              id={id}
+              aria-describedby={describedBy}
+              type="text"
+              value={birthPlace}
+              onChange={e => setBirthPlace(e.target.value)}
+              placeholder="e.g., Manchester, London, Birmingham"
+            />
+          )}
+        </Field>
 
         {/* Birth Country */}
-        <div>
-          <label className="block text-sm font-medium text-ink mb-1">
-            Country
-          </label>
-          <input
-            type="text"
-            value={birthCountry}
-            onChange={(e) => setBirthCountry(e.target.value)}
-            placeholder="e.g., England, Scotland, Wales"
-            className="w-full px-4 py-3 rounded-xl border border-sepia/20 focus:border-sepia focus:outline-none"
-          />
-        </div>
+        <Field label="Country">
+          {(id, describedBy) => (
+            <Input
+              id={id}
+              aria-describedby={describedBy}
+              type="text"
+              value={birthCountry}
+              onChange={e => setBirthCountry(e.target.value)}
+              placeholder="e.g., England, Scotland, Wales"
+            />
+          )}
+        </Field>
 
         {/* Birth Year */}
-        <div>
-          <label className="block text-sm font-medium text-ink mb-1">
-            What year were you born?
-          </label>
-          <select
-            value={birthYear}
-            onChange={(e) => setBirthYear(e.target.value)}
-            className="w-full px-4 py-3 rounded-xl border border-sepia/20 focus:border-sepia focus:outline-none bg-white"
-          >
-            <option value="">Select year (optional)</option>
-            {years.map(year => (
-              <option key={year} value={year}>{year}</option>
-            ))}
-          </select>
-        </div>
+        <Field label="What year were you born?">
+          {(id, describedBy) => (
+            <select
+              id={id}
+              aria-describedby={describedBy}
+              value={birthYear}
+              onChange={e => setBirthYear(e.target.value)}
+              className={SELECT_CLASSES}
+            >
+              <option value="">Select year (optional)</option>
+              {years.map(year => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
+          )}
+        </Field>
 
         {/* Additional Context */}
-        <div>
-          <label className="block text-sm font-medium text-ink mb-1">
-            Anything else you'd like to share?
-            <span className="text-warmgray font-normal"> (optional)</span>
-          </label>
-          <textarea
-            value={additionalContext}
-            onChange={(e) => setAdditionalContext(e.target.value)}
-            placeholder="e.g., I grew up on a farm, my family moved a lot, I was the youngest of 5 children..."
-            rows={3}
-            className="w-full px-4 py-3 rounded-xl border border-sepia/20 focus:border-sepia focus:outline-none resize-none"
-          />
-        </div>
+        <Field
+          label={
+            <>
+              Anything else you'd like to share?
+              <span className="text-sepia-500 font-normal"> (optional)</span>
+            </>
+          }
+        >
+          {(id, describedBy) => (
+            <Textarea
+              id={id}
+              aria-describedby={describedBy}
+              value={additionalContext}
+              onChange={e => setAdditionalContext(e.target.value)}
+              placeholder="e.g., I grew up on a farm, my family moved a lot, I was the youngest of 5 children..."
+              rows={3}
+            />
+          )}
+        </Field>
 
         {/* Buttons */}
         <div className="flex gap-3 pt-2">
-          <button
-            type="button"
-            onClick={onBack}
-            className="flex-1 px-6 py-3 border border-sepia/20 text-warmgray rounded-xl hover:bg-sepia/5 transition"
-          >
+          <Button type="button" variant="secondary" size="lg" className="flex-1" onClick={onBack}>
             Back
-          </button>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="flex-1 px-6 py-3 bg-sepia text-white rounded-xl hover:bg-ink transition disabled:opacity-50"
-          >
+          </Button>
+          <Button type="submit" size="lg" className="flex-1" loading={isSubmitting}>
             {isSubmitting ? 'Saving...' : 'Continue'}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

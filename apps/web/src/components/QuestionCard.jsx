@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect, memo } from 'react'
+import { IconCamera, IconFeather, IconLoader2, IconSearch, IconX } from '@tabler/icons-react'
 import { useAuth } from '../context/AuthContext'
+import { Button, Card, Input, Textarea } from './ui'
 
 export default memo(function QuestionCard({
   question,
@@ -94,27 +96,28 @@ export default memo(function QuestionCard({
   }
 
   return (
-    <div className="bg-white/60 backdrop-blur-sm rounded-lg border border-sepia/10 overflow-hidden page-enter">
+    <Card padding="none" className="overflow-hidden page-enter">
       {/* Question Header */}
-      <div className="p-4 sm:p-6 border-b border-sepia/10">
-        <h2 className="text-lg sm:text-xl text-ink mb-2 font-medium leading-relaxed">
+      <div className="p-5 sm:p-8 border-b border-sepia-100">
+        <h2 className="font-display text-2xl sm:text-3xl text-ink leading-snug mb-2">
           {question.question}
         </h2>
-        <p className="text-sepia/70 text-sm italic">{question.prompt}</p>
+        <p className="text-sepia-600 text-base">{question.prompt}</p>
       </div>
 
       {/* Answer Area */}
-      <div className="p-4 sm:p-6">
+      <div className="p-5 sm:p-8 pt-5 sm:pt-6">
         <div className="relative">
-          <textarea
+          <Textarea
             ref={textareaRef}
             value={answer}
             onChange={handleAnswerChange}
             placeholder="Begin your recollection here... Take your time, every memory matters."
-            className="w-full h-48 sm:h-64 p-4 sm:p-5 border border-sepia/20 rounded bg-white/50 resize-none focus:outline-none focus:ring-1 focus:ring-sepia/30 focus:border-sepia/40 text-ink leading-loose text-base placeholder:text-sepia/40 placeholder:italic"
+            className="font-serif text-lg min-h-[14rem] sm:min-h-[18rem] p-4 sm:p-5 bg-cream/50"
           />
           {saving && (
-            <span className="absolute bottom-3 right-3 text-xs text-sepia/50 italic">
+            <span className="absolute bottom-3 right-4 inline-flex items-center gap-1.5 text-xs text-sepia-500">
+              <IconLoader2 size={14} stroke={2} className="animate-spin" />
               Saving...
             </span>
           )}
@@ -122,36 +125,27 @@ export default memo(function QuestionCard({
 
         {/* Quick edit hint + find/replace - shows when there's substantial content */}
         {answer && answer.length > 100 && (
-          <div className="mt-2 flex items-center justify-between gap-2">
-            <p className="text-xs text-sepia/50 italic">
+          <div className="mt-3 flex items-center justify-between gap-2">
+            <p className="text-sm text-sepia-500">
               You can edit the text directly above — fix any names, dates, or details
             </p>
-            <button
+            <Button
+              variant={showFindReplace ? 'secondary' : 'ghost'}
+              size="sm"
               onClick={() => setShowFindReplace(!showFindReplace)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs transition whitespace-nowrap ${
-                showFindReplace
-                  ? 'bg-sepia/10 text-sepia border border-sepia/20'
-                  : 'text-sepia/60 hover:text-sepia hover:bg-sepia/5'
-              }`}
+              icon={<IconSearch size={16} stroke={1.75} />}
+              className="whitespace-nowrap shrink-0"
             >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
               Find & Replace
-            </button>
+            </Button>
           </div>
         )}
 
         {/* Find & Replace panel */}
         {showFindReplace && (
-          <div className="mt-2 p-3 bg-sepia/5 rounded-lg border border-sepia/15 space-y-2">
-            <div className="flex gap-2">
-              <input
+          <div className="mt-3 p-4 bg-sepia-50 rounded-xl space-y-2">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Input
                 type="text"
                 value={findText}
                 onChange={e => {
@@ -159,16 +153,17 @@ export default memo(function QuestionCard({
                   setReplaceCount(null)
                 }}
                 placeholder="Find text..."
-                className="flex-1 px-3 py-2 border border-sepia/20 rounded text-sm bg-white focus:outline-none focus:ring-1 focus:ring-sepia/30"
+                className="flex-1 text-sm"
               />
-              <input
+              <Input
                 type="text"
                 value={replaceText}
                 onChange={e => setReplaceText(e.target.value)}
                 placeholder="Replace with..."
-                className="flex-1 px-3 py-2 border border-sepia/20 rounded text-sm bg-white focus:outline-none focus:ring-1 focus:ring-sepia/30"
+                className="flex-1 text-sm"
               />
-              <button
+              <Button
+                variant="secondary"
                 onClick={() => {
                   if (!findText) return
                   const regex = new RegExp(findText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi')
@@ -184,13 +179,13 @@ export default memo(function QuestionCard({
                   }
                 }}
                 disabled={!findText}
-                className="px-4 py-2 bg-sepia text-white rounded text-sm hover:bg-ink transition disabled:opacity-40"
+                className="shrink-0"
               >
                 Replace All
-              </button>
+              </Button>
             </div>
             {replaceCount !== null && (
-              <p className="text-xs text-sepia/70">
+              <p className="text-sm text-sepia-600">
                 {replaceCount === 0
                   ? 'No matches found'
                   : `Replaced ${replaceCount} occurrence${replaceCount > 1 ? 's' : ''}`}
@@ -201,13 +196,15 @@ export default memo(function QuestionCard({
 
         {/* Error Message */}
         {error && (
-          <div className="mt-3 p-2 bg-red-50 text-red-700 rounded text-sm text-center">{error}</div>
+          <div className="mt-3 p-3 bg-error-soft text-error-strong rounded-xl text-sm text-center">
+            {error}
+          </div>
         )}
 
         {/* Photos */}
         {photos && photos.length > 0 && (
-          <div className="mt-4">
-            <p className="text-sm text-sepia mb-2">Photos</p>
+          <div className="mt-5">
+            <p className="text-sm font-medium text-ink-soft mb-2">Photos</p>
             <div className="flex flex-wrap gap-2">
               {photos.map(photo => (
                 <div key={photo.id} className="relative group">
@@ -215,13 +212,15 @@ export default memo(function QuestionCard({
                     src={`/api/photos/file/${photo.filename}`}
                     alt={photo.caption || 'Memory photo'}
                     loading="lazy"
-                    className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-lg"
+                    className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-xl"
                   />
                   <button
+                    type="button"
                     onClick={() => deletePhoto(photo.id)}
-                    className="absolute -top-2 -right-2 w-7 h-7 sm:w-6 sm:h-6 bg-red-500 text-white rounded-full sm:opacity-0 sm:group-hover:opacity-100 transition text-sm sm:text-xs flex items-center justify-center"
+                    aria-label="Delete photo"
+                    className="absolute -top-2 -right-2 w-7 h-7 sm:w-6 sm:h-6 bg-error text-white rounded-full sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex items-center justify-center shadow-soft"
                   >
-                    ×
+                    <IconX size={14} stroke={2} />
                   </button>
                 </div>
               ))}
@@ -230,7 +229,7 @@ export default memo(function QuestionCard({
         )}
 
         {/* Action Buttons */}
-        <div className="mt-5 flex flex-col sm:flex-row flex-wrap gap-3">
+        <div className="mt-6 flex flex-col sm:flex-row flex-wrap gap-3">
           {/* Upload Photo */}
           <input
             ref={fileInputRef}
@@ -242,8 +241,10 @@ export default memo(function QuestionCard({
           />
           <label
             htmlFor="photo-upload"
-            className={`inline-flex items-center justify-center gap-2 px-5 py-3 sm:py-2.5 border border-sepia/25 text-sepia/80 rounded hover:bg-white/50 hover:border-sepia/40 transition ${
-              !storyId ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+            className={`inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium select-none bg-surface text-ink border border-sepia-200 shadow-xs transition-all duration-200 ${
+              !storyId
+                ? 'opacity-50 cursor-not-allowed'
+                : 'cursor-pointer hover:border-sepia-300 hover:bg-sepia-50 tap-bounce'
             } ${uploading ? 'opacity-50' : ''}`}
             onClick={e => {
               if (!storyId) {
@@ -253,24 +254,11 @@ export default memo(function QuestionCard({
               }
             }}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
-              />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
-              />
-            </svg>
-            <span className="text-sm">{uploading ? 'Uploading...' : 'Add Photograph'}</span>
+            <IconCamera size={20} stroke={1.75} />
+            <span>{uploading ? 'Uploading...' : 'Add Photograph'}</span>
           </label>
           {!storyId && (
-            <span className="text-xs text-sepia/50 self-center text-center sm:text-left italic">
+            <span className="text-sm text-sepia-500 self-center text-center sm:text-left">
               {answer.trim()
                 ? '(Saving... photos enabled shortly)'
                 : '(Write something first to add photos)'}
@@ -278,24 +266,24 @@ export default memo(function QuestionCard({
           )}
 
           {/* AI Assistant */}
-          <button
+          <Button
+            variant="secondary"
             onClick={onAskAI}
-            className="inline-flex items-center justify-center gap-2 px-5 py-3 sm:py-2.5 bg-ink text-white/90 rounded hover:bg-ink/90 transition tap-bounce pulse-gentle"
+            icon={<IconFeather size={20} stroke={1.75} />}
           >
-            <span className="text-base">✒️</span>
-            <span className="text-sm">Writing Assistant</span>
-          </button>
+            Writing Assistant
+          </Button>
         </div>
 
         {/* Tips */}
-        <div className="mt-5 sm:mt-6 p-4 bg-sepia/5 rounded border-l-2 border-sepia/30">
-          <p className="text-sm text-sepia/70 italic leading-relaxed">
-            <span className="text-sepia not-italic">A note:</span> Write as though speaking to a
+        <div className="mt-6 p-4 bg-sepia-50 rounded-xl">
+          <p className="text-sm text-sepia-600 leading-relaxed">
+            <span className="font-medium text-ink-soft">A note:</span> Write as though speaking to a
             dear friend. The words need not be perfect — the assistant can help refine your thoughts
             and draw out the richer details of your memories.
           </p>
         </div>
       </div>
-    </div>
+    </Card>
   )
 })

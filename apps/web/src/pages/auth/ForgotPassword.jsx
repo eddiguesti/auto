@@ -1,6 +1,8 @@
 import { useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
+import { IconAlertCircle, IconMailCheck } from '@tabler/icons-react'
 import { API_URL } from '../../config'
+import { Button, Card, Field, Input } from '../../components/ui'
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('')
@@ -63,57 +65,43 @@ export default function ForgotPassword() {
           <div className="text-center mb-8">
             <Link
               to="/"
-              className="text-sepia/30 text-2xl tracking-[0.3em] hover:text-sepia/50 transition"
+              className="font-display text-xl text-ink hover:text-bronze-700 transition-colors"
             >
-              &#10087;
+              Easy&nbsp;Memoir
             </Link>
           </div>
 
-          <div className="bg-white/80 backdrop-blur rounded-2xl p-8 border border-sepia/20 shadow-lg text-center">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <svg
-                className="w-8 h-8 text-green-600"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                />
-              </svg>
+          <Card padding="lg" className="text-center">
+            <div className="w-16 h-16 bg-success-soft text-success-strong rounded-full flex items-center justify-center mx-auto mb-6">
+              <IconMailCheck size={32} stroke={1.5} />
             </div>
 
-            <h1 className="text-2xl text-ink mb-4">Check Your Email</h1>
-            <p className="text-sepia/70 mb-6">
-              If an account exists for <strong>{email}</strong>, you will receive a password reset
-              link shortly.
+            <h1 className="text-2xl font-display text-ink mb-4">Check Your Email</h1>
+            <p className="text-sepia-600 mb-6">
+              If an account exists for <strong className="text-ink">{email}</strong>, you will
+              receive a password reset link shortly.
             </p>
-            <p className="text-sm text-sepia/60 mb-8">
+            <p className="text-sm text-sepia-500 mb-8">
               The link will expire in 1 hour. Check your spam folder if you don't see it.
             </p>
 
             <div className="space-y-3">
-              <Link
-                to="/login"
-                className="block w-full py-3 bg-sepia text-white rounded-lg hover:bg-sepia/90 transition"
-              >
+              <Button to="/login" size="xl">
                 Back to Sign In
-              </Link>
-              <button
+              </Button>
+              <Button
+                variant="ghost"
+                size="xl"
                 onClick={() => {
                   setSubmitted(false)
                   setEmail('')
                   formLoadTime.current = Date.now()
                 }}
-                className="block w-full py-3 text-sepia/70 hover:text-sepia transition"
               >
                 Try a different email
-              </button>
+              </Button>
             </div>
-          </div>
+          </Card>
         </div>
       </div>
     )
@@ -125,21 +113,27 @@ export default function ForgotPassword() {
         <div className="text-center mb-8">
           <Link
             to="/"
-            className="text-sepia/30 text-2xl tracking-[0.3em] hover:text-sepia/50 transition"
+            className="font-display text-xl text-ink hover:text-bronze-700 transition-colors"
           >
-            &#10087;
+            Easy&nbsp;Memoir
           </Link>
-          <h1 className="text-3xl text-ink mt-4 mb-2">Forgot Password?</h1>
-          <p className="text-sepia/70">No worries, we'll send you reset instructions.</p>
+          <h1 className="text-3xl sm:text-4xl font-display text-ink mt-6 mb-2">Forgot Password?</h1>
+          <p className="text-sepia-600">No worries, we'll send you reset instructions.</p>
         </div>
 
-        <div className="bg-white/80 backdrop-blur rounded-2xl p-8 border border-sepia/20 shadow-lg">
+        <Card padding="lg">
           {status.message && (
             <div
-              className={`mb-4 p-3 rounded-lg text-sm ${
-                status.type === 'error' ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'
+              role="alert"
+              className={`mb-5 p-3.5 rounded-xl text-sm flex items-center gap-2.5 ${
+                status.type === 'error'
+                  ? 'bg-error-soft text-error-strong'
+                  : 'bg-success-soft text-success-strong'
               }`}
             >
+              {status.type === 'error' && (
+                <IconAlertCircle size={18} stroke={1.75} className="shrink-0" />
+              )}
               {status.message}
             </div>
           )}
@@ -157,36 +151,37 @@ export default function ForgotPassword() {
               />
             </div>
 
-            <div>
-              <label className="block text-sm text-sepia/70 mb-1">Email Address</label>
-              <input
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-sepia/30 bg-white focus:outline-none focus:ring-2 focus:ring-sepia/30 focus:border-sepia"
-                placeholder="you@example.com"
-                required
-                autoComplete="email"
-                autoFocus
-              />
-            </div>
+            <Field label="Email Address">
+              {(id, describedBy) => (
+                <Input
+                  id={id}
+                  aria-describedby={describedBy}
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  required
+                  autoComplete="email"
+                  autoFocus
+                />
+              )}
+            </Field>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 bg-sepia text-white rounded-lg hover:bg-sepia/90 transition disabled:opacity-50"
-            >
+            <Button type="submit" size="xl" loading={loading} className="mt-2">
               {loading ? 'Sending...' : 'Send Reset Link'}
-            </button>
+            </Button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-sepia/70">
+          <p className="mt-6 text-center text-sm text-sepia-600">
             Remember your password?{' '}
-            <Link to="/login" className="text-sepia hover:underline font-medium">
+            <Link
+              to="/login"
+              className="text-bronze-700 hover:text-bronze-800 hover:underline font-medium"
+            >
               Sign in
             </Link>
           </p>
-        </div>
+        </Card>
       </div>
     </div>
   )

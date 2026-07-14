@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Button } from '../ui'
 
 const MARKETING_PATHS = ['/', '/how-it-works', '/blog']
 const SCROLL_THRESHOLD = 600
@@ -51,17 +52,19 @@ export default function StickyCTA() {
         shouldShow ? 'translate-y-0' : 'translate-y-full'
       }`}
     >
-      <div className="bg-heritage-cream/95 backdrop-blur-md border-t border-heritage-sepia-light/40 shadow-lg">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
-          <p className="font-serif text-sm sm:text-base text-heritage-ink hidden sm:block">
+      <div className="bg-surface/95 backdrop-blur-md border-t border-sepia-200/70 shadow-lifted">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3 pb-safe flex items-center justify-between gap-4">
+          <p className="text-sm sm:text-base text-ink font-medium hidden sm:block">
             Ready to preserve your story?
           </p>
-          <button
+          <Button
+            variant="primary"
+            size="md"
             onClick={() => navigate('/register')}
-            className="w-full sm:w-auto font-sans text-sm sm:text-base bg-heritage-cta text-white px-6 py-3 rounded-full hover:bg-heritage-cta-hover transition-colors shadow-md shadow-heritage-cta/20 font-medium"
+            className="w-full sm:w-auto"
           >
-            Start Your Free Memoir
-          </button>
+            Start your free memoir
+          </Button>
         </div>
       </div>
     </div>

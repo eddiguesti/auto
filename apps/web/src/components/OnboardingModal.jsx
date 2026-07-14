@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef } from 'react'
-import { useFocusTrap } from '../hooks/useFocusTrap'
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { IconMap } from '@tabler/icons-react'
 import { useAuth } from '../context/AuthContext'
+import { Modal, Button } from './ui'
 import PreferenceSelector from './onboarding/PreferenceSelector'
 import OnboardingVoiceInterview from './onboarding/OnboardingVoiceInterview'
 import OnboardingTypeForm from './onboarding/OnboardingTypeForm'
@@ -29,6 +30,8 @@ const STEP_INDEX = {
   [STEPS.CHANNEL_SELECTION]: 3,
   [STEPS.TOUR_OFFER]: 4
 }
+
+const TOTAL_STEPS = 5
 
 // Steps that show the progress indicator (offer step hides dots for focus)
 const INDICATOR_STEPS = new Set([
@@ -77,25 +80,11 @@ export default function OnboardingModal({ onClose, initialStep }) {
   const { authFetch, user, refreshUser } = useAuth()
   const [step, setStep] = useState(initialStep || STEPS.WELCOME)
   const [preference, setPreference] = useState(null)
-  const [isVisible, setIsVisible] = useState(false)
-  const [isClosing, setIsClosing] = useState(false)
   const [extractedContext, setExtractedContext] = useState(null)
-  const rafIdRef = useRef(null)
-  const dialogRef = useRef(null)
-  useFocusTrap(dialogRef)
 
-  // Animate in on mount
-  useEffect(() => {
-    rafIdRef.current = requestAnimationFrame(() => setIsVisible(true))
-    return () => {
-      if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current)
-    }
-  }, [])
-
-  // Handle close with animation
+  // Handle close — pass options through to the host page
   const handleClose = (options = {}) => {
-    setIsClosing(true)
-    setTimeout(() => onClose(options), 400)
+    onClose(options)
   }
 
   // Save preference and move to next step
@@ -185,242 +174,202 @@ export default function OnboardingModal({ onClose, initialStep }) {
   const activeIndex = STEP_INDEX[step] ?? -1
 
   return (
-    <div
-      className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-500 ease-out ${
-        isVisible && !isClosing ? 'bg-black/70 backdrop-blur-sm' : 'bg-transparent'
-      }`}
+    <Modal
+      dismissable={false}
+      ariaLabel="Welcome to Easy Memoir"
+      size={WIDE_STEPS.has(step) ? 'xl' : 'lg'}
+      className="transition-all duration-500"
     >
-      <div
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Welcome to Easy Memoir"
-        className={`relative w-full ${WIDE_STEPS.has(step) ? 'max-w-2xl' : 'max-w-lg'} mx-4 bg-gradient-to-b from-cream to-amber-50 rounded-2xl shadow-2xl overflow-hidden transition-all duration-500 ease-out ${
-          isVisible && !isClosing
-            ? 'opacity-100 scale-100 translate-y-0'
-            : 'opacity-0 scale-[0.97] translate-y-3'
-        }`}
-      >
-        {/* Decorative header — voice interview overlays this with animated version */}
-        <div className="h-2 bg-gradient-to-r from-sepia via-amber-500 to-sepia" />
+      {/* Content — AnimatePresence crossfades between steps */}
+      <AnimatePresence mode="wait" initial={false}>
+        {/* Welcome Step */}
+        {step === STEPS.WELCOME && (
+          <motion.div
+            key="welcome"
+            variants={stepVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            className="text-center"
+          >
+            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-bronze-100 text-bronze-700 flex items-center justify-center">
+              <span className="font-display text-3xl">L</span>
+            </div>
 
-        {/* Content — AnimatePresence crossfades between steps */}
-        <div className="p-6 sm:p-8">
-          <AnimatePresence mode="wait" initial={false}>
-            {/* Welcome Step */}
-            {step === STEPS.WELCOME && (
-              <motion.div
-                key="welcome"
-                variants={stepVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                className="text-center"
+            <h2 className="text-2xl sm:text-3xl font-display text-ink mb-3">
+              Welcome, {firstName}!
+            </h2>
+
+            <p className="text-sepia-600 text-base mb-8 leading-relaxed">
+              I'm Clio, and I'll be helping you capture your life story. Before we dive in, let me
+              get to know you a little better.
+            </p>
+
+            <Button size="xl" onClick={() => setStep(STEPS.PREFERENCE)}>
+              Let's Get Started
+            </Button>
+          </motion.div>
+        )}
+
+        {/* Preference Step */}
+        {step === STEPS.PREFERENCE && (
+          <motion.div
+            key="preference"
+            variants={stepVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+          >
+            <PreferenceSelector onSelect={handlePreferenceSelect} />
+          </motion.div>
+        )}
+
+        {/* Voice Interview Step */}
+        {step === STEPS.VOICE_INTERVIEW && (
+          <motion.div
+            key="voice"
+            variants={stepVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+          >
+            <OnboardingVoiceInterview
+              onComplete={handleVoiceComplete}
+              onBack={() => setStep(STEPS.PREFERENCE)}
+            />
+          </motion.div>
+        )}
+
+        {/* Type Form Step */}
+        {step === STEPS.TYPE_FORM && (
+          <motion.div
+            key="typeform"
+            variants={stepVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+          >
+            <OnboardingTypeForm
+              onSubmit={handleTypeFormSubmit}
+              onBack={() => setStep(STEPS.PREFERENCE)}
+            />
+          </motion.div>
+        )}
+
+        {/* Channel Selection Step */}
+        {step === STEPS.CHANNEL_SELECTION && (
+          <motion.div
+            key="channels"
+            variants={stepVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+          >
+            <ChannelSelector firstName={firstName} onComplete={handleChannelSelectionComplete} />
+          </motion.div>
+        )}
+
+        {/* Offer Step */}
+        {step === STEPS.OFFER && (
+          <motion.div
+            key="offer"
+            variants={stepVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+          >
+            <OnboardingOffer firstName={firstName} onTryFree={handleTryFree} />
+          </motion.div>
+        )}
+
+        {/* Tour Offer Step */}
+        {step === STEPS.TOUR_OFFER && (
+          <motion.div
+            key="tour"
+            variants={stepVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            className="text-center"
+          >
+            <div className="w-16 h-16 mx-auto mb-5 rounded-full bg-bronze-100 text-bronze-700 flex items-center justify-center">
+              <IconMap size={28} stroke={1.5} />
+            </div>
+
+            <h2 className="text-2xl font-display text-ink mb-2">You're all set, {firstName}!</h2>
+
+            <p className="text-sepia-600 text-base mb-8 leading-relaxed">
+              Would you like a quick tour of your memoir dashboard? It only takes a moment.
+            </p>
+
+            <div className="flex flex-col gap-3">
+              <Button size="xl" onClick={() => handleClose({ showTour: true })}>
+                Yes, show me around
+              </Button>
+              <Button
+                variant="ghost"
+                size="md"
+                className="w-full"
+                onClick={() => handleClose({ showTour: false })}
               >
-                <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-sepia to-amber-600 flex items-center justify-center shadow-lg">
-                  <span className="text-white font-display text-3xl">L</span>
-                </div>
+                No thanks, I'll explore on my own
+              </Button>
+            </div>
+          </motion.div>
+        )}
 
-                <h2 className="text-2xl sm:text-3xl font-display text-ink mb-3">
-                  Welcome, {firstName}!
-                </h2>
+        {/* Processing Step */}
+        {step === STEPS.PROCESSING && (
+          <motion.div
+            key="processing"
+            variants={fadeVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            className="text-center py-8"
+          >
+            <div
+              className="w-14 h-14 mx-auto mb-6 rounded-full border-4 border-sepia-200 border-t-bronze-500 animate-spin"
+              style={{ animationDuration: '1.2s' }}
+            />
+            <h3 className="text-xl font-display text-ink mb-2">Setting Up Your Journey</h3>
+            <p className="text-sepia-600 text-base">
+              Creating personalized chapter artwork just for you...
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-                <p className="text-warmgray mb-8 leading-relaxed">
-                  I'm Clio, and I'll be helping you capture your life story. Before we dive in, let
-                  me get to know you a little better.
-                </p>
-
-                <button
-                  onClick={() => setStep(STEPS.PREFERENCE)}
-                  className="w-full bg-sepia text-white px-8 py-4 rounded-xl text-lg font-medium hover:bg-ink transition-colors duration-300"
-                >
-                  Let's Get Started
-                </button>
-              </motion.div>
-            )}
-
-            {/* Preference Step */}
-            {step === STEPS.PREFERENCE && (
-              <motion.div
-                key="preference"
-                variants={stepVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-              >
-                <PreferenceSelector onSelect={handlePreferenceSelect} />
-              </motion.div>
-            )}
-
-            {/* Voice Interview Step */}
-            {step === STEPS.VOICE_INTERVIEW && (
-              <motion.div
-                key="voice"
-                variants={stepVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-              >
-                <OnboardingVoiceInterview
-                  onComplete={handleVoiceComplete}
-                  onBack={() => setStep(STEPS.PREFERENCE)}
-                />
-              </motion.div>
-            )}
-
-            {/* Type Form Step */}
-            {step === STEPS.TYPE_FORM && (
-              <motion.div
-                key="typeform"
-                variants={stepVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-              >
-                <OnboardingTypeForm
-                  onSubmit={handleTypeFormSubmit}
-                  onBack={() => setStep(STEPS.PREFERENCE)}
-                />
-              </motion.div>
-            )}
-
-            {/* Channel Selection Step */}
-            {step === STEPS.CHANNEL_SELECTION && (
-              <motion.div
-                key="channels"
-                variants={stepVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-              >
-                <ChannelSelector
-                  firstName={firstName}
-                  onComplete={handleChannelSelectionComplete}
-                />
-              </motion.div>
-            )}
-
-            {/* Offer Step */}
-            {step === STEPS.OFFER && (
-              <motion.div
-                key="offer"
-                variants={stepVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-              >
-                <OnboardingOffer firstName={firstName} onTryFree={handleTryFree} />
-              </motion.div>
-            )}
-
-            {/* Tour Offer Step */}
-            {step === STEPS.TOUR_OFFER && (
-              <motion.div
-                key="tour"
-                variants={stepVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                className="text-center"
-              >
-                <div className="w-16 h-16 mx-auto mb-5 rounded-full bg-sepia/10 flex items-center justify-center">
-                  <svg
-                    className="w-8 h-8 text-sepia"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.5}
-                      d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
-                    />
-                  </svg>
-                </div>
-
-                <h2 className="text-2xl font-display text-ink mb-2">
-                  You're all set, {firstName}!
-                </h2>
-
-                <p className="text-warmgray mb-8 leading-relaxed">
-                  Would you like a quick tour of your memoir dashboard? It only takes a moment.
-                </p>
-
-                <div className="flex flex-col gap-3">
-                  <button
-                    onClick={() => handleClose({ showTour: true })}
-                    className="w-full bg-sepia text-white px-8 py-4 rounded-xl text-lg font-medium hover:bg-ink transition-colors duration-300"
-                  >
-                    Yes, show me around
-                  </button>
-                  <button
-                    onClick={() => handleClose({ showTour: false })}
-                    className="w-full px-8 py-3 text-warmgray hover:text-ink transition-colors duration-300 text-sm font-medium"
-                  >
-                    No thanks, I'll explore on my own
-                  </button>
-                </div>
-              </motion.div>
-            )}
-
-            {/* Processing Step */}
-            {step === STEPS.PROCESSING && (
-              <motion.div
-                key="processing"
-                variants={fadeVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                className="text-center py-8"
-              >
-                <div className="w-16 h-16 mx-auto mb-6 relative">
-                  <div className="absolute inset-0 border-4 border-sepia/20 rounded-full" />
-                  <div
-                    className="absolute inset-0 border-4 border-sepia border-t-transparent rounded-full animate-spin"
-                    style={{ animationDuration: '1.2s' }}
-                  />
-                  <motion.div
-                    className="absolute inset-0 border-4 border-sepia/10 rounded-full"
-                    animate={{ scale: [1, 1.2, 1], opacity: [0.4, 0, 0.4] }}
-                    transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                  />
-                </div>
-                <h3 className="text-xl font-display text-ink mb-2">Setting Up Your Journey</h3>
-                <p className="text-warmgray">
-                  Creating personalized chapter artwork just for you...
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* Progress indicator — pill-shaped active dot */}
-        <AnimatePresence>
-          {INDICATOR_STEPS.has(step) && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="pb-6 flex justify-center items-center gap-1.5"
-            >
+      {/* Progress indicator — bronze pill dots with a quiet step count */}
+      <AnimatePresence>
+        {INDICATOR_STEPS.has(step) && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="mt-8 flex flex-col items-center gap-2"
+          >
+            <div className="flex items-center gap-1.5">
               {[0, 1, 2, 3, 4].map(i => (
                 <div
                   key={i}
                   className={`h-1.5 rounded-full transition-all duration-500 ease-out ${
                     i === activeIndex
-                      ? 'w-5 bg-sepia'
+                      ? 'w-5 bg-bronze-500'
                       : i < activeIndex
-                        ? 'w-1.5 bg-sepia/50'
-                        : 'w-1.5 bg-sepia/20'
+                        ? 'w-1.5 bg-bronze-300'
+                        : 'w-1.5 bg-sepia-200'
                   }`}
                 />
               ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    </div>
+            </div>
+            <p className="text-xs text-sepia-500">
+              Step {activeIndex + 1} of {TOTAL_STEPS}
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </Modal>
   )
 }

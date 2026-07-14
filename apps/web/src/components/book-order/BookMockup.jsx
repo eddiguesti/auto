@@ -15,10 +15,11 @@ export default function BookMockup({ config, options, title }) {
   const bookWidth = baseHeight * aspectRatio
   const spineWidth = isHardcover ? 25 : 15
 
+  // Default cover falls back to the system ink hex (#292420)
   const coverColor =
     config.binding === 'LW' && config.linen !== 'X'
-      ? LINEN_COLOR_MAP[config.linen] || '#2d3748'
-      : '#2d3748'
+      ? LINEN_COLOR_MAP[config.linen] || '#292420'
+      : '#292420'
 
   const foilColor = config.foil !== 'X' ? FOIL_COLOR_MAP[config.foil] : null
 
@@ -69,7 +70,7 @@ export default function BookMockup({ config, options, title }) {
 function BookShadow({ width }) {
   return (
     <div
-      className="absolute bottom-0 left-4 bg-black/20 rounded-full blur-xl"
+      className="absolute bottom-0 left-4 bg-ink/20 rounded-full blur-xl"
       style={{ width, height: 20 }}
     />
   )
@@ -124,7 +125,7 @@ function Pages({ width, height, spineWidth, paper }) {
         height: height - 4,
         top: 2,
         left: spineWidth + 2,
-        background: paper?.includes('C') ? '#f5f5f0' : '#faf8f2',
+        background: paper?.includes('C') ? '#FFFFFF' : '#FBF8F3',
         transform: `translateZ(-${spineWidth - 2}px)`,
         boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.1)'
       }}
@@ -132,7 +133,7 @@ function Pages({ width, height, spineWidth, paper }) {
       {[...Array(8)].map((_, i) => (
         <div
           key={i}
-          className="absolute left-0 right-0 border-b border-sepia/10"
+          className="absolute left-0 right-0 border-b border-sepia-200/50"
           style={{ top: `${(i + 1) * 11}%` }}
         />
       ))}
@@ -196,7 +197,7 @@ function CoilRings() {
   return (
     <div className="absolute left-0 top-0 bottom-0 w-4 flex flex-col justify-around py-2">
       {[...Array(12)].map((_, i) => (
-        <div key={i} className="w-3 h-3 rounded-full border-2 border-gray-400 bg-white" />
+        <div key={i} className="w-3 h-3 rounded-full border-2 border-sepia-300 bg-white" />
       ))}
     </div>
   )

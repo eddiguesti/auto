@@ -3,12 +3,21 @@ import { useAuth } from '../context/AuthContext'
 import {
   IconBook,
   IconBookmark,
+  IconCheck,
   IconGift,
   IconX,
   IconStack2,
   IconHeadphones,
   IconDiscount2
 } from '@tabler/icons-react'
+import { Badge, Button, Card, Field, Input, ProgressBar, Skeleton } from './ui'
+
+const SELECT_CLASSES = [
+  'w-full px-4 py-3 rounded-xl text-base text-ink bg-surface',
+  'border border-sepia-200 hover:border-sepia-300',
+  'focus:border-bronze-400 focus:ring-4 focus:ring-bronze-500/10 focus:outline-none',
+  'transition-colors duration-150'
+].join(' ')
 
 // Package options with discounts
 const PACKAGES = {
@@ -58,10 +67,14 @@ function BookPreview({ title, format, size = 'normal' }) {
             : '2px 2px 12px rgba(0,0,0,0.3)'
         }}
       >
-        <div className="w-full h-full bg-gradient-to-br from-[#8b7355] via-[#6b5344] to-[#4a3728] flex flex-col justify-center p-5 relative">
+        {/* Cloth cover — palette hexes only (sepia #9C7E5D into ink #292420) */}
+        <div
+          className="w-full h-full flex flex-col justify-center p-5 relative"
+          style={{ background: 'linear-gradient(150deg, #9C7E5D 0%, #292420 100%)' }}
+        >
           <div className="text-center">
             <h3
-              className="font-serif text-amber-100/80 leading-snug"
+              className="font-display text-parchment/90 leading-snug"
               style={{
                 fontSize: size === 'large' ? '22px' : size === 'small' ? '14px' : '18px',
                 fontWeight: 500
@@ -85,33 +98,46 @@ function BookPreview({ title, format, size = 'normal' }) {
 
 // Icon mapping for book formats using Tabler Icons
 const formatIcons = {
-  paperback: <IconBook size={40} className="text-sepia" stroke={1.5} />,
-  hardcover: <IconBookmark size={40} className="text-sepia" stroke={1.5} />,
-  deluxe: <IconGift size={40} className="text-sepia" stroke={1.5} />
+  paperback: <IconBook size={40} className="text-sepia-500" stroke={1.5} />,
+  hardcover: <IconBookmark size={40} className="text-sepia-500" stroke={1.5} />,
+  deluxe: <IconGift size={40} className="text-sepia-500" stroke={1.5} />
+}
+
+function SelectedCheck({ className = 'top-3 right-3' }) {
+  return (
+    <span
+      className={`absolute ${className} w-5 h-5 rounded-full bg-bronze-500 text-white flex items-center justify-center`}
+      aria-hidden="true"
+    >
+      <IconCheck size={12} stroke={3} />
+    </span>
+  )
 }
 
 // Format card component
 function FormatCard({ format, selected, onClick }) {
   return (
     <button
+      type="button"
       onClick={onClick}
-      className={`relative p-5 rounded-2xl border-2 transition-all duration-300 text-center ${
+      className={`relative p-5 rounded-2xl border bg-surface transition-all duration-200 text-center ${
         selected
-          ? 'border-sepia bg-sepia/10 shadow-lg scale-[1.02]'
-          : 'border-sepia/20 hover:border-sepia/40 hover:shadow-md'
-      } ${format.popular ? 'ring-2 ring-amber-400/50' : ''}`}
+          ? 'border-bronze-400 ring-4 ring-bronze-500/10 shadow-soft'
+          : 'border-sepia-200 hover:border-sepia-300 hover:shadow-soft'
+      }`}
     >
       {format.popular && (
-        <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-amber-400 text-amber-900 text-xs px-3 py-0.5 rounded-full font-medium">
+        <Badge variant="bronze" className="absolute -top-2.5 left-1/2 -translate-x-1/2">
           Most Popular
-        </span>
+        </Badge>
       )}
+      {selected && <SelectedCheck />}
       <div className="flex justify-center mb-2">
         {formatIcons[format.icon] || formatIcons.paperback}
       </div>
       <div className="font-medium text-ink text-lg">{format.name}</div>
-      <div className="text-sm text-warmgray mt-1">{format.description}</div>
-      <div className="text-xl font-semibold text-sepia mt-3">{format.price}</div>
+      <div className="text-sm text-sepia-600 mt-1">{format.description}</div>
+      <div className="text-xl font-display text-ink mt-3">{format.price}</div>
     </button>
   )
 }
@@ -202,11 +228,15 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-ink/50 backdrop-blur-sm flex items-center justify-center z-50">
-        <div className="bg-white rounded-2xl p-8 text-center shadow-2xl">
-          <div className="w-12 h-12 border-3 border-sepia border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-sepia">Loading book options...</p>
-        </div>
+      <div className="fixed inset-0 bg-ink/40 backdrop-blur-sm flex items-center justify-center z-50 p-6">
+        <Card className="w-full max-w-sm">
+          <p className="text-sepia-600 text-sm mb-4">Loading book options...</p>
+          <div className="space-y-3">
+            <Skeleton className="h-6 w-3/4" />
+            <Skeleton className="h-6" />
+            <Skeleton className="h-6 w-1/2" />
+          </div>
+        </Card>
       </div>
     )
   }
@@ -218,44 +248,28 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
   ]
 
   return (
-    <div className="fixed inset-0 bg-ink/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 sm:p-2">
-      <div className="bg-gradient-to-b from-white to-cream rounded-t-2xl sm:rounded-2xl w-full max-w-[95vw] max-h-[98vh] sm:max-h-[96vh] flex flex-col shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 bg-ink/40 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 sm:p-2">
+      <div className="bg-parchment rounded-t-3xl sm:rounded-3xl w-full max-w-[95vw] max-h-[98vh] sm:max-h-[96vh] flex flex-col shadow-modal overflow-hidden">
         {/* Header */}
-        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-sepia/10 flex justify-between items-center">
+        <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-sepia-100 flex justify-between items-start gap-4 bg-surface/60">
           <div className="min-w-0 flex-1">
-            <h2 className="text-xl sm:text-2xl font-serif text-ink">Create Your Book</h2>
-            {/* Progress steps - compact on mobile */}
-            <div className="flex items-center gap-0.5 sm:gap-1 mt-2 overflow-x-auto">
-              {steps.map((s, i) => (
-                <div key={s.num} className="flex items-center flex-shrink-0">
-                  <div
-                    className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-medium transition-colors ${
-                      step > s.num
-                        ? 'bg-green-500 text-white'
-                        : step === s.num
-                          ? 'bg-sepia text-white'
-                          : 'bg-sepia/20 text-sepia/60'
-                    }`}
-                  >
-                    {step > s.num ? '✓' : s.num}
-                  </div>
-                  <span
-                    className={`ml-1 sm:ml-1.5 text-[10px] sm:text-xs hidden xs:inline ${step === s.num ? 'text-ink font-medium' : 'text-sepia/60'}`}
-                  >
-                    {s.label}
-                  </span>
-                  {i < steps.length - 1 && (
-                    <div className="w-3 sm:w-6 h-0.5 mx-1 sm:mx-2 bg-sepia/20" />
-                  )}
-                </div>
-              ))}
-            </div>
+            <p className="eyebrow mb-1">
+              Step {step} of {steps.length} &middot; {steps[step - 1].label}
+            </p>
+            <h2 className="text-xl sm:text-2xl font-display text-ink">Create Your Book</h2>
+            <ProgressBar
+              value={(step / steps.length) * 100}
+              className="mt-3 max-w-xs"
+              label="Order progress"
+            />
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full hover:bg-sepia/10 text-sepia/60 hover:text-sepia transition ml-2"
+            aria-label="Close"
+            className="shrink-0 -mr-1 p-2 rounded-full text-sepia-400 hover:text-ink hover:bg-sepia-100/70 transition-colors"
           >
-            <IconX size={22} stroke={2} />
+            <IconX size={20} stroke={1.75} />
           </button>
         </div>
 
@@ -266,7 +280,7 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
             <div className="p-4 sm:p-6 space-y-6 sm:space-y-8">
               {/* Book Format */}
               <div>
-                <h3 className="text-base sm:text-lg font-medium text-ink mb-3 sm:mb-4">
+                <h3 className="text-lg font-display text-ink mb-3 sm:mb-4">
                   Choose your book format
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
@@ -283,51 +297,53 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
 
               {/* Package Selection */}
               <div>
-                <h3 className="text-base sm:text-lg font-medium text-ink mb-3 sm:mb-4">
-                  Choose your package
-                </h3>
+                <h3 className="text-lg font-display text-ink mb-3 sm:mb-4">Choose your package</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   {/* Single Copy */}
                   <button
+                    type="button"
                     onClick={() => setSelectedPackage('single')}
-                    className={`relative p-5 rounded-2xl border-2 transition-all duration-300 text-left ${
+                    className={`relative p-5 rounded-2xl border bg-surface transition-all duration-200 text-left ${
                       selectedPackage === 'single'
-                        ? 'border-sepia bg-sepia/10 shadow-lg'
-                        : 'border-sepia/20 hover:border-sepia/40 hover:shadow-md'
+                        ? 'border-bronze-400 ring-4 ring-bronze-500/10 shadow-soft'
+                        : 'border-sepia-200 hover:border-sepia-300 hover:shadow-soft'
                     }`}
                   >
+                    {selectedPackage === 'single' && <SelectedCheck />}
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-full bg-sepia/10 flex items-center justify-center">
-                        <IconBook size={24} className="text-sepia" stroke={1.5} />
+                      <div className="w-12 h-12 rounded-xl bg-sepia-100 flex items-center justify-center">
+                        <IconBook size={24} className="text-sepia-600" stroke={1.5} />
                       </div>
                       <div>
                         <div className="font-medium text-ink text-lg">Single Copy</div>
-                        <div className="text-sm text-warmgray">Perfect for yourself</div>
+                        <div className="text-sm text-sepia-600">Perfect for yourself</div>
                       </div>
                     </div>
                   </button>
 
                   {/* 10 Book Bundle */}
                   <button
+                    type="button"
                     onClick={() => setSelectedPackage('bundle10')}
-                    className={`relative p-5 rounded-2xl border-2 transition-all duration-300 text-left ${
+                    className={`relative p-5 rounded-2xl border bg-surface transition-all duration-200 text-left ${
                       selectedPackage === 'bundle10'
-                        ? 'border-sepia bg-sepia/10 shadow-lg ring-2 ring-amber-400/50'
-                        : 'border-sepia/20 hover:border-sepia/40 hover:shadow-md ring-2 ring-amber-400/50'
+                        ? 'border-bronze-400 ring-4 ring-bronze-500/10 shadow-soft'
+                        : 'border-sepia-200 hover:border-sepia-300 hover:shadow-soft'
                     }`}
                   >
-                    <span className="absolute -top-2.5 left-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs px-3 py-0.5 rounded-full font-medium flex items-center gap-1">
-                      <IconDiscount2 size={14} />
+                    <span className="absolute -top-2.5 left-4 bg-bronze-500 text-white text-xs px-3 py-0.5 rounded-full font-medium flex items-center gap-1">
+                      <IconDiscount2 size={14} stroke={1.75} />
                       40% OFF
                     </span>
+                    {selectedPackage === 'bundle10' && <SelectedCheck />}
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center">
-                        <IconStack2 size={24} className="text-amber-600" stroke={1.5} />
+                      <div className="w-12 h-12 rounded-xl bg-bronze-100 flex items-center justify-center">
+                        <IconStack2 size={24} className="text-bronze-600" stroke={1.5} />
                       </div>
                       <div>
                         <div className="font-medium text-ink text-lg">10 Book Bundle</div>
-                        <div className="text-sm text-warmgray">Share with family & friends</div>
-                        <div className="text-xs text-amber-600 font-medium mt-1">
+                        <div className="text-sm text-sepia-600">Share with family & friends</div>
+                        <div className="text-xs text-success-strong font-medium mt-1">
                           Save £
                           {(
                             parseFloat(
@@ -347,69 +363,64 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
 
               {/* Audiobook Add-on */}
               <div>
-                <h3 className="text-base sm:text-lg font-medium text-ink mb-3 sm:mb-4">
+                <h3 className="text-lg font-display text-ink mb-3 sm:mb-4">
                   Add audiobook narration
                 </h3>
                 <button
+                  type="button"
                   onClick={() => setIncludeAudiobook(!includeAudiobook)}
-                  className={`w-full relative p-5 rounded-2xl border-2 transition-all duration-300 text-left ${
+                  className={`w-full relative p-5 rounded-2xl border bg-surface transition-all duration-200 text-left ${
                     includeAudiobook
-                      ? 'border-sepia bg-sepia/10 shadow-lg'
-                      : 'border-sepia/20 hover:border-sepia/40 hover:shadow-md'
+                      ? 'border-bronze-400 ring-4 ring-bronze-500/10 shadow-soft'
+                      : 'border-sepia-200 hover:border-sepia-300 hover:shadow-soft'
                   }`}
                 >
                   {selectedPackage === 'bundle10' && (
-                    <span className="absolute -top-2.5 right-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs px-3 py-0.5 rounded-full font-medium">
+                    <span className="absolute -top-2.5 right-4 bg-bronze-500 text-white text-xs px-3 py-0.5 rounded-full font-medium">
                       40% OFF with bundle
                     </span>
                   )}
                   <div className="flex items-center gap-4">
                     <div
-                      className={`w-12 h-12 rounded-full flex items-center justify-center ${includeAudiobook ? 'bg-sepia/20' : 'bg-sepia/10'}`}
+                      className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                        includeAudiobook ? 'bg-bronze-100' : 'bg-sepia-100'
+                      }`}
                     >
-                      <IconHeadphones size={24} className="text-sepia" stroke={1.5} />
+                      <IconHeadphones
+                        size={24}
+                        className={includeAudiobook ? 'text-bronze-600' : 'text-sepia-600'}
+                        stroke={1.5}
+                      />
                     </div>
                     <div className="flex-1">
                       <div className="font-medium text-ink text-lg">Professional AI Audiobook</div>
-                      <div className="text-sm text-warmgray">
+                      <div className="text-sm text-sepia-600">
                         Your memoir read aloud with natural AI narration
                       </div>
                     </div>
                     <div className="text-right">
                       {selectedPackage === 'bundle10' ? (
                         <>
-                          <div className="text-lg font-semibold text-sepia">
+                          <div className="text-lg font-semibold text-ink">
                             £{(AUDIOBOOK_PRICE * (1 - AUDIOBOOK_BUNDLE_DISCOUNT)).toFixed(2)}
                           </div>
-                          <div className="text-xs text-warmgray line-through">
+                          <div className="text-xs text-sepia-500 line-through">
                             £{AUDIOBOOK_PRICE.toFixed(2)}
                           </div>
                         </>
                       ) : (
-                        <div className="text-lg font-semibold text-sepia">
+                        <div className="text-lg font-semibold text-ink">
                           £{AUDIOBOOK_PRICE.toFixed(2)}
                         </div>
                       )}
                     </div>
                     <div
                       className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
-                        includeAudiobook ? 'bg-sepia border-sepia' : 'border-sepia/30'
+                        includeAudiobook ? 'bg-bronze-500 border-bronze-500' : 'border-sepia-300'
                       }`}
                     >
                       {includeAudiobook && (
-                        <svg
-                          className="w-4 h-4 text-white"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={3}
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
+                        <IconCheck size={14} stroke={3} className="text-white" />
                       )}
                     </div>
                   </div>
@@ -418,41 +429,47 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
 
               {/* Book Title & Author */}
               <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-lg font-medium text-ink mb-2">Book title</label>
-                  <input
-                    type="text"
-                    value={bookTitle}
-                    onChange={e => setBookTitle(e.target.value)}
-                    className="w-full px-4 py-3 border border-sepia/20 rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-sepia/30"
-                    placeholder="Enter your book title"
-                  />
-                </div>
-                <div>
-                  <label className="block text-lg font-medium text-ink mb-2">Author name</label>
-                  <input
-                    type="text"
-                    value={authorName}
-                    onChange={e => setAuthorName(e.target.value)}
-                    className="w-full px-4 py-3 border border-sepia/20 rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-sepia/30"
-                    placeholder="Your name"
-                  />
-                </div>
+                <Field label="Book title">
+                  {(id, describedBy) => (
+                    <Input
+                      id={id}
+                      aria-describedby={describedBy}
+                      type="text"
+                      value={bookTitle}
+                      onChange={e => setBookTitle(e.target.value)}
+                      placeholder="Enter your book title"
+                    />
+                  )}
+                </Field>
+                <Field label="Author name">
+                  {(id, describedBy) => (
+                    <Input
+                      id={id}
+                      aria-describedby={describedBy}
+                      type="text"
+                      value={authorName}
+                      onChange={e => setAuthorName(e.target.value)}
+                      placeholder="Your name"
+                    />
+                  )}
+                </Field>
               </div>
 
               {/* Price Summary */}
               {pricing.savings > 0 && (
-                <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-200">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <IconDiscount2 size={20} className="text-amber-600" />
-                      <span className="text-amber-800 font-medium">
+                <div className="bg-bronze-50 border border-bronze-200/60 rounded-2xl p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <IconDiscount2 size={20} stroke={1.75} className="text-bronze-600 shrink-0" />
+                      <span className="text-ink font-medium">
                         You're saving £{pricing.savings.toFixed(2)}!
                       </span>
                     </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-ink">£{pricing.total.toFixed(2)}</div>
-                      <div className="text-xs text-warmgray">
+                    <div className="text-right shrink-0">
+                      <div className="text-2xl font-display text-ink">
+                        £{pricing.total.toFixed(2)}
+                      </div>
+                      <div className="text-xs text-sepia-600">
                         {pricing.quantity} book{pricing.quantity > 1 ? 's' : ''}
                         {includeAudiobook ? ' + audiobook' : ''}
                       </div>
@@ -467,73 +484,87 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
           {step === 2 && (
             <div className="p-6">
               <div className="max-w-lg mx-auto space-y-5">
-                <div>
-                  <label className="block text-sm font-medium text-ink mb-2">Full Name *</label>
-                  <input
-                    type="text"
-                    value={shipping.name}
-                    onChange={e => setShipping(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full px-4 py-3 border border-sepia/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-sepia/30"
-                  />
-                </div>
+                <Field label="Full Name *">
+                  {(id, describedBy) => (
+                    <Input
+                      id={id}
+                      aria-describedby={describedBy}
+                      type="text"
+                      value={shipping.name}
+                      onChange={e => setShipping(prev => ({ ...prev, name: e.target.value }))}
+                    />
+                  )}
+                </Field>
 
-                <div>
-                  <label className="block text-sm font-medium text-ink mb-2">Email *</label>
-                  <input
-                    type="email"
-                    value={shipping.email}
-                    onChange={e => setShipping(prev => ({ ...prev, email: e.target.value }))}
-                    className="w-full px-4 py-3 border border-sepia/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-sepia/30"
-                  />
-                </div>
+                <Field label="Email *">
+                  {(id, describedBy) => (
+                    <Input
+                      id={id}
+                      aria-describedby={describedBy}
+                      type="email"
+                      value={shipping.email}
+                      onChange={e => setShipping(prev => ({ ...prev, email: e.target.value }))}
+                    />
+                  )}
+                </Field>
 
-                <div>
-                  <label className="block text-sm font-medium text-ink mb-2">Address *</label>
-                  <input
-                    type="text"
-                    value={shipping.street1}
-                    onChange={e => setShipping(prev => ({ ...prev, street1: e.target.value }))}
-                    className="w-full px-4 py-3 border border-sepia/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-sepia/30"
-                  />
-                </div>
+                <Field label="Address *">
+                  {(id, describedBy) => (
+                    <Input
+                      id={id}
+                      aria-describedby={describedBy}
+                      type="text"
+                      value={shipping.street1}
+                      onChange={e => setShipping(prev => ({ ...prev, street1: e.target.value }))}
+                    />
+                  )}
+                </Field>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-ink mb-2">City *</label>
-                    <input
-                      type="text"
-                      value={shipping.city}
-                      onChange={e => setShipping(prev => ({ ...prev, city: e.target.value }))}
-                      className="w-full px-4 py-3 border border-sepia/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-sepia/30"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-ink mb-2">Postcode *</label>
-                    <input
-                      type="text"
-                      value={shipping.postcode}
-                      onChange={e => setShipping(prev => ({ ...prev, postcode: e.target.value }))}
-                      className="w-full px-4 py-3 border border-sepia/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-sepia/30"
-                    />
-                  </div>
+                  <Field label="City *">
+                    {(id, describedBy) => (
+                      <Input
+                        id={id}
+                        aria-describedby={describedBy}
+                        type="text"
+                        value={shipping.city}
+                        onChange={e => setShipping(prev => ({ ...prev, city: e.target.value }))}
+                      />
+                    )}
+                  </Field>
+                  <Field label="Postcode *">
+                    {(id, describedBy) => (
+                      <Input
+                        id={id}
+                        aria-describedby={describedBy}
+                        type="text"
+                        value={shipping.postcode}
+                        onChange={e => setShipping(prev => ({ ...prev, postcode: e.target.value }))}
+                      />
+                    )}
+                  </Field>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-ink mb-2">Country *</label>
-                  <select
-                    value={shipping.countryCode}
-                    onChange={e => setShipping(prev => ({ ...prev, countryCode: e.target.value }))}
-                    className="w-full px-4 py-3 border border-sepia/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-sepia/30 bg-white"
-                  >
-                    <option value="GB">United Kingdom</option>
-                    <option value="US">United States</option>
-                    <option value="CA">Canada</option>
-                    <option value="AU">Australia</option>
-                    <option value="DE">Germany</option>
-                    <option value="FR">France</option>
-                    <option value="IE">Ireland</option>
-                  </select>
-                </div>
+                <Field label="Country *">
+                  {id => (
+                    <select
+                      id={id}
+                      value={shipping.countryCode}
+                      onChange={e =>
+                        setShipping(prev => ({ ...prev, countryCode: e.target.value }))
+                      }
+                      className={SELECT_CLASSES}
+                    >
+                      <option value="GB">United Kingdom</option>
+                      <option value="US">United States</option>
+                      <option value="CA">Canada</option>
+                      <option value="AU">Australia</option>
+                      <option value="DE">Germany</option>
+                      <option value="FR">France</option>
+                      <option value="IE">Ireland</option>
+                    </select>
+                  )}
+                </Field>
               </div>
             </div>
           )}
@@ -553,52 +584,52 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
                     />
                     <div className="mt-4 text-center">
                       <div className="font-medium text-ink">{bookTitle}</div>
-                      <div className="text-sm text-warmgray capitalize">{selectedFormat}</div>
+                      <div className="text-sm text-sepia-600 capitalize">{selectedFormat}</div>
                     </div>
                   </div>
 
                   {/* Order Summary */}
                   <div className="space-y-4">
-                    <div className="bg-white rounded-xl p-5 border border-sepia/10">
-                      <h4 className="font-medium text-ink mb-3">Order Summary</h4>
+                    <Card padding="sm">
+                      <h4 className="font-display text-ink mb-3">Order Summary</h4>
                       <dl className="space-y-2 text-sm">
                         <div className="flex justify-between">
-                          <dt className="text-warmgray">Format</dt>
+                          <dt className="text-sepia-600">Format</dt>
                           <dd className="text-ink font-medium capitalize">{selectedFormat}</dd>
                         </div>
                         <div className="flex justify-between">
-                          <dt className="text-warmgray">Quantity</dt>
+                          <dt className="text-sepia-600">Quantity</dt>
                           <dd className="text-ink font-medium">
                             {pricing.quantity} book{pricing.quantity > 1 ? 's' : ''}
                             {selectedPackage === 'bundle10' && (
-                              <span className="text-amber-600 ml-1">(40% off)</span>
+                              <span className="text-bronze-700 ml-1">(40% off)</span>
                             )}
                           </dd>
                         </div>
                         <div className="flex justify-between">
-                          <dt className="text-warmgray">Cover</dt>
+                          <dt className="text-sepia-600">Cover</dt>
                           <dd className="text-ink font-medium">Classic Cloth</dd>
                         </div>
                         <div className="flex justify-between">
-                          <dt className="text-warmgray">Pages</dt>
+                          <dt className="text-sepia-600">Pages</dt>
                           <dd className="text-ink font-medium">~{pageCount || 50} pages</dd>
                         </div>
                         {includeAudiobook && (
                           <div className="flex justify-between">
-                            <dt className="text-warmgray">Audiobook</dt>
+                            <dt className="text-sepia-600">Audiobook</dt>
                             <dd className="text-ink font-medium">
                               AI Narration
                               {selectedPackage === 'bundle10' && (
-                                <span className="text-green-600 ml-1">(40% off)</span>
+                                <span className="text-success-strong ml-1">(40% off)</span>
                               )}
                             </dd>
                           </div>
                         )}
                       </dl>
-                    </div>
+                    </Card>
 
-                    <div className="bg-white rounded-xl p-5 border border-sepia/10">
-                      <h4 className="font-medium text-ink mb-3">Shipping To</h4>
+                    <Card padding="sm">
+                      <h4 className="font-display text-ink mb-3">Shipping To</h4>
                       <p className="text-sm text-ink">
                         {shipping.name}
                         <br />
@@ -606,35 +637,35 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
                         <br />
                         {shipping.city}, {shipping.postcode}
                       </p>
-                    </div>
+                    </Card>
 
-                    <div className="bg-sepia/10 rounded-xl p-5">
+                    <Card padding="sm">
                       <dl className="space-y-2 text-sm mb-3">
                         <div className="flex justify-between">
-                          <dt className="text-warmgray">Books ({pricing.quantity}x)</dt>
+                          <dt className="text-sepia-600">Books ({pricing.quantity}x)</dt>
                           <dd className="text-ink">£{pricing.books.toFixed(2)}</dd>
                         </div>
                         {includeAudiobook && (
                           <div className="flex justify-between">
-                            <dt className="text-warmgray">Audiobook</dt>
+                            <dt className="text-sepia-600">Audiobook</dt>
                             <dd className="text-ink">£{pricing.audiobook.toFixed(2)}</dd>
                           </div>
                         )}
                         {pricing.savings > 0 && (
-                          <div className="flex justify-between text-green-600">
+                          <div className="flex justify-between text-success-strong">
                             <dt>You saved</dt>
                             <dd>-£{pricing.savings.toFixed(2)}</dd>
                           </div>
                         )}
                       </dl>
-                      <div className="flex justify-between items-center pt-3 border-t border-sepia/20">
+                      <div className="flex justify-between items-baseline pt-3 border-t border-sepia-200/70">
                         <span className="text-ink font-medium">Total</span>
-                        <span className="text-2xl font-semibold text-ink">
+                        <span className="text-2xl font-display text-ink">
                           £{pricing.total.toFixed(2)}
                         </span>
                       </div>
-                      <p className="text-xs text-warmgray mt-1">Includes shipping</p>
-                    </div>
+                      <p className="text-xs text-sepia-500 mt-1">Includes shipping</p>
+                    </Card>
                   </div>
                 </div>
               </div>
@@ -643,20 +674,18 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
         </div>
 
         {/* Footer */}
-        <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-sepia/10 bg-white/50">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-sepia-100 bg-surface/60">
           <div className="flex flex-col-reverse sm:flex-row sm:justify-between sm:items-center gap-3">
             <div className="hidden sm:block">
               {step === 1 && selectedFormat && (
                 <div className="text-left">
-                  <span className="text-xl font-semibold text-ink">
-                    £{pricing.total.toFixed(2)}
-                  </span>
+                  <span className="text-xl font-display text-ink">£{pricing.total.toFixed(2)}</span>
                   {pricing.savings > 0 && (
-                    <span className="text-sm text-green-600 ml-2">
+                    <span className="text-sm text-success-strong ml-2">
                       Save £{pricing.savings.toFixed(2)}
                     </span>
                   )}
-                  <div className="text-xs text-warmgray">
+                  <div className="text-xs text-sepia-600">
                     {pricing.quantity} book{pricing.quantity > 1 ? 's' : ''}
                     {includeAudiobook ? ' + audiobook' : ''}
                   </div>
@@ -665,41 +694,46 @@ export default function BookOrderWizard({ userName, pageCount, onClose }) {
             </div>
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
               {step > 1 && (
-                <button
+                <Button
+                  variant="ghost"
+                  size="lg"
                   onClick={() => setStep(s => s - 1)}
-                  className="w-full sm:w-auto px-6 py-3 border border-sepia/30 text-sepia rounded-xl hover:bg-sepia/5 transition font-medium order-2 sm:order-1"
+                  className="w-full sm:w-auto order-2 sm:order-1"
                 >
                   Back
-                </button>
+                </Button>
               )}
               {step === 1 && (
-                <button
+                <Button
+                  size="lg"
                   onClick={() => setStep(2)}
                   disabled={!canProceedToStep2}
-                  className="w-full sm:w-auto px-8 py-3.5 sm:py-3 bg-sepia text-white rounded-xl hover:bg-sepia/90 disabled:opacity-40 transition font-medium text-base order-1 sm:order-2"
+                  className="w-full sm:w-auto order-1 sm:order-2"
                 >
                   Continue to Shipping
-                </button>
+                </Button>
               )}
               {step === 2 && (
-                <button
+                <Button
+                  size="lg"
                   onClick={() => setStep(3)}
                   disabled={!canProceedToStep3}
-                  className="w-full sm:w-auto px-8 py-3.5 sm:py-3 bg-sepia text-white rounded-xl hover:bg-sepia/90 disabled:opacity-40 transition font-medium text-base order-1 sm:order-2"
+                  className="w-full sm:w-auto order-1 sm:order-2"
                 >
                   Review Order
-                </button>
+                </Button>
               )}
               {step === 3 && (
-                <button
+                <Button
+                  size="lg"
                   onClick={() => {
                     // TODO: Integrate with Stripe payment
                     // TODO: Integrate Stripe payment flow
                   }}
-                  className="w-full sm:w-auto px-8 py-3.5 sm:py-3 bg-ink text-white rounded-xl hover:bg-ink/90 transition font-medium text-base order-1 sm:order-2"
+                  className="w-full sm:w-auto order-1 sm:order-2"
                 >
                   Complete Order
-                </button>
+                </Button>
               )}
             </div>
           </div>

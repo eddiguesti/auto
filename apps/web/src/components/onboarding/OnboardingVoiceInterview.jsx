@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { IconAlertCircle } from '@tabler/icons-react'
 import { useAuth } from '../../context/AuthContext'
 import { useSettings } from '../../context/SettingsContext'
 import { AudioVisualizer } from '../AudioVisualizer'
+import { Button } from '../ui'
 
 /**
  * OnboardingVoiceInterview - Real-time voice interview with Clio using xAI Grok
@@ -593,84 +595,18 @@ Keep every response under 15 words. Never break character.`,
   // Render
   // ============================================
 
-  // Animated border colors based on state
-  const getBorderStyle = () => {
-    if (isListening) {
-      // User speaking - emerald green with pulse
-      return {
-        background: 'linear-gradient(90deg, #10B981, #34D399, #10B981)',
-        backgroundSize: '200% 100%',
-        animation: 'borderPulse 1.5s ease-in-out infinite, borderShimmer 2s linear infinite'
-      }
-    }
-    if (isSpeaking) {
-      // Clio speaking - soft blue with wave
-      return {
-        background: 'linear-gradient(90deg, #6B8DD9, #8BA8E8, #6B8DD9, #8BA8E8)',
-        backgroundSize: '300% 100%',
-        animation: 'borderWave 2s ease-in-out infinite'
-      }
-    }
-    if (isConnected) {
-      // Ready/waiting - subtle sepia
-      return {
-        background: 'linear-gradient(90deg, #9B8B7A, #B8A99A, #9B8B7A)',
-        backgroundSize: '200% 100%',
-        animation: 'borderShimmer 3s linear infinite'
-      }
-    }
-    // Connecting - amber
-    return {
-      background: 'linear-gradient(90deg, #d97706, #f59e0b, #d97706)',
-      backgroundSize: '200% 100%',
-      animation: 'borderShimmer 1s linear infinite'
-    }
-  }
-
   return (
     <div className="flex flex-col items-center justify-center min-h-[400px] relative">
-      {/* Animated top border - overlays the modal header exactly */}
-      <div
-        className="voice-animated-border absolute h-2 transition-all duration-300 rounded-t-2xl"
-        style={getBorderStyle()}
-      />
-
-      {/* CSS animations and positioning */}
-      <style>{`
-        .voice-animated-border {
-          top: calc(-1.5rem - 0.5rem);
-          left: -1.5rem;
-          right: -1.5rem;
-        }
-        @media (min-width: 640px) {
-          .voice-animated-border {
-            top: calc(-2rem - 0.5rem);
-            left: -2rem;
-            right: -2rem;
-          }
-        }
-        @keyframes borderShimmer {
-          0% { background-position: 0% 50%; }
-          100% { background-position: 200% 50%; }
-        }
-        @keyframes borderWave {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-        @keyframes borderPulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.7; }
-        }
-      `}</style>
-
       {/* Error */}
       {error ? (
-        <div className="text-center">
-          <p className="text-red-600 mb-4">{error}</p>
-          <button onClick={handleRetry} className="px-6 py-2 bg-sepia text-white rounded-lg">
+        <div className="text-center max-w-sm mx-auto">
+          <div className="mb-5 p-4 bg-error-soft text-error-strong rounded-xl text-sm text-left flex items-center gap-3">
+            <IconAlertCircle size={20} stroke={1.75} className="shrink-0" />
+            {error}
+          </div>
+          <Button size="lg" onClick={handleRetry}>
             Try Again
-          </button>
+          </Button>
         </div>
       ) : (
         <>
@@ -686,7 +622,7 @@ Keep every response under 15 words. Never break character.`,
           </div>
 
           {/* Minimal status */}
-          <p className="text-sepia/60 text-sm mt-2 mb-4">
+          <p className="text-sepia-500 text-base mt-2 mb-4">
             {isSpeaking
               ? 'Clio'
               : isListening
@@ -698,12 +634,9 @@ Keep every response under 15 words. Never break character.`,
 
           {/* Continue button — appears after Clio confirms user's details */}
           {infoConfirmed && (
-            <button
-              onClick={handleContinue}
-              className="px-8 py-3 bg-sepia text-white rounded-xl hover:bg-ink transition-colors duration-300"
-            >
+            <Button size="lg" onClick={handleContinue}>
               Continue
-            </button>
+            </Button>
           )}
         </>
       )}
