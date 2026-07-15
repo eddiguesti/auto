@@ -257,10 +257,10 @@ void main() {
   vec3 L2 = normalize(vec3(0.5, -0.35, 0.62));
   body += uRim * 0.06 * clamp(dot(n, L2), 0.0, 1.0);
 
-  // True Blinn-Phong specular — a highlight that rides the curvature
+  // Soft waxy specular — character skin, not glass
   vec3 H = normalize(L + vec3(0.0, 0.0, 1.0));
-  float spec = pow(clamp(dot(n, H), 0.0, 1.0), 48.0);
-  body += vec3(1.0, 0.99, 0.96) * spec * 0.32;
+  float spec = pow(clamp(dot(n, H), 0.0, 1.0), 26.0);
+  body += vec3(1.0, 0.99, 0.96) * spec * 0.13;
 
   // Pixar color science: shadows drift violet, never just darker
   float shade = 1.0 - ndl;
@@ -302,18 +302,22 @@ void main() {
     featureCol *= 0.8 + 0.2 * zn;
     featureCol += body * 0.10;
 
-    // Eyes — large, calm, vertical ovals
-    float eyeH = 0.235 * max(uEyeOpen, 0.09);
-    float eyeW = 0.135 + 0.018 * (1.0 - min(uEyeOpen, 1.0));
-    vec2 eL = vec2(-0.36, 0.10) + look;
-    vec2 eR = vec2(0.36, 0.10) + look;
+    // Eyes — character anatomy: white sclera, gaze-tracking iris, pupil.
+    // The aperture ellipse squashes shut on blinks, like closing lids.
+    float eyeH = 0.27 * max(uEyeOpen, 0.09);
+    float eyeW = 0.155 + 0.02 * (1.0 - min(uEyeOpen, 1.0));
+    vec2 eL = vec2(-0.30, 0.10) + look * 0.4;
+    vec2 eR = vec2(0.30, 0.10) + look * 0.4;
     float dL = length((hp - eL) / vec2(eyeW, eyeH)) - 1.0;
     float dR = length((hp - eR) / vec2(eyeW, eyeH)) - 1.0;
     float eyeD = min(dL, dR);
-    float eyeMask = smoothstep(0.16, -0.12, eyeD);
-    // Local eye coordinates (nearest eye) for the iris gradients
+    float eyeMask = smoothstep(0.10, -0.10, eyeD);
     vec2 eyeC = dL < dR ? eL : eR;
+
+    // Sclera — living white, softly shaded at the top by the lid
     vec2 ep = (hp - eyeC) / vec2(eyeW, eyeH);
+    vec3 scleraCol = mix(vec3(0.985, 0.99, 1.0), body, 0.06);
+    scleraCol *= 1.0 - 0.14 * smoothstep(0.1, 0.9, ep.y);
 
     // Mouth — small confident smile that opens with her voice
     float openAmt = smoothstep(0.02, 0.2, uMouth);
@@ -334,12 +338,28 @@ void main() {
     float inset = smoothstep(0.45, -0.1, eyeD) * 0.5 + smoothstep(0.5, -0.2, dm) * openAmt * 0.4;
     body *= 1.0 - inset * 0.08;
 
-    // Iris: light passes through — brighter, bluer toward the bottom
-    vec3 irisCol = featureCol + vec3(0.09, 0.15, 0.26) * smoothstep(0.2, -0.95, ep.y);
-    body = mix(body, irisCol, eyeMask * 0.94);
-    // Soft upper-lid occlusion inside the eye
-    float lid = smoothstep(0.15, 0.85, ep.y) * eyeMask;
-    body = mix(body, featureCol * 0.55, lid * 0.45);
+    body = mix(body, scleraCol, eyeMask * 0.96);
+
+    // Iris — deep blue radial gradient, tracking her gaze inside the white
+    vec2 gaze = uLook * vec2(0.075, 0.06);
+    vec2 irisC = eyeC + gaze;
+    float irisR = length(hp - irisC);
+    float irisMask = smoothstep(0.105, 0.085, irisR) * eyeMask;
+    float irisG = smoothstep(0.11, 0.0, irisR);
+    vec3 irisCol = mix(vec3(0.10, 0.22, 0.42), vec3(0.24, 0.52, 0.88), irisG);
+    irisCol += vec3(0.06, 0.14, 0.22) * smoothstep(0.02, -0.10, hp.y - irisC.y);
+    body = mix(body, irisCol, irisMask);
+    // Pupil
+    float pupilMask = smoothstep(0.048, 0.034, irisR) * eyeMask;
+    body = mix(body, vec3(0.045, 0.05, 0.09), pupilMask);
+
+    // Brows — soft arcs that lift when she's attentive
+    float browRaise = (uEyeOpen - 1.0) * 0.10;
+    float browY = eyeC.y + 0.30 + browRaise;
+    vec2 bpw = hp - vec2(eyeC.x, browY);
+    bpw.y += 0.35 * bpw.x * bpw.x - 0.02 * sign(eyeC.x) * bpw.x; // gentle arch
+    float browMask = smoothstep(0.030, 0.014, abs(bpw.y)) * smoothstep(0.15, 0.10, abs(bpw.x));
+    body = mix(body, featureCol, browMask * 0.75);
 
     body = mix(body, featureCol, mouthMask * 0.88);
     // A hint of warmth inside the open mouth
@@ -352,19 +372,19 @@ void main() {
     float blush = exp(-dot(bL, bL)) + exp(-dot(bR, bR));
     body = mix(body, blushCol, blush * (0.13 + w.z * 0.11 + uLevel * 0.08) * zn);
 
-    // Catchlights — primary spark + a tiny secondary glint
+    // Catchlights on the iris — primary spark + a tiny secondary glint
     float cl = min(
-      length(hp - (eL + vec2(-0.045, 0.075))),
-      length(hp - (eR + vec2(-0.045, 0.075)))
+      length(hp - (eL + gaze + vec2(-0.035, 0.045))),
+      length(hp - (eR + gaze + vec2(-0.035, 0.045)))
     );
-    float clMask = smoothstep(0.055, 0.008, cl) * step(0.35, uEyeOpen);
-    body = mix(body, vec3(1.0, 1.0, 0.99), clMask * 0.9);
+    float clMask = smoothstep(0.035, 0.006, cl) * step(0.35, uEyeOpen);
+    body = mix(body, vec3(1.0, 1.0, 0.99), clMask * 0.95);
     float cl2 = min(
-      length(hp - (eL + vec2(0.055, -0.05))),
-      length(hp - (eR + vec2(0.055, -0.05)))
+      length(hp - (eL + gaze + vec2(0.04, -0.035))),
+      length(hp - (eR + gaze + vec2(0.04, -0.035)))
     );
-    float cl2Mask = smoothstep(0.025, 0.004, cl2) * step(0.35, uEyeOpen);
-    body = mix(body, vec3(0.85, 0.95, 1.0), cl2Mask * 0.55);
+    float cl2Mask = smoothstep(0.018, 0.003, cl2) * step(0.35, uEyeOpen);
+    body = mix(body, vec3(0.85, 0.95, 1.0), cl2Mask * 0.6);
   }
 
   // Nib slit — from the breather hole down to the point
@@ -377,9 +397,9 @@ void main() {
   // ---- Studio gloss (after the face — the surface coats her) ------------------
   // Window highlight: tall soft reflection, top-left
   vec2 wq = (bp - vec2(-0.22, 0.38)) / vec2(0.16, 0.30);
-  body += vec3(1.0) * exp(-dot(wq, wq)) * 0.14 * (0.6 + 0.4 * zn);
+  body += vec3(1.0) * exp(-dot(wq, wq)) * 0.08 * (0.6 + 0.4 * zn);
   vec2 wq2 = (bp - vec2(-0.20, 0.42)) / vec2(0.05, 0.14);
-  body += vec3(1.0) * exp(-dot(wq2, wq2)) * 0.18;
+  body += vec3(1.0) * exp(-dot(wq2, wq2)) * 0.09;
   // Secondary glint, lower-right — the second point of light real glass has
   vec2 wq3 = (bp - headC - vec2(0.34, -0.30)) / vec2(0.045, 0.09);
   body += vec3(1.0) * exp(-dot(wq3, wq3)) * 0.09;
