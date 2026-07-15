@@ -23,11 +23,11 @@
 export const orbStates = {
   // At rest — quiet frosted pearl, upright, slow breath
   idle: {
-    colA: '#F2F7FB',
-    colB: '#BFD5E5',
-    colC: '#7E9BB2',
-    rim: '#E8F1F8',
-    aura: '#6C88A0',
+    colA: '#F5FAFE',
+    colB: '#B9D4EC',
+    colC: '#7E92BC',
+    rim: '#EAF3FB',
+    aura: '#75879E',
     flow: 0.6,
     wobble: 0.004,
     lobe: 0.0,
@@ -40,11 +40,11 @@ export const orbStates = {
   },
   // Listening — brighter sky; she leans in, attentive
   active: {
-    colA: '#EAF5FE',
-    colB: '#9CC8E6',
-    colC: '#5D87A8',
-    rim: '#DDEEFA',
-    aura: '#5F82A0',
+    colA: '#EFF8FF',
+    colB: '#A0CCF0',
+    colC: '#5F80B4',
+    rim: '#E2F1FE',
+    aura: '#68809C',
     flow: 1.0,
     wobble: 0.01,
     lobe: 0.45,
@@ -57,11 +57,11 @@ export const orbStates = {
   },
   // User speaking — vivid azure heart, beating gently with your voice
   detected: {
-    colA: '#E6F4FF',
-    colB: '#7FB8E4',
-    colC: '#44759D',
-    rim: '#CFE7FA',
-    aura: '#587FA2',
+    colA: '#E9F6FF',
+    colB: '#82BCF0',
+    colC: '#48659E',
+    rim: '#D5EAFD',
+    aura: '#5A7594',
     flow: 1.3,
     wobble: 0.012,
     lobe: 0.08,
@@ -74,11 +74,11 @@ export const orbStates = {
   },
   // Clio speaking — twilight blue; upright, talking, lip-synced
   speaking: {
-    colA: '#B9D6EC',
-    colB: '#5D7F9C',
-    colC: '#32506B',
-    rim: '#9DC2E0',
-    aura: '#46647E',
+    colA: '#C3DCF2',
+    colB: '#63819F',
+    colC: '#374F7E',
+    rim: '#A9CBE8',
+    aura: '#485E76',
     flow: 1.1,
     wobble: 0.006,
     lobe: 0.15,

@@ -222,12 +222,12 @@ void main() {
   float zn = sqrt(depth * (2.0 - depth)); // hemispherical profile
 
   // Surface normal from the SDF gradient
-  float e = 0.012;
+  float e = 0.024; // wide gradient sampling = soft, sculpted normal transitions
   vec2 grad = vec2(
     bodySDF(bp + vec2(e, 0.0), w) - bodySDF(bp - vec2(e, 0.0), w),
     bodySDF(bp + vec2(0.0, e), w) - bodySDF(bp - vec2(0.0, e), w)
   ) / (2.0 * e);
-  vec3 n = normalize(vec3(grad.x, grad.y, 1.6 * zn + 0.25));
+  vec3 n = normalize(vec3(grad.x, grad.y, 1.12 * zn + 0.16));
 
   // ---- Frosted resin material -------------------------------------------------
   // Denser color at the thin edges, light at the thick core (translucency)
@@ -253,9 +253,28 @@ void main() {
   // Key light (top-left studio softbox) + cool fill from below-right
   vec3 L = normalize(vec3(-0.35, 0.55, 0.75));
   float ndl = clamp(dot(n, L), 0.0, 1.0);
-  body *= 0.80 + 0.22 * ndl;
+  body *= 0.72 + 0.32 * ndl;
   vec3 L2 = normalize(vec3(0.5, -0.35, 0.62));
   body += uRim * 0.06 * clamp(dot(n, L2), 0.0, 1.0);
+
+  // True Blinn-Phong specular — a highlight that rides the curvature
+  vec3 H = normalize(L + vec3(0.0, 0.0, 1.0));
+  float spec = pow(clamp(dot(n, H), 0.0, 1.0), 48.0);
+  body += vec3(1.0, 0.99, 0.96) * spec * 0.32;
+
+  // Pixar color science: shadows drift violet, never just darker
+  float shade = 1.0 - ndl;
+  body = mix(body, body * vec3(0.92, 0.90, 1.10), shade * 0.35);
+  // Warm bounce light from the parchment page below
+  body += vec3(0.98, 0.86, 0.68) * clamp(-n.y, 0.0, 1.0) * 0.10 * (0.4 + 0.6 * depth);
+  // Environment gradient: cool sky above, warm page below
+  body *= mix(vec3(1.03, 1.0, 0.96), vec3(0.965, 0.995, 1.05), smoothstep(-0.7, 0.7, bp.y));
+
+  // Subsurface transmission: light punches through her thin edges,
+  // saturating the blue on the lit side
+  float lightSide = clamp(dot(normalize(bp - headC + 1e-4), normalize(vec2(-0.5, 0.6))), 0.0, 1.0);
+  vec3 sssCol = mix(uColB, vec3(0.38, 0.78, 1.0), 0.55);
+  body += sssCol * pow(1.0 - depth, 2.2) * lightSide * 0.16;
 
   // Glass edge: a light band just inside the silhouette, then a hairline
   // of denser color right at it — the double-line read of real glass
@@ -292,6 +311,9 @@ void main() {
     float dR = length((hp - eR) / vec2(eyeW, eyeH)) - 1.0;
     float eyeD = min(dL, dR);
     float eyeMask = smoothstep(0.16, -0.12, eyeD);
+    // Local eye coordinates (nearest eye) for the iris gradients
+    vec2 eyeC = dL < dR ? eL : eR;
+    vec2 ep = (hp - eyeC) / vec2(eyeW, eyeH);
 
     // Mouth — small confident smile that opens with her voice
     float openAmt = smoothstep(0.02, 0.2, uMouth);
@@ -312,15 +334,37 @@ void main() {
     float inset = smoothstep(0.45, -0.1, eyeD) * 0.5 + smoothstep(0.5, -0.2, dm) * openAmt * 0.4;
     body *= 1.0 - inset * 0.08;
 
-    body = mix(body, featureCol, max(eyeMask * 0.94, mouthMask * 0.88));
+    // Iris: light passes through — brighter, bluer toward the bottom
+    vec3 irisCol = featureCol + vec3(0.09, 0.15, 0.26) * smoothstep(0.2, -0.95, ep.y);
+    body = mix(body, irisCol, eyeMask * 0.94);
+    // Soft upper-lid occlusion inside the eye
+    float lid = smoothstep(0.15, 0.85, ep.y) * eyeMask;
+    body = mix(body, featureCol * 0.55, lid * 0.45);
 
-    // Catchlights
+    body = mix(body, featureCol, mouthMask * 0.88);
+    // A hint of warmth inside the open mouth
+    body = mix(body, vec3(0.42, 0.20, 0.20), openMask * smoothstep(0.0, -0.6, op.y) * 0.35);
+
+    // Blush — the Pixar tell. Warmer when she's a heart or hears your voice
+    vec3 blushCol = vec3(0.95, 0.60, 0.55);
+    vec2 bL = (hp - vec2(-0.56, -0.16)) / 0.20;
+    vec2 bR = (hp - vec2(0.56, -0.16)) / 0.20;
+    float blush = exp(-dot(bL, bL)) + exp(-dot(bR, bR));
+    body = mix(body, blushCol, blush * (0.13 + w.z * 0.11 + uLevel * 0.08) * zn);
+
+    // Catchlights — primary spark + a tiny secondary glint
     float cl = min(
       length(hp - (eL + vec2(-0.045, 0.075))),
       length(hp - (eR + vec2(-0.045, 0.075)))
     );
     float clMask = smoothstep(0.055, 0.008, cl) * step(0.35, uEyeOpen);
     body = mix(body, vec3(1.0, 1.0, 0.99), clMask * 0.9);
+    float cl2 = min(
+      length(hp - (eL + vec2(0.055, -0.05))),
+      length(hp - (eR + vec2(0.055, -0.05)))
+    );
+    float cl2Mask = smoothstep(0.025, 0.004, cl2) * step(0.35, uEyeOpen);
+    body = mix(body, vec3(0.85, 0.95, 1.0), cl2Mask * 0.55);
   }
 
   // Nib slit — from the breather hole down to the point
@@ -350,6 +394,18 @@ void main() {
   float shadow = (exp(-dot(sq, sq)) * 0.75 + exp(-dot(sq2, sq2)) * 0.45) * uAuraAmt;
   vec3 shadowCol = uAura * 0.35;
 
+  // Floor reflection — she stands on a glossy page (fades fast, squashed)
+  float dyG = -0.76 - uv.y;
+  vec2 uvM = vec2(uv.x, -0.76 + dyG / 0.5);
+  vec2 bpM = mat2(ca, -sa, sa, ca) * uvM;
+  bpM = vec2(bpM.x * (2.0 - squash), bpM.y * squash);
+  bpM /= breathe;
+  vec2 wpM = bpM - pivot;
+  bpM = mat2(wc, -wsn, wsn, wc) * wpM + pivot + vec2(sin(t * 1.3) * 0.035 * write, 0.0);
+  float dM = bodySDF(bpM, w);
+  float reflMask = (1.0 - smoothstep(-aa * 3.0, aa * 3.0, dM)) * step(0.0, dyG) * exp(-dyG * 5.5);
+  vec3 reflCol = uColB * 0.8;
+
   // The written line — hand-wavy ink on the page beneath the nib
   float inkY = -0.76 + 0.008 * sin(uv.x * 34.0 + 2.0) + 0.005 * sin(uv.x * 61.0);
   float ink = exp(-pow((uv.y - inkY) * 90.0, 2.0))
@@ -359,8 +415,9 @@ void main() {
   vec3 inkCol = uColC * 0.45;
 
   // ---- Composite (premultiplied alpha) -----------------------------------------
-  vec3 col = body * alpha + (shadowCol * shadow + inkCol * ink) * (1.0 - alpha);
-  float a = clamp(alpha + (shadow * 0.75 + ink) * (1.0 - alpha), 0.0, 1.0);
+  vec3 col = body * alpha
+           + (shadowCol * shadow + inkCol * ink + reflCol * reflMask * 0.12) * (1.0 - alpha);
+  float a = clamp(alpha + (shadow * 0.75 + ink + reflMask * 0.1) * (1.0 - alpha), 0.0, 1.0);
 
   // Grain dither — invisible, kills gradient banding
   col += (hash21(gl_FragCoord.xy + fract(t) * 61.7) - 0.5) * (2.0 / 255.0);
