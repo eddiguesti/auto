@@ -30,11 +30,20 @@ const hexToRgb = hex => {
   ]
 }
 
+// Body forms — weights for (comma, ear, bulb, pen); SDFs blend in the shader
+const SHAPE_WEIGHTS = {
+  comma: [1, 0, 0, 0],
+  ear: [0, 1, 0, 0],
+  bulb: [0, 0, 1, 0],
+  pen: [0, 0, 0, 1]
+}
+
 // Pre-parse palettes once
 const STATE_PARAMS = Object.fromEntries(
   Object.entries(orbStates).map(([name, s]) => [
     name,
     {
+      shapeW: SHAPE_WEIGHTS[s.shape] || SHAPE_WEIGHTS.comma,
       colA: hexToRgb(s.colA),
       colB: hexToRgb(s.colB),
       colC: hexToRgb(s.colC),
@@ -74,7 +83,8 @@ const UNIFORM_NAMES = [
   'uFace',
   'uEyeOpen',
   'uMouth',
-  'uLook'
+  'uLook',
+  'uShape'
 ]
 
 const lerp = (a, b, t) => a + (b - a) * t
@@ -306,6 +316,12 @@ export default function AudioVisualizer({
       if (!anim.params) anim.params = JSON.parse(JSON.stringify(target))
       const p = anim.params
       const k = 0.09 // transition speed
+      // The metamorphosis breathes a little slower than the colors —
+      // the form change should feel deliberate, not instant
+      const kShape = 0.032
+      for (let i = 0; i < 4; i++) {
+        p.shapeW[i] = lerp(p.shapeW[i], target.shapeW[i], kShape)
+      }
       p.colA = lerpVec(p.colA, target.colA, k)
       p.colB = lerpVec(p.colB, target.colB, k)
       p.colC = lerpVec(p.colC, target.colC, k)
@@ -375,6 +391,7 @@ export default function AudioVisualizer({
       ctx.uniform1f(uniforms.uEyeOpen, face.eyeOpen)
       ctx.uniform1f(uniforms.uMouth, Math.max(0, Math.min(face.mouth, 1)))
       ctx.uniform2f(uniforms.uLook, face.look[0], face.look[1])
+      ctx.uniform4fv(uniforms.uShape, p.shapeW)
       ctx.drawArrays(ctx.TRIANGLES, 0, 3)
     }
 

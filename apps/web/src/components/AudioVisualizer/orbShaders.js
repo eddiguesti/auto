@@ -1,21 +1,24 @@
 /**
- * Clio Orb — GLSL sources.
+ * Clio — "The Comma" — GLSL sources.
  *
- * A living "drop of ink and bronze in glass": the whole orb is drawn in a
- * single fragment shader on a quad. Techniques (state of the art for voice
- * orbs — same family as ElevenLabs' Orb and ChatGPT voice mode blobs):
+ * One idea: Clio is a comma. The pause in a story; the breath before you
+ * remember; the promise that the sentence isn't over. A single-stroke
+ * silhouette you can sketch from memory, built for everything from a 64px
+ * app icon to a billboard.
  *
- *  - 3D simplex noise (Ashima/McEwan-Gustavson) layered as fbm
- *  - Domain warping for the liquid-ink interior flow
- *  - Seamless angular noise displacing the silhouette so the orb itself
- *    breathes and wobbles organically
- *  - Fake-sphere normals -> fresnel rim light + limb darkening
- *  - Glass specular highlights, inner core glow, drifting sparkle motes
- *  - Audio-reactive uniforms (level / transient pulse / high-band energy)
- *  - Expanding ripple rings while speaking, soft outer aura
- *  - Hash-grain dithering to eliminate gradient banding
+ * Design system (brand brief):
+ *  - Silhouette first: a soft disc with a tapering hooked tail (SDF
+ *    metaball chain), slight natural tilt. No decoration that doesn't aid
+ *    recognition.
+ *  - Material: frosted glass / soft resin — depth, light and subtle
+ *    translucency instead of internal texture. No noise interior.
+ *  - Lighting: studio — soft window key light, controlled highlights,
+ *    subtle rim, and a grounded contact shadow. No aura, no bloom.
+ *  - Face: large expressive eyes, small confident smile, Pixar restraint.
+ *  - Motion is posture: she leans in to listen, gives a gentle
+ *    squash-and-breath to your voice, and lip-syncs when she speaks.
  *
- * WebGL1-compatible (GLSL ES 1.0, constant loops, no derivatives extension).
+ * WebGL1-compatible (GLSL ES 1.0, constant loops, no derivatives).
  */
 
 export const ORB_VERTEX_SHADER = /* glsl */ `
@@ -32,23 +35,23 @@ uniform vec2  uRes;      // canvas resolution (physical px)
 uniform float uTime;     // seconds
 uniform float uLevel;    // smoothed voice energy 0..1
 uniform float uPulse;    // fast transient (attack) 0..1
-uniform float uHighs;    // high-frequency band energy 0..1
+uniform float uHighs;    // high-frequency band energy 0..1 (unused, kept for API)
 
-// State-blended palette (lerped on the CPU between idle/listening/speaking)
-uniform vec3  uColA;     // light tone   (veins, sparkles, core)
-uniform vec3  uColB;     // mid tone     (body)
-uniform vec3  uColC;     // deep tone    (depths)
-uniform vec3  uRim;      // rim light
-uniform vec3  uAura;     // outer halo
+// State-blended palette
+uniform vec3  uColA;     // light tone (core light, catchlights)
+uniform vec3  uColB;     // mid tone  (body)
+uniform vec3  uColC;     // deep tone (edge density, shade)
+uniform vec3  uRim;      // rim light tint
+uniform vec3  uAura;     // contact shadow tint
 
-// State-blended behaviour
-uniform float uFlow;     // interior flow speed
-uniform float uWobble;   // fine organic silhouette texture
-uniform float uLobe;     // soft jelly lobes (listening — the orb "leans in")
-uniform float uPetal;    // rhythmic radial waves (speaking — sound leaving)
-uniform float uRimAmt;   // fresnel rim strength
-uniform float uAuraAmt;  // halo + ripple strength
-uniform float uSpark;    // sparkle mote amount
+// State-blended behaviour (slots repurposed for the comma's posture)
+uniform float uFlow;     // inner-light drift speed
+uniform float uWobble;   // micro jelly (very subtle aliveness)
+uniform float uLobe;     // LEAN — she tilts in when listening
+uniform float uPetal;    // SQUASH — gentle bounce with the voice
+uniform float uRimAmt;   // rim light strength
+uniform float uAuraAmt;  // contact shadow strength
+uniform float uSpark;    // unused (kept for API stability)
 uniform float uBreath;   // idle breathing amplitude
 
 // Face (expressions computed on the CPU)
@@ -57,289 +60,229 @@ uniform float uEyeOpen;  // 0 closed .. ~1.15 wide attentive
 uniform float uMouth;    // 0 resting smile .. 1 fully open (speech)
 uniform vec2  uLook;     // gaze offset, roughly -1..1
 
-// ---------------------------------------------------------------------------
-// Simplex noise 3D — Ian McEwan & Stefan Gustavson (Ashima Arts), MIT.
-// ---------------------------------------------------------------------------
-vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-vec4 permute(vec4 x) { return mod289(((x * 34.0) + 1.0) * x); }
-vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
+// Shape metamorphosis — weights for (comma, ear-crescent, bulb, pen nib).
+// SDF fields blend directly, so one body melts into the next.
+uniform vec4  uShape;
 
-float snoise(vec3 v) {
-  const vec2 C = vec2(1.0 / 6.0, 1.0 / 3.0);
-  const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
-
-  vec3 i  = floor(v + dot(v, C.yyy));
-  vec3 x0 = v - i + dot(i, C.xxx);
-
-  vec3 g  = step(x0.yzx, x0.xyz);
-  vec3 l  = 1.0 - g;
-  vec3 i1 = min(g.xyz, l.zxy);
-  vec3 i2 = max(g.xyz, l.zxy);
-
-  vec3 x1 = x0 - i1 + C.xxx;
-  vec3 x2 = x0 - i2 + C.yyy;
-  vec3 x3 = x0 - D.yyy;
-
-  i = mod289(i);
-  vec4 p = permute(permute(permute(
-             i.z + vec4(0.0, i1.z, i2.z, 1.0))
-           + i.y + vec4(0.0, i1.y, i2.y, 1.0))
-           + i.x + vec4(0.0, i1.x, i2.x, 1.0));
-
-  float n_ = 0.142857142857;
-  vec3  ns = n_ * D.wyz - D.xzx;
-
-  vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
-
-  vec4 x_ = floor(j * ns.z);
-  vec4 y_ = floor(j - 7.0 * x_);
-
-  vec4 x = x_ * ns.x + ns.yyyy;
-  vec4 y = y_ * ns.x + ns.yyyy;
-  vec4 h = 1.0 - abs(x) - abs(y);
-
-  vec4 b0 = vec4(x.xy, y.xy);
-  vec4 b1 = vec4(x.zw, y.zw);
-
-  vec4 s0 = floor(b0) * 2.0 + 1.0;
-  vec4 s1 = floor(b1) * 2.0 + 1.0;
-  vec4 sh = -step(h, vec4(0.0));
-
-  vec4 a0 = b0.xzyw + s0.xzyw * sh.xxyy;
-  vec4 a1 = b1.xzyw + s1.xzyw * sh.zzww;
-
-  vec3 p0 = vec3(a0.xy, h.x);
-  vec3 p1 = vec3(a0.zw, h.y);
-  vec3 p2 = vec3(a1.xy, h.z);
-  vec3 p3 = vec3(a1.zw, h.w);
-
-  vec4 norm = taylorInvSqrt(vec4(dot(p0, p0), dot(p1, p1), dot(p2, p2), dot(p3, p3)));
-  p0 *= norm.x;
-  p1 *= norm.y;
-  p2 *= norm.z;
-  p3 *= norm.w;
-
-  vec4 m = max(0.6 - vec4(dot(x0, x0), dot(x1, x1), dot(x2, x2), dot(x3, x3)), 0.0);
-  m = m * m;
-  return 42.0 * dot(m * m, vec4(dot(p0, x0), dot(p1, x1), dot(p2, x2), dot(p3, x3)));
-}
-
-// Fractal Brownian Motion — 4 octaves of simplex
-float fbm(vec3 p) {
-  float f = 0.0;
-  float amp = 0.5;
-  for (int i = 0; i < 4; i++) {
-    f += amp * snoise(p);
-    p *= 2.03;
-    amp *= 0.5;
-  }
-  return f;
-}
-
+// --- Tiny value noise (only for the micro-jelly; interior stays clean) -----
 float hash21(vec2 p) {
   return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
 }
+float vnoise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(hash21(i), hash21(i + vec2(1.0, 0.0)), u.x),
+    mix(hash21(i + vec2(0.0, 1.0)), hash21(i + vec2(1.0, 1.0)), u.x),
+    u.y
+  ) * 2.0 - 1.0;
+}
+
+// Polynomial smooth minimum — blends the comma from simple circles
+float smin(float a, float b, float k) {
+  float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+  return mix(b, a, h) - k * h * (1.0 - h);
+}
+
+// Rounded-box SDF (for the bulb base)
+float rbox(vec2 p, vec2 b, float r) {
+  vec2 q = abs(p) - b + r;
+  return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
+}
+
+// ── The four bodies. Every shape keeps its face zone (head disc) intact. ──
+
+// COMMA — resting identity. The pause between stories.
+float commaSDF(vec2 p) {
+  float d = length(p - vec2(0.06, 0.13)) - 0.58;             // head
+  d = smin(d, length(p - vec2(-0.26, -0.34)) - 0.245, 0.10); // shoulder
+  d = smin(d, length(p - vec2(-0.43, -0.52)) - 0.140, 0.09); // taper
+  d = smin(d, length(p - vec2(-0.52, -0.65)) - 0.070, 0.08); // tip
+  return d;
+}
+
+// EAR CRESCENT — listening. A cupped curve catching your voice.
+float earSDF(vec2 p) {
+  float d = length(p - vec2(-0.06, 0.10)) - 0.56;            // head
+  float cup = length(p - vec2(0.50, 0.10)) - 0.30;           // outer cup
+  float hollow = length(p - vec2(0.68, 0.10)) - 0.24;        // carve inside
+  cup = max(cup, -hollow);
+  d = smin(d, cup, 0.10);
+  return d;
+}
+
+// BULB — remembering. Lights up with the teller's voice.
+float bulbSDF(vec2 p) {
+  float d = length(p - vec2(0.0, 0.20)) - 0.55;              // glass
+  d = smin(d, length(p - vec2(0.0, -0.34)) - 0.19, 0.12);    // neck
+  d = smin(d, rbox(p - vec2(0.0, -0.55), vec2(0.19, 0.115), 0.07), 0.05); // base
+  return d;
+}
+
+// PEN NIB — writing it down. The story becomes ink.
+float penSDF(vec2 p) {
+  float d = length(p - vec2(0.0, 0.22)) - 0.52;              // body
+  d = smin(d, length(p - vec2(0.0, -0.10)) - 0.38, 0.08);    // shoulders
+  d = smin(d, length(p - vec2(0.0, -0.40)) - 0.20, 0.07);    // straight taper
+  d = smin(d, length(p - vec2(0.0, -0.64)) - 0.048, 0.07);   // point
+  return d;
+}
+
+// Blended field + the face anchor that travels with it
+float bodySDF(vec2 p, vec4 w) {
+  return w.x * commaSDF(p) + w.y * earSDF(p) + w.z * bulbSDF(p) + w.w * penSDF(p);
+}
+
+vec2 headCenter(vec4 w) {
+  return w.x * vec2(0.06, 0.13) + w.y * vec2(-0.06, 0.10) + w.z * vec2(0.0, 0.20) +
+         w.w * vec2(0.0, 0.22);
+}
 
 void main() {
-  // Centered coords, -1..1 on the short axis
   vec2 uv = (gl_FragCoord.xy * 2.0 - uRes) / min(uRes.x, uRes.y);
   float t = uTime;
 
-  // ---- Breathing, audio-swelling base radius -------------------------------
-  float baseR = 0.65
-    + uBreath * sin(t * 0.9)
-    + uBreath * 0.6 * sin(t * 1.7 + 1.3)
-    + uLevel * 0.055
-    + uPulse * 0.03;
+  // ---- Posture -------------------------------------------------------------
+  // Breathing scale + a gentle squash bounce driven by the voice
+  float breathe = 1.0 + uBreath * sin(t * 0.9) + uLevel * 0.035 + uPulse * 0.02;
+  float squash = 1.0 + uPetal * 0.16 * (uLevel - 0.30) + uPetal * 0.05 * sin(t * 3.1);
+  // Lean: a poised tilt toward the speaker, with a slow attentive sway
+  float lean = uLobe * (0.10 + 0.035 * sin(t * 0.7));
+  float ca = cos(lean);
+  float sa = sin(lean);
 
-  // ---- Living silhouette: three shape languages blended by state -----------
-  float ang = atan(uv.y, uv.x);
-  vec3 circ = vec3(cos(ang), sin(ang), 0.0);
+  vec2 bp = uv;
+  bp = mat2(ca, -sa, sa, ca) * bp;             // lean
+  bp = vec2(bp.x * (2.0 - squash), bp.y * squash); // squash & stretch (volume-ish)
+  bp /= breathe;
 
-  // Fine organic texture (always subtly present)
-  float edge1 = fbm(circ * 1.3 + vec3(0.0, 0.0, t * 0.32));
-  float edge2 = snoise(circ * 2.6 + vec3(0.0, 0.0, t * 0.7));
-  float organic = uWobble * (0.75 * edge1 + 0.15 * edge2) * (0.45 + uLevel * 1.4 + uPulse);
+  // Micro-jelly: barely-there organic life on the silhouette
+  float jelly = vnoise(bp * 2.0 + vec2(0.0, t * 0.5)) * uWobble;
 
-  // Listening: soft slow jelly lobes — a friendly blob leaning in
-  float lobes = snoise(circ * 1.05 + vec3(0.0, 0.0, t * 0.8))
-              + 0.5 * snoise(circ * 1.9 - vec3(0.0, 0.0, t * 0.55));
-  float lobe = uLobe * lobes * (0.7 + uLevel * 1.2);
+  // Normalized shape weights — the body is a blend of four fields
+  vec4 w = uShape / max(uShape.x + uShape.y + uShape.z + uShape.w, 1e-4);
+  vec2 headC = headCenter(w);
 
-  // Speaking: rhythmic radial petals — sound rippling outward
-  float petals = sin(ang * 5.0 - t * 2.6) * 0.6 + sin(ang * 3.0 + t * 1.8) * 0.4;
-  float petal = uPetal * petals * (0.45 + uLevel * 1.6);
+  float d = bodySDF(bp, w) + jelly;
 
-  float r = length(uv);
-  float R = baseR * (1.0 + organic + lobe + petal);
-  float d = r / R;
+  // ---- Pseudo-3D from the SDF ------------------------------------------------
+  float px = 2.0 / min(uRes.x, uRes.y);
+  float aa = px * 1.6;
+  float alpha = 1.0 - smoothstep(-aa, aa, d);
 
-  // ---- Fake sphere geometry -------------------------------------------------
-  float z = sqrt(max(0.0, 1.0 - d * d));
+  // Depth: 0 at the edge, 1 deep inside — the "thickness" of the resin
+  float depth = clamp(-d / 0.40, 0.0, 1.0);
+  float zn = sqrt(depth * (2.0 - depth)); // hemispherical profile
 
-  // ---- Interior: domain-warped liquid ink ----------------------------------
-  vec3 sp = vec3(uv / R, z); // point on the unit sphere
-  float ft = t * uFlow;
-  float ca = cos(ft * 0.12);
-  float sa = sin(ft * 0.12);
-  sp.xz = mat2(ca, -sa, sa, ca) * sp.xz; // slow tumble
+  // Surface normal from the SDF gradient
+  float e = 0.012;
+  vec2 grad = vec2(
+    bodySDF(bp + vec2(e, 0.0), w) - bodySDF(bp - vec2(e, 0.0), w),
+    bodySDF(bp + vec2(0.0, e), w) - bodySDF(bp - vec2(0.0, e), w)
+  ) / (2.0 * e);
+  vec3 n = normalize(vec3(grad.x, grad.y, 1.6 * zn + 0.25));
 
-  vec3 q = sp * 1.15 + vec3(0.0, ft * 0.14, 0.0);
-  vec3 warp = vec3(
-    snoise(q + vec3(0.0, 0.0, ft * 0.22)),
-    snoise(q + vec3(5.2, 1.3, ft * 0.18)),
-    snoise(q + vec3(1.7, 9.2, ft * 0.16))
-  );
-  float f1 = fbm(q + 0.8 * warp);
-  float f2 = fbm(q * 1.8 - 0.55 * warp + vec3(0.0, -ft * 0.24, 0.0));
+  // ---- Frosted resin material -------------------------------------------------
+  // Denser color at the thin edges, light at the thick core (translucency)
+  vec3 body = mix(uColC, uColB, smoothstep(0.0, 0.45, depth));
+  body = mix(body, uColA, smoothstep(0.45, 1.0, depth) * 0.55);
 
-  // Ridged noise -> thin flowing ink filaments (the fine structure)
-  float ridge = 1.0 - abs(snoise(q * 2.4 + 0.9 * warp + vec3(0.0, -ft * 0.20, 0.0)));
-  ridge = pow(max(ridge, 0.0), 4.0);
-  float ridge2 = 1.0 - abs(snoise(q * 4.8 - 0.6 * warp + vec3(3.1, ft * 0.26, 0.0)));
-  ridge2 = pow(max(ridge2, 0.0), 6.0);
+  // Inner light: a soft source drifting slightly, like light in frosted glass.
+  // In bulb form it becomes the filament — your voice literally lights her up.
+  vec2 lightPos = headC + vec2(0.03 * sin(t * 0.4 * uFlow), 0.08 + 0.02 * cos(t * 0.33 * uFlow));
+  float inner = exp(-dot(bp - lightPos, bp - lightPos) * 2.2);
+  body += uColA * inner * (0.14 + uLevel * 0.18 + w.z * (0.12 + uLevel * 0.5));
 
-  // Fine shimmer octave for micro-detail
-  float fine = snoise(q * 6.5 + warp * 0.5 + vec3(0.0, ft * 0.3, 0.0));
+  // Key light (top-left studio softbox)
+  vec3 L = normalize(vec3(-0.35, 0.55, 0.75));
+  float ndl = clamp(dot(n, L), 0.0, 1.0);
+  body *= 0.80 + 0.22 * ndl;
 
-  // Broad liquid forms with real depth range
-  float m1 = smoothstep(-0.55, 0.75, f1 + uLevel * 0.22);
-  float m2 = smoothstep(-0.45, 0.9, f2);
-  vec3 body = mix(uColC, uColB, m1);
-  body = mix(body, uColA, m2 * 0.55);
+  // Soft occlusion under the head, above the tail — gives the form weight
+  body *= 1.0 - 0.10 * smoothstep(0.2, 0.9, -bp.y) * (1.0 - depth);
 
-  // Carve dark channels between filaments, then paint the filaments luminous.
-  // Filament energy builds with the state (uSpark) — calm at rest, electric live.
-  float energy = 0.32 + uSpark * 0.55;
-  body = mix(body, uColC, (1.0 - ridge) * 0.20 * m1);
-  body += uColA * ridge * (0.28 + uLevel * 0.30) * energy;
-  body += mix(uColB, uColA, 0.5) * ridge2 * (0.32 + uHighs * 0.5) * energy;
-  body += body * fine * 0.08; // micro-shimmer
-
-  // Volume shading + luminous vein crossings + voice energy flush
-  body *= 0.76 + 0.24 * z;
-  body = mix(body, uColA, 0.08 * z); // milky glass depth toward the center
-  body += uColA * pow(max(0.0, f1 * f2), 2.0) * 0.24;
-  body += uRim * uPulse * 0.16;
-  body *= 1.0 + 0.07 * (uv.y / R); // soft top-light ambience
-
-  // Warm core glow, gently alive even at rest
-  float core = exp(-d * d * 3.0);
-  body += uColA * core * (0.10 + uLevel * 0.28 + 0.05 * sin(t * 2.1));
-
-  // ---- Sparkle motes ("dust of memories") ----------------------------------
-  vec2 gp = (uv / R) * 7.0 + vec2(0.0, t * 0.25); // slow upward drift
-  vec2 cell = floor(gp);
-  vec2 fp = fract(gp) - 0.5;
-  float h = hash21(cell);
-  vec2 off = vec2(hash21(cell + 13.1), hash21(cell + 27.7)) - 0.5;
-  float sd = length(fp - off * 0.62);
-  float twinkle = pow(0.5 + 0.5 * sin(t * (1.4 + h * 2.6) + h * 6.2831), 6.0);
-  float spark = smoothstep(0.10, 0.0, sd) * twinkle;
-  body += uColA * spark * uSpark * (0.4 + uHighs * 1.2) * z;
-
-  // ---- Face — pigment set inside the glass, under the gloss ----------------
-  // Drawn in blob space (deforms with the body), shaded by the same volume
-  // light, with the filament texture ghosting through; the fresnel rim and
-  // glass speculars render AFTER, coating the face so it sits inside the ball.
+  // ---- Face — pigment set in the resin, under the gloss -----------------------
   if (uFace > 0.5) {
-    vec2 p = uv / R;
-    // Mild spherical foreshortening pins features to the curved surface
-    p /= 0.82 + 0.18 * z;
+    // Head space: features ride the lean, breath, squash — and the morph
+    vec2 hp = (bp - headC) / 0.58;
+    hp /= 0.86 + 0.14 * zn;
     vec2 look = uLook * 0.12;
 
-    // Feature pigment: deep cool ink, lit like the body, texture showing through
-    vec3 featureCol = mix(uColC, vec3(0.09, 0.11, 0.15), 0.65);
-    featureCol *= 0.72 + 0.28 * z;              // same limb shading as the body
-    featureCol += body * 0.16;                   // filaments ghost through the ink
+    vec3 featureCol = mix(uColC, vec3(0.08, 0.10, 0.14), 0.7);
+    featureCol *= 0.8 + 0.2 * zn;
+    featureCol += body * 0.10;
 
-    // Eyes: vertical ellipses that squash shut when blinking
-    float eyeH = 0.14 * max(uEyeOpen, 0.10);
-    float eyeW = 0.085 + 0.012 * (1.0 - min(uEyeOpen, 1.0));
-    vec2 eL = vec2(-0.30, 0.16) + look;
-    vec2 eR = vec2(0.30, 0.16) + look;
-    float dL = length((p - eL) / vec2(eyeW, eyeH)) - 1.0;
-    float dR = length((p - eR) / vec2(eyeW, eyeH)) - 1.0;
+    // Eyes — large, calm, vertical ovals
+    float eyeH = 0.235 * max(uEyeOpen, 0.09);
+    float eyeW = 0.135 + 0.018 * (1.0 - min(uEyeOpen, 1.0));
+    vec2 eL = vec2(-0.36, 0.10) + look;
+    vec2 eR = vec2(0.36, 0.10) + look;
+    float dL = length((hp - eL) / vec2(eyeW, eyeH)) - 1.0;
+    float dR = length((hp - eR) / vec2(eyeW, eyeH)) - 1.0;
     float eyeD = min(dL, dR);
-    float eyeMask = smoothstep(0.22, -0.15, eyeD);
+    float eyeMask = smoothstep(0.16, -0.12, eyeD);
 
-    // Mouth: a true smile arc at rest, opening into a wide talking mouth
+    // Mouth — small confident smile that opens with her voice
     float openAmt = smoothstep(0.02, 0.2, uMouth);
-    vec2 sv = p - vec2(0.0, -0.13) - look * 0.4;
-    float dArc = abs(length(sv) - 0.185);
-    float smileMask = smoothstep(0.020, 0.007, dArc)
-                    * smoothstep(-0.10, -0.15, sv.y)
+    vec2 sv = hp - vec2(0.0, -0.16) - look * 0.4;
+    float dArc = abs(length(sv) - 0.26);
+    float smileMask = smoothstep(0.030, 0.011, dArc)
+                    * smoothstep(-0.16, -0.22, sv.y)
                     * (1.0 - openAmt);
-    vec2 mp = p - vec2(0.0, -0.31) - look * 0.4;
-    vec2 op = vec2(mp.x, mp.y - 0.5 * mp.x * mp.x); // corners lifted
-    float mouthH = 0.012 + 0.105 * uMouth;
-    float mouthW = 0.19 + 0.05 * uMouth;
+    vec2 mp = hp - vec2(0.0, -0.42) - look * 0.4;
+    vec2 op = vec2(mp.x, mp.y - 0.45 * mp.x * mp.x);
+    float mouthH = 0.02 + 0.15 * uMouth;
+    float mouthW = 0.26 + 0.07 * uMouth;
     float dm = length(op / vec2(mouthW, mouthH)) - 1.0;
-    float openMask = smoothstep(0.28, -0.2, dm) * openAmt;
+    float openMask = smoothstep(0.25, -0.2, dm) * openAmt;
     float mouthMask = max(openMask, smileMask * 0.85);
 
-    // Soft inset shadow around the features — carved in, not stuck on
-    float inset = smoothstep(0.5, -0.1, eyeD) * 0.5
-                + smoothstep(0.55, -0.2, dm) * openAmt * 0.4;
-    body *= 1.0 - inset * 0.10;
+    // Soft inset — features sit in the material, not on it
+    float inset = smoothstep(0.45, -0.1, eyeD) * 0.5 + smoothstep(0.5, -0.2, dm) * openAmt * 0.4;
+    body *= 1.0 - inset * 0.08;
 
-    body = mix(body, featureCol, max(eyeMask * 0.9, mouthMask * 0.85));
+    body = mix(body, featureCol, max(eyeMask * 0.94, mouthMask * 0.88));
 
-    // Catchlights — the spark of life (drawn on the pigment, still under gloss)
+    // Catchlights
     float cl = min(
-      length(p - (eL + vec2(-0.026, 0.052))),
-      length(p - (eR + vec2(-0.026, 0.052)))
+      length(hp - (eL + vec2(-0.045, 0.075))),
+      length(hp - (eR + vec2(-0.045, 0.075)))
     );
-    float clMask = smoothstep(0.034, 0.004, cl) * step(0.35, uEyeOpen);
-    body = mix(body, vec3(1.0, 0.99, 0.96), clMask * 0.85);
+    float clMask = smoothstep(0.055, 0.008, cl) * step(0.35, uEyeOpen);
+    body = mix(body, vec3(1.0, 1.0, 0.99), clMask * 0.9);
   }
 
-  // ---- Fresnel rim light (broad glow + thin crisp glass edge) ---------------
-  // Rendered after the face: the glass coats her, embedding the features.
-  float fres = pow(1.0 - z, 2.2);
-  body += uRim * fres * uRimAmt * (0.55 + uLevel * 0.9 + uPulse * 0.4);
-  body += uRim * pow(1.0 - z, 7.0) * (0.28 + uLevel * 0.4);
+  // Nib slit — the single detail that makes the pen read as a pen
+  float slit = smoothstep(0.018, 0.006, abs(bp.x))
+             * smoothstep(-0.66, -0.56, bp.y)
+             * (1.0 - smoothstep(-0.42, -0.32, bp.y))
+             * w.w;
+  body = mix(body, uColC * 0.6, slit * 0.55);
 
-  // ---- Glass specular (soft bloom + hot point, top-left) --------------------
-  vec2 hl = uv / R - vec2(-0.38, 0.42);
-  float specD = dot(hl, hl);
-  body += vec3(1.0, 0.985, 0.95) * exp(-specD * 8.0) * 0.16 * (0.7 + 0.3 * z);
-  body += vec3(1.0) * exp(-specD * 42.0) * 0.22;
+  // ---- Studio gloss (after the face — the surface coats her) ------------------
+  // Window highlight: tall soft reflection, top-left
+  vec2 wq = (bp - vec2(-0.22, 0.38)) / vec2(0.16, 0.30);
+  body += vec3(1.0) * exp(-dot(wq, wq)) * 0.14 * (0.6 + 0.4 * zn);
+  vec2 wq2 = (bp - vec2(-0.20, 0.42)) / vec2(0.05, 0.14);
+  body += vec3(1.0) * exp(-dot(wq2, wq2)) * 0.18;
 
-  // Soft inner shadow at the base for weight
-  body *= 1.0 - 0.16 * smoothstep(0.0, 1.1, -uv.y / R * 0.8 + d * 0.4) * (1.0 - z);
+  // Thin rim light, lower-right — separates her from the page
+  float rimDir = clamp(dot(normalize(bp - headC + 1e-4), normalize(vec2(0.55, -0.6))), 0.0, 1.0);
+  body += uRim * pow(1.0 - depth, 3.5) * rimDir * uRimAmt * (0.5 + uLevel * 0.4);
 
-  // ---- Compositing: orb mask, aura, ripples --------------------------------
-  float px = 2.0 / min(uRes.x, uRes.y);   // one pixel in uv units
-  float aa = px * 1.6 / R;
-  float alpha = 1.0 - smoothstep(1.0 - aa, 1.0 + aa, d);
+  // ---- Grounded contact shadow (behind the body) -------------------------------
+  vec2 sq = (uv - vec2(-0.02, -0.80)) / vec2(0.46 * breathe, 0.085);
+  float shadow = exp(-dot(sq, sq)) * uAuraAmt;
+  vec3 shadowCol = uAura * 0.35;
 
-  // Halo hugging the rim
-  float aura = exp(-max(d - 1.0, 0.0) * 3.4)
-             * step(1.0, d)
-             * uAuraAmt * (0.35 + uLevel * 0.9 + uPulse * 0.6);
+  // ---- Composite (premultiplied alpha) -----------------------------------------
+  vec3 col = body * alpha + shadowCol * shadow * (1.0 - alpha);
+  float a = clamp(alpha + shadow * 0.75 * (1.0 - alpha), 0.0, 1.0);
 
-  // Expanding ripple rings (voice leaving the orb)
-  float rip = 0.0;
-  for (int i = 0; i < 2; i++) {
-    float phase = fract(t * 0.5 + float(i) * 0.5);
-    float ringR = 1.02 + phase * 0.30;
-    rip += exp(-pow((d - ringR) * 26.0, 2.0)) * (1.0 - phase);
-  }
-  rip *= uAuraAmt * (0.18 + uLevel * 0.7);
-
-  vec3 col = body * alpha + uAura * aura + uRim * rip;
-  float a = clamp(alpha + aura * 0.85 + rip * 0.6, 0.0, 1.0);
-
-  // Fade everything before the square canvas edge so nothing clips hard
-  float edgeFade = 1.0 - smoothstep(0.90, 1.0, r);
-  col *= edgeFade;
-  a *= edgeFade;
-
-  // ---- Grain dither (kills banding on the soft gradients) -------------------
+  // Grain dither — invisible, kills gradient banding
   col += (hash21(gl_FragCoord.xy + fract(t) * 61.7) - 0.5) * (2.0 / 255.0);
 
-  gl_FragColor = vec4(col, a); // premultiplied alpha
+  gl_FragColor = vec4(col, a);
 }
 `

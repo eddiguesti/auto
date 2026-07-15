@@ -1,86 +1,93 @@
 /**
- * Clio Orb configuration.
+ * Clio — "The Comma" — configuration.
  *
- * Four states, each a full palette + behaviour + shape profile. The component
- * lerps every value continuously, so states melt into each other. Colors are a friendly
- * "morning sky" blue family anchored to the design system's info blue —
- * blue reads as trust and calm for assistant orbs.
+ * Four states, each a palette + posture profile, continuously blended.
+ * Colors are a calm frosted-mineral blue family (blue reads as trust and
+ * warmth-of-intelligence for assistant characters; anchored to the design
+ * system's info blue).
  *
- * colA = light tone (veins, sparkles, core glow)
- * colB = mid tone   (body)
- * colC = deep tone  (depths)
- * rim  = fresnel rim light | aura = outer halo
+ * colA = light tone (inner light, catchlights)
+ * colB = mid tone  (body)
+ * colC = deep tone (edge density, features)
+ * rim  = rim light | aura = contact-shadow tint
  *
- * Shape language:
- *  wobble = fine organic texture (always subtle)
- *  lobe   = soft jelly lobes — the orb "leans in" while listening
- *  petal  = rhythmic radial waves — sound rippling out while speaking
+ * Posture (slots shared with the shader):
+ *  wobble = micro-jelly aliveness (barely visible)
+ *  lobe   = LEAN — she tilts in when listening
+ *  petal  = SQUASH — gentle bounce with the voice
+ *  auraAmt = grounded contact-shadow strength
+ *  shape  = her body: 'comma' (the pause) | 'ear' (listening) |
+ *           'bulb' (your memories light her up) | 'pen' (writing it down)
  */
 
 export const orbStates = {
-  // At rest — a calm cream pearl, slow breath
+  // At rest — quiet frosted pearl, upright, slow breath
   idle: {
-    colA: '#EDF4FA',
-    colB: '#AACBE4',
-    colC: '#5F8AA9',
-    rim: '#E1EDF6',
-    aura: '#BFD7E6',
-    flow: 0.5,
-    wobble: 0.02,
-    lobe: 0.012,
+    colA: '#F2F7FB',
+    colB: '#BFD5E5',
+    colC: '#7E9BB2',
+    rim: '#E8F1F8',
+    aura: '#6C88A0',
+    flow: 0.6,
+    wobble: 0.004,
+    lobe: 0.0,
     petal: 0.0,
-    rimAmt: 0.38,
+    rimAmt: 0.55,
     auraAmt: 0.3,
-    spark: 0.18,
-    breath: 0.013
+    spark: 0,
+    breath: 0.012,
+    shape: 'comma'
   },
-  // Listening — warm honey; soft lobes slowly morph (attentive jelly)
+  // Listening — brighter sky; she leans in, attentive
   active: {
-    colA: '#E6F3FD',
-    colB: '#8FC0E2',
-    colC: '#4C7CA0',
-    rim: '#D2E8F8',
-    aura: '#9CC8E8',
-    flow: 0.85,
-    wobble: 0.022,
-    lobe: 0.1,
-    petal: 0.0,
-    rimAmt: 0.65,
-    auraAmt: 0.55,
-    spark: 0.4,
-    breath: 0.01
+    colA: '#EAF5FE',
+    colB: '#9CC8E6',
+    colC: '#5D87A8',
+    rim: '#DDEEFA',
+    aura: '#5F82A0',
+    flow: 1.0,
+    wobble: 0.01,
+    lobe: 0.45,
+    petal: 0.15,
+    rimAmt: 0.75,
+    auraAmt: 0.32,
+    spark: 0,
+    breath: 0.01,
+    shape: 'ear'
   },
-  // User speaking — friendly gold, lobes ripple with the voice
+  // User speaking — vivid azure; she bounces gently with your voice
   detected: {
-    colA: '#E0F1FF',
-    colB: '#6BAEE0',
-    colC: '#35688F',
-    rim: '#C4E2F9',
-    aura: '#79B9E8',
-    flow: 1.25,
-    wobble: 0.035,
-    lobe: 0.09,
-    petal: 0.02,
-    rimAmt: 0.6,
-    auraAmt: 0.55,
-    spark: 0.75,
-    breath: 0.008
+    colA: '#E6F4FF',
+    colB: '#7FB8E4',
+    colC: '#44759D',
+    rim: '#CFE7FA',
+    aura: '#587FA2',
+    flow: 1.3,
+    wobble: 0.012,
+    lobe: 0.08,
+    petal: 0.9,
+    rimAmt: 0.9,
+    auraAmt: 0.34,
+    spark: 0,
+    breath: 0.008,
+    shape: 'bulb'
   },
-  // Clio speaking — warm ink with bronze veins; petal waves pulse outward
+  // Clio speaking — twilight blue; upright, talking, lip-synced
   speaking: {
-    colA: '#A9CDE9',
-    colB: '#4C6E8B',
-    colC: '#26415A',
-    rim: '#86B4D8',
-    aura: '#5D89AC',
-    flow: 1.5,
-    wobble: 0.025,
-    lobe: 0.015,
-    petal: 0.075,
-    rimAmt: 0.85,
-    auraAmt: 0.7,
-    spark: 0.5,
-    breath: 0.008
+    colA: '#B9D6EC',
+    colB: '#5D7F9C',
+    colC: '#32506B',
+    rim: '#9DC2E0',
+    aura: '#46647E',
+    flow: 1.1,
+    wobble: 0.006,
+    lobe: 0.15,
+    petal: 0.55,
+    rimAmt: 0.8,
+    auraAmt: 0.34,
+    spark: 0,
+    breath: 0.008,
+    shape: 'pen'
   }
 }
 
