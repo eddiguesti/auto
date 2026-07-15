@@ -53,7 +53,7 @@ export const orbStates = {
     auraAmt: 0.32,
     spark: 0,
     breath: 0.01,
-    shape: 'headphones'
+    shape: 'heart'
   },
   // User speaking — vivid azure heart, beating gently with your voice
   detected: {
@@ -70,7 +70,7 @@ export const orbStates = {
     auraAmt: 0.34,
     spark: 0,
     breath: 0.008,
-    shape: 'heart'
+    shape: 'pen'
   },
   // Clio speaking — twilight blue; upright, talking, lip-synced
   speaking: {

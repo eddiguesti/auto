@@ -171,6 +171,10 @@ void main() {
   vec2 uv = (gl_FragCoord.xy * 2.0 - uRes) / min(uRes.x, uRes.y);
   float t = uTime;
 
+  // Normalized shape weights — the body is a blend of four fields
+  vec4 w = uShape / max(uShape.x + uShape.y + uShape.z + uShape.w, 1e-4);
+  vec2 headC = headCenter(w);
+
   // ---- Posture -------------------------------------------------------------
   // Breathing scale + a gentle squash bounce driven by the voice
   float breathe = 1.0 + uBreath * sin(t * 0.9) + uLevel * 0.035 + uPulse * 0.02;
@@ -185,12 +189,18 @@ void main() {
   bp = vec2(bp.x * (2.0 - squash), bp.y * squash); // squash & stretch (volume-ish)
   bp /= breathe;
 
+  // Writing motion — in pen form she scribbles with the voice, pivoting at
+  // the nib tip like a real pen on paper, drifting slowly along the line
+  float write = w.w * (0.25 + uLevel * 1.5);
+  float wAng = (sin(t * 7.0) * 0.5 + sin(t * 11.3) * 0.3 + sin(t * 4.7) * 0.2) * 0.075 * write;
+  vec2 pivot = vec2(0.0, -0.66);
+  vec2 wp = bp - pivot;
+  float wc = cos(wAng);
+  float wsn = sin(wAng);
+  bp = mat2(wc, -wsn, wsn, wc) * wp + pivot + vec2(sin(t * 1.3) * 0.035 * write, 0.0);
+
   // Micro-jelly: barely-there organic life on the silhouette
   float jelly = vnoise(bp * 2.0 + vec2(0.0, t * 0.5)) * uWobble;
-
-  // Normalized shape weights — the body is a blend of four fields
-  vec4 w = uShape / max(uShape.x + uShape.y + uShape.z + uShape.w, 1e-4);
-  vec2 headC = headCenter(w);
 
   float d = bodySDF(bp, w) + jelly;
 
