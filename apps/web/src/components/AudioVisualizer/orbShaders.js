@@ -130,14 +130,15 @@ float phonesSDF(vec2 p) {
   return d;
 }
 
-// BULB — remembering. Pear-shaped glass, collar, screw base, contact nub.
-float bulbSDF(vec2 p) {
-  float d = length(p - vec2(0.0, 0.24)) - 0.47;                                   // dome
-  d = smin(d, taperSeg(p, vec2(0.0, 0.05), vec2(0.0, -0.30), 0.30, 0.215), 0.09); // waist
-  d = smin(d, taperSeg(p, vec2(0.0, -0.30), vec2(0.0, -0.46), 0.22, 0.18), 0.05); // collar
-  d = smin(d, rbox(p - vec2(0.0, -0.55), vec2(0.18, 0.09), 0.05), 0.035);         // screw base
-  d = smin(d, length(p - vec2(0.0, -0.68)) - 0.045, 0.04);                        // contact nub
-  return d;
+// HEART — your memories, held. Beats brighter with the teller's voice.
+float heartSDF(vec2 p) {
+  float lobes = smin(
+    length(p - vec2(-0.245, 0.30)) - 0.36,
+    length(p - vec2(0.245, 0.30)) - 0.36,
+    0.04 // keep the notch between the lobes crisp
+  );
+  float body = taperSeg(p, vec2(0.0, -0.02), vec2(0.0, -0.60), 0.44, 0.02);
+  return smin(lobes, body, 0.10);
 }
 
 // PEN NIB — writing it down. A shield: dome shoulders flowing into the point.
@@ -154,16 +155,16 @@ float penSDF(vec2 p) {
 
 // Blended field + the face anchor and scale that travel with it
 float bodySDF(vec2 p, vec4 w) {
-  return w.x * bubbleSDF(p) + w.y * phonesSDF(p) + w.z * bulbSDF(p) + w.w * penSDF(p);
+  return w.x * bubbleSDF(p) + w.y * phonesSDF(p) + w.z * heartSDF(p) + w.w * penSDF(p);
 }
 
 vec2 headCenter(vec4 w) {
-  return w.x * vec2(0.0, 0.08) + w.y * vec2(0.0, 0.0) + w.z * vec2(0.0, 0.22) +
+  return w.x * vec2(0.0, 0.08) + w.y * vec2(0.0, 0.0) + w.z * vec2(0.0, 0.10) +
          w.w * vec2(0.0, 0.12);
 }
 
 float headRadius(vec4 w) {
-  return dot(w, vec4(0.54, 0.52, 0.46, 0.50));
+  return dot(w, vec4(0.54, 0.52, 0.5, 0.50));
 }
 
 void main() {
@@ -220,17 +221,9 @@ void main() {
   float inner = exp(-dot(bp - lightPos, bp - lightPos) * 2.2);
   body += uColA * inner * (0.14 + uLevel * 0.18);
 
-  // Bulb filament: a small glowing ring that burns brighter with your voice
-  float filR = abs(length(bp - vec2(0.0, -0.04)) - 0.10);
-  float filament = exp(-filR * filR * 500.0) * w.z;
-  body += uColA * filament * (0.25 + uLevel * 1.1);
-  body += uColA * exp(-dot(bp - vec2(0.0, -0.04), bp - vec2(0.0, -0.04)) * 6.0)
-        * w.z * (0.10 + uLevel * 0.55);
-
-  // Bulb screw threads: two quiet grooves across the base
-  float thread = (exp(-pow((bp.y + 0.51) * 60.0, 2.0)) + exp(-pow((bp.y + 0.60) * 60.0, 2.0)))
-               * smoothstep(0.20, 0.16, abs(bp.x)) * w.z;
-  body = mix(body, uColC * 0.75, thread * 0.4);
+  // Heart glow: a warm pulse from the center that swells with your voice
+  vec2 hg = bp - vec2(0.0, 0.02);
+  body += uColA * exp(-dot(hg, hg) * 3.2) * w.z * (0.14 + uLevel * 0.65);
 
   // Key light (top-left studio softbox) + cool fill from below-right
   vec3 L = normalize(vec3(-0.35, 0.55, 0.75));

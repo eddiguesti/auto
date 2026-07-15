@@ -17,7 +17,7 @@
  *  petal  = SQUASH — gentle bounce with the voice
  *  auraAmt = grounded contact-shadow strength
  *  shape  = her body: 'bubble' (here to chat) | 'headphones' (listening) |
- *           'bulb' (your memories light her up) | 'pen' (writing it down)
+ *           'heart' (holding your memories) | 'pen' (writing it down)
  */
 
 export const orbStates = {
@@ -55,7 +55,7 @@ export const orbStates = {
     breath: 0.01,
     shape: 'headphones'
   },
-  // User speaking — vivid azure; she bounces gently with your voice
+  // User speaking — vivid azure heart, beating gently with your voice
   detected: {
     colA: '#E6F4FF',
     colB: '#7FB8E4',
@@ -70,7 +70,7 @@ export const orbStates = {
     auraAmt: 0.34,
     spark: 0,
     breath: 0.008,
-    shape: 'bulb'
+    shape: 'heart'
   },
   // Clio speaking — twilight blue; upright, talking, lip-synced
   speaking: {

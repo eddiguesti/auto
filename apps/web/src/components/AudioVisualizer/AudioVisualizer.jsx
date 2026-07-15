@@ -30,11 +30,11 @@ const hexToRgb = hex => {
   ]
 }
 
-// Body forms — weights for (bubble, headphones, bulb, pen); SDFs blend in the shader
+// Body forms — weights for (bubble, headphones, heart, pen); SDFs blend in the shader
 const SHAPE_WEIGHTS = {
   bubble: [1, 0, 0, 0],
   headphones: [0, 1, 0, 0],
-  bulb: [0, 0, 1, 0],
+  heart: [0, 0, 1, 0],
   pen: [0, 0, 0, 1]
 }
 
