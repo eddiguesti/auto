@@ -91,41 +91,59 @@ float rbox(vec2 p, vec2 b, float r) {
   return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
 }
 
+// Tapering capsule — a segment whose radius narrows from r1 to r2
+float taperSeg(vec2 p, vec2 a, vec2 b, float r1, float r2) {
+  vec2 pa = p - a;
+  vec2 ba = b - a;
+  float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+  return length(pa - ba * h) - mix(r1, r2, h);
+}
+
+// Circular arc with rounded caps (iq) — aperture opens around +y
+float sdArc(vec2 p, vec2 sc, float ra, float rb) {
+  p.x = abs(p.x);
+  return ((sc.y * p.x > sc.x * p.y) ? length(p - sc * ra) : abs(length(p) - ra)) - rb;
+}
+
 // ── The four bodies. Every shape keeps its face zone (head disc) intact. ──
 
 // COMMA — resting identity. The pause between stories.
 float commaSDF(vec2 p) {
-  float d = length(p - vec2(0.06, 0.13)) - 0.58;             // head
-  d = smin(d, length(p - vec2(-0.26, -0.34)) - 0.245, 0.10); // shoulder
-  d = smin(d, length(p - vec2(-0.43, -0.52)) - 0.140, 0.09); // taper
-  d = smin(d, length(p - vec2(-0.52, -0.65)) - 0.070, 0.08); // tip
+  float d = length(p - vec2(0.06, 0.13)) - 0.56; // head
+  // One clean tapering sweep, hooking down-left to a fine tip
+  float tail = taperSeg(p, vec2(-0.20, -0.26), vec2(-0.42, -0.48), 0.215, 0.115);
+  tail = smin(tail, taperSeg(p, vec2(-0.42, -0.48), vec2(-0.56, -0.63), 0.115, 0.022), 0.05);
+  d = smin(d, tail, 0.07);
   return d;
 }
 
-// EAR CRESCENT — listening. A cupped curve catching your voice.
+// EAR — listening. A crisp cupped arc catching your voice.
 float earSDF(vec2 p) {
-  float d = length(p - vec2(-0.06, 0.10)) - 0.56;            // head
-  float cup = length(p - vec2(0.50, 0.10)) - 0.30;           // outer cup
-  float hollow = length(p - vec2(0.68, 0.10)) - 0.24;        // carve inside
-  cup = max(cup, -hollow);
-  d = smin(d, cup, 0.10);
+  float d = length(p - vec2(-0.08, 0.10)) - 0.55; // head
+  // The cup: an open "C" arc, uniform thickness, rounded tips, catching sound
+  vec2 q = p - vec2(0.54, 0.12);
+  q = vec2(-q.y, -q.x); // rotate so the cup wraps the side of her head
+  float cup = sdArc(q, vec2(sin(1.5), cos(1.5)), 0.30, 0.10);
+  d = smin(d, cup, 0.075);
   return d;
 }
 
-// BULB — remembering. Lights up with the teller's voice.
+// BULB — remembering. Glass, collar, base and screw threads.
 float bulbSDF(vec2 p) {
-  float d = length(p - vec2(0.0, 0.20)) - 0.55;              // glass
-  d = smin(d, length(p - vec2(0.0, -0.34)) - 0.19, 0.12);    // neck
-  d = smin(d, rbox(p - vec2(0.0, -0.55), vec2(0.19, 0.115), 0.07), 0.05); // base
+  float d = length(p - vec2(0.0, 0.20)) - 0.54;                            // glass
+  d = smin(d, taperSeg(p, vec2(0.0, -0.26), vec2(0.0, -0.46), 0.25, 0.19), 0.06); // collar
+  d = smin(d, rbox(p - vec2(0.0, -0.55), vec2(0.19, 0.10), 0.05), 0.035);  // screw base
+  d = smin(d, length(p - vec2(0.0, -0.68)) - 0.05, 0.04);                  // contact nub
   return d;
 }
 
-// PEN NIB — writing it down. The story becomes ink.
+// PEN NIB — writing it down. Straight taper, breather hole, slit.
 float penSDF(vec2 p) {
-  float d = length(p - vec2(0.0, 0.22)) - 0.52;              // body
-  d = smin(d, length(p - vec2(0.0, -0.10)) - 0.38, 0.08);    // shoulders
-  d = smin(d, length(p - vec2(0.0, -0.40)) - 0.20, 0.07);    // straight taper
-  d = smin(d, length(p - vec2(0.0, -0.64)) - 0.048, 0.07);   // point
+  float d = length(p - vec2(0.0, 0.24)) - 0.50;                             // body
+  float nib = taperSeg(p, vec2(0.0, -0.02), vec2(0.0, -0.66), 0.40, 0.012); // clean cone
+  d = smin(d, nib, 0.045);
+  // Breather hole — punched clean through, like a real nib
+  d = max(d, -(length(p - vec2(0.0, -0.33)) - 0.052));
   return d;
 }
 
@@ -188,16 +206,35 @@ void main() {
   vec3 body = mix(uColC, uColB, smoothstep(0.0, 0.45, depth));
   body = mix(body, uColA, smoothstep(0.45, 1.0, depth) * 0.55);
 
-  // Inner light: a soft source drifting slightly, like light in frosted glass.
-  // In bulb form it becomes the filament — your voice literally lights her up.
+  // Inner light: a soft source drifting slightly, like light in frosted glass
   vec2 lightPos = headC + vec2(0.03 * sin(t * 0.4 * uFlow), 0.08 + 0.02 * cos(t * 0.33 * uFlow));
   float inner = exp(-dot(bp - lightPos, bp - lightPos) * 2.2);
-  body += uColA * inner * (0.14 + uLevel * 0.18 + w.z * (0.12 + uLevel * 0.5));
+  body += uColA * inner * (0.14 + uLevel * 0.18);
 
-  // Key light (top-left studio softbox)
+  // Bulb filament: a small glowing ring that burns brighter with your voice
+  float filR = abs(length(bp - vec2(0.0, -0.04)) - 0.10);
+  float filament = exp(-filR * filR * 500.0) * w.z;
+  body += uColA * filament * (0.25 + uLevel * 1.1);
+  body += uColA * exp(-dot(bp - vec2(0.0, -0.04), bp - vec2(0.0, -0.04)) * 6.0)
+        * w.z * (0.10 + uLevel * 0.55);
+
+  // Bulb screw threads: two quiet grooves across the base
+  float thread = (exp(-pow((bp.y + 0.51) * 60.0, 2.0)) + exp(-pow((bp.y + 0.60) * 60.0, 2.0)))
+               * smoothstep(0.20, 0.16, abs(bp.x)) * w.z;
+  body = mix(body, uColC * 0.75, thread * 0.4);
+
+  // Key light (top-left studio softbox) + cool fill from below-right
   vec3 L = normalize(vec3(-0.35, 0.55, 0.75));
   float ndl = clamp(dot(n, L), 0.0, 1.0);
   body *= 0.80 + 0.22 * ndl;
+  vec3 L2 = normalize(vec3(0.5, -0.35, 0.62));
+  body += uRim * 0.06 * clamp(dot(n, L2), 0.0, 1.0);
+
+  // Glass edge: a light band just inside the silhouette, then a hairline
+  // of denser color right at it — the double-line read of real glass
+  float edgeBand = smoothstep(0.0, 0.10, depth) * (1.0 - smoothstep(0.10, 0.30, depth));
+  body += uColA * edgeBand * 0.10;
+  body *= 1.0 - 0.10 * (1.0 - smoothstep(0.0, 0.05, depth));
 
   // Soft occlusion under the head, above the tail — gives the form weight
   body *= 1.0 - 0.10 * smoothstep(0.2, 0.9, -bp.y) * (1.0 - depth);
@@ -253,12 +290,12 @@ void main() {
     body = mix(body, vec3(1.0, 1.0, 0.99), clMask * 0.9);
   }
 
-  // Nib slit — the single detail that makes the pen read as a pen
-  float slit = smoothstep(0.018, 0.006, abs(bp.x))
-             * smoothstep(-0.66, -0.56, bp.y)
-             * (1.0 - smoothstep(-0.42, -0.32, bp.y))
+  // Nib slit — from the breather hole down to the point
+  float slit = smoothstep(0.016, 0.005, abs(bp.x))
+             * smoothstep(-0.66, -0.61, bp.y)
+             * (1.0 - smoothstep(-0.40, -0.36, bp.y))
              * w.w;
-  body = mix(body, uColC * 0.6, slit * 0.55);
+  body = mix(body, uColC * 0.55, slit * 0.6);
 
   // ---- Studio gloss (after the face — the surface coats her) ------------------
   // Window highlight: tall soft reflection, top-left
@@ -266,14 +303,18 @@ void main() {
   body += vec3(1.0) * exp(-dot(wq, wq)) * 0.14 * (0.6 + 0.4 * zn);
   vec2 wq2 = (bp - vec2(-0.20, 0.42)) / vec2(0.05, 0.14);
   body += vec3(1.0) * exp(-dot(wq2, wq2)) * 0.18;
+  // Secondary glint, lower-right — the second point of light real glass has
+  vec2 wq3 = (bp - headC - vec2(0.34, -0.30)) / vec2(0.045, 0.09);
+  body += vec3(1.0) * exp(-dot(wq3, wq3)) * 0.09;
 
   // Thin rim light, lower-right — separates her from the page
   float rimDir = clamp(dot(normalize(bp - headC + 1e-4), normalize(vec2(0.55, -0.6))), 0.0, 1.0);
   body += uRim * pow(1.0 - depth, 3.5) * rimDir * uRimAmt * (0.5 + uLevel * 0.4);
 
-  // ---- Grounded contact shadow (behind the body) -------------------------------
+  // ---- Grounded contact shadow (two layers: tight core + soft spread) ----------
   vec2 sq = (uv - vec2(-0.02, -0.80)) / vec2(0.46 * breathe, 0.085);
-  float shadow = exp(-dot(sq, sq)) * uAuraAmt;
+  vec2 sq2 = (uv - vec2(-0.02, -0.79)) / vec2(0.26 * breathe, 0.045);
+  float shadow = (exp(-dot(sq, sq)) * 0.75 + exp(-dot(sq2, sq2)) * 0.45) * uAuraAmt;
   vec3 shadowCol = uAura * 0.35;
 
   // ---- Composite (premultiplied alpha) -----------------------------------------
