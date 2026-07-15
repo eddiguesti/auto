@@ -16,7 +16,7 @@
  *  lobe   = LEAN — she tilts in when listening
  *  petal  = SQUASH — gentle bounce with the voice
  *  auraAmt = grounded contact-shadow strength
- *  shape  = her body: 'comma' (the pause) | 'ear' (listening) |
+ *  shape  = her body: 'bubble' (here to chat) | 'headphones' (listening) |
  *           'bulb' (your memories light her up) | 'pen' (writing it down)
  */
 
@@ -36,7 +36,7 @@ export const orbStates = {
     auraAmt: 0.3,
     spark: 0,
     breath: 0.012,
-    shape: 'comma'
+    shape: 'bubble'
   },
   // Listening — brighter sky; she leans in, attentive
   active: {
@@ -53,7 +53,7 @@ export const orbStates = {
     auraAmt: 0.32,
     spark: 0,
     breath: 0.01,
-    shape: 'ear'
+    shape: 'headphones'
   },
   // User speaking — vivid azure; she bounces gently with your voice
   detected: {

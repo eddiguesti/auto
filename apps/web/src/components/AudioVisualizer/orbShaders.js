@@ -105,56 +105,65 @@ float sdArc(vec2 p, vec2 sc, float ra, float rb) {
   return ((sc.y * p.x > sc.x * p.y) ? length(p - sc * ra) : abs(length(p) - ra)) - rb;
 }
 
-// ── The four bodies. Every shape keeps its face zone (head disc) intact. ──
+// ── The four bodies — true icon silhouettes; the face lives inside each. ──
 
-// COMMA — resting identity. The pause between stories.
-float commaSDF(vec2 p) {
-  float d = length(p - vec2(0.06, 0.13)) - 0.56; // head
-  // One clean tapering sweep, hooking down-left to a fine tip
-  float tail = taperSeg(p, vec2(-0.20, -0.26), vec2(-0.42, -0.48), 0.215, 0.115);
-  tail = smin(tail, taperSeg(p, vec2(-0.42, -0.48), vec2(-0.56, -0.63), 0.115, 0.022), 0.05);
-  d = smin(d, tail, 0.07);
+// SPEECH BUBBLE — at rest. "I'm here to chat." Short, crisp tail.
+float bubbleSDF(vec2 p) {
+  float d = length(p - vec2(0.0, 0.08)) - 0.54;
+  float tail = taperSeg(p, vec2(-0.18, -0.38), vec2(-0.38, -0.62), 0.13, 0.02);
+  d = smin(d, tail, 0.05);
   return d;
 }
 
-// EAR — listening. A crisp cupped arc catching your voice.
-float earSDF(vec2 p) {
-  float d = length(p - vec2(-0.08, 0.10)) - 0.55; // head
-  // The cup: an open "C" arc, uniform thickness, rounded tips, catching sound
-  vec2 q = p - vec2(0.54, 0.12);
-  q = vec2(-q.y, -q.x); // rotate so the cup wraps the side of her head
-  float cup = sdArc(q, vec2(sin(1.5), cos(1.5)), 0.30, 0.10);
-  d = smin(d, cup, 0.075);
+// HEADPHONES — listening. Band over her head, cups snug at the sides.
+float phonesSDF(vec2 p) {
+  float d = length(p - vec2(0.0, 0.0)) - 0.52; // her head
+  // Band: an arc riding over the crown
+  float band = sdArc(p - vec2(0.0, 0.02), vec2(sin(1.25), cos(1.25)), 0.60, 0.05);
+  d = min(d, band);
+  // Cups: rounded pads hugging each side
+  float cups = min(
+    rbox(p - vec2(-0.57, -0.04), vec2(0.085, 0.165), 0.06),
+    rbox(p - vec2(0.57, -0.04), vec2(0.085, 0.165), 0.06)
+  );
+  d = smin(d, cups, 0.04);
   return d;
 }
 
-// BULB — remembering. Glass, collar, base and screw threads.
+// BULB — remembering. Pear-shaped glass, collar, screw base, contact nub.
 float bulbSDF(vec2 p) {
-  float d = length(p - vec2(0.0, 0.20)) - 0.54;                            // glass
-  d = smin(d, taperSeg(p, vec2(0.0, -0.26), vec2(0.0, -0.46), 0.25, 0.19), 0.06); // collar
-  d = smin(d, rbox(p - vec2(0.0, -0.55), vec2(0.19, 0.10), 0.05), 0.035);  // screw base
-  d = smin(d, length(p - vec2(0.0, -0.68)) - 0.05, 0.04);                  // contact nub
+  float d = length(p - vec2(0.0, 0.24)) - 0.47;                                   // dome
+  d = smin(d, taperSeg(p, vec2(0.0, 0.05), vec2(0.0, -0.30), 0.30, 0.215), 0.09); // waist
+  d = smin(d, taperSeg(p, vec2(0.0, -0.30), vec2(0.0, -0.46), 0.22, 0.18), 0.05); // collar
+  d = smin(d, rbox(p - vec2(0.0, -0.55), vec2(0.18, 0.09), 0.05), 0.035);         // screw base
+  d = smin(d, length(p - vec2(0.0, -0.68)) - 0.045, 0.04);                        // contact nub
   return d;
 }
 
-// PEN NIB — writing it down. Straight taper, breather hole, slit.
+// PEN NIB — writing it down. A shield: dome shoulders flowing into the point.
 float penSDF(vec2 p) {
-  float d = length(p - vec2(0.0, 0.24)) - 0.50;                             // body
-  float nib = taperSeg(p, vec2(0.0, -0.02), vec2(0.0, -0.66), 0.40, 0.012); // clean cone
-  d = smin(d, nib, 0.045);
+  vec2 pe = vec2(p.x / 1.06, p.y); // slightly wide dome
+  float d = length(pe - vec2(0.0, 0.16)) - 0.50;
+  // Shoulders start as wide as the dome so the sides read as one curve
+  float shield = taperSeg(p, vec2(0.0, -0.02), vec2(0.0, -0.68), 0.475, 0.01);
+  d = smin(d, shield, 0.10);
   // Breather hole — punched clean through, like a real nib
-  d = max(d, -(length(p - vec2(0.0, -0.33)) - 0.052));
+  d = max(d, -(length(p - vec2(0.0, -0.36)) - 0.05));
   return d;
 }
 
-// Blended field + the face anchor that travels with it
+// Blended field + the face anchor and scale that travel with it
 float bodySDF(vec2 p, vec4 w) {
-  return w.x * commaSDF(p) + w.y * earSDF(p) + w.z * bulbSDF(p) + w.w * penSDF(p);
+  return w.x * bubbleSDF(p) + w.y * phonesSDF(p) + w.z * bulbSDF(p) + w.w * penSDF(p);
 }
 
 vec2 headCenter(vec4 w) {
-  return w.x * vec2(0.06, 0.13) + w.y * vec2(-0.06, 0.10) + w.z * vec2(0.0, 0.20) +
-         w.w * vec2(0.0, 0.22);
+  return w.x * vec2(0.0, 0.08) + w.y * vec2(0.0, 0.0) + w.z * vec2(0.0, 0.22) +
+         w.w * vec2(0.0, 0.12);
+}
+
+float headRadius(vec4 w) {
+  return dot(w, vec4(0.54, 0.52, 0.46, 0.50));
 }
 
 void main() {
@@ -242,7 +251,7 @@ void main() {
   // ---- Face — pigment set in the resin, under the gloss -----------------------
   if (uFace > 0.5) {
     // Head space: features ride the lean, breath, squash — and the morph
-    vec2 hp = (bp - headC) / 0.58;
+    vec2 hp = (bp - headC) / headRadius(w);
     hp /= 0.86 + 0.14 * zn;
     vec2 look = uLook * 0.12;
 
@@ -292,8 +301,8 @@ void main() {
 
   // Nib slit — from the breather hole down to the point
   float slit = smoothstep(0.016, 0.005, abs(bp.x))
-             * smoothstep(-0.66, -0.61, bp.y)
-             * (1.0 - smoothstep(-0.40, -0.36, bp.y))
+             * smoothstep(-0.68, -0.63, bp.y)
+             * (1.0 - smoothstep(-0.43, -0.39, bp.y))
              * w.w;
   body = mix(body, uColC * 0.55, slit * 0.6);
 

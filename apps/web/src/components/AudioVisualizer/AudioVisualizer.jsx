@@ -30,10 +30,10 @@ const hexToRgb = hex => {
   ]
 }
 
-// Body forms — weights for (comma, ear, bulb, pen); SDFs blend in the shader
+// Body forms — weights for (bubble, headphones, bulb, pen); SDFs blend in the shader
 const SHAPE_WEIGHTS = {
-  comma: [1, 0, 0, 0],
-  ear: [0, 1, 0, 0],
+  bubble: [1, 0, 0, 0],
+  headphones: [0, 1, 0, 0],
   bulb: [0, 0, 1, 0],
   pen: [0, 0, 0, 1]
 }
@@ -43,7 +43,7 @@ const STATE_PARAMS = Object.fromEntries(
   Object.entries(orbStates).map(([name, s]) => [
     name,
     {
-      shapeW: SHAPE_WEIGHTS[s.shape] || SHAPE_WEIGHTS.comma,
+      shapeW: SHAPE_WEIGHTS[s.shape] || SHAPE_WEIGHTS.bubble,
       colA: hexToRgb(s.colA),
       colB: hexToRgb(s.colB),
       colC: hexToRgb(s.colC),
