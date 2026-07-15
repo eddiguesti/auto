@@ -43,6 +43,7 @@ const STATE_PARAMS = Object.fromEntries(
   Object.entries(orbStates).map(([name, s]) => [
     name,
     {
+      shapeKey: s.shape,
       shapeW: SHAPE_WEIGHTS[s.shape] || SHAPE_WEIGHTS.bubble,
       colA: hexToRgb(s.colA),
       colB: hexToRgb(s.colB),
@@ -84,7 +85,8 @@ const UNIFORM_NAMES = [
   'uEyeOpen',
   'uMouth',
   'uLook',
-  'uShape'
+  'uShape',
+  'uMorph'
 ]
 
 const lerp = (a, b, t) => a + (b - a) * t
@@ -140,7 +142,11 @@ export default function AudioVisualizer({
     pulse: 0,
     highs: 0,
     params: null, // lerped copy of STATE_PARAMS[state]
-    face: { eyeOpen: 1, mouth: 0, look: [0, 0], nextBlink: 2.4, blinkAt: -1 }
+    face: { eyeOpen: 1, mouth: 0, look: [0, 0], nextBlink: 2.4, blinkAt: -1 },
+    // Metamorphosis: a damped spring with a touch of overshoot — the new
+    // form arrives with momentum and settles, instead of gliding linearly
+    shapeW: [1, 0, 0, 0],
+    morph: { key: 'bubble', from: [1, 0, 0, 0], to: [1, 0, 0, 0], p: 1, v: 0, blinked: true }
   })
 
   // Live flags readable from the render loop without re-creating it
@@ -316,11 +322,29 @@ export default function AudioVisualizer({
       if (!anim.params) anim.params = JSON.parse(JSON.stringify(target))
       const p = anim.params
       const k = 0.09 // transition speed
-      // The metamorphosis breathes a little slower than the colors —
-      // the form change should feel deliberate, not instant
-      const kShape = 0.032
+
+      // -- Metamorphosis spring: underdamped, ~5% overshoot, ~0.9s settle --
+      const morph = anim.morph
+      if (morph.key !== target.shapeKey) {
+        morph.from = [...anim.shapeW] // depart from wherever we visually are
+        morph.to = target.shapeW
+        morph.key = target.shapeKey
+        morph.p = 0
+        morph.v = 0
+        morph.blinked = false
+      }
+      const K = 38 // stiffness
+      const C = 8.5 // damping
+      morph.v += (K * (1 - morph.p) - C * morph.v) * dt
+      morph.p += morph.v * dt
       for (let i = 0; i < 4; i++) {
-        p.shapeW[i] = lerp(p.shapeW[i], target.shapeW[i], kShape)
+        anim.shapeW[i] = morph.from[i] + (morph.to[i] - morph.from[i]) * morph.p
+      }
+      const morphEnergy = Math.min(Math.abs(morph.v) * 0.4, 1)
+      // The animator's trick: blink at the heart of the transformation
+      if (!morph.blinked && morph.p > 0.45) {
+        anim.face.blinkAt = anim.time
+        morph.blinked = true
       }
       p.colA = lerpVec(p.colA, target.colA, k)
       p.colB = lerpVec(p.colB, target.colB, k)
@@ -391,7 +415,8 @@ export default function AudioVisualizer({
       ctx.uniform1f(uniforms.uEyeOpen, face.eyeOpen)
       ctx.uniform1f(uniforms.uMouth, Math.max(0, Math.min(face.mouth, 1)))
       ctx.uniform2f(uniforms.uLook, face.look[0], face.look[1])
-      ctx.uniform4fv(uniforms.uShape, p.shapeW)
+      ctx.uniform4fv(uniforms.uShape, anim.shapeW)
+      ctx.uniform1f(uniforms.uMorph, morphEnergy)
       ctx.drawArrays(ctx.TRIANGLES, 0, 3)
     }
 
@@ -433,6 +458,16 @@ export default function AudioVisualizer({
     else if (isActive) target = STATE_PARAMS.active
     anim.params = JSON.parse(JSON.stringify(target))
     anim.level = isActive || isSpeaking ? 0.25 : 0
+    // Snap the metamorphosis to the target form — no motion in this mode
+    anim.shapeW = [...target.shapeW]
+    anim.morph = {
+      key: target.shapeKey,
+      from: [...target.shapeW],
+      to: target.shapeW,
+      p: 1,
+      v: 0,
+      blinked: true
+    }
     state.renderFrame(performance.now())
   }, [reducedMotion, isActive, isSpeaking, isSpeechDetected, webglFailed])
 

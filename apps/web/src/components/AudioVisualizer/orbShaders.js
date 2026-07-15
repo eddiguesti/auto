@@ -60,9 +60,10 @@ uniform float uEyeOpen;  // 0 closed .. ~1.15 wide attentive
 uniform float uMouth;    // 0 resting smile .. 1 fully open (speech)
 uniform vec2  uLook;     // gaze offset, roughly -1..1
 
-// Shape metamorphosis — weights for (comma, ear-crescent, bulb, pen nib).
+// Shape metamorphosis — weights for (bubble, headphones, heart, pen nib).
 // SDF fields blend directly, so one body melts into the next.
 uniform vec4  uShape;
+uniform float uMorph;    // morph velocity 0..1 — excites the material in transit
 
 // --- Tiny value noise (only for the micro-jelly; interior stays clean) -----
 float hash21(vec2 p) {
@@ -112,6 +113,8 @@ float bubbleSDF(vec2 p) {
   float d = length(p - vec2(0.0, 0.08)) - 0.54;
   float tail = taperSeg(p, vec2(-0.18, -0.38), vec2(-0.38, -0.62), 0.13, 0.02);
   d = smin(d, tail, 0.05);
+  // A detached mini-bubble by the tail — the universal chat mark
+  d = min(d, length(p - vec2(-0.52, -0.72)) - 0.052);
   return d;
 }
 
@@ -189,6 +192,11 @@ void main() {
   bp = vec2(bp.x * (2.0 - squash), bp.y * squash); // squash & stretch (volume-ish)
   bp /= breathe;
 
+  // Morph excitement: mid-transformation the body compresses a whisper and
+  // stretches — anticipation and follow-through, not a crossfade
+  squash += uMorph * 0.05;
+  breathe *= 1.0 - uMorph * 0.025;
+
   // Writing motion — in pen form she scribbles with the voice, pivoting at
   // the nib tip like a real pen on paper, drifting slowly along the line
   float write = w.w * (0.25 + uLevel * 1.5);
@@ -199,8 +207,8 @@ void main() {
   float wsn = sin(wAng);
   bp = mat2(wc, -wsn, wsn, wc) * wp + pivot + vec2(sin(t * 1.3) * 0.035 * write, 0.0);
 
-  // Micro-jelly: barely-there organic life on the silhouette
-  float jelly = vnoise(bp * 2.0 + vec2(0.0, t * 0.5)) * uWobble;
+  // Micro-jelly: barely-there at rest, excited while she transforms
+  float jelly = vnoise(bp * 2.0 + vec2(0.0, t * 0.5)) * uWobble * (1.0 + uMorph * 2.5);
 
   float d = bodySDF(bp, w) + jelly;
 
@@ -231,9 +239,16 @@ void main() {
   float inner = exp(-dot(bp - lightPos, bp - lightPos) * 2.2);
   body += uColA * inner * (0.14 + uLevel * 0.18);
 
-  // Heart glow: a warm pulse from the center that swells with your voice
+  // Heart: a real lub-dub heartbeat glow that swells with your voice
+  float beatT = fract(t * 1.05);
+  float lubdub = exp(-beatT * 9.0) + 0.55 * exp(-max(beatT - 0.22, 0.0) * 12.0) * step(0.22, beatT);
   vec2 hg = bp - vec2(0.0, 0.02);
-  body += uColA * exp(-dot(hg, hg) * 3.2) * w.z * (0.14 + uLevel * 0.65);
+  body += uColA * exp(-dot(hg, hg) * 3.2) * w.z
+        * (0.10 + uLevel * 0.55 + lubdub * (0.10 + uLevel * 0.25));
+  // The crease between the lobes, fading as it descends
+  float crease = smoothstep(0.014, 0.004, abs(bp.x))
+               * smoothstep(0.46, 0.38, bp.y) * smoothstep(0.02, 0.18, bp.y) * w.z;
+  body = mix(body, uColC * 0.85, crease * 0.3);
 
   // Key light (top-left studio softbox) + cool fill from below-right
   vec3 L = normalize(vec3(-0.35, 0.55, 0.75));
@@ -247,6 +262,12 @@ void main() {
   float edgeBand = smoothstep(0.0, 0.10, depth) * (1.0 - smoothstep(0.10, 0.30, depth));
   body += uColA * edgeBand * 0.10;
   body *= 1.0 - 0.10 * (1.0 - smoothstep(0.0, 0.05, depth));
+  // Crisp inset hairline — the icon-grade inner outline
+  float inset = exp(-pow((depth - 0.10) * 34.0, 2.0));
+  body += uColA * inset * 0.13;
+
+  // Morph shimmer — the material glints faintly while transforming
+  body += uColA * uMorph * 0.05;
 
   // Soft occlusion under the head, above the tail — gives the form weight
   body *= 1.0 - 0.10 * smoothstep(0.2, 0.9, -bp.y) * (1.0 - depth);
@@ -329,9 +350,17 @@ void main() {
   float shadow = (exp(-dot(sq, sq)) * 0.75 + exp(-dot(sq2, sq2)) * 0.45) * uAuraAmt;
   vec3 shadowCol = uAura * 0.35;
 
+  // The written line — hand-wavy ink on the page beneath the nib
+  float inkY = -0.76 + 0.008 * sin(uv.x * 34.0 + 2.0) + 0.005 * sin(uv.x * 61.0);
+  float ink = exp(-pow((uv.y - inkY) * 90.0, 2.0))
+            * smoothstep(-0.44, -0.36, uv.x) * (1.0 - smoothstep(0.28, 0.40, uv.x))
+            * w.w * (0.14 + uLevel * 0.28);
+  shadow = max(shadow, 0.0);
+  vec3 inkCol = uColC * 0.45;
+
   // ---- Composite (premultiplied alpha) -----------------------------------------
-  vec3 col = body * alpha + shadowCol * shadow * (1.0 - alpha);
-  float a = clamp(alpha + shadow * 0.75 * (1.0 - alpha), 0.0, 1.0);
+  vec3 col = body * alpha + (shadowCol * shadow + inkCol * ink) * (1.0 - alpha);
+  float a = clamp(alpha + (shadow * 0.75 + ink) * (1.0 - alpha), 0.0, 1.0);
 
   // Grain dither — invisible, kills gradient banding
   col += (hash21(gl_FragCoord.xy + fract(t) * 61.7) - 0.5) * (2.0 / 255.0);
