@@ -49,11 +49,11 @@ base = mb_data.elements.new(type='BALL')
 base.co = (0.0, 0.0, 1.08)
 base.radius = 1.12
 
-for i in range(1, 23):
-    t = i / 22.0
+for i in range(1, 41):
+    t = i / 40.0
     el = mb_data.elements.new(type='BALL')
     el.co = (0.20 * t ** 2.0, 0.0, 1.08 + 1.48 * t)
-    el.radius = 1.12 * (1.0 - t) ** 1.5 + 0.058
+    el.radius = 1.12 * (1.0 - t) ** 1.5 + 0.055
 
 # Convert metaball to mesh
 bpy.context.view_layer.objects.active = mb_obj
@@ -73,6 +73,11 @@ for stray in parts[1:]:
 body = parts[0]
 body.name = 'Clio'
 bpy.context.view_layer.objects.active = body
+# Gentle vertex smoothing irons out any residual metaball ripples
+smooth = body.modifiers.new('Smooth', 'SMOOTH')
+smooth.factor = 0.7
+smooth.iterations = 10
+bpy.ops.object.modifier_apply(modifier='Smooth')
 bpy.ops.object.shade_smooth()
 
 
@@ -91,7 +96,7 @@ def simple_mat(name, color, rough, coat=0.0, sheen=0.0):
     return m
 
 
-ink_mat = simple_mat('ClioInk', (0.006, 0.006, 0.008), 0.38, coat=0.10, sheen=0.35)  # matte black ink
+ink_mat = simple_mat('ClioInk', (0.006, 0.006, 0.008), 0.52, coat=0.04, sheen=0.4)  # matte black ink
 gloss_black = simple_mat('GlossBlack', (0.01, 0.01, 0.012), 0.18)  # brows/mouth/limbs
 white_mat = simple_mat('EyeWhite', (0.96, 0.965, 0.97), 0.15)
 pupil_mat = simple_mat('Pupil', (0.008, 0.008, 0.01), 0.05)
@@ -223,9 +228,9 @@ def area_light(name, loc, rot, power, size, color=(1, 1, 1)):
     return obj
 
 
-area_light('Key', (-3.0, -3.6, 4.8), (math.radians(44), math.radians(-16), math.radians(-30)), 1400, 7.0,
+area_light('Key', (-3.0, -3.6, 4.8), (math.radians(44), math.radians(-16), math.radians(-30)), 1050, 9.0,
            (1.0, 0.985, 0.96))
-area_light('Fill', (3.6, -3.2, 1.6), (math.radians(75), math.radians(18), math.radians(38)), 420, 5.0,
+area_light('Fill', (3.6, -3.2, 1.6), (math.radians(75), math.radians(18), math.radians(38)), 560, 6.0,
            (0.94, 0.96, 1.0))
 area_light('Rim', (1.8, 3.6, 3.6), (math.radians(-50), math.radians(12), math.radians(160)), 800, 3.0,
            (0.97, 0.98, 1.0))
@@ -236,7 +241,7 @@ world = bpy.data.worlds.new('World')
 scene.world = world
 world.use_nodes = True
 world.node_tree.nodes['Background'].inputs['Color'].default_value = (0.97, 0.96, 0.94, 1.0)
-world.node_tree.nodes['Background'].inputs['Strength'].default_value = 0.16
+world.node_tree.nodes['Background'].inputs['Strength'].default_value = 0.26
 
 # ── Camera ───────────────────────────────────────────────────────────────────
 cam_data = bpy.data.cameras.new('Cam')
