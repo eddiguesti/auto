@@ -43,20 +43,17 @@ mb_data.render_resolution = 0.018
 mb_obj = bpy.data.objects.new('ClioBody', mb_data)
 bpy.context.collection.objects.link(mb_obj)
 
-head = mb_data.elements.new(type='BALL')
-head.co = (0.0, 0.0, 1.15)
-head.radius = 1.0
+# One fat sphere for the round base, then a single continuous ogee curve
+# of shrinking balls to a fine tip — the classic teardrop profile
+base = mb_data.elements.new(type='BALL')
+base.co = (0.0, 0.0, 1.08)
+base.radius = 1.12
 
-hips = mb_data.elements.new(type='BALL')
-hips.co = (0.0, 0.0, 0.82)
-hips.radius = 0.94
-
-# The tip: tall graceful sweep, flicking to one side like the reference
-for i in range(10):
-    t = i / 9.0
+for i in range(1, 15):
+    t = i / 14.0
     el = mb_data.elements.new(type='BALL')
-    el.co = (0.34 * t ** 1.5, 0.0, 1.45 + 2.0 * t)
-    el.radius = 0.85 * (1.0 - t) ** 1.6 + 0.05
+    el.co = (0.32 * t ** 2.2, 0.0, 1.08 + 1.55 * t)
+    el.radius = 1.12 * (1.0 - t) ** 1.4 + 0.04
 
 # Convert metaball to mesh
 bpy.context.view_layer.objects.active = mb_obj
@@ -198,7 +195,7 @@ make_arm(1, 'ArmR')
 # ── Feet: rounded ovals planted on the page ──────────────────────────────────
 FLOOR_Z = 0.60
 for side, name in ((-1, 'FootL'), (1, 'FootR')):
-    add_sphere(name, (0.23 * side, -0.56, FLOOR_Z + 0.02), 0.15, (1.1, 1.55, 0.72), gloss_black, segments=32)
+    add_sphere(name, (0.26 * side, -0.62, FLOOR_Z + 0.02), 0.155, (1.1, 1.55, 0.72), gloss_black, segments=32)
 
 # ── Stage: warm white studio ─────────────────────────────────────────────────
 stage_mat = simple_mat('StageMat', (0.975, 0.965, 0.945), 0.6)
