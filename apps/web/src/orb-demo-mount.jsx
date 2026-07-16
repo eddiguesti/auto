@@ -1,7 +1,7 @@
 // TEMPORARY demo page for the Clio Orb — not linked from the app; remove before deploy.
 import { useState, useEffect, useRef } from 'react'
 import { createRoot } from 'react-dom/client'
-import AudioVisualizer from './components/AudioVisualizer/AudioVisualizer'
+import AudioVisualizer from './components/AudioVisualizer'
 
 const STATES = [
   { key: 'idle', label: 'Resting', props: {} },

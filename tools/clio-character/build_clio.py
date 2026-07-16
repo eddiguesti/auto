@@ -31,6 +31,10 @@ def get_arg(name, default):
 
 
 OUT_PATH = get_arg('--out', '//clio_rest.png')
+EYES = get_arg('--eyes', 'open')          # open | closed
+MOUTH = get_arg('--mouth', 'smile')       # smile | small | mid | wide
+SIZE = int(get_arg('--size', '900'))
+TRANSPARENT = get_arg('--transparent', '0') == '1'
 
 # ── Clean scene ──────────────────────────────────────────────────────────────
 bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -244,8 +248,14 @@ def make_eye(side, name):
     add_sphere(f'{name}_cl', cl_pos, 0.025, (1.0, 0.6, 1.0), white_mat, segments=16)
 
 
-make_eye(-1, 'EyeL')
-make_eye(1, 'EyeR')
+if EYES == 'open':
+    make_eye(-1, 'EyeL')
+    make_eye(1, 'EyeR')
+else:
+    # Closed lids: soft ink mounds over the sockets
+    for side in (-1, 1):
+        sp_l, n_l = surf((0.34 * side, -1.0, 0.06))
+        add_sphere(f'Lid{side}', sp_l - n_l * 0.05, 0.17, (0.95, 0.55, 0.9), ink_mat)
 
 
 # ── Arc helper (brows, mouth) ────────────────────────────────────────────────
@@ -275,7 +285,13 @@ arc('BrowL', [(-0.60, -0.88, 0.40), (-0.38, -1.0, 0.52), (-0.16, -1.0, 0.46)], 0
 arc('BrowR', [(0.16, -1.0, 0.46), (0.38, -1.0, 0.52), (0.60, -0.88, 0.40)], 0.042, gloss_black, offset=-0.012, taper=[0.5, 1.0, 0.3])
 
 # Mouth — thin engraved smile
-arc('Mouth', [(-0.28, -1.0, -0.36), (0.0, -1.0, -0.48), (0.28, -1.0, -0.36)], 0.024, gloss_black, offset=-0.010, taper=[0.35, 1.0, 0.35])
+if MOUTH == 'smile':
+    arc('Mouth', [(-0.28, -1.0, -0.36), (0.0, -1.0, -0.48), (0.28, -1.0, -0.36)], 0.024, gloss_black, offset=-0.010, taper=[0.35, 1.0, 0.35])
+else:
+    mouth_sizes = {'small': (0.055, 1.3, 0.5), 'mid': (0.085, 1.25, 0.55), 'wide': (0.115, 1.3, 0.55)}
+    mr, mx, mz = mouth_sizes[MOUTH]
+    mp_, mn_ = surf((0.0, -1.0, -0.46))
+    add_sphere('MouthOpen', mp_ + mn_ * 0.012, mr, (mx, 0.45, mz), gloss_black, segments=32)
 
 
 # ── Stage: warm white studio ─────────────────────────────────────────────────
@@ -285,10 +301,13 @@ floor = bpy.context.active_object
 floor.name = 'Stage'
 floor.data.materials.append(stage_mat)
 
-bpy.ops.mesh.primitive_plane_add(size=30, location=(0, 6, 6), rotation=(math.radians(90), 0, 0))
-wall = bpy.context.active_object
-wall.name = 'Backdrop'
-wall.data.materials.append(stage_mat)
+if not TRANSPARENT:
+    bpy.ops.mesh.primitive_plane_add(size=30, location=(0, 6, 6), rotation=(math.radians(90), 0, 0))
+    wall = bpy.context.active_object
+    wall.name = 'Backdrop'
+    wall.data.materials.append(stage_mat)
+else:
+    floor.is_shadow_catcher = True
 
 
 # ── Studio lighting ──────────────────────────────────────────────────────────
@@ -334,6 +353,7 @@ scene.camera = cam
 # ── Render settings ──────────────────────────────────────────────────────────
 scene.render.engine = 'CYCLES'
 scene.view_settings.view_transform = 'Khronos PBR Neutral'
+scene.render.film_transparent = TRANSPARENT
 scene.cycles.samples = 160
 scene.cycles.use_denoising = True
 prefs = bpy.context.preferences.addons.get('cycles')
@@ -348,8 +368,8 @@ if prefs:
     except Exception:
         scene.cycles.device = 'CPU'
 
-scene.render.resolution_x = 900
-scene.render.resolution_y = 900
+scene.render.resolution_x = SIZE
+scene.render.resolution_y = SIZE
 scene.render.filepath = OUT_PATH
 scene.render.image_settings.file_format = 'PNG'
 
