@@ -55,6 +55,12 @@ for i in range(1, 41):
     el.co = (0.44 * t ** 2.3, 0.0, 1.42 + 1.66 * t)
     el.radius = 1.05 * (1.0 - t) ** 1.28 + 0.045
 
+# Shoulder swells — the body rises smoothly to meet the arms
+for side in (-1, 1):
+    sh = mb_data.elements.new(type='BALL')
+    sh.co = (0.60 * side, -0.02, 1.30)
+    sh.radius = 0.30
+
 # Convert metaball to mesh
 bpy.context.view_layer.objects.active = mb_obj
 mb_obj.select_set(True)
@@ -185,8 +191,10 @@ def make_arm(side, name):
     curve.dimensions = '3D'
     sp_ = curve.splines.new('BEZIER')
     sp_.bezier_points.add(2)
-    for bpt, co in zip(sp_.bezier_points, [shoulder - sn * 0.05, elbow, fist_c]):
+    arm_taper = [1.35, 1.0, 0.88]
+    for bpt, co, r in zip(sp_.bezier_points, [shoulder - sn * 0.14, elbow, fist_c], arm_taper):
         bpt.co = co
+        bpt.radius = r
         bpt.handle_left_type = bpt.handle_right_type = 'AUTO'
     curve.bevel_depth = 0.10
     curve.use_fill_caps = True
