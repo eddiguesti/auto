@@ -132,58 +132,6 @@ def add_sphere(name, loc, radius, scale, mat, segments=48):
     return o
 
 
-# ── Eyes: big white patches, large black pupils, tiny catchlight ────────────
-def make_eye(side, name):
-    sp, n = surf((0.34 * side, -1.0, 0.06))
-    center = sp - n * 0.055  # mostly proud, slightly seated
-
-    add_sphere(f'{name}_white', center, 0.185, (0.92, 0.55, 1.05), white_mat)
-
-    # Warm brown iris with a black pupil, looking slightly inward
-    iris_pos = center + n * 0.082 + mathutils.Vector((-0.03 * side, 0.0, 0.005))
-    add_sphere(f'{name}_iris', iris_pos, 0.096, (1.0, 0.5, 1.0), iris_mat, segments=32)
-    pupil_pos = center + n * 0.105 + mathutils.Vector((-0.03 * side, 0.0, 0.005))
-    add_sphere(f'{name}_pupil', pupil_pos, 0.058, (1.0, 0.55, 1.0), pupil_mat, segments=32)
-
-    # Catchlight — the toy-render spark
-    cl_pos = pupil_pos + n * 0.05 + mathutils.Vector((-0.028, 0.0, 0.035))
-    add_sphere(f'{name}_cl', cl_pos, 0.025, (1.0, 0.6, 1.0), white_mat, segments=16)
-
-
-make_eye(-1, 'EyeL')
-make_eye(1, 'EyeR')
-
-
-# ── Arc helper (brows, mouth) ────────────────────────────────────────────────
-def arc(name, dirs, bevel, mat, offset=0.02, taper=None):
-    # Tapered stroke hugging the surface; negative offset sinks it into the
-    # body so it reads as relief/engraving rather than a stuck-on tube.
-    pts = [surf(d, offset)[0] for d in dirs]
-    curve = bpy.data.curves.new(name, 'CURVE')
-    curve.dimensions = '3D'
-    sp_ = curve.splines.new('BEZIER')
-    sp_.bezier_points.add(len(pts) - 1)
-    taper = taper or [1.0] * len(pts)
-    for bpt, co, r in zip(sp_.bezier_points, pts, taper):
-        bpt.co = co
-        bpt.radius = r
-        bpt.handle_left_type = bpt.handle_right_type = 'AUTO'
-    curve.bevel_depth = bevel
-    curve.use_fill_caps = True
-    obj = bpy.data.objects.new(name, curve)
-    bpy.context.collection.objects.link(obj)
-    obj.data.materials.append(mat)
-    return obj
-
-
-# Brows — bold black arcs above the eyes (read via gloss against matte body)
-arc('BrowL', [(-0.60, -0.88, 0.40), (-0.38, -1.0, 0.52), (-0.16, -1.0, 0.46)], 0.042, gloss_black, offset=-0.012, taper=[0.3, 1.0, 0.5])
-arc('BrowR', [(0.16, -1.0, 0.46), (0.38, -1.0, 0.52), (0.60, -0.88, 0.40)], 0.042, gloss_black, offset=-0.012, taper=[0.5, 1.0, 0.3])
-
-# Mouth — thin engraved smile
-arc('Mouth', [(-0.28, -1.0, -0.36), (0.0, -1.0, -0.48), (0.28, -1.0, -0.36)], 0.024, gloss_black, offset=-0.010, taper=[0.35, 1.0, 0.35])
-
-
 # ── Arms: stubby, bent, mitten fists ─────────────────────────────────────────
 def make_arm(side, name):
     shoulder, sn = surf((1.0 * side, -0.10, -0.12))
@@ -238,6 +186,97 @@ def make_leg(side, name):
 
 make_leg(-1, 'LegL')
 make_leg(1, 'LegR')
+
+
+FUSE_NAMES = ['ArmL', 'ArmR', 'ArmL_fist', 'ArmR_fist',
+              'LegL', 'LegR', 'LegL_foot', 'LegR_foot']
+
+# ── Fuse limbs into the body: one continuous ink form, no seams ─────────────
+bpy.ops.object.select_all(action='DESELECT')
+fuse_parts = [body]
+for fuse_name in FUSE_NAMES:
+    o = bpy.data.objects.get(fuse_name)
+    if not o:
+        continue
+    if o.type == 'CURVE':
+        bpy.ops.object.select_all(action='DESELECT')
+        o.select_set(True)
+        bpy.context.view_layer.objects.active = o
+        bpy.ops.object.convert(target='MESH')
+        o = bpy.context.active_object
+    fuse_parts.append(o)
+bpy.ops.object.select_all(action='DESELECT')
+for o in fuse_parts:
+    o.select_set(True)
+bpy.context.view_layer.objects.active = body
+bpy.ops.object.join()
+body = bpy.context.active_object
+body.name = 'Clio'
+
+# Voxel remesh melts the intersections into smooth fillets
+rm = body.modifiers.new('Remesh', 'REMESH')
+rm.mode = 'VOXEL'
+rm.voxel_size = 0.016
+bpy.ops.object.modifier_apply(modifier='Remesh')
+sm2 = body.modifiers.new('Smooth2', 'SMOOTH')
+sm2.factor = 0.6
+sm2.iterations = 6
+bpy.ops.object.modifier_apply(modifier='Smooth2')
+bpy.ops.object.shade_smooth()
+body.data.materials.clear()
+body.data.materials.append(ink_mat)
+
+# ── Eyes: big white patches, large black pupils, tiny catchlight ────────────
+def make_eye(side, name):
+    sp, n = surf((0.34 * side, -1.0, 0.06))
+    center = sp - n * 0.055  # mostly proud, slightly seated
+
+    add_sphere(f'{name}_white', center, 0.185, (0.92, 0.55, 1.05), white_mat)
+
+    # Warm brown iris with a black pupil, looking slightly inward
+    iris_pos = center + n * 0.082 + mathutils.Vector((-0.03 * side, 0.0, 0.005))
+    add_sphere(f'{name}_iris', iris_pos, 0.096, (1.0, 0.5, 1.0), iris_mat, segments=32)
+    pupil_pos = center + n * 0.105 + mathutils.Vector((-0.03 * side, 0.0, 0.005))
+    add_sphere(f'{name}_pupil', pupil_pos, 0.058, (1.0, 0.55, 1.0), pupil_mat, segments=32)
+
+    # Catchlight — the toy-render spark
+    cl_pos = pupil_pos + n * 0.05 + mathutils.Vector((-0.028, 0.0, 0.035))
+    add_sphere(f'{name}_cl', cl_pos, 0.025, (1.0, 0.6, 1.0), white_mat, segments=16)
+
+
+make_eye(-1, 'EyeL')
+make_eye(1, 'EyeR')
+
+
+# ── Arc helper (brows, mouth) ────────────────────────────────────────────────
+def arc(name, dirs, bevel, mat, offset=0.02, taper=None):
+    # Tapered stroke hugging the surface; negative offset sinks it into the
+    # body so it reads as relief/engraving rather than a stuck-on tube.
+    pts = [surf(d, offset)[0] for d in dirs]
+    curve = bpy.data.curves.new(name, 'CURVE')
+    curve.dimensions = '3D'
+    sp_ = curve.splines.new('BEZIER')
+    sp_.bezier_points.add(len(pts) - 1)
+    taper = taper or [1.0] * len(pts)
+    for bpt, co, r in zip(sp_.bezier_points, pts, taper):
+        bpt.co = co
+        bpt.radius = r
+        bpt.handle_left_type = bpt.handle_right_type = 'AUTO'
+    curve.bevel_depth = bevel
+    curve.use_fill_caps = True
+    obj = bpy.data.objects.new(name, curve)
+    bpy.context.collection.objects.link(obj)
+    obj.data.materials.append(mat)
+    return obj
+
+
+# Brows — bold black arcs above the eyes (read via gloss against matte body)
+arc('BrowL', [(-0.60, -0.88, 0.40), (-0.38, -1.0, 0.52), (-0.16, -1.0, 0.46)], 0.042, gloss_black, offset=-0.012, taper=[0.3, 1.0, 0.5])
+arc('BrowR', [(0.16, -1.0, 0.46), (0.38, -1.0, 0.52), (0.60, -0.88, 0.40)], 0.042, gloss_black, offset=-0.012, taper=[0.5, 1.0, 0.3])
+
+# Mouth — thin engraved smile
+arc('Mouth', [(-0.28, -1.0, -0.36), (0.0, -1.0, -0.48), (0.28, -1.0, -0.36)], 0.024, gloss_black, offset=-0.010, taper=[0.35, 1.0, 0.35])
+
 
 # ── Stage: warm white studio ─────────────────────────────────────────────────
 stage_mat = simple_mat('StageMat', (0.93, 0.87, 0.76), 0.55)
