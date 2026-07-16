@@ -43,6 +43,12 @@ head = mb_data.elements.new(type='BALL')
 head.co = (0.0, 0.0, 1.12)
 head.radius = 1.0
 
+# Eye-socket mounds — the face flesh that holds the eyeballs
+for sx in (-0.20, 0.20):
+    m = mb_data.elements.new(type='BALL')
+    m.co = (sx, -0.16, 1.30)
+    m.radius = 0.34
+
 # Tapering tip curving gently to one side — a dense chain for a seamless taper
 for i in range(9):
     t = i / 8.0
@@ -87,13 +93,31 @@ if 'Subsurface Weight' in bsdf.inputs:
 body.data.materials.append(mat)
 
 
-# ── Eyes: real eyeballs — white sclera, blue iris, dark pupil ────────────────
-def make_eye(x, name):
-    # Sclera
-    bpy.ops.mesh.primitive_uv_sphere_add(radius=0.22, location=(x, -0.60, 1.28), segments=48, ring_count=32)
+# ── Surface projection: every feature seats itself on the real mesh ─────────
+import mathutils
+
+HEAD_C = mathutils.Vector((0.0, 0.0, 1.30))
+
+
+def surf(direction, offset=0.0):
+    """Ray-cast outward from the head centre; return (point, normal) with the
+    point pushed `offset` along the outward normal."""
+    d = mathutils.Vector(direction).normalized()
+    hit, loc, normal, _ = body.ray_cast(HEAD_C, d)
+    if not hit:
+        return HEAD_C + d * 0.5, -d
+    return loc + normal * offset, normal
+
+
+# ── Eyes: real eyeballs seated in the face ───────────────────────────────────
+def make_eye(side, name):
+    sp, n = surf((0.50 * side, -1.0, -0.03))
+    center = sp - n * 0.085  # sunk into the socket, front third proud
+
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=0.155, location=center, segments=48, ring_count=32)
     eye = bpy.context.active_object
     eye.name = f'{name}_sclera'
-    eye.scale = (0.85, 0.60, 1.15)  # tall oval, mostly embedded
+    eye.scale = (0.9, 0.8, 1.12)
     bpy.ops.object.shade_smooth()
     m = bpy.data.materials.new(f'{name}_white')
     m.use_nodes = True
@@ -102,11 +126,12 @@ def make_eye(x, name):
     b.inputs['Roughness'].default_value = 0.08
     eye.data.materials.append(m)
 
-    # Iris — flattened sphere sunk into the sclera front
-    bpy.ops.mesh.primitive_uv_sphere_add(radius=0.135, location=(x, -0.735, 1.26), segments=32, ring_count=24)
+    # Iris and pupil stack outward along the eye's own normal
+    iris_c = center + n * 0.145
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=0.093, location=iris_c, segments=32, ring_count=24)
     iris = bpy.context.active_object
     iris.name = f'{name}_iris'
-    iris.scale = (1.0, 0.35, 1.0)
+    iris.scale = (1.0, 0.42, 1.0)
     bpy.ops.object.shade_smooth()
     mi = bpy.data.materials.new(f'{name}_irisMat')
     mi.use_nodes = True
@@ -115,11 +140,11 @@ def make_eye(x, name):
     bi.inputs['Roughness'].default_value = 0.15
     iris.data.materials.append(mi)
 
-    # Pupil
-    bpy.ops.mesh.primitive_uv_sphere_add(radius=0.06, location=(x, -0.78, 1.26), segments=24, ring_count=16)
+    pupil_c = center + n * 0.175
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=0.042, location=pupil_c, segments=24, ring_count=16)
     pupil = bpy.context.active_object
     pupil.name = f'{name}_pupil'
-    pupil.scale = (1.0, 0.3, 1.0)
+    pupil.scale = (1.0, 0.4, 1.0)
     bpy.ops.object.shade_smooth()
     mp = bpy.data.materials.new(f'{name}_pupilMat')
     mp.use_nodes = True
@@ -129,9 +154,8 @@ def make_eye(x, name):
     pupil.data.materials.append(mp)
 
 
-make_eye(-0.34, 'EyeL')
-make_eye(0.34, 'EyeR')
-
+make_eye(-1, 'EyeL')
+make_eye(1, 'EyeR')
 
 # ── Feature material + bezier-arc helper ────────────────────────────────────
 feat_mat = bpy.data.materials.new('FeatureMat')
@@ -141,12 +165,14 @@ fb_.inputs['Base Color'].default_value = (0.62, 0.62, 0.60, 1.0)  # soft grey
 fb_.inputs['Roughness'].default_value = 0.4
 
 
-def arc(name, p0, p1, p2, bevel):
+def arc(name, dirs, bevel, offset=0.022):
+    """Bezier arc through surface points found along the given directions."""
+    pts = [surf(d, offset)[0] for d in dirs]
     curve = bpy.data.curves.new(name, 'CURVE')
     curve.dimensions = '3D'
-    sp = curve.splines.new('BEZIER')
-    sp.bezier_points.add(2)
-    for bpt, co in zip(sp.bezier_points, [p0, p1, p2]):
+    sp_ = curve.splines.new('BEZIER')
+    sp_.bezier_points.add(len(pts) - 1)
+    for bpt, co in zip(sp_.bezier_points, pts):
         bpt.co = co
         bpt.handle_left_type = bpt.handle_right_type = 'AUTO'
     curve.bevel_depth = bevel
@@ -157,12 +183,12 @@ def arc(name, p0, p1, p2, bevel):
     return obj
 
 
-# Brows — gentle arches riding the head surface
-arc('BrowL', (-0.42, -0.80, 1.53), (-0.32, -0.83, 1.56), (-0.22, -0.82, 1.54), 0.014)
-arc('BrowR', (0.22, -0.82, 1.54), (0.32, -0.83, 1.56), (0.42, -0.80, 1.53), 0.014)
+# Brows — arched just above the eyes, hugging the face
+arc('BrowL', [(-0.72, -0.85, 0.46), (-0.48, -0.95, 0.60), (-0.22, -1.0, 0.50)], 0.018)
+arc('BrowR', [(0.22, -1.0, 0.50), (0.48, -0.95, 0.60), (0.72, -0.85, 0.46)], 0.018)
 
-# Mouth — small confident smile
-arc('Mouth', (-0.15, -0.93, 0.93), (0.0, -0.98, 0.87), (0.15, -0.93, 0.93), 0.020)
+# Mouth — small confident smile on the chin
+arc('Mouth', [(-0.30, -1.0, -0.42), (0.0, -1.0, -0.56), (0.30, -1.0, -0.42)], 0.024, offset=0.015)
 
 # ── Stage: warm parchment floor + backdrop (one curved plane) ────────────────
 bpy.ops.mesh.primitive_plane_add(size=30, location=(0, 4, 0.60))
