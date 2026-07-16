@@ -46,14 +46,14 @@ bpy.context.collection.objects.link(mb_obj)
 # One fat sphere for the round base, then a single continuous ogee curve
 # of shrinking balls to a fine tip — the classic teardrop profile
 base = mb_data.elements.new(type='BALL')
-base.co = (0.0, 0.0, 1.08)
-base.radius = 1.12
+base.co = (0.0, 0.0, 1.42)
+base.radius = 1.05
 
 for i in range(1, 41):
     t = i / 40.0
     el = mb_data.elements.new(type='BALL')
-    el.co = (0.20 * t ** 2.0, 0.0, 1.08 + 1.48 * t)
-    el.radius = 1.12 * (1.0 - t) ** 1.5 + 0.055
+    el.co = (0.44 * t ** 2.3, 0.0, 1.42 + 1.66 * t)
+    el.radius = 1.05 * (1.0 - t) ** 1.28 + 0.045
 
 # Convert metaball to mesh
 bpy.context.view_layer.objects.active = mb_obj
@@ -103,7 +103,7 @@ pupil_mat = simple_mat('Pupil', (0.008, 0.008, 0.01), 0.05)
 body.data.materials.append(ink_mat)
 
 # ── Surface projection helper ────────────────────────────────────────────────
-HEAD_C = mathutils.Vector((0.0, 0.0, 1.25))
+HEAD_C = mathutils.Vector((0.0, 0.0, 1.66))
 
 
 def surf(direction, offset=0.0):
@@ -146,14 +146,18 @@ make_eye(1, 'EyeR')
 
 
 # ── Arc helper (brows, mouth) ────────────────────────────────────────────────
-def arc(name, dirs, bevel, mat, offset=0.02):
+def arc(name, dirs, bevel, mat, offset=0.02, taper=None):
+    # Tapered stroke hugging the surface; negative offset sinks it into the
+    # body so it reads as relief/engraving rather than a stuck-on tube.
     pts = [surf(d, offset)[0] for d in dirs]
     curve = bpy.data.curves.new(name, 'CURVE')
     curve.dimensions = '3D'
     sp_ = curve.splines.new('BEZIER')
     sp_.bezier_points.add(len(pts) - 1)
-    for bpt, co in zip(sp_.bezier_points, pts):
+    taper = taper or [1.0] * len(pts)
+    for bpt, co, r in zip(sp_.bezier_points, pts, taper):
         bpt.co = co
+        bpt.radius = r
         bpt.handle_left_type = bpt.handle_right_type = 'AUTO'
     curve.bevel_depth = bevel
     curve.use_fill_caps = True
@@ -164,18 +168,18 @@ def arc(name, dirs, bevel, mat, offset=0.02):
 
 
 # Brows — bold black arcs above the eyes (read via gloss against matte body)
-arc('BrowL', [(-0.62, -0.90, 0.42), (-0.38, -1.0, 0.55), (-0.16, -1.0, 0.48)], 0.034, gloss_black)
-arc('BrowR', [(0.16, -1.0, 0.48), (0.38, -1.0, 0.55), (0.62, -0.90, 0.42)], 0.034, gloss_black)
+arc('BrowL', [(-0.60, -0.88, 0.40), (-0.38, -1.0, 0.52), (-0.16, -1.0, 0.46)], 0.042, gloss_black, offset=-0.012, taper=[0.3, 1.0, 0.5])
+arc('BrowR', [(0.16, -1.0, 0.46), (0.38, -1.0, 0.52), (0.60, -0.88, 0.40)], 0.042, gloss_black, offset=-0.012, taper=[0.5, 1.0, 0.3])
 
 # Mouth — thin engraved smile
-arc('Mouth', [(-0.26, -1.0, -0.40), (0.0, -1.0, -0.52), (0.26, -1.0, -0.40)], 0.016, gloss_black, offset=0.012)
+arc('Mouth', [(-0.28, -1.0, -0.36), (0.0, -1.0, -0.48), (0.28, -1.0, -0.36)], 0.024, gloss_black, offset=-0.010, taper=[0.35, 1.0, 0.35])
 
 
 # ── Arms: stubby, bent, mitten fists ─────────────────────────────────────────
 def make_arm(side, name):
     shoulder, sn = surf((1.0 * side, -0.10, -0.12))
-    elbow = shoulder + mathutils.Vector((0.13 * side, -0.02, -0.14))
-    fist_c = elbow + mathutils.Vector((0.04 * side, -0.05, -0.16))
+    elbow = shoulder + mathutils.Vector((0.07 * side, -0.03, -0.16))
+    fist_c = elbow + mathutils.Vector((0.0, -0.05, -0.20))
 
     curve = bpy.data.curves.new(name, 'CURVE')
     curve.dimensions = '3D'
@@ -188,19 +192,41 @@ def make_arm(side, name):
     curve.use_fill_caps = True
     obj = bpy.data.objects.new(name, curve)
     bpy.context.collection.objects.link(obj)
-    obj.data.materials.append(gloss_black)
+    obj.data.materials.append(ink_mat)
 
     # Mitten fist
-    add_sphere(f'{name}_fist', fist_c, 0.135, (1.0, 0.92, 1.05), gloss_black, segments=32)
+    add_sphere(f'{name}_fist', fist_c, 0.135, (1.0, 0.92, 1.05), ink_mat, segments=32)
 
 
 make_arm(-1, 'ArmL')
 make_arm(1, 'ArmR')
 
-# ── Feet: rounded ovals planted on the page ──────────────────────────────────
+# ── Legs + feet: she stands, round bottom clear of the ground ───────────────
 FLOOR_Z = 0.60
-for side, name in ((-1, 'FootL'), (1, 'FootR')):
-    add_sphere(name, (0.26 * side, -0.62, FLOOR_Z + 0.02), 0.155, (1.1, 1.55, 0.72), gloss_black, segments=32)
+
+
+def make_leg(side, name):
+    top = mathutils.Vector((0.25 * side, -0.02, 1.02))
+    ankle = mathutils.Vector((0.26 * side, -0.06, FLOOR_Z + 0.10))
+    curve = bpy.data.curves.new(name, 'CURVE')
+    curve.dimensions = '3D'
+    sp_ = curve.splines.new('BEZIER')
+    sp_.bezier_points.add(1)
+    for bpt, co in zip(sp_.bezier_points, [top, ankle]):
+        bpt.co = co
+        bpt.handle_left_type = bpt.handle_right_type = 'AUTO'
+    curve.bevel_depth = 0.095
+    curve.use_fill_caps = True
+    obj = bpy.data.objects.new(name, curve)
+    bpy.context.collection.objects.link(obj)
+    obj.data.materials.append(ink_mat)
+    foot = add_sphere(f'{name}_foot', (0.30 * side, -0.26, FLOOR_Z + 0.055), 0.15,
+                      (1.05, 1.7, 0.78), ink_mat, segments=32)
+    foot.rotation_euler = (0, 0, math.radians(-14 * side))
+
+
+make_leg(-1, 'LegL')
+make_leg(1, 'LegR')
 
 # ── Stage: warm white studio ─────────────────────────────────────────────────
 stage_mat = simple_mat('StageMat', (0.975, 0.965, 0.945), 0.6)
@@ -247,10 +273,10 @@ world.node_tree.nodes['Background'].inputs['Strength'].default_value = 0.26
 cam_data = bpy.data.cameras.new('Cam')
 cam_data.lens = 62
 cam_data.dof.use_dof = True
-cam_data.dof.focus_distance = 6.9
+cam_data.dof.focus_distance = 7.3
 cam_data.dof.aperture_fstop = 5.0
 cam = bpy.data.objects.new('Cam', cam_data)
-cam.location = (0.12, -7.0, 1.9)
+cam.location = (0.12, -7.4, 1.8)
 cam.rotation_euler = (math.radians(88.0), 0, math.radians(1.0))
 bpy.context.collection.objects.link(cam)
 scene.camera = cam
