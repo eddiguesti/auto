@@ -102,8 +102,8 @@ def simple_mat(name, color, rough, coat=0.0, sheen=0.0):
     return m
 
 
-ink_mat = simple_mat('ClioInk', (0.006, 0.006, 0.008), 0.28, coat=0.35, sheen=0.2)  # matte black ink
-gloss_black = simple_mat('GlossBlack', (0.01, 0.01, 0.012), 0.18)  # brows/mouth/limbs
+ink_mat = simple_mat('ClioInk', (0.002, 0.002, 0.003), 0.26, coat=0.4, sheen=0.15)  # matte black ink
+gloss_black = simple_mat('GlossBlack', (0.004, 0.004, 0.005), 0.45)  # brows/mouth/limbs
 white_mat = simple_mat('EyeWhite', (0.96, 0.965, 0.97), 0.15)
 pupil_mat = simple_mat('Pupil', (0.008, 0.008, 0.01), 0.05)
 iris_mat = simple_mat('Iris', (0.16, 0.085, 0.035), 0.2)
