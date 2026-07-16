@@ -102,10 +102,11 @@ def simple_mat(name, color, rough, coat=0.0, sheen=0.0):
     return m
 
 
-ink_mat = simple_mat('ClioInk', (0.006, 0.006, 0.008), 0.52, coat=0.04, sheen=0.4)  # matte black ink
+ink_mat = simple_mat('ClioInk', (0.006, 0.006, 0.008), 0.28, coat=0.35, sheen=0.2)  # matte black ink
 gloss_black = simple_mat('GlossBlack', (0.01, 0.01, 0.012), 0.18)  # brows/mouth/limbs
 white_mat = simple_mat('EyeWhite', (0.96, 0.965, 0.97), 0.15)
 pupil_mat = simple_mat('Pupil', (0.008, 0.008, 0.01), 0.05)
+iris_mat = simple_mat('Iris', (0.16, 0.085, 0.035), 0.2)
 body.data.materials.append(ink_mat)
 
 # ── Surface projection helper ────────────────────────────────────────────────
@@ -138,9 +139,11 @@ def make_eye(side, name):
 
     add_sphere(f'{name}_white', center, 0.185, (0.92, 0.55, 1.05), white_mat)
 
-    # Large black pupil, looking slightly inward like the reference
-    pupil_pos = center + n * 0.085 + mathutils.Vector((-0.03 * side, 0.0, 0.005))
-    add_sphere(f'{name}_pupil', pupil_pos, 0.088, (1.0, 0.55, 1.0), pupil_mat, segments=32)
+    # Warm brown iris with a black pupil, looking slightly inward
+    iris_pos = center + n * 0.082 + mathutils.Vector((-0.03 * side, 0.0, 0.005))
+    add_sphere(f'{name}_iris', iris_pos, 0.096, (1.0, 0.5, 1.0), iris_mat, segments=32)
+    pupil_pos = center + n * 0.105 + mathutils.Vector((-0.03 * side, 0.0, 0.005))
+    add_sphere(f'{name}_pupil', pupil_pos, 0.058, (1.0, 0.55, 1.0), pupil_mat, segments=32)
 
     # Catchlight — the toy-render spark
     cl_pos = pupil_pos + n * 0.05 + mathutils.Vector((-0.028, 0.0, 0.035))
@@ -184,8 +187,8 @@ arc('Mouth', [(-0.28, -1.0, -0.36), (0.0, -1.0, -0.48), (0.28, -1.0, -0.36)], 0.
 # ── Arms: stubby, bent, mitten fists ─────────────────────────────────────────
 def make_arm(side, name):
     shoulder, sn = surf((1.0 * side, -0.10, -0.12))
-    elbow = shoulder + mathutils.Vector((0.07 * side, -0.03, -0.16))
-    fist_c = elbow + mathutils.Vector((0.0, -0.05, -0.20))
+    elbow = shoulder + mathutils.Vector((0.15 * side, -0.04, -0.15))
+    fist_c = elbow + mathutils.Vector((0.09 * side, -0.05, -0.19))
 
     curve = bpy.data.curves.new(name, 'CURVE')
     curve.dimensions = '3D'
@@ -237,7 +240,7 @@ make_leg(-1, 'LegL')
 make_leg(1, 'LegR')
 
 # ── Stage: warm white studio ─────────────────────────────────────────────────
-stage_mat = simple_mat('StageMat', (0.975, 0.965, 0.945), 0.6)
+stage_mat = simple_mat('StageMat', (0.93, 0.87, 0.76), 0.55)
 bpy.ops.mesh.primitive_plane_add(size=30, location=(0, 4, FLOOR_Z))
 floor = bpy.context.active_object
 floor.name = 'Stage'
@@ -262,10 +265,10 @@ def area_light(name, loc, rot, power, size, color=(1, 1, 1)):
     return obj
 
 
-area_light('Key', (-3.0, -3.6, 4.8), (math.radians(44), math.radians(-16), math.radians(-30)), 1050, 9.0,
-           (1.0, 0.985, 0.96))
-area_light('Fill', (3.6, -3.2, 1.6), (math.radians(75), math.radians(18), math.radians(38)), 560, 6.0,
-           (0.94, 0.96, 1.0))
+area_light('Key', (-3.0, -3.6, 4.8), (math.radians(44), math.radians(-16), math.radians(-30)), 1250, 8.0,
+           (1.0, 0.93, 0.80))
+area_light('Fill', (3.6, -3.2, 1.6), (math.radians(75), math.radians(18), math.radians(38)), 460, 6.0,
+           (0.95, 0.90, 0.82))
 area_light('Rim', (1.8, 3.6, 3.6), (math.radians(-50), math.radians(12), math.radians(160)), 800, 3.0,
            (0.97, 0.98, 1.0))
 area_light('RimL', (-3.4, 3.0, 2.8), (math.radians(-55), math.radians(-10), math.radians(-155)), 550, 2.5,
@@ -274,7 +277,7 @@ area_light('RimL', (-3.4, 3.0, 2.8), (math.radians(-55), math.radians(-10), math
 world = bpy.data.worlds.new('World')
 scene.world = world
 world.use_nodes = True
-world.node_tree.nodes['Background'].inputs['Color'].default_value = (0.97, 0.96, 0.94, 1.0)
+world.node_tree.nodes['Background'].inputs['Color'].default_value = (0.95, 0.88, 0.76, 1.0)
 world.node_tree.nodes['Background'].inputs['Strength'].default_value = 0.26
 
 # ── Camera ───────────────────────────────────────────────────────────────────
