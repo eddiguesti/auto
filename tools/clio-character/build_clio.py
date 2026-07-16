@@ -49,11 +49,11 @@ base = mb_data.elements.new(type='BALL')
 base.co = (0.0, 0.0, 1.08)
 base.radius = 1.12
 
-for i in range(1, 15):
-    t = i / 14.0
+for i in range(1, 23):
+    t = i / 22.0
     el = mb_data.elements.new(type='BALL')
-    el.co = (0.32 * t ** 2.2, 0.0, 1.08 + 1.55 * t)
-    el.radius = 1.12 * (1.0 - t) ** 1.4 + 0.04
+    el.co = (0.20 * t ** 2.0, 0.0, 1.08 + 1.48 * t)
+    el.radius = 1.12 * (1.0 - t) ** 1.5 + 0.058
 
 # Convert metaball to mesh
 bpy.context.view_layer.objects.active = mb_obj
