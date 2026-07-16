@@ -71,18 +71,19 @@ bpy.context.view_layer.objects.active = body
 bpy.ops.object.shade_smooth()
 
 # ── Body material: translucent blue resin-skin ───────────────────────────────
-mat = bpy.data.materials.new('ClioSkin')
+mat = bpy.data.materials.new('ClioInk')
 mat.use_nodes = True
 bsdf = mat.node_tree.nodes['Principled BSDF']
-bsdf.inputs['Base Color'].default_value = (0.38, 0.62, 0.90, 1.0)  # sky blue
-bsdf.inputs['Roughness'].default_value = 0.32
-# Subsurface scattering — the Pixar skin ingredient
-if 'Subsurface Weight' in bsdf.inputs:  # Blender 4.x
-    bsdf.inputs['Subsurface Weight'].default_value = 0.38
-    bsdf.inputs['Subsurface Radius'].default_value = (0.4, 0.55, 0.9)
-    bsdf.inputs['Subsurface Scale'].default_value = 0.5
+bsdf.inputs['Base Color'].default_value = (0.030, 0.040, 0.070, 1.0)  # stylized ink: near-black blue
+bsdf.inputs['Roughness'].default_value = 0.33  # soft toy sheen, not vinyl
 if 'Coat Weight' in bsdf.inputs:
-    bsdf.inputs['Coat Weight'].default_value = 0.25  # soft wax coat
+    bsdf.inputs['Coat Weight'].default_value = 0.22  # gentle sheen
+    bsdf.inputs['Coat Roughness'].default_value = 0.08
+if 'Sheen Weight' in bsdf.inputs:
+    bsdf.inputs['Sheen Weight'].default_value = 0.3
+if 'Subsurface Weight' in bsdf.inputs:
+    bsdf.inputs['Subsurface Weight'].default_value = 0.06
+    bsdf.inputs['Subsurface Radius'].default_value = (0.1, 0.12, 0.25)
 body.data.materials.append(mat)
 
 
@@ -102,7 +103,7 @@ def make_eye(x, name):
     eye.data.materials.append(m)
 
     # Iris — flattened sphere sunk into the sclera front
-    bpy.ops.mesh.primitive_uv_sphere_add(radius=0.095, location=(x, -0.745, 1.27), segments=32, ring_count=24)
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=0.135, location=(x, -0.735, 1.26), segments=32, ring_count=24)
     iris = bpy.context.active_object
     iris.name = f'{name}_iris'
     iris.scale = (1.0, 0.35, 1.0)
@@ -110,12 +111,12 @@ def make_eye(x, name):
     mi = bpy.data.materials.new(f'{name}_irisMat')
     mi.use_nodes = True
     bi = mi.node_tree.nodes['Principled BSDF']
-    bi.inputs['Base Color'].default_value = (0.16, 0.38, 0.75, 1.0)
+    bi.inputs['Base Color'].default_value = (0.22, 0.50, 0.95, 1.0)
     bi.inputs['Roughness'].default_value = 0.15
     iris.data.materials.append(mi)
 
     # Pupil
-    bpy.ops.mesh.primitive_uv_sphere_add(radius=0.042, location=(x, -0.775, 1.27), segments=24, ring_count=16)
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=0.06, location=(x, -0.78, 1.26), segments=24, ring_count=16)
     pupil = bpy.context.active_object
     pupil.name = f'{name}_pupil'
     pupil.scale = (1.0, 0.3, 1.0)
@@ -136,8 +137,8 @@ make_eye(0.34, 'EyeR')
 feat_mat = bpy.data.materials.new('FeatureMat')
 feat_mat.use_nodes = True
 fb_ = feat_mat.node_tree.nodes['Principled BSDF']
-fb_.inputs['Base Color'].default_value = (0.07, 0.10, 0.18, 1.0)
-fb_.inputs['Roughness'].default_value = 0.45
+fb_.inputs['Base Color'].default_value = (0.62, 0.62, 0.60, 1.0)  # soft grey
+fb_.inputs['Roughness'].default_value = 0.4
 
 
 def arc(name, p0, p1, p2, bevel):
@@ -157,21 +158,21 @@ def arc(name, p0, p1, p2, bevel):
 
 
 # Brows — gentle arches riding the head surface
-arc('BrowL', (-0.46, -0.79, 1.58), (-0.34, -0.83, 1.64), (-0.20, -0.81, 1.59), 0.024)
-arc('BrowR', (0.20, -0.81, 1.59), (0.34, -0.83, 1.64), (0.46, -0.79, 1.58), 0.024)
+arc('BrowL', (-0.42, -0.80, 1.53), (-0.32, -0.83, 1.56), (-0.22, -0.82, 1.54), 0.014)
+arc('BrowR', (0.22, -0.82, 1.54), (0.32, -0.83, 1.56), (0.42, -0.80, 1.53), 0.014)
 
 # Mouth — small confident smile
-arc('Mouth', (-0.16, -0.93, 0.93), (0.0, -0.98, 0.86), (0.16, -0.93, 0.93), 0.034)
+arc('Mouth', (-0.15, -0.93, 0.93), (0.0, -0.98, 0.87), (0.15, -0.93, 0.93), 0.020)
 
 # ── Stage: warm parchment floor + backdrop (one curved plane) ────────────────
-bpy.ops.mesh.primitive_plane_add(size=30, location=(0, 4, 0.115))
+bpy.ops.mesh.primitive_plane_add(size=30, location=(0, 4, 0.60))
 floor = bpy.context.active_object
 floor.name = 'Stage'
 fm = bpy.data.materials.new('StageMat')
 fm.use_nodes = True
 fb = fm.node_tree.nodes['Principled BSDF']
 fb.inputs['Base Color'].default_value = (0.973, 0.953, 0.918, 1.0)  # parchment
-fb.inputs['Roughness'].default_value = 0.28  # soft gloss => gentle reflection
+fb.inputs['Roughness'].default_value = 0.55  # matte paper
 floor.data.materials.append(fm)
 
 # Backdrop wall — warm parchment, softly lit
@@ -193,11 +194,13 @@ def area_light(name, loc, rot, power, size, color=(1, 1, 1)):
     return obj
 
 
-area_light('Key', (-3.2, -3.4, 4.6), (math.radians(45), math.radians(-18), math.radians(-32)), 1150, 5.0,
+area_light('Key', (-3.2, -3.4, 4.6), (math.radians(45), math.radians(-18), math.radians(-32)), 1300, 7.0,
            (1.0, 0.97, 0.92))
-area_light('Fill', (3.6, -3.0, 1.4), (math.radians(75), math.radians(18), math.radians(38)), 220, 4.0,
+area_light('Fill', (3.6, -3.0, 1.4), (math.radians(75), math.radians(18), math.radians(38)), 180, 4.0,
            (0.85, 0.92, 1.0))
-area_light('Rim', (1.6, 3.8, 3.4), (math.radians(-50), math.radians(12), math.radians(160)), 500, 3.0,
+area_light('RimL', (-3.4, 3.2, 2.6), (math.radians(-55), math.radians(-10), math.radians(-155)), 650, 2.5,
+           (0.9, 0.95, 1.0))
+area_light('Rim', (1.6, 3.8, 3.4), (math.radians(-50), math.radians(12), math.radians(160)), 950, 3.0,
            (0.95, 0.98, 1.0))
 
 # World: soft warm ambient
@@ -205,17 +208,17 @@ world = bpy.data.worlds.new('World')
 scene.world = world
 world.use_nodes = True
 world.node_tree.nodes['Background'].inputs['Color'].default_value = (0.96, 0.94, 0.90, 1.0)
-world.node_tree.nodes['Background'].inputs['Strength'].default_value = 0.25
+world.node_tree.nodes['Background'].inputs['Strength'].default_value = 0.10
 
 # ── Camera: 85mm portrait, slight down-angle, gentle DoF ─────────────────────
 cam_data = bpy.data.cameras.new('Cam')
-cam_data.lens = 85
+cam_data.lens = 70
 cam_data.dof.use_dof = True
 cam_data.dof.focus_distance = 8.2
-cam_data.dof.aperture_fstop = 3.2
+cam_data.dof.aperture_fstop = 4.5
 cam = bpy.data.objects.new('Cam', cam_data)
-cam.location = (0.3, -8.3, 1.85)
-cam.rotation_euler = (math.radians(88.5), 0, math.radians(2.0))
+cam.location = (0.3, -7.6, 1.62)
+cam.rotation_euler = (math.radians(87.5), 0, math.radians(2.0))
 bpy.context.collection.objects.link(cam)
 scene.camera = cam
 
