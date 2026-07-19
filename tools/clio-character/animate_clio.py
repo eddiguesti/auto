@@ -160,15 +160,15 @@ TWO_PI = 2.0 * math.pi
 if ANIM == 'idle':
     for f in range(1, N + 2):
         t = (f - 1) / N
-        kf_mod('Sway', 'angle', f, math.radians(2.2) * math.sin(TWO_PI * t))
-        kf_mod('Squash', 'factor', f, 0.015 * math.sin(TWO_PI * t * 2))
+        kf_mod('Sway', 'angle', f, math.radians(1.6) * math.sin(TWO_PI * t))
+        kf_mod('Squash', 'factor', f, 0.011 * math.sin(TWO_PI * t * 2))
     blink(list(range(38, 43)) + list(range(96, 101)))
     mouth_show({1: 'smile'})
 
 elif ANIM == 'listen':
     for f in range(1, N + 2):
         t = (f - 1) / N
-        lean = math.radians(-5.0)
+        lean = math.radians(-6.5)
         kf_mod('Sway', 'angle', f, lean + math.radians(1.4) * math.sin(TWO_PI * t))
         kf_mod('Squash', 'factor', f, 0.01 * math.sin(TWO_PI * t))
     blink(list(range(58, 63)))
@@ -189,7 +189,7 @@ elif ANIM == 'excited':
     for f in range(1, N + 2):
         t = (f - 1) / N
         kf_mod('Sway', 'angle', f, math.radians(2.0) * math.sin(TWO_PI * t * 2))
-        kf_mod('Squash', 'factor', f, 0.045 * math.sin(TWO_PI * t * 3))
+        kf_mod('Squash', 'factor', f, 0.032 * math.sin(TWO_PI * t * 3))
     blink(list(range(30, 35)))
     mouth_show({1: 'smile'})
 

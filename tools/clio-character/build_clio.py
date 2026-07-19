@@ -106,11 +106,11 @@ def simple_mat(name, color, rough, coat=0.0, sheen=0.0):
     return m
 
 
-ink_mat = simple_mat('ClioInk', (0.002, 0.002, 0.003), 0.26, coat=0.4, sheen=0.15)  # matte black ink
-gloss_black = simple_mat('GlossBlack', (0.004, 0.004, 0.005), 0.45)  # brows/mouth/limbs
-white_mat = simple_mat('EyeWhite', (0.96, 0.965, 0.97), 0.15)
+ink_mat = simple_mat('ClioInk', (0.014, 0.010, 0.007), 0.3, coat=0.3, sheen=0.25)  # matte black ink
+gloss_black = simple_mat('GlossBlack', (0.010, 0.007, 0.005), 0.45)  # brows/mouth/limbs
+white_mat = simple_mat('EyeWhite', (0.99, 0.975, 0.94), 0.15)
 pupil_mat = simple_mat('Pupil', (0.008, 0.008, 0.01), 0.05)
-iris_mat = simple_mat('Iris', (0.16, 0.085, 0.035), 0.2)
+iris_mat = simple_mat('Iris', (0.22, 0.115, 0.045), 0.2)
 body.data.materials.append(ink_mat)
 
 # ── Surface projection helper ────────────────────────────────────────────────
@@ -281,12 +281,12 @@ def arc(name, dirs, bevel, mat, offset=0.02, taper=None):
 
 
 # Brows — bold black arcs above the eyes (read via gloss against matte body)
-arc('BrowL', [(-0.60, -0.88, 0.40), (-0.38, -1.0, 0.52), (-0.16, -1.0, 0.46)], 0.042, gloss_black, offset=-0.012, taper=[0.3, 1.0, 0.5])
-arc('BrowR', [(0.16, -1.0, 0.46), (0.38, -1.0, 0.52), (0.60, -0.88, 0.40)], 0.042, gloss_black, offset=-0.012, taper=[0.5, 1.0, 0.3])
+arc('BrowL', [(-0.56, -0.90, 0.44), (-0.36, -1.0, 0.54), (-0.16, -1.0, 0.50)], 0.038, gloss_black, offset=-0.014, taper=[0.3, 1.0, 0.5])
+arc('BrowR', [(0.16, -1.0, 0.50), (0.36, -1.0, 0.54), (0.56, -0.90, 0.44)], 0.038, gloss_black, offset=-0.014, taper=[0.5, 1.0, 0.3])
 
 # Mouth — thin engraved smile
 if MOUTH == 'smile':
-    arc('Mouth', [(-0.28, -1.0, -0.36), (0.0, -1.0, -0.48), (0.28, -1.0, -0.36)], 0.024, gloss_black, offset=-0.010, taper=[0.35, 1.0, 0.35])
+    arc('Mouth', [(-0.34, -1.0, -0.33), (0.0, -1.0, -0.50), (0.34, -1.0, -0.33)], 0.028, gloss_black, offset=-0.010, taper=[0.3, 1.0, 0.3])
 else:
     mouth_sizes = {'small': (0.055, 1.3, 0.5), 'mid': (0.085, 1.25, 0.55), 'wide': (0.115, 1.3, 0.55)}
     mr, mx, mz = mouth_sizes[MOUTH]
@@ -323,10 +323,10 @@ def area_light(name, loc, rot, power, size, color=(1, 1, 1)):
     return obj
 
 
-area_light('Key', (-3.0, -3.6, 4.8), (math.radians(44), math.radians(-16), math.radians(-30)), 1250, 8.0,
-           (1.0, 0.93, 0.80))
-area_light('Fill', (3.6, -3.2, 1.6), (math.radians(75), math.radians(18), math.radians(38)), 460, 6.0,
-           (0.95, 0.90, 0.82))
+area_light('Key', (-3.0, -3.6, 4.8), (math.radians(44), math.radians(-16), math.radians(-30)), 1300, 8.5,
+           (1.0, 0.90, 0.72))
+area_light('Fill', (3.6, -3.2, 1.6), (math.radians(75), math.radians(18), math.radians(38)), 520, 6.5,
+           (1.0, 0.90, 0.76))
 area_light('Rim', (1.8, 3.6, 3.6), (math.radians(-50), math.radians(12), math.radians(160)), 800, 3.0,
            (0.97, 0.98, 1.0))
 area_light('RimL', (-3.4, 3.0, 2.8), (math.radians(-55), math.radians(-10), math.radians(-155)), 550, 2.5,
@@ -335,8 +335,8 @@ area_light('RimL', (-3.4, 3.0, 2.8), (math.radians(-55), math.radians(-10), math
 world = bpy.data.worlds.new('World')
 scene.world = world
 world.use_nodes = True
-world.node_tree.nodes['Background'].inputs['Color'].default_value = (0.95, 0.88, 0.76, 1.0)
-world.node_tree.nodes['Background'].inputs['Strength'].default_value = 0.26
+world.node_tree.nodes['Background'].inputs['Color'].default_value = (0.97, 0.88, 0.72, 1.0)
+world.node_tree.nodes['Background'].inputs['Strength'].default_value = 0.32
 
 # ── Camera ───────────────────────────────────────────────────────────────────
 cam_data = bpy.data.cameras.new('Cam')
