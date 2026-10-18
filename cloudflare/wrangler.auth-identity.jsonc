@@ -1,0 +1,10 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "easy-memoir-auth-identity-staging",
+  "account_id": "df3d63daad6e36a66171d8ae6b368da7",
+  "main": "auth-client-identity.js",
+  "compatibility_date": "2026-10-09",
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": []
+}

@@ -5,7 +5,8 @@
  * Run with: npx vitest run services/api/tests/auth.test.js
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+vi.mock('../db/index.js', () => ({ default: { query: vi.fn(async () => ({ rows: [] })) } }))
 import jwt from 'jsonwebtoken'
 import {
   generateTestToken,
@@ -15,8 +16,6 @@ import {
   createMockRequest,
   createMockResponse,
   createMockNext,
-  createMockDb,
-  createMockDbWithUser,
   assertStatus,
   assertError
 } from './testUtils.js'

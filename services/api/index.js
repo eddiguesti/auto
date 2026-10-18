@@ -1,13 +1,7 @@
 // Polyfills must be loaded first (before any module that uses File API)
+import './environment.js'
 import './polyfills.js'
-
-import express from 'express'
-import dotenv from 'dotenv'
-import { fileURLToPath } from 'url'
-import { dirname, join } from 'path'
-
-// Load .env from root directory (grandparent of services/api/)
-dotenv.config({ path: join(dirname(fileURLToPath(import.meta.url)), '..', '..', '.env') })
+import { createApp } from './app.js'
 
 import pool from './db/index.js'
 import { runMigrations } from './db/runner.js'
@@ -17,47 +11,10 @@ import {
   isProduction,
   logFeatureStatus
 } from './utils/validateEnv.js'
-import { errorHandler, notFoundHandler } from './middleware/errorHandler.js'
-import { wrapPoolWithTiming } from './utils/timedPool.js'
-import { mountRoutes } from './routes/index.js'
-import { setupMiddleware } from './middleware/setup.js'
-import { setupStaticFiles } from './middleware/staticFiles.js'
 import { setupWebSocket, setupGracefulShutdown } from './utils/serverSetup.js'
 import { initializeCronJobs } from './cron/index.js'
 import { getQueue, stopQueue } from './jobs/queue.js'
-import { initSentry } from './utils/sentry.js'
-import healthRouter from './routes/health.js'
-import { mountSwaggerDocs } from './utils/swagger.js'
-
-const app = express()
 const PORT = process.env.PORT || 3001
-
-initSentry(app)
-app.set('trust proxy', 1)
-
-// Redirect www to non-www and enforce HTTPS
-app.use((req, res, next) => {
-  const host = req.hostname || req.headers.host
-  if (host && host.startsWith('www.')) {
-    return res.redirect(301, `https://${host.replace(/^www\./, '')}${req.originalUrl}`)
-  }
-  if (req.headers['x-forwarded-proto'] === 'http') {
-    return res.redirect(301, `https://${host}${req.originalUrl}`)
-  }
-  next()
-})
-
-// Wrap pool with query timing and make available to routes
-const timedPool = wrapPoolWithTiming(pool)
-app.locals.db = timedPool
-
-setupMiddleware(app)
-mountRoutes(app, { express, pool })
-app.use(healthRouter)
-mountSwaggerDocs(app)
-setupStaticFiles(app)
-app.use('/api/*', notFoundHandler)
-app.use(errorHandler)
 
 async function start() {
   console.log('Validating environment configuration...')
@@ -79,6 +36,7 @@ async function start() {
   console.log('Environment validation passed.')
   logFeatureStatus()
   await runMigrations(pool)
+  const app = createApp()
 
   // Start job queue (API only enqueues — workers run in services/worker)
   // Non-fatal: if queue fails to start, the app continues without it
@@ -86,16 +44,18 @@ async function start() {
     console.warn('[queue] Failed to start job queue — async jobs unavailable:', err.message)
   })
 
+  // Dedicated workers own scheduling; legacy single-process hosts may opt in.
+  const cronJobs = process.env.RUN_CRON_IN_API === 'true' ? initializeCronJobs() : null
   const server = app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`)
-    initializeCronJobs()
   })
-
-  const wss = setupWebSocket(server, timedPool)
-  setupGracefulShutdown(server, wss, pool, stopQueue)
+  const wss = setupWebSocket(server, app.locals.db)
+  setupGracefulShutdown(server, wss, pool, stopQueue, () => cronJobs?.stop())
 }
 
-start().catch(err => {
-  console.error('Failed to start server:', err)
+start().catch(async err => {
+  console.error('Failed to start server:', err.message)
+  await stopQueue().catch(() => {})
+  await pool?.end().catch(() => {})
   process.exit(1)
 })

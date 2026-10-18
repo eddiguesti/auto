@@ -1,37 +1,39 @@
-// /life-story/client/src/components/MemoryMap.jsx
-
-import { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useState, useEffect } from 'react'
+import { useAuth } from '../context/AuthContext'
+import { fetchApiResponse } from '../lib/apiResponse'
 
 export default function MemoryMap() {
-  const { token } = useAuth();
-  const [entities, setEntities] = useState({ people: [], places: [] });
-  const [loading, setLoading] = useState(true);
+  const { authFetch } = useAuth()
+  const [entities, setEntities] = useState({ people: [], places: [] })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
-    fetchEntities();
-  }, []);
-
-  const fetchEntities = async () => {
-    try {
-      const [peopleRes, placesRes] = await Promise.all([
-        fetch('/api/memory/person', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        }).then(r => r.json()),
-        fetch('/api/memory/place', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        }).then(r => r.json())
-      ]);
-      setEntities({
-        people: peopleRes.data || [],
-        places: placesRes.data || []
-      });
-    } catch (err) {
-      console.error('Error fetching entities:', err);
-    } finally {
-      setLoading(false);
+    let active = true
+    const controller = new AbortController()
+    setLoading(true)
+    setError(null)
+    Promise.all([
+      fetchApiResponse(authFetch, '/api/memory/entities/person', { signal: controller.signal }),
+      fetchApiResponse(authFetch, '/api/memory/entities/place', { signal: controller.signal })
+    ])
+      .then(([people, places]) => {
+        if (!Array.isArray(people?.entities) || !Array.isArray(places?.entities))
+          throw new Error('Your memory map could not be loaded. Please try again.')
+        if (active) setEntities({ people: people.entities, places: places.entities })
+      })
+      .catch(err => {
+        if (active) setError(err.message)
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+    return () => {
+      active = false
+      controller.abort()
     }
-  };
+  }, [authFetch, attempt])
 
   if (loading) {
     return (
@@ -45,18 +47,28 @@ export default function MemoryMap() {
           </div>
         </div>
       </div>
-    );
+    )
   }
 
-  const hasPeople = entities.people.length > 0;
-  const hasPlaces = entities.places.length > 0;
-  const isEmpty = !hasPeople && !hasPlaces;
+  const hasPeople = entities.people.length > 0
+  const hasPlaces = entities.places.length > 0
+  const isEmpty = !hasPeople && !hasPlaces
 
   return (
     <div className="bg-white rounded-xl p-6 border border-sepia/10">
       <h2 className="font-display text-xl text-ink mb-4">Your Memory Map</h2>
-
-      {isEmpty ? (
+      {error ? (
+        <div role="alert">
+          <p className="text-sepia">{error}</p>
+          <button
+            type="button"
+            onClick={() => setAttempt(value => value + 1)}
+            className="mt-3 rounded-full bg-forest px-5 py-2 text-white"
+          >
+            Try again
+          </button>
+        </div>
+      ) : isEmpty ? (
         <p className="text-sepia text-center py-8">
           As you write memories, people and places you mention will appear here.
         </p>
@@ -77,9 +89,7 @@ export default function MemoryMap() {
                   >
                     {person.name}
                     {person.mention_count > 1 && (
-                      <span className="ml-1 text-xs text-sepia">
-                        ({person.mention_count})
-                      </span>
+                      <span className="ml-1 text-xs text-sepia">({person.mention_count})</span>
                     )}
                   </span>
                 ))}
@@ -107,9 +117,7 @@ export default function MemoryMap() {
                   >
                     {place.name}
                     {place.mention_count > 1 && (
-                      <span className="ml-1 text-xs text-sepia">
-                        ({place.mention_count})
-                      </span>
+                      <span className="ml-1 text-xs text-sepia">({place.mention_count})</span>
                     )}
                   </span>
                 ))}
@@ -124,5 +132,5 @@ export default function MemoryMap() {
         </div>
       )}
     </div>
-  );
+  )
 }

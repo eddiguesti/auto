@@ -11,18 +11,13 @@
  * @typedef {import('../types/index.js').DbClient} DbClient
  */
 
-import { writeFile, mkdir, readFile } from 'fs/promises'
-import { existsSync } from 'fs'
-import { join, basename, dirname } from 'path'
-import { fileURLToPath } from 'url'
+import { objectStorage } from '../utils/objectStorage.js'
+import { detectAudioType } from '../utils/mediaType.js'
 import { chapters } from '@easy-memoir/shared/chapters'
 import { audiobookRepository } from '../repositories/audiobookRepository.js'
 import { storyRepository } from '../repositories/storyRepository.js'
 import { createLogger } from '../utils/logger.js'
 import { JOB } from './jobNames.js'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
 
 const logger = createLogger('audiobook-worker')
 const FISH_API_URL = 'https://api.fish.audio/v1'
@@ -70,22 +65,14 @@ async function _processOne(job, db) {
 
   // Get voice sample if using own voice
   let voiceSampleBuffer = null
+  let voiceSampleType = null
   if (useOwnVoice) {
     const voiceModel = await audiobookRepository.findVoiceSampleWithConsent(db, userId)
-    if (voiceModel?.fish_model_id) {
-      const voicePath = join(
-        __dirname,
-        '..',
-        '..',
-        '..',
-        'uploads',
-        'voices',
-        voiceModel.fish_model_id
-      )
-      if (existsSync(voicePath)) {
-        voiceSampleBuffer = await readFile(voicePath)
-      }
-    }
+    if (!voiceModel?.fish_model_id) throw new Error('Consented voice sample required')
+    voiceSampleBuffer = await objectStorage.read(`voices/${voiceModel.fish_model_id}`)
+    if (!voiceSampleBuffer) throw new Error('Voice sample file not found')
+    voiceSampleType = detectAudioType(voiceSampleBuffer)
+    if (!voiceSampleType) throw new Error('Voice sample format is invalid')
   }
 
   // Get all stories with content
@@ -121,8 +108,8 @@ async function _processOne(job, db) {
     formData.append('text', fullText)
     formData.append(
       'reference_audio',
-      new Blob([voiceSampleBuffer], { type: 'audio/wav' }),
-      'reference.wav'
+      new Blob([voiceSampleBuffer], { type: voiceSampleType.contentType }),
+      `reference.${voiceSampleType.extension}`
     )
     audioResponse = await fetch(`${FISH_API_URL}/tts`, {
       method: 'POST',
@@ -149,16 +136,9 @@ async function _processOne(job, db) {
 
   const audioBuffer = await audioResponse.arrayBuffer()
 
-  // Save to uploads/audiobooks/
-  const uploadsDir = join(__dirname, '..', '..', '..', 'uploads', 'audiobooks')
-  if (!existsSync(uploadsDir)) {
-    await mkdir(uploadsDir, { recursive: true })
-  }
-
   const safeName = userName.replace(/[^a-zA-Z0-9]/g, '_')
   const filename = `${safeName}_Life_Story_${Date.now()}.mp3`
-  const filepath = join(uploadsDir, basename(filename))
-  await writeFile(filepath, Buffer.from(audioBuffer))
+  await objectStorage.put(`audiobooks/${filename}`, Buffer.from(audioBuffer), 'audio/mpeg')
 
   await audiobookRepository.saveAudiobook(db, userId, filename, useOwnVoice ? 'custom' : 'default')
 

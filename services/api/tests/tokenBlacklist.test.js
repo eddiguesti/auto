@@ -72,10 +72,12 @@ describe('Token Blacklisting', () => {
     expect(result).toBe(true)
   })
 
-  it('returns false on DB error (fail open rather than block all users)', async () => {
+  it('fails closed on database errors', async () => {
     pool.query.mockRejectedValue(new Error('DB error'))
-    const result = await isTokenBlacklisted('some-jti')
-    expect(result).toBe(false)
+    await expect(isTokenBlacklisted('some-jti')).rejects.toMatchObject({
+      statusCode: 503,
+      code: 'REVOCATION_UNAVAILABLE'
+    })
   })
 })
 

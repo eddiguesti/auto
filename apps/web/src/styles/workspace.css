@@ -1,0 +1,519 @@
+.story-container {
+  width: min(100% - 80px, 1120px);
+  margin-inline: auto;
+}
+.memoir-workspace {
+  min-height: 100vh;
+}
+.story-masthead {
+  border-bottom: 1px solid var(--rule);
+}
+.story-masthead > .story-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 28px;
+  min-height: 90px;
+}
+.story-masthead nav {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  font-size: 14px;
+  font-weight: 500;
+}
+.story-masthead nav a,
+.story-masthead nav button {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+}
+.story-masthead nav [aria-current] {
+  text-decoration: underline;
+  text-underline-offset: 8px;
+}
+.story-masthead nav a:hover,
+.story-masthead nav button:hover {
+  color: var(--accent);
+}
+.story-main {
+  padding-block: 52px 80px;
+}
+.story-greeting {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 24px;
+  margin-bottom: 36px;
+}
+.story-greeting h1 {
+  font-size: 44px;
+  line-height: 1.15;
+  margin: 14px 0 12px;
+  letter-spacing: -0.7px;
+}
+.story-greeting > div > p:last-child {
+  font-size: 16px;
+  color: var(--body);
+  line-height: 1.7;
+}
+.story-saved-count {
+  background: var(--sage);
+  border: 1px solid #c6cdbe;
+  padding: 9px 14px;
+  border-radius: 4px;
+  font-size: 13px;
+  white-space: nowrap;
+  margin-bottom: 4px;
+}
+.story-dashboard-grid {
+  display: grid;
+  grid-template-columns: 7fr 5fr;
+  gap: 24px;
+}
+.story-next-panel {
+  background: var(--sheet);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 38px;
+}
+.story-next-panel h2 {
+  font-size: 38px;
+  line-height: 1.15;
+  margin: 22px 0 10px;
+}
+.story-next-subtitle {
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.7;
+}
+.story-next-panel blockquote {
+  font-family: 'Lora', Georgia, serif;
+  font-size: 24px;
+  line-height: 1.65;
+  border-left: 2px solid #a8473050;
+  padding: 8px 0 8px 24px;
+  margin: 32px 0;
+  max-width: 480px;
+}
+.story-next-panel .memoir-action-row {
+  gap: 16px;
+}
+.story-small-note {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.7;
+  margin-top: 20px;
+}
+.story-summary {
+  padding: 28px 32px;
+  background: #eceee3;
+  border: 1px solid #d5d8cb;
+  border-radius: 8px;
+}
+.story-summary h2 {
+  font-size: 28px;
+  margin-top: 22px;
+  line-height: 1.2;
+}
+.story-summary > p:not(.memoir-eyebrow) {
+  font-size: 14px;
+  color: var(--body);
+  line-height: 1.7;
+  margin-top: 12px;
+}
+.story-book-mark {
+  width: 145px;
+  min-height: 184px;
+  margin: 22px auto;
+  background: var(--forest);
+  color: var(--sheet);
+  box-shadow:
+    5px 3px 0 #fffaf1,
+    6px 4px 0 #b6bba9,
+    10px 10px 22px #233a3215;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  text-align: center;
+  padding: 27px 14px 22px;
+  border-left: 7px solid #172b23;
+}
+.story-book-mark > span:first-child {
+  font-family: 'Boska', Georgia, serif;
+  font-size: 22px;
+  line-height: 1.25;
+}
+.story-book-mark > span:last-child {
+  font-size: 8px;
+  line-height: 1.7;
+  letter-spacing: 1px;
+  overflow-wrap: anywhere;
+}
+.story-progress {
+  height: 5px;
+  background: #cdd3c2;
+  border-radius: 4px;
+  margin: 20px 0 12px;
+  overflow: hidden;
+}
+.story-progress > span {
+  height: 100%;
+  display: block;
+  background: var(--forest);
+}
+.story-summary .memoir-text-link {
+  font-size: 14px;
+}
+.story-tools {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 24px 0;
+  border-bottom: 1px solid var(--rule);
+  flex-wrap: wrap;
+}
+.story-tools p {
+  font-size: 13px;
+  color: var(--muted);
+  margin-right: auto;
+}
+.story-tools a {
+  font-size: 14px;
+  min-height: 44px;
+  display: flex;
+  gap: 22px;
+  align-items: center;
+}
+.story-tools a:hover {
+  text-decoration: underline;
+  text-underline-offset: 5px;
+}
+.story-tools a span {
+  color: var(--accent);
+  font-size: 18px;
+}
+.story-chapters {
+  padding-top: 56px;
+  scroll-margin-top: 24px;
+}
+.story-chapters-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 28px;
+  margin-bottom: 28px;
+}
+.story-chapters-heading h2 {
+  font-size: 36px;
+  line-height: 1.2;
+  margin-top: 14px;
+}
+.story-chapters-heading > p {
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+  padding-bottom: 5px;
+}
+.story-chapter-list {
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 32px;
+}
+.story-chapter-list li {
+  border-top: 1px solid var(--rule);
+}
+.story-chapter-list li a {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 22px 8px 22px 0;
+  min-height: 96px;
+}
+.story-chapter-list li a:hover {
+  background: #e5eadd60;
+}
+.story-chapter-number {
+  font-family: 'Boska', Georgia, serif;
+  font-size: 25px;
+  color: var(--accent);
+  width: 30px;
+  flex-shrink: 0;
+}
+.story-chapter-list h3 {
+  font-size: 23px;
+  line-height: 1.2;
+}
+.story-chapter-list p {
+  font-size: 14px;
+  color: var(--muted);
+  margin-top: 7px;
+  line-height: 1.5;
+}
+.story-chapter-status {
+  margin-left: auto;
+  text-align: right;
+  font-size: 14px;
+  color: var(--muted);
+  max-width: 100px;
+}
+.story-chapter-arrow {
+  font-size: 20px;
+  color: var(--forest);
+}
+.story-plan {
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  margin-top: 44px;
+  padding: 28px 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+}
+.story-plan h2 {
+  font-size: 28px;
+}
+.story-plan p {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--body);
+  margin-top: 8px;
+}
+.story-error {
+  padding: 36px;
+  background: var(--sheet);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+}
+.story-error h2 {
+  font-size: 32px;
+}
+.story-error p {
+  margin-block: 16px 24px;
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--body);
+}
+.story-error button:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+.story-skeleton-line,
+.story-skeleton-title {
+  background: #e9e7de;
+  border-radius: 4px;
+  height: 18px;
+  margin-block: 24px;
+  max-width: 75%;
+}
+.story-skeleton-title {
+  height: 48px;
+  max-width: 90%;
+}
+.story-loading .story-next-panel {
+  min-height: 430px;
+}
+.story-loading .story-summary {
+  min-height: 430px;
+}
+@media (max-width: 900px) {
+  .story-container {
+    width: calc(100% - 48px);
+  }
+  .story-masthead nav {
+    gap: 18px;
+  }
+  .story-next-panel {
+    padding: 30px;
+  }
+  .story-summary {
+    padding: 26px;
+  }
+  .story-next-panel .memoir-action-row {
+    align-items: start;
+    flex-direction: column;
+  }
+  .story-chapter-list {
+    gap: 0 20px;
+  }
+  .story-chapter-status {
+    display: none;
+  }
+  .story-chapter-arrow {
+    margin-left: auto;
+  }
+  .story-greeting h1 {
+    font-size: 40px;
+  }
+}
+@media (max-width: 700px) {
+  .story-container {
+    width: calc(100% - 40px);
+  }
+  .story-masthead > .story-container {
+    flex-direction: column;
+    align-items: start;
+    gap: 8px;
+    padding-block: 18px 10px;
+  }
+  .story-masthead nav {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 4px 16px;
+    font-size: 14px;
+  }
+  .story-main {
+    padding-block: 34px 56px;
+  }
+  .story-greeting {
+    display: block;
+    margin-bottom: 28px;
+  }
+  .story-greeting h1 {
+    font-size: 36px;
+  }
+  .story-greeting > div > p:last-child {
+    font-size: 15px;
+  }
+  .story-saved-count {
+    display: inline-flex;
+    margin-top: 18px;
+  }
+  .story-dashboard-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .story-next-panel {
+    padding: 26px 24px;
+  }
+  .story-next-panel h2 {
+    font-size: 34px;
+  }
+  .story-next-panel blockquote {
+    font-size: 21px;
+    padding-left: 18px;
+    margin-block: 26px;
+  }
+  .story-next-panel .memoir-action-row {
+    flex-direction: row;
+  }
+  .story-summary {
+    padding: 24px;
+    display: grid;
+    grid-template-columns: 1fr 92px;
+    gap: 0 24px;
+  }
+  .story-summary .memoir-eyebrow,
+  .story-summary h2,
+  .story-summary > p:not(.memoir-eyebrow),
+  .story-summary .story-progress,
+  .story-summary .memoir-text-link {
+    grid-column: 1;
+  }
+  .story-summary .story-book-mark {
+    grid-column: 2;
+    grid-row: 1/5;
+    width: 90px;
+    min-height: 126px;
+    margin: 0;
+    padding: 18px 8px;
+    border-left-width: 4px;
+    align-self: center;
+  }
+  .story-book-mark > span:first-child {
+    font-size: 16px;
+  }
+  .story-book-mark > span:last-child {
+    font-size: 6px;
+  }
+  .story-summary h2 {
+    font-size: 26px;
+    margin-top: 14px;
+  }
+  .story-summary > p:not(.memoir-eyebrow) {
+    font-size: 13px;
+  }
+  .story-summary .memoir-text-link {
+    grid-column: 1/-1;
+    margin-top: 4px;
+  }
+  .story-tools {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 4px;
+    padding-block: 20px;
+  }
+  .story-tools p {
+    margin-bottom: 6px;
+  }
+  .story-tools a {
+    justify-content: space-between;
+    font-size: 15px;
+  }
+  .story-chapters {
+    padding-top: 40px;
+  }
+  .story-chapters-heading {
+    display: block;
+  }
+  .story-chapters-heading h2 {
+    font-size: 32px;
+    max-width: 300px;
+  }
+  .story-chapters-heading > p {
+    margin-top: 14px;
+  }
+  .story-chapter-list {
+    grid-template-columns: 1fr;
+  }
+  .story-chapter-list li a {
+    gap: 14px;
+    padding-block: 20px;
+  }
+  .story-chapter-list h3 {
+    font-size: 23px;
+  }
+  .story-chapter-status {
+    display: block;
+    font-size: 14px;
+  }
+  .story-chapter-arrow {
+    margin-left: 0;
+  }
+  .story-plan {
+    flex-direction: column;
+    align-items: start;
+    padding: 24px;
+  }
+  .story-error {
+    padding: 26px;
+  }
+  .story-error h2 {
+    font-size: 28px;
+  }
+  .story-loading .story-next-panel {
+    min-height: 400px;
+  }
+  .story-loading .story-summary {
+    min-height: 240px;
+  }
+}
+@media (max-width: 360px) {
+  .story-chapter-status {
+    display: none;
+  }
+  .story-chapter-arrow {
+    margin-left: auto;
+  }
+  .story-summary {
+    gap: 0 16px;
+  }
+  .story-summary h2 {
+    font-size: 24px;
+  }
+}

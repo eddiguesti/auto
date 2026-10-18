@@ -6,6 +6,7 @@
 import { WebSocketServer } from 'ws'
 import { handleTelnyxMediaStream } from '../routes/index.js'
 import { handleVoiceProxy } from './voiceProxy.js'
+import { createShutdown, registerShutdown } from './lifecycle.js'
 
 /**
  * Attach a WebSocket server to the HTTP server for Telnyx media streams.
@@ -50,33 +51,21 @@ export function setupWebSocket(server, db) {
  * Drains the HTTP server, closes WebSocket connections, stops the job queue, and ends the DB pool.
  * @param {Function} [stopQueue] - Optional async callback to stop the job queue
  */
-export function setupGracefulShutdown(server, wss, pool, stopQueue) {
-  const shutdown = async signal => {
-    console.log(`\n${signal} received — shutting down gracefully...`)
-    server.close(() => console.log('HTTP server closed'))
-    wss.close()
-    if (stopQueue) {
-      try {
-        await stopQueue()
-        console.log('Job queue stopped')
-      } catch (err) {
-        console.error('Error stopping job queue:', err.message)
-      }
-    }
-    if (pool) {
-      try {
-        await pool.end()
-        console.log('Database pool closed')
-      } catch (err) {
-        console.error('Error closing database pool:', err.message)
-      }
-    }
-    setTimeout(() => {
-      console.error('Forced shutdown after timeout')
-      process.exit(1)
-    }, 10000)
-  }
-
-  process.on('SIGTERM', () => shutdown('SIGTERM'))
-  process.on('SIGINT', () => shutdown('SIGINT'))
+export function setupGracefulShutdown(server, wss, pool, stopQueue, stopCron) {
+  const shutdown = createShutdown({
+    stopCron,
+    stopQueue,
+    closeServer: () =>
+      new Promise((resolve, reject) => {
+        server.close(error => (error ? reject(error) : resolve()))
+      }),
+    closeSockets: () =>
+      new Promise((resolve, reject) => {
+        for (const socket of wss.clients) socket.close(1001, 'Server shutting down')
+        wss.close(error => (error ? reject(error) : resolve()))
+      }),
+    closeDatabase: () => pool?.end()
+  })
+  registerShutdown(shutdown)
+  return shutdown
 }

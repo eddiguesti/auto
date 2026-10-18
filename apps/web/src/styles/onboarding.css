@@ -1,0 +1,67 @@
+.memoir-onboarding {
+  background: #fffcf7;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 40px);
+  color: #233a32;
+}
+.memoir-onboarding-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  gap: 24px;
+  border-bottom: 1px solid #d9d5c9;
+  flex-shrink: 0;
+  font-size: 13px;
+  color: #4d5149;
+}
+.memoir-onboarding-controls button {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 14px;
+}
+.memoir-onboarding-controls button span {
+  font-size: 24px;
+}
+.memoir-onboarding-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.memoir-onboarding-content p {
+  font-family: 'General Sans', system-ui, sans-serif;
+  line-height: 1.75;
+  font-size: 16px;
+}
+.memoir-onboarding-content .text-warmgray {
+  color: #4d5149;
+}
+.memoir-onboarding-content button {
+  min-height: 48px;
+}
+.memoir-onboarding-content button.bg-sepia {
+  background: #233a32;
+}
+.memoir-onboarding-content button.bg-sepia:hover {
+  background: #385447;
+}
+.memoir-onboarding :focus-visible {
+  outline: 3px solid #a84730;
+  outline-offset: 4px;
+}
+.memoir-onboarding h2[tabindex],
+.memoir-onboarding h3[tabindex] {
+  outline: none;
+}
+@media (max-width: 600px) {
+  .memoir-onboarding {
+    max-height: calc(100dvh - 24px);
+  }
+  .memoir-onboarding-controls {
+    padding-inline: 20px;
+  }
+}

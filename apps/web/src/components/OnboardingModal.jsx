@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
 import { useFocusTrap } from '../hooks/useFocusTrap'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import PreferenceSelector from './onboarding/PreferenceSelector'
 import OnboardingVoiceInterview from './onboarding/OnboardingVoiceInterview'
 import OnboardingTypeForm from './onboarding/OnboardingTypeForm'
 import ChannelSelector from './onboarding/ChannelSelector'
 import OnboardingOffer from './onboarding/OnboardingOffer'
+import '../styles/onboarding.css'
 
 // Onboarding steps
 const STEPS = {
@@ -29,19 +30,6 @@ const STEP_INDEX = {
   [STEPS.CHANNEL_SELECTION]: 3,
   [STEPS.TOUR_OFFER]: 4
 }
-
-// Steps that show the progress indicator (offer step hides dots for focus)
-const INDICATOR_STEPS = new Set([
-  STEPS.WELCOME,
-  STEPS.PREFERENCE,
-  STEPS.VOICE_INTERVIEW,
-  STEPS.TYPE_FORM,
-  STEPS.CHANNEL_SELECTION,
-  STEPS.TOUR_OFFER
-])
-
-// Steps that need the wider modal
-const WIDE_STEPS = new Set([STEPS.CHANNEL_SELECTION, STEPS.VOICE_INTERVIEW])
 
 // Smooth step crossfade — slides up on enter, fades up on exit
 const stepVariants = {
@@ -82,7 +70,22 @@ export default function OnboardingModal({ onClose, initialStep }) {
   const [extractedContext, setExtractedContext] = useState(null)
   const rafIdRef = useRef(null)
   const dialogRef = useRef(null)
+  const reducedMotion = useReducedMotion()
   useFocusTrap(dialogRef)
+
+  useEffect(() => {
+    const focusTimer = setTimeout(
+      () => {
+        const heading = dialogRef.current?.querySelector('h2, h3')
+        if (heading) {
+          heading.tabIndex = -1
+          heading.focus({ preventScroll: true })
+        }
+      },
+      reducedMotion ? 0 : 500
+    )
+    return () => clearTimeout(focusTimer)
+  }, [step, reducedMotion])
 
   // Animate in on mount
   useEffect(() => {
@@ -95,7 +98,7 @@ export default function OnboardingModal({ onClose, initialStep }) {
   // Handle close with animation
   const handleClose = (options = {}) => {
     setIsClosing(true)
-    setTimeout(() => onClose(options), 400)
+    setTimeout(() => onClose(options), reducedMotion ? 0 : 200)
   }
 
   // Save preference and move to next step
@@ -195,17 +198,29 @@ export default function OnboardingModal({ onClose, initialStep }) {
         role="dialog"
         aria-modal="true"
         aria-label="Welcome to Easy Memoir"
-        className={`relative w-full ${WIDE_STEPS.has(step) ? 'max-w-2xl' : 'max-w-lg'} mx-4 bg-gradient-to-b from-cream to-amber-50 rounded-2xl shadow-2xl overflow-hidden transition-all duration-500 ease-out ${
+        className={`memoir-onboarding relative w-full max-w-2xl mx-4 rounded-xl shadow-2xl overflow-hidden transition-all duration-300 ease-out ${
           isVisible && !isClosing
             ? 'opacity-100 scale-100 translate-y-0'
             : 'opacity-0 scale-[0.97] translate-y-3'
         }`}
       >
-        {/* Decorative header — voice interview overlays this with animated version */}
-        <div className="h-2 bg-gradient-to-r from-sepia via-amber-500 to-sepia" />
+        <div className="memoir-onboarding-controls">
+          <span aria-live="polite">
+            {activeIndex >= 0
+              ? `Step ${activeIndex + 1} of 5`
+              : step === STEPS.PROCESSING
+                ? 'Saving your details…'
+                : 'Your next chapter'}
+          </span>
+          {step !== STEPS.PROCESSING && (
+            <button onClick={() => handleClose()}>
+              Finish later <span aria-hidden="true">×</span>
+            </button>
+          )}
+        </div>
 
         {/* Content — AnimatePresence crossfades between steps */}
-        <div className="p-6 sm:p-8">
+        <div className="memoir-onboarding-content p-6 sm:p-8">
           <AnimatePresence mode="wait" initial={false}>
             {/* Welcome Step */}
             {step === STEPS.WELCOME && (
@@ -217,8 +232,8 @@ export default function OnboardingModal({ onClose, initialStep }) {
                 exit="exit"
                 className="text-center"
               >
-                <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-sepia to-amber-600 flex items-center justify-center shadow-lg">
-                  <span className="text-white font-display text-3xl">L</span>
+                <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-[#233a32] flex items-center justify-center">
+                  <span className="text-white font-display text-3xl">C</span>
                 </div>
 
                 <h2 className="text-2xl sm:text-3xl font-display text-ink mb-3">
@@ -382,44 +397,20 @@ export default function OnboardingModal({ onClose, initialStep }) {
                   />
                   <motion.div
                     className="absolute inset-0 border-4 border-sepia/10 rounded-full"
-                    animate={{ scale: [1, 1.2, 1], opacity: [0.4, 0, 0.4] }}
-                    transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                    animate={reducedMotion ? { opacity: 0.4 } : { opacity: [0.4, 0.2, 0.4] }}
+                    transition={{
+                      duration: 2,
+                      repeat: reducedMotion ? 0 : Infinity,
+                      ease: 'easeInOut'
+                    }}
                   />
                 </div>
-                <h3 className="text-xl font-display text-ink mb-2">Setting Up Your Journey</h3>
-                <p className="text-warmgray">
-                  Creating personalized chapter artwork just for you...
-                </p>
+                <h3 className="text-xl font-display text-ink mb-2">Saving your details</h3>
+                <p className="text-warmgray">Getting your memoir ready. This may take a moment.</p>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
-
-        {/* Progress indicator — pill-shaped active dot */}
-        <AnimatePresence>
-          {INDICATOR_STEPS.has(step) && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="pb-6 flex justify-center items-center gap-1.5"
-            >
-              {[0, 1, 2, 3, 4].map(i => (
-                <div
-                  key={i}
-                  className={`h-1.5 rounded-full transition-all duration-500 ease-out ${
-                    i === activeIndex
-                      ? 'w-5 bg-sepia'
-                      : i < activeIndex
-                        ? 'w-1.5 bg-sepia/50'
-                        : 'w-1.5 bg-sepia/20'
-                  }`}
-                />
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
     </div>
   )

@@ -1,0 +1,72 @@
+.memoir-auth {
+  background: #f7f3eb;
+  color: #233a32;
+  font-family: 'General Sans', system-ui, sans-serif;
+}
+.memoir-auth p {
+  font-family: inherit;
+  color: #4d5149;
+  line-height: 1.7;
+}
+.memoir-auth .memoir-auth-wordmark {
+  display: inline-block;
+  font-family: 'Boska', Georgia, serif;
+  font-size: 32px;
+  color: #233a32;
+  letter-spacing: -1px;
+}
+.memoir-auth h1 {
+  font-size: 42px;
+  line-height: 1.2;
+  color: #233a32;
+}
+.memoir-auth-panel {
+  background: #fffcf7;
+  border: 1px solid #d9d5c9;
+  border-radius: 8px;
+  padding: 32px;
+}
+.memoir-auth label {
+  color: #4d5149;
+  font-size: 14px;
+}
+.memoir-auth input:not([tabindex='-1']) {
+  font-size: 16px;
+  min-height: 52px;
+  border-color: #b5b9ab;
+  border-radius: 4px;
+}
+.memoir-auth input:focus-visible {
+  outline: 3px solid #a84730;
+  outline-offset: 2px;
+  box-shadow: none;
+}
+.memoir-auth button[type='submit'] {
+  background: #233a32;
+  min-height: 54px;
+  border-radius: 4px;
+  font-size: 16px;
+}
+.memoir-auth button[type='submit']:hover {
+  background: #385447;
+}
+.memoir-auth a:not(.memoir-auth-wordmark) {
+  color: #233a32;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.memoir-auth :focus-visible {
+  outline: 3px solid #a84730;
+  outline-offset: 4px;
+}
+.memoir-auth .text-xs {
+  font-size: 14px;
+}
+@media (max-width: 600px) {
+  .memoir-auth-panel {
+    padding: 24px;
+  }
+  .memoir-auth h1 {
+    font-size: 36px;
+  }
+}

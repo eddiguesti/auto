@@ -1,0 +1,5407 @@
+{
+  "formatVersion": 1,
+  "sources": [
+    {
+      "name": "001_baseline.js",
+      "sha256": "e97dce76d55180fb491dda88660c500c89f3772ebce14103d164c1fa33ea4072"
+    },
+    {
+      "name": "001_full_baseline.sql",
+      "sha256": "5591e3571b7b3820c72a5aff5e8ac9f9bbb6b988c7dbdac615150ce64f60891b"
+    },
+    {
+      "name": "002_add_indexes.js",
+      "sha256": "cca7cd2b49fd52c78c7db56e0fd79e83488801ecb1e5a542fe02b3a622faec08"
+    },
+    {
+      "name": "002_soft_delete_users.sql",
+      "sha256": "3772b7602b6355d65b9d410d449d9c9829db57277f01f1b39ee7f5d82557a18f"
+    },
+    {
+      "name": "003_add_admin_column.js",
+      "sha256": "eda76c0903e489c5a1b5424ae2827c8370f64b991d358ae4458ee914b8a81595"
+    },
+    {
+      "name": "003_payments_audit_log.sql",
+      "sha256": "28547747fd243b714bf80a64d33227a134b2da2c3e288d04f6c3a1b618cdbe3a"
+    },
+    {
+      "name": "004_photo_prompts.sql",
+      "sha256": "3969c9066518be7daee0b37a8ca0e36ad592383f2205b2777bbe1385dcdf882f"
+    },
+    {
+      "name": "add_performance_indexes.sql",
+      "sha256": "f7a6c33dd53a6a181f7f7e92f8f542e68b33b809f9a4d554acac390792fd1ddd"
+    }
+  ],
+  "tables": [
+    {
+      "name": "users",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "email",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": true
+        },
+        {
+          "name": "password_hash",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "google_id",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": true
+        },
+        {
+          "name": "name",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "birth_year",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "avatar_url",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "premium_until",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "premium_activated_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "email_verified",
+          "sourceType": "BOOLEAN",
+          "kind": "boolean",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "false",
+          "defaultSql": "0"
+        },
+        {
+          "name": "email_verified_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "phone_number",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "phone_call_consent",
+          "sourceType": "BOOLEAN",
+          "kind": "boolean",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "false",
+          "defaultSql": "0"
+        },
+        {
+          "name": "contact_preference",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "'email'",
+          "defaultSql": "'email'"
+        },
+        {
+          "name": "is_admin",
+          "sourceType": "BOOLEAN",
+          "kind": "boolean",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "FALSE",
+          "defaultSql": "0"
+        },
+        {
+          "name": "deleted_at",
+          "sourceType": "TIMESTAMPTZ",
+          "kind": "instant",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "NULL",
+          "defaultSql": "NULL"
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "unique": []
+    },
+    {
+      "name": "prompt_library",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "prompt_type",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "prompt_category",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "prompt_text",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "prompt_hint",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "linked_chapter_id",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "linked_question_id",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "era_specific",
+          "sourceType": "BOOLEAN",
+          "kind": "boolean",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "false",
+          "defaultSql": "0"
+        },
+        {
+          "name": "requires_person_mention",
+          "sourceType": "BOOLEAN",
+          "kind": "boolean",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "false",
+          "defaultSql": "0"
+        },
+        {
+          "name": "requires_place_mention",
+          "sourceType": "BOOLEAN",
+          "kind": "boolean",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "false",
+          "defaultSql": "0"
+        },
+        {
+          "name": "personalization_template",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "preferred_day_of_week",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "min_streak_days",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "0",
+          "defaultSql": "0"
+        },
+        {
+          "name": "max_uses_per_user",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "difficulty_level",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "1",
+          "defaultSql": "1"
+        },
+        {
+          "name": "estimated_minutes",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "3",
+          "defaultSql": "3"
+        },
+        {
+          "name": "is_active",
+          "sourceType": "BOOLEAN",
+          "kind": "boolean",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "true",
+          "defaultSql": "1"
+        },
+        {
+          "name": "times_used",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "0",
+          "defaultSql": "0"
+        },
+        {
+          "name": "avg_completion_rate",
+          "sourceType": "DECIMAL(3,2)",
+          "kind": "decimal",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "unique": []
+    },
+    {
+      "name": "collections",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "collection_key",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": true
+        },
+        {
+          "name": "collection_name",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "collection_description",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "collection_icon",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "required_items",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "5",
+          "defaultSql": "5"
+        },
+        {
+          "name": "reward_artwork_prompt",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "display_order",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "0",
+          "defaultSql": "0"
+        },
+        {
+          "name": "is_active",
+          "sourceType": "BOOLEAN",
+          "kind": "boolean",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "true",
+          "defaultSql": "1"
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "unique": []
+    },
+    {
+      "name": "collection_items",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "collection_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "collections",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "item_key",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "item_name",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "item_description",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "completion_type",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "completion_criteria",
+          "sourceType": "JSONB",
+          "kind": "json",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "display_order",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "0",
+          "defaultSql": "0"
+        }
+      ],
+      "unique": [["collection_id", "item_key"]]
+    },
+    {
+      "name": "voice_sessions",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "chapter_id",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "session_status",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "'active'",
+          "defaultSql": "'active'"
+        },
+        {
+          "name": "questions_answered",
+          "sourceType": "TEXT[]",
+          "kind": "text-array",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "'{}'",
+          "defaultSql": "'[]'"
+        },
+        {
+          "name": "current_question_id",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "questions_since_compile",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "0",
+          "defaultSql": "0"
+        },
+        {
+          "name": "session_transcripts",
+          "sourceType": "JSONB",
+          "kind": "json",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "'[]'",
+          "defaultSql": "'[]'"
+        },
+        {
+          "name": "started_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "ended_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "last_compile_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "unique": []
+    },
+    {
+      "name": "settings",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "name",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "unique": [["user_id"]]
+    },
+    {
+      "name": "stories",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "chapter_id",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "question_id",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "answer",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "original_answer",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "style_applied",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "style_applied_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "compiled_content",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "compiled_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "voice_session_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "voice_sessions",
+            "column": "id",
+            "onDelete": "NO ACTION"
+          }
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "unique": [["user_id", "chapter_id", "question_id"]]
+    },
+    {
+      "name": "photos",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "story_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "stories",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "filename",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "original_name",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "caption",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "chapter_id",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "ai_description",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "ai_era",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "ai_questions",
+          "sourceType": "JSONB",
+          "kind": "json",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "'[]'",
+          "defaultSql": "'[]'"
+        }
+      ],
+      "unique": []
+    },
+    {
+      "name": "followups",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "story_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "stories",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "question",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "answer",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "unique": []
+    },
+    {
+      "name": "memory_entities",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "entity_type",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "name",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "description",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "first_mentioned_chapter",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "first_mentioned_question",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "mention_count",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "1",
+          "defaultSql": "1"
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "unique": [["user_id", "entity_type", "name"]]
+    },
+    {
+      "name": "memory_mentions",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "entity_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "memory_entities",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "story_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "stories",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "context",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "sentiment",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "unique": []
+    },
+    {
+      "name": "memory_relationships",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "entity1_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "memory_entities",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "entity2_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "memory_entities",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "relationship_type",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "description",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "unique": [["entity1_id", "entity2_id", "relationship_type"]]
+    },
+    {
+      "name": "payments",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "stripe_session_id",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "stripe_subscription_id",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "product_id",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "product_type",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "amount",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "currency",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "'usd'",
+          "defaultSql": "'usd'"
+        },
+        {
+          "name": "status",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "'pending'",
+          "defaultSql": "'pending'"
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "unique": []
+    },
+    {
+      "name": "payments_audit_log",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "event_type",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "stripe_event_id",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "amount",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "product_id",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "unique": []
+    },
+    {
+      "name": "voice_models",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": true,
+          "reference": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "fish_model_id",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "consent_given",
+          "sourceType": "BOOLEAN",
+          "kind": "boolean",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "false",
+          "defaultSql": "0"
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "unique": []
+    },
+    {
+      "name": "audiobooks",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "filename",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "voice_type",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "'default'",
+          "defaultSql": "'default'"
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "unique": []
+    },
+    {
+      "name": "user_style_preferences",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": true,
+          "reference": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "tones",
+          "sourceType": "TEXT[]",
+          "kind": "text-array",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "narrative",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "author_style",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "applied_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "unique": []
+    },
+    {
+      "name": "chapter_reviews",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "chapter_id",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "polished_text",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "raw_source_text",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "version",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "1",
+          "defaultSql": "1"
+        },
+        {
+          "name": "clio_history",
+          "sourceType": "JSONB",
+          "kind": "json",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "'[]'",
+          "defaultSql": "'[]'"
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "unique": [["user_id", "chapter_id"]]
+    },
+    {
+      "name": "telegram_users",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "telegram_chat_id",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": true
+        },
+        {
+          "name": "telegram_username",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "telegram_first_name",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "telegram_last_name",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "SET NULL"
+          }
+        },
+        {
+          "name": "guest_name",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "guest_email",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "is_registered",
+          "sourceType": "BOOLEAN",
+          "kind": "boolean",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "false",
+          "defaultSql": "0"
+        },
+        {
+          "name": "link_code",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": true
+        },
+        {
+          "name": "link_code_expires",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "unique": []
+    },
+    {
+      "name": "telegram_sessions",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "telegram_user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "telegram_users",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "session_state",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "'idle'",
+          "defaultSql": "'idle'"
+        },
+        {
+          "name": "current_chapter_id",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "current_question_id",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "context",
+          "sourceType": "JSONB",
+          "kind": "json",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "'{}'",
+          "defaultSql": "'{}'"
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "unique": [["telegram_user_id"]]
+    },
+    {
+      "name": "telegram_messages",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "telegram_user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "telegram_users",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "message_id",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "direction",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "content",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "unique": []
+    },
+    {
+      "name": "user_onboarding",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": true,
+          "reference": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "onboarding_completed",
+          "sourceType": "BOOLEAN",
+          "kind": "boolean",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "false",
+          "defaultSql": "0"
+        },
+        {
+          "name": "input_preference",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "birth_place",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "birth_country",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "birth_year",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "additional_context",
+          "sourceType": "JSONB",
+          "kind": "json",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "'{}'",
+          "defaultSql": "'{}'"
+        },
+        {
+          "name": "channel_preferences",
+          "sourceType": "JSONB",
+          "kind": "json",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "'[]'",
+          "defaultSql": "'[]'"
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "unique": []
+    },
+    {
+      "name": "chapter_images",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "chapter_id",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "image_url",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "prompt_used",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "generation_status",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "'pending'",
+          "defaultSql": "'pending'"
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "unique": [["user_id", "chapter_id"]]
+    },
+    {
+      "name": "book_covers",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": true,
+          "reference": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "template_id",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "'classic'",
+          "defaultSql": "'classic'"
+        },
+        {
+          "name": "title",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "author",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "front_cover_url",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "back_cover_url",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "spine_text",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "color_scheme",
+          "sourceType": "JSONB",
+          "kind": "json",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "'{}'",
+          "defaultSql": "'{}'"
+        },
+        {
+          "name": "custom_settings",
+          "sourceType": "JSONB",
+          "kind": "json",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "'{}'",
+          "defaultSql": "'{}'"
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "unique": []
+    },
+    {
+      "name": "user_game_state",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": true,
+          "reference": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "current_streak",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "0",
+          "defaultSql": "0"
+        },
+        {
+          "name": "longest_streak",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "0",
+          "defaultSql": "0"
+        },
+        {
+          "name": "last_activity_date",
+          "sourceType": "DATE",
+          "kind": "date",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "streak_shields_available",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "1",
+          "defaultSql": "1"
+        },
+        {
+          "name": "streak_shields_used_this_week",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "0",
+          "defaultSql": "0"
+        },
+        {
+          "name": "last_shield_reset",
+          "sourceType": "DATE",
+          "kind": "date",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "total_memories",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "0",
+          "defaultSql": "0"
+        },
+        {
+          "name": "total_people_mentioned",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "0",
+          "defaultSql": "0"
+        },
+        {
+          "name": "total_places_mentioned",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "0",
+          "defaultSql": "0"
+        },
+        {
+          "name": "daily_prompt_completed_today",
+          "sourceType": "BOOLEAN",
+          "kind": "boolean",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "false",
+          "defaultSql": "0"
+        },
+        {
+          "name": "prompts_completed_this_week",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "0",
+          "defaultSql": "0"
+        },
+        {
+          "name": "game_mode_enabled",
+          "sourceType": "BOOLEAN",
+          "kind": "boolean",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "true",
+          "defaultSql": "1"
+        },
+        {
+          "name": "notification_preferences",
+          "sourceType": "JSONB",
+          "kind": "json",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "'{\"daily_reminder\": true, \"streak_warning\": true, \"weekly_digest\": true, \"family_activity\": true}'",
+          "defaultSql": "'{\"daily_reminder\": true, \"streak_warning\": true, \"weekly_digest\": true, \"family_activity\": true}'"
+        },
+        {
+          "name": "preferred_prompt_time",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "'09:00'",
+          "defaultSql": "'09:00'"
+        },
+        {
+          "name": "timezone",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "'Europe/London'",
+          "defaultSql": "'Europe/London'"
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "unique": []
+    },
+    {
+      "name": "daily_prompts",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "prompt_date",
+          "sourceType": "DATE",
+          "kind": "date",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "prompt_type",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "prompt_category",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "prompt_text",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "prompt_hint",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "linked_chapter_id",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "linked_question_id",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "personalization_context",
+          "sourceType": "JSONB",
+          "kind": "json",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "'{}'",
+          "defaultSql": "'{}'"
+        },
+        {
+          "name": "status",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "'pending'",
+          "defaultSql": "'pending'"
+        },
+        {
+          "name": "answered_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "answer_story_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "stories",
+            "column": "id",
+            "onDelete": "NO ACTION"
+          }
+        },
+        {
+          "name": "time_to_complete_seconds",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "word_count",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "skipped_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "skip_reason",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "unique": [["user_id", "prompt_date"]]
+    },
+    {
+      "name": "achievements",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "achievement_type",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "achievement_key",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "achievement_name",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "achievement_description",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "achievement_icon",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "earned_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "seen_by_user",
+          "sourceType": "BOOLEAN",
+          "kind": "boolean",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "false",
+          "defaultSql": "0"
+        },
+        {
+          "name": "trigger_data",
+          "sourceType": "JSONB",
+          "kind": "json",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "'{}'",
+          "defaultSql": "'{}'"
+        }
+      ],
+      "unique": [["user_id", "achievement_key"]]
+    },
+    {
+      "name": "user_collection_progress",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "collection_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "collections",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "items_completed",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "0",
+          "defaultSql": "0"
+        },
+        {
+          "name": "completed_items",
+          "sourceType": "JSONB",
+          "kind": "json",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "'[]'",
+          "defaultSql": "'[]'"
+        },
+        {
+          "name": "is_complete",
+          "sourceType": "BOOLEAN",
+          "kind": "boolean",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "false",
+          "defaultSql": "0"
+        },
+        {
+          "name": "completed_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "reward_artwork_url",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "unique": [["user_id", "collection_id"]]
+    },
+    {
+      "name": "memory_circles",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "owner_user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "circle_name",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "'My Memory Circle'",
+          "defaultSql": "'My Memory Circle'"
+        },
+        {
+          "name": "invite_code",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": true
+        },
+        {
+          "name": "invite_code_expires",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "max_members",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "10",
+          "defaultSql": "10"
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "unique": []
+    },
+    {
+      "name": "memory_circle_members",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "circle_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "memory_circles",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "role",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "'helper'",
+          "defaultSql": "'helper'"
+        },
+        {
+          "name": "display_name",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "joined_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "last_active_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        }
+      ],
+      "unique": [["circle_id", "user_id"]]
+    },
+    {
+      "name": "family_prompts",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "circle_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "memory_circles",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "from_user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "SET NULL"
+          }
+        },
+        {
+          "name": "for_user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "prompt_text",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "prompt_note",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "status",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "'pending'",
+          "defaultSql": "'pending'"
+        },
+        {
+          "name": "answered_story_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "stories",
+            "column": "id",
+            "onDelete": "NO ACTION"
+          }
+        },
+        {
+          "name": "answered_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "declined_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "unique": []
+    },
+    {
+      "name": "family_encouragements",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "circle_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "memory_circles",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "from_user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "SET NULL"
+          }
+        },
+        {
+          "name": "for_user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "encouragement_type",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "'heart'",
+          "defaultSql": "'heart'"
+        },
+        {
+          "name": "message",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "related_story_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "stories",
+            "column": "id",
+            "onDelete": "NO ACTION"
+          }
+        },
+        {
+          "name": "seen_by_recipient",
+          "sourceType": "BOOLEAN",
+          "kind": "boolean",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "false",
+          "defaultSql": "0"
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "unique": []
+    },
+    {
+      "name": "streak_history",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "date",
+          "sourceType": "DATE",
+          "kind": "date",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "had_activity",
+          "sourceType": "BOOLEAN",
+          "kind": "boolean",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "false",
+          "defaultSql": "0"
+        },
+        {
+          "name": "streak_on_this_day",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "0",
+          "defaultSql": "0"
+        },
+        {
+          "name": "shield_used",
+          "sourceType": "BOOLEAN",
+          "kind": "boolean",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "false",
+          "defaultSql": "0"
+        },
+        {
+          "name": "prompt_completed",
+          "sourceType": "BOOLEAN",
+          "kind": "boolean",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "false",
+          "defaultSql": "0"
+        }
+      ],
+      "unique": [["user_id", "date"]]
+    },
+    {
+      "name": "notification_queue",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "notification_type",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "channel",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "subject",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "body",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "data",
+          "sourceType": "JSONB",
+          "kind": "json",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "'{}'",
+          "defaultSql": "'{}'"
+        },
+        {
+          "name": "scheduled_for",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "sent_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "failed_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "failure_reason",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "unique": []
+    },
+    {
+      "name": "newsletter_subscribers",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "email",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": true
+        },
+        {
+          "name": "subscribed_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "unsubscribed_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "source",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "'blog'",
+          "defaultSql": "'blog'"
+        },
+        {
+          "name": "ip_address",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "user_agent",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        }
+      ],
+      "unique": []
+    },
+    {
+      "name": "password_reset_tokens",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "token_hash",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "expires_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "used_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "unique": []
+    },
+    {
+      "name": "email_verification_tokens",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "token_hash",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "expires_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "used_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "unique": []
+    },
+    {
+      "name": "email_session_tokens",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "token_hash",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "prompt_text",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "prompt_chapter_id",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "prompt_question_id",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "expires_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "used_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "unique": []
+    },
+    {
+      "name": "memos",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "title",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "audio_url",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "transcript",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "duration",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "unique": []
+    },
+    {
+      "name": "free_stories",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "title",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "content",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "unique": []
+    },
+    {
+      "name": "telnyx_calls",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "call_control_id",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "stream_id",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "call_status",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "'initiated'",
+          "defaultSql": "'initiated'"
+        },
+        {
+          "name": "prompt_text",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "prompt_chapter_id",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "prompt_question_id",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "duration_seconds",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "transcript_saved",
+          "sourceType": "BOOLEAN",
+          "kind": "boolean",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "false",
+          "defaultSql": "0"
+        },
+        {
+          "name": "error_message",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "started_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "answered_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "ended_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "unique": []
+    },
+    {
+      "name": "ai_usage",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "date",
+          "sourceType": "DATE",
+          "kind": "date",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_DATE",
+          "defaultSql": "CURRENT_DATE"
+        },
+        {
+          "name": "request_count",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "0",
+          "defaultSql": "0"
+        },
+        {
+          "name": "token_count",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "0",
+          "defaultSql": "0"
+        },
+        {
+          "name": "updated_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "unique": [["user_id", "date"]]
+    },
+    {
+      "name": "refund_requests",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "payment_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "payments",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "type",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "reason",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "amount",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "status",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "'pending'",
+          "defaultSql": "'pending'"
+        },
+        {
+          "name": "admin_notes",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "resolved_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "stripe_refund_id",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "unique": []
+    },
+    {
+      "name": "lulu_orders",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "lulu_order_id",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": true
+        },
+        {
+          "name": "status",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "'created'",
+          "defaultSql": "'created'"
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMP",
+          "kind": "timestamp",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "CURRENT_TIMESTAMP",
+          "defaultSql": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "unique": []
+    },
+    {
+      "name": "token_blacklist",
+      "columns": [
+        {
+          "name": "jti",
+          "sourceType": "VARCHAR(255)",
+          "kind": "text",
+          "nullable": false,
+          "primary": true,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "user_id",
+          "sourceType": "INT",
+          "kind": "integer",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "expires_at",
+          "sourceType": "TIMESTAMPTZ",
+          "kind": "instant",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "revoked_at",
+          "sourceType": "TIMESTAMPTZ",
+          "kind": "instant",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "NOW()",
+          "defaultSql": "(strftime('%Y-%m-%d %H:%M:%f+00', 'now'))"
+        }
+      ],
+      "unique": []
+    },
+    {
+      "name": "user_token_invalidation",
+      "columns": [
+        {
+          "name": "user_id",
+          "sourceType": "INT",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "invalidated_at",
+          "sourceType": "TIMESTAMPTZ",
+          "kind": "instant",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "NOW()",
+          "defaultSql": "(strftime('%Y-%m-%d %H:%M:%f+00', 'now'))"
+        }
+      ],
+      "unique": []
+    },
+    {
+      "name": "cron_health",
+      "columns": [
+        {
+          "name": "job_name",
+          "sourceType": "VARCHAR(100)",
+          "kind": "text",
+          "nullable": false,
+          "primary": true,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "last_success",
+          "sourceType": "TIMESTAMPTZ",
+          "kind": "instant",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "last_attempt",
+          "sourceType": "TIMESTAMPTZ",
+          "kind": "instant",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        }
+      ],
+      "unique": []
+    },
+    {
+      "name": "schema_migrations",
+      "columns": [
+        {
+          "name": "version",
+          "sourceType": "VARCHAR(255)",
+          "kind": "text",
+          "nullable": false,
+          "primary": true,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "applied_at",
+          "sourceType": "TIMESTAMPTZ",
+          "kind": "instant",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "NOW()",
+          "defaultSql": "(strftime('%Y-%m-%d %H:%M:%f+00', 'now'))"
+        }
+      ],
+      "unique": []
+    }
+  ],
+  "indexes": [
+    {
+      "name": "idx_users_email",
+      "unique": false,
+      "table": "users",
+      "columns": "email"
+    },
+    {
+      "name": "idx_users_google_id",
+      "unique": false,
+      "table": "users",
+      "columns": "google_id"
+    },
+    {
+      "name": "idx_stories_user",
+      "unique": false,
+      "table": "stories",
+      "columns": "user_id"
+    },
+    {
+      "name": "idx_stories_user_chapter",
+      "unique": false,
+      "table": "stories",
+      "columns": "user_id, chapter_id"
+    },
+    {
+      "name": "idx_photos_story",
+      "unique": false,
+      "table": "photos",
+      "columns": "story_id"
+    },
+    {
+      "name": "idx_photos_story_id",
+      "unique": false,
+      "table": "photos",
+      "columns": "story_id"
+    },
+    {
+      "name": "idx_followups_story_id",
+      "unique": false,
+      "table": "followups",
+      "columns": "story_id"
+    },
+    {
+      "name": "idx_memory_entities_user",
+      "unique": false,
+      "table": "memory_entities",
+      "columns": "user_id"
+    },
+    {
+      "name": "idx_memory_entities_user_type",
+      "unique": false,
+      "table": "memory_entities",
+      "columns": "user_id, entity_type"
+    },
+    {
+      "name": "idx_memory_mentions_entity",
+      "unique": false,
+      "table": "memory_mentions",
+      "columns": "entity_id"
+    },
+    {
+      "name": "idx_memory_mentions_story",
+      "unique": false,
+      "table": "memory_mentions",
+      "columns": "story_id"
+    },
+    {
+      "name": "idx_memory_relationships_entity1",
+      "unique": false,
+      "table": "memory_relationships",
+      "columns": "entity1_id"
+    },
+    {
+      "name": "idx_memory_relationships_entity2",
+      "unique": false,
+      "table": "memory_relationships",
+      "columns": "entity2_id"
+    },
+    {
+      "name": "idx_chapter_reviews_user",
+      "unique": false,
+      "table": "chapter_reviews",
+      "columns": "user_id"
+    },
+    {
+      "name": "idx_chapter_reviews_user_chapter",
+      "unique": false,
+      "table": "chapter_reviews",
+      "columns": "user_id, chapter_id"
+    },
+    {
+      "name": "idx_payments_user",
+      "unique": false,
+      "table": "payments",
+      "columns": "user_id"
+    },
+    {
+      "name": "idx_payments_stripe_session",
+      "unique": false,
+      "table": "payments",
+      "columns": "stripe_session_id"
+    },
+    {
+      "name": "idx_payments_stripe_session_unique",
+      "unique": true,
+      "table": "payments",
+      "columns": "stripe_session_id"
+    },
+    {
+      "name": "idx_voice_models_user",
+      "unique": false,
+      "table": "voice_models",
+      "columns": "user_id"
+    },
+    {
+      "name": "idx_audiobooks_user",
+      "unique": false,
+      "table": "audiobooks",
+      "columns": "user_id"
+    },
+    {
+      "name": "idx_user_style_preferences_user",
+      "unique": false,
+      "table": "user_style_preferences",
+      "columns": "user_id"
+    },
+    {
+      "name": "idx_telegram_users_chat_id",
+      "unique": false,
+      "table": "telegram_users",
+      "columns": "telegram_chat_id"
+    },
+    {
+      "name": "idx_telegram_users_user_id",
+      "unique": false,
+      "table": "telegram_users",
+      "columns": "user_id"
+    },
+    {
+      "name": "idx_telegram_users_link_code",
+      "unique": false,
+      "table": "telegram_users",
+      "columns": "link_code"
+    },
+    {
+      "name": "idx_telegram_sessions_user",
+      "unique": false,
+      "table": "telegram_sessions",
+      "columns": "telegram_user_id"
+    },
+    {
+      "name": "idx_telegram_messages_user",
+      "unique": false,
+      "table": "telegram_messages",
+      "columns": "telegram_user_id"
+    },
+    {
+      "name": "idx_user_onboarding_user",
+      "unique": false,
+      "table": "user_onboarding",
+      "columns": "user_id"
+    },
+    {
+      "name": "idx_chapter_images_user",
+      "unique": false,
+      "table": "chapter_images",
+      "columns": "user_id"
+    },
+    {
+      "name": "idx_chapter_images_status",
+      "unique": false,
+      "table": "chapter_images",
+      "columns": "generation_status"
+    },
+    {
+      "name": "idx_book_covers_user",
+      "unique": false,
+      "table": "book_covers",
+      "columns": "user_id"
+    },
+    {
+      "name": "idx_voice_sessions_user",
+      "unique": false,
+      "table": "voice_sessions",
+      "columns": "user_id"
+    },
+    {
+      "name": "idx_voice_sessions_user_chapter",
+      "unique": false,
+      "table": "voice_sessions",
+      "columns": "user_id, chapter_id"
+    },
+    {
+      "name": "idx_voice_sessions_active",
+      "unique": false,
+      "table": "voice_sessions",
+      "columns": "user_id, chapter_id, session_status"
+    },
+    {
+      "name": "idx_user_game_state_user",
+      "unique": false,
+      "table": "user_game_state",
+      "columns": "user_id"
+    },
+    {
+      "name": "idx_user_game_state_last_activity",
+      "unique": false,
+      "table": "user_game_state",
+      "columns": "last_activity_date"
+    },
+    {
+      "name": "idx_daily_prompts_user_date",
+      "unique": false,
+      "table": "daily_prompts",
+      "columns": "user_id, prompt_date"
+    },
+    {
+      "name": "idx_daily_prompts_status",
+      "unique": false,
+      "table": "daily_prompts",
+      "columns": "status"
+    },
+    {
+      "name": "idx_achievements_user",
+      "unique": false,
+      "table": "achievements",
+      "columns": "user_id"
+    },
+    {
+      "name": "idx_achievements_unseen",
+      "unique": false,
+      "table": "achievements",
+      "columns": "user_id, seen_by_user",
+      "where": "seen_by_user = false"
+    },
+    {
+      "name": "idx_collection_items_collection",
+      "unique": false,
+      "table": "collection_items",
+      "columns": "collection_id"
+    },
+    {
+      "name": "idx_user_collection_progress_user",
+      "unique": false,
+      "table": "user_collection_progress",
+      "columns": "user_id"
+    },
+    {
+      "name": "idx_memory_circles_owner",
+      "unique": false,
+      "table": "memory_circles",
+      "columns": "owner_user_id"
+    },
+    {
+      "name": "idx_memory_circles_invite",
+      "unique": false,
+      "table": "memory_circles",
+      "columns": "invite_code"
+    },
+    {
+      "name": "idx_memory_circle_members_user",
+      "unique": false,
+      "table": "memory_circle_members",
+      "columns": "user_id"
+    },
+    {
+      "name": "idx_memory_circle_members_circle",
+      "unique": false,
+      "table": "memory_circle_members",
+      "columns": "circle_id"
+    },
+    {
+      "name": "idx_family_prompts_for_user",
+      "unique": false,
+      "table": "family_prompts",
+      "columns": "for_user_id, status"
+    },
+    {
+      "name": "idx_family_encouragements_for_user",
+      "unique": false,
+      "table": "family_encouragements",
+      "columns": "for_user_id, seen_by_recipient"
+    },
+    {
+      "name": "idx_streak_history_user_date",
+      "unique": false,
+      "table": "streak_history",
+      "columns": "user_id, date DESC"
+    },
+    {
+      "name": "idx_prompt_library_type",
+      "unique": false,
+      "table": "prompt_library",
+      "columns": "prompt_type, is_active"
+    },
+    {
+      "name": "idx_prompt_library_category",
+      "unique": false,
+      "table": "prompt_library",
+      "columns": "prompt_category"
+    },
+    {
+      "name": "idx_notification_queue_scheduled",
+      "unique": false,
+      "table": "notification_queue",
+      "columns": "scheduled_for",
+      "where": "sent_at IS NULL"
+    },
+    {
+      "name": "idx_notification_queue_user",
+      "unique": false,
+      "table": "notification_queue",
+      "columns": "user_id"
+    },
+    {
+      "name": "idx_newsletter_email",
+      "unique": false,
+      "table": "newsletter_subscribers",
+      "columns": "email"
+    },
+    {
+      "name": "idx_password_reset_user",
+      "unique": false,
+      "table": "password_reset_tokens",
+      "columns": "user_id"
+    },
+    {
+      "name": "idx_password_reset_expires",
+      "unique": false,
+      "table": "password_reset_tokens",
+      "columns": "expires_at",
+      "where": "used_at IS NULL"
+    },
+    {
+      "name": "idx_email_session_tokens_hash",
+      "unique": false,
+      "table": "email_session_tokens",
+      "columns": "token_hash",
+      "where": "used_at IS NULL"
+    },
+    {
+      "name": "idx_email_session_tokens_user",
+      "unique": false,
+      "table": "email_session_tokens",
+      "columns": "user_id"
+    },
+    {
+      "name": "idx_email_session_tokens_expires",
+      "unique": false,
+      "table": "email_session_tokens",
+      "columns": "expires_at",
+      "where": "used_at IS NULL"
+    },
+    {
+      "name": "idx_email_verification_user",
+      "unique": false,
+      "table": "email_verification_tokens",
+      "columns": "user_id"
+    },
+    {
+      "name": "idx_email_verification_expires",
+      "unique": false,
+      "table": "email_verification_tokens",
+      "columns": "expires_at",
+      "where": "used_at IS NULL"
+    },
+    {
+      "name": "idx_memos_user",
+      "unique": false,
+      "table": "memos",
+      "columns": "user_id"
+    },
+    {
+      "name": "idx_memos_created",
+      "unique": false,
+      "table": "memos",
+      "columns": "user_id, created_at DESC"
+    },
+    {
+      "name": "idx_free_stories_user",
+      "unique": false,
+      "table": "free_stories",
+      "columns": "user_id"
+    },
+    {
+      "name": "idx_free_stories_created",
+      "unique": false,
+      "table": "free_stories",
+      "columns": "user_id, created_at DESC"
+    },
+    {
+      "name": "idx_telnyx_calls_user",
+      "unique": false,
+      "table": "telnyx_calls",
+      "columns": "user_id"
+    },
+    {
+      "name": "idx_telnyx_calls_control_id",
+      "unique": false,
+      "table": "telnyx_calls",
+      "columns": "call_control_id"
+    },
+    {
+      "name": "idx_telnyx_calls_status",
+      "unique": false,
+      "table": "telnyx_calls",
+      "columns": "call_status",
+      "where": "call_status IN ('initiated', 'ringing', 'answered', 'streaming')"
+    },
+    {
+      "name": "idx_ai_usage_user_date",
+      "unique": false,
+      "table": "ai_usage",
+      "columns": "user_id, date"
+    },
+    {
+      "name": "idx_refund_requests_user",
+      "unique": false,
+      "table": "refund_requests",
+      "columns": "user_id"
+    },
+    {
+      "name": "idx_refund_requests_payment",
+      "unique": false,
+      "table": "refund_requests",
+      "columns": "payment_id"
+    },
+    {
+      "name": "idx_refund_requests_status",
+      "unique": false,
+      "table": "refund_requests",
+      "columns": "status",
+      "where": "status = 'pending'"
+    },
+    {
+      "name": "idx_lulu_orders_user",
+      "unique": false,
+      "table": "lulu_orders",
+      "columns": "user_id"
+    },
+    {
+      "name": "idx_lulu_orders_lulu",
+      "unique": false,
+      "table": "lulu_orders",
+      "columns": "lulu_order_id"
+    },
+    {
+      "name": "idx_token_blacklist_expires",
+      "unique": false,
+      "table": "token_blacklist",
+      "columns": "expires_at"
+    },
+    {
+      "name": "idx_payments_audit_log_user",
+      "unique": false,
+      "table": "payments_audit_log",
+      "columns": "user_id"
+    },
+    {
+      "name": "idx_payments_audit_log_stripe_event",
+      "unique": false,
+      "table": "payments_audit_log",
+      "columns": "stripe_event_id"
+    },
+    {
+      "name": "idx_users_deleted_at",
+      "unique": false,
+      "table": "users",
+      "columns": "deleted_at",
+      "where": "deleted_at IS NOT NULL"
+    },
+    {
+      "name": "idx_photos_user_id",
+      "unique": false,
+      "table": "photos",
+      "columns": "user_id"
+    },
+    {
+      "name": "idx_photos_chapter_id",
+      "unique": false,
+      "table": "photos",
+      "columns": "chapter_id"
+    },
+    {
+      "name": "idx_stories_user_chapter_question",
+      "unique": false,
+      "table": "stories",
+      "columns": "user_id, chapter_id, question_id"
+    },
+    {
+      "name": "idx_stories_user_answered",
+      "unique": false,
+      "table": "stories",
+      "columns": "user_id",
+      "where": "answer IS NOT NULL AND answer != ''"
+    },
+    {
+      "name": "idx_memory_entities_user_name",
+      "unique": false,
+      "table": "memory_entities",
+      "columns": "user_id, name"
+    },
+    {
+      "name": "idx_memory_entities_mention_count",
+      "unique": false,
+      "table": "memory_entities",
+      "columns": "user_id, mention_count DESC"
+    },
+    {
+      "name": "idx_memory_relationships_entities",
+      "unique": false,
+      "table": "memory_relationships",
+      "columns": "entity1_id, entity2_id"
+    },
+    {
+      "name": "idx_daily_prompts_user_status",
+      "unique": false,
+      "table": "daily_prompts",
+      "columns": "user_id, status"
+    },
+    {
+      "name": "idx_game_state_user",
+      "unique": false,
+      "table": "user_game_state",
+      "columns": "user_id"
+    },
+    {
+      "name": "idx_collection_progress_user",
+      "unique": false,
+      "table": "user_collection_progress",
+      "columns": "user_id, collection_id"
+    },
+    {
+      "name": "idx_achievements_user_unseen",
+      "unique": false,
+      "table": "achievements",
+      "columns": "user_id",
+      "where": "seen_by_user = false"
+    },
+    {
+      "name": "idx_onboarding_user",
+      "unique": false,
+      "table": "user_onboarding",
+      "columns": "user_id"
+    },
+    {
+      "name": "idx_settings_user",
+      "unique": false,
+      "table": "settings",
+      "columns": "user_id"
+    }
+  ],
+  "indexConflicts": [
+    {
+      "source": "002_add_indexes.js",
+      "retained": {
+        "name": "idx_notification_queue_user",
+        "unique": false,
+        "table": "notification_queue",
+        "columns": "user_id"
+      },
+      "ignored": {
+        "name": "idx_notification_queue_user",
+        "unique": false,
+        "table": "notification_queue",
+        "columns": "user_id, scheduled_for"
+      }
+    },
+    {
+      "source": "add_performance_indexes.sql",
+      "retained": {
+        "name": "idx_daily_prompts_user_date",
+        "unique": false,
+        "table": "daily_prompts",
+        "columns": "user_id, prompt_date"
+      },
+      "ignored": {
+        "name": "idx_daily_prompts_user_date",
+        "unique": false,
+        "table": "daily_prompts",
+        "columns": "user_id, prompt_date DESC"
+      }
+    },
+    {
+      "source": "add_performance_indexes.sql",
+      "retained": {
+        "name": "idx_collection_items_collection",
+        "unique": false,
+        "table": "collection_items",
+        "columns": "collection_id"
+      },
+      "ignored": {
+        "name": "idx_collection_items_collection",
+        "unique": false,
+        "table": "collection_items",
+        "columns": "collection_id, display_order"
+      }
+    },
+    {
+      "source": "add_performance_indexes.sql",
+      "retained": {
+        "name": "idx_achievements_user",
+        "unique": false,
+        "table": "achievements",
+        "columns": "user_id"
+      },
+      "ignored": {
+        "name": "idx_achievements_user",
+        "unique": false,
+        "table": "achievements",
+        "columns": "user_id, achievement_key"
+      }
+    },
+    {
+      "source": "add_performance_indexes.sql",
+      "retained": {
+        "name": "idx_payments_user",
+        "unique": false,
+        "table": "payments",
+        "columns": "user_id"
+      },
+      "ignored": {
+        "name": "idx_payments_user",
+        "unique": false,
+        "table": "payments",
+        "columns": "user_id, created_at DESC"
+      }
+    }
+  ]
+}

@@ -11,10 +11,12 @@ const fade = delay => ({
 export default function OnboardingOffer({ firstName, onTryFree }) {
   const { authFetch } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
+  const [checkoutError, setCheckoutError] = useState('')
 
   const handleBuy = async () => {
     if (isLoading) return
     setIsLoading(true)
+    setCheckoutError('')
     try {
       authFetch('/api/onboarding/complete', { method: 'POST' }).catch(() => {})
       const res = await authFetch('/api/payments/create-checkout', {
@@ -26,13 +28,15 @@ export default function OnboardingOffer({ firstName, onTryFree }) {
         })
       })
       const data = await res.json()
-      if (data.url) {
+      if (res.ok && /^https:\/\//.test(data.url || '')) {
         window.location.href = data.url
       } else {
+        setCheckoutError(data.message || data.error || 'Checkout is unavailable.')
         setIsLoading(false)
       }
     } catch (err) {
       console.error('Checkout failed:', err)
+      setCheckoutError('Checkout could not be opened. Please try again.')
       setIsLoading(false)
     }
   }
@@ -75,7 +79,7 @@ export default function OnboardingOffer({ firstName, onTryFree }) {
               />
             </svg>
           </div>
-          <p className="text-[12px] font-semibold text-ink/85 leading-tight">4 Royal Hardcover</p>
+          <p className="text-[12px] font-semibold text-ink/85 leading-tight">10 A5 Hardbacks</p>
           <p className="text-[12px] font-semibold text-ink/85 leading-tight">Books in Cloth</p>
           <p className="text-[10.5px] text-warmgray/55 mt-1">Full colour, delivered</p>
         </div>
@@ -176,20 +180,27 @@ export default function OnboardingOffer({ firstName, onTryFree }) {
         className="text-center mb-5 py-5 mx-auto max-w-[280px] rounded-2xl bg-gradient-to-b from-white/90 to-amber-50/40 ring-1 ring-sepia/[0.08] shadow-[0_2px_8px_rgba(139,90,43,0.06)]"
       >
         <div className="flex items-center justify-center gap-2.5 mb-1.5">
-          <span className="text-warmgray/30 line-through text-sm">£599</span>
           <span className="text-[11px] font-semibold text-sepia/80 bg-sepia/[0.08] px-2 py-0.5 rounded-full tracking-wide">
-            50% OFF
+            10 FOR THE PRICE OF 5
           </span>
         </div>
         <span className="text-[46px] font-display text-ink tracking-[-0.03em] leading-none">
-          £299
+          £250
         </span>
         <p className="text-[12px] text-warmgray/50 mt-2">One payment · Everything included</p>
-        <p className="text-[11px] text-warmgray/45 mt-1">Or 4 monthly payments of £100</p>
+        <p className="text-[11px] text-warmgray/70 mt-1">
+          Up to 200 pages · 8 colour photo pages · UK or France delivery
+        </p>
         <p className="text-[11px] text-sepia/60 font-medium mt-1">
-          Welcome price — only available right now
+          Delivery to one address included
         </p>
       </motion.div>
+
+      {checkoutError && (
+        <p role="alert" className="text-sm text-red-700 mb-4">
+          {checkoutError}
+        </p>
+      )}
 
       {/* CTA — concrete action + ownership language */}
       <motion.button
@@ -198,7 +209,7 @@ export default function OnboardingOffer({ firstName, onTryFree }) {
         disabled={isLoading}
         className="w-full bg-sepia text-white px-8 py-[16px] rounded-2xl text-[16px] font-semibold tracking-[-0.01em] shadow-[0_2px_16px_rgba(139,90,43,0.3)] hover:bg-ink hover:shadow-[0_4px_20px_rgba(0,0,0,0.2)] active:scale-[0.98] transition-all duration-300 disabled:opacity-50 mb-2"
       >
-        {isLoading ? 'Redirecting...' : 'Get My Book — £299'}
+        {isLoading ? 'Redirecting...' : 'Get My Ten Books — £250'}
       </motion.button>
 
       {/* Free option */}

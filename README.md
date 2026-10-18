@@ -2,7 +2,7 @@
 
 AI-powered autobiography platform that helps seniors and families preserve life stories through voice interviews, text input, and AI conversation — producing beautifully formatted books (digital, audiobook, and print-on-demand).
 
-**Live:** easymemoir.co.uk
+**Domain:** easymemoir.co.uk
 
 ---
 
@@ -22,6 +22,61 @@ npm run dev
 - API runs on `http://localhost:3001`
 - Web app runs on `http://localhost:5173` (proxied to API)
 - Mobile app: `cd apps/mobile && npx expo start`
+
+## Cloudflare migration
+
+The destination is the **Easy Memoir** account (`df3d63daad6e36a66171d8ae6b368da7`).
+The migration is in progress; these files do not mean the live API or data have moved.
+Use Node.js 22.12 or later.
+
+```bash
+npm ci
+npm run test:cloudflare
+npm run test:data-migration
+npm run check:cloudflare:api
+npm run test:cloudflare:readiness
+npm run build:cloudflare
+npx wrangler deploy --dry-run
+```
+
+`wrangler.jsonc` configures the frontend's static assets and an `API` service binding
+to `easy-memoir-api`. That backend must be deployed and verified before the frontend
+is promoted. Both HTTP API requests and voice WebSockets use the same origin.
+`build:cloudflare` strips the old Pages API proxy from its generated assets to avoid
+loops after the domain moves. The existing Railway configuration remains available
+during data transfer and validation.
+
+The full migration also requires porting PostgreSQL queries and transactions to D1,
+moving persistent media to R2, replacing process-based jobs, checking production
+secrets and OAuth/webhook settings, and validating the copied data. Domain traffic
+should switch only after these checks pass. R2 must first be activated in the
+Cloudflare dashboard.
+
+The new EU staging D1 database is `easymemoir-migration-staging`; its 48-table schema
+has been applied and checked remotely. It has no customer data. Its identifiers are
+recorded in `cloudflare/wrangler.staging.jsonc`. Read `cloudflare/db/README.md` for the
+audited source-to-D1 mapping and snapshot verification commands. The staging schema
+is a data-transfer contract; the current PostgreSQL API cannot use it until its
+queries, transactions and background jobs have been ported.
+
+The independent native staging Worker now implements owner-scoped stories,
+password registration/login and email verification, account phone settings/data
+export, onboarding, and private R2 photographs. These contracts are exercised in
+actual workerd with D1/R2; they have not been deployed. Staging health remains
+`productionReady: false`. Unsupported workflows return an explicit error rather
+than pretending that providers or queued work completed. Read
+[`cloudflare/api/README.md`](cloudflare/api/README.md),
+[`cloudflare/api/PHOTOS.md`](cloudflare/api/PHOTOS.md), and
+[`cloudflare/INGRESS.md`](cloudflare/INGRESS.md) for dependencies and deliberate
+limits. Public authentication also requires independently verified trusted ingress
+and a private identity service; existing bcrypt passwords require a Paid Workers
+plan and hosted CPU profiling before enabling login.
+
+[`cloudflare/readiness/README.md`](cloudflare/readiness/README.md) records the
+source route/provider/job inventory and read-only preflight commands. The checked-in
+configuration intentionally uses a local D1 sentinel and incomplete bindings, so
+deployment preflight currently fails. Inventory or successful tests do not attest
+to imported customer data, live provider correctness, DNS changes or cutover.
 
 ---
 
@@ -75,7 +130,8 @@ Each file is a self-contained Express router handling one feature area.
 | `audiobook.js`      | Audiobook generation via Fish.audio. Supports default TTS voices and custom voice cloning.                                        |
 | `export.js`         | Story export to EPUB and PDF formats for download.                                                                                |
 | `covers.js`         | Book cover design generation — users pick templates and customize.                                                                |
-| `lulu.js`           | Print-on-demand book ordering through Lulu API. Hardcover, paperback, dust jacket options.                                        |
+| `lulu.js`           | Legacy Lulu configuration endpoints.                                        |
+| `print.js`          | £250 complete memoir package: ten A5 hardbacks, immutable PDF approval and Bookvault fulfilment. See [activation instructions](docs/bookvault-printing.md). |
 | `payments.js`       | Stripe payment processing. Creates checkout sessions, handles webhooks, manages premium subscriptions.                            |
 | `style.js`          | Writing style preferences — tone, narrative voice, detail level. Stored per-user.                                                 |
 | `seo.js`            | Server-rendered public landing pages for SEO (pre-renders meta tags for social sharing).                                          |
@@ -373,7 +429,7 @@ React Native Expo app (iOS/Android/Web). Entry point: `apps/mobile/App.tsx`
 | **AI**           | Grok (xAI) for conversation & text, Replicate for images                    |
 | **Voice**        | Fish.audio (TTS/audiobook), Telnyx (phone calls), xAI Realtime (live voice) |
 | **Payments**     | Stripe (checkout, webhooks, subscriptions)                                  |
-| **Print**        | Lulu API (print-on-demand books)                                            |
+| **Print**        | Bookvault personalised transient orders (Node API + worker); legacy Lulu endpoints remain available. See [activation instructions](docs/bookvault-printing.md). |
 | **Email**        | Resend (transactional emails)                                               |
 | **Auth**         | JWT + Google OAuth + Magic Links                                            |
 | **Deploy**       | Railway or Render (Node.js + static hosting)                                |

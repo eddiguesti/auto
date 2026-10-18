@@ -145,8 +145,8 @@ export default function RefundPolicy() {
             <ul className="list-disc list-inside text-warmgray mt-2 space-y-1">
               <li>Premium Monthly Subscription (£9.99/month)</li>
               <li>Premium Yearly Subscription (£99.99/year)</li>
-              <li>Premium Bundle — Full Memoir + Printed Book + Audiobook (£299.00)</li>
-              <li>Welcome Bundle — Full Memoir + Printed Book + Audiobook (£299.00)</li>
+              <li>Complete Memoir — 10 Hardbacks + Audiobook (£250.00)</li>
+              <li>Welcome Bundle — 10 Hardbacks + Audiobook (£250.00)</li>
             </ul>
             <p className="text-warmgray leading-relaxed mt-4">
               If you are not satisfied with the Service for any reason, you may request a full
@@ -364,7 +364,7 @@ export default function RefundPolicy() {
               5.4 Bundles (Premium Bundle &amp; Welcome Bundle)
             </h3>
             <p className="text-warmgray leading-relaxed">
-              Bundle purchases (£299.00) include digital access plus a printed book and audiobook.
+              Bundle purchases (£250.00) include digital access plus 10 hardback books and an audiobook.
               Refund terms depend on which components have been used:
             </p>
             <ul className="list-disc list-inside text-warmgray mt-2 space-y-2">

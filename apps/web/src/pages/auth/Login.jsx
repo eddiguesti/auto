@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom'
 import { GoogleLogin } from '@react-oauth/google'
 import { useAuth } from '../../context/AuthContext'
 import { API_URL } from '../../config'
+import { fetchApiResponse, assertAuthResponse } from '../../lib/apiResponse'
+import '../../styles/auth-editorial.css'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -21,14 +23,18 @@ export default function Login() {
     const normalizedEmail = email.trim().toLowerCase()
 
     try {
-      const res = await fetch(`${API_URL}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: normalizedEmail, password })
-      })
+      const data = await fetchApiResponse(
+        fetch,
+        `${API_URL}/api/auth/login`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: normalizedEmail, password })
+        },
+        { expectJson: true }
+      )
 
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error)
+      assertAuthResponse(data)
 
       login(data.user, data.token)
 
@@ -59,14 +65,18 @@ export default function Login() {
     setLoading(true)
 
     try {
-      const res = await fetch(`${API_URL}/api/auth/google`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ credential: credentialResponse.credential })
-      })
+      const data = await fetchApiResponse(
+        fetch,
+        `${API_URL}/api/auth/google`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ credential: credentialResponse.credential })
+        },
+        { expectJson: true }
+      )
 
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error)
+      assertAuthResponse(data)
 
       login(data.user, data.token)
 
@@ -93,22 +103,25 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12 page-enter">
+    <div className="memoir-auth min-h-screen flex items-center justify-center px-5 py-12 page-enter">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Link
-            to="/"
-            className="text-sepia/30 text-2xl tracking-[0.3em] hover:text-sepia/50 transition"
-          >
-            ❧
+          <Link to="/" className="memoir-auth-wordmark">
+            EasyMemoir.
           </Link>
           <h1 className="text-3xl text-ink mt-4 mb-2">Welcome Back</h1>
           <p className="text-sepia/70">Sign in to continue your story</p>
         </div>
 
-        <div className="bg-white/80 backdrop-blur rounded-2xl p-8 border border-sepia/20 shadow-lg">
+        <div className="memoir-auth-panel">
           {error && (
-            <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>
+            <div
+              role="alert"
+              id="auth-error"
+              className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm"
+            >
+              {error}
+            </div>
           )}
 
           {/* Google Sign-In */}
@@ -135,8 +148,11 @@ export default function Login() {
           {/* Email/Password Form */}
           <form onSubmit={handleEmailLogin} className="space-y-4">
             <div>
-              <label className="block text-sm text-sepia/70 mb-1">Email</label>
+              <label htmlFor="auth-email" className="block text-sm text-sepia/70 mb-1">
+                Email
+              </label>
               <input
+                id="auth-email"
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
@@ -148,12 +164,15 @@ export default function Login() {
             </div>
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="block text-sm text-sepia/70">Password</label>
+                <label htmlFor="auth-password" className="block text-sm text-sepia/70">
+                  Password
+                </label>
                 <Link to="/forgot-password" className="text-xs text-sepia hover:underline">
                   Forgot password?
                 </Link>
               </div>
               <input
+                id="auth-password"
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}

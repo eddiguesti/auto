@@ -1,8 +1,7 @@
 import { Router } from 'express'
-import { writeFile, mkdir, unlink } from 'fs/promises'
-import { existsSync } from 'fs'
-import { join, basename, dirname } from 'path'
-import { fileURLToPath } from 'url'
+import { pipeline } from 'node:stream/promises'
+import { objectStorage, validateObjectKey } from '../utils/objectStorage.js'
+import { detectAudioType } from '../utils/mediaType.js'
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { requireDb } from '../middleware/requireDb.js'
 import validate from '../middleware/validate.js'
@@ -14,9 +13,6 @@ import { paymentRepository } from '../repositories/paymentRepository.js'
 import { storyRepository } from '../repositories/storyRepository.js'
 import { getQueue } from '../jobs/queue.js'
 import { JOB } from '../jobs/jobNames.js'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
 
 const router = Router()
 const logger = createLogger('audiobook')
@@ -53,31 +49,17 @@ router.post(
     }
 
     // Magic byte validation — ensure this is actually an audio file
-    const isWav = audioBuffer.length >= 4 && audioBuffer.toString('ascii', 0, 4) === 'RIFF'
-    const isMp3Id3 = audioBuffer.length >= 3 && audioBuffer.toString('ascii', 0, 3) === 'ID3'
-    const isMp3Sync =
-      audioBuffer.length >= 2 && audioBuffer[0] === 0xff && (audioBuffer[1] & 0xe0) === 0xe0
-    const isOgg = audioBuffer.length >= 4 && audioBuffer.toString('ascii', 0, 4) === 'OggS'
-    const isFlac = audioBuffer.length >= 4 && audioBuffer.toString('ascii', 0, 4) === 'fLaC'
-    const isM4a = audioBuffer.length >= 8 && audioBuffer.toString('ascii', 4, 8) === 'ftyp'
-
-    if (!isWav && !isMp3Id3 && !isMp3Sync && !isOgg && !isFlac && !isM4a) {
+    const audioType = detectAudioType(audioBuffer)
+    if (!audioType) {
       return res
         .status(400)
         .json({ error: 'Invalid audio format. Supported: WAV, MP3, OGG, FLAC, M4A' })
     }
 
-    // Save voice sample locally
-    const voicesDir = join(__dirname, '..', '..', '..', 'uploads', 'voices')
-    if (!existsSync(voicesDir)) {
-      await mkdir(voicesDir, { recursive: true })
-    }
-
     // Sanitize filename to prevent path traversal
     const safeUserId = String(userId).replace(/[^0-9]/g, '')
-    const filename = `voice_${safeUserId}_${Date.now()}.wav`
-    const filepath = join(voicesDir, basename(filename))
-    await writeFile(filepath, audioBuffer)
+    const filename = `voice_${safeUserId}_${Date.now()}.${audioType.extension}`
+    await objectStorage.put(`voices/${filename}`, audioBuffer, audioType.contentType)
 
     await audiobookRepository.saveVoiceSample(db, userId, filename, consentGiven)
 
@@ -96,14 +78,11 @@ router.delete(
     const db = req.app.locals.db
     const userId = req.user.id
 
-    const filename = await audiobookRepository.deleteVoiceSample(db, userId)
-
-    if (filename) {
-      const filepath = join(__dirname, '..', '..', '..', 'uploads', 'voices', filename)
-      if (existsSync(filepath)) {
-        await unlink(filepath)
-      }
+    const voiceModel = await audiobookRepository.findVoiceSample(db, userId)
+    if (voiceModel?.fish_model_id) {
+      await objectStorage.delete(`voices/${voiceModel.fish_model_id}`)
     }
+    await audiobookRepository.deleteVoiceSample(db, userId)
 
     res.json({ success: true, message: 'Voice model deleted' })
   })
@@ -270,18 +249,28 @@ router.get(
     const userId = req.user.id
     const { filename } = req.params
 
+    try {
+      validateObjectKey(filename)
+      if (filename.includes('/')) throw new TypeError('Invalid filename')
+    } catch {
+      return res.status(400).json({ error: 'Invalid filename' })
+    }
+
     const audiobook = await audiobookRepository.findByFilenameForUser(db, userId, filename)
 
     if (!audiobook) {
       return res.status(404).json({ error: 'Audiobook not found' })
     }
 
-    const filepath = join(__dirname, '..', '..', '..', 'uploads', 'audiobooks', filename)
-    if (!existsSync(filepath)) {
+    const audiobookFile = await objectStorage.get(`audiobooks/${filename}`)
+    if (!audiobookFile) {
       return res.status(404).json({ error: 'Audiobook file not found' })
     }
 
-    res.download(filepath, filename)
+    res.attachment(filename)
+    res.type('audio/mpeg')
+    res.set('Cache-Control', 'private, no-store')
+    await pipeline(audiobookFile.body, res)
   })
 )
 

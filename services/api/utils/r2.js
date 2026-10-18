@@ -1,6 +1,6 @@
 /**
  * Cloudflare R2 storage client (S3-compatible).
- * If R2 credentials aren't set, falls back to local file storage.
+ * Local fallback policy belongs to objectStorage.js; remote outages always throw.
  */
 
 import {
@@ -10,6 +10,7 @@ import {
   DeleteObjectCommand
 } from '@aws-sdk/client-s3'
 import { createLogger } from './logger.js'
+import { ServiceUnavailableError } from './errors.js'
 
 const logger = createLogger('r2')
 
@@ -30,7 +31,9 @@ if (process.env.R2_ACCESS_KEY_ID && process.env.R2_SECRET_ACCESS_KEY && process.
   })
   logger.info('R2 storage configured', { bucket })
 } else {
-  logger.warn('R2 not configured — file uploads will use local storage')
+  logger.warn(
+    'R2 not configured — production media requires durable storage or an explicit legacy local-storage override'
+  )
 }
 
 /**
@@ -54,7 +57,7 @@ export async function r2Upload(key, body, contentType) {
     return true
   } catch (err) {
     logger.error('R2 upload failed', { key, error: err.message })
-    return false
+    throw new ServiceUnavailableError('Durable media storage')
   }
 }
 
@@ -79,7 +82,7 @@ export async function r2Get(key) {
   } catch (err) {
     if (err.name === 'NoSuchKey') return null
     logger.error('R2 get failed', { key, error: err.message })
-    return null
+    throw new ServiceUnavailableError('Durable media storage')
   }
 }
 
@@ -100,7 +103,7 @@ export async function r2Delete(key) {
     return true
   } catch (err) {
     logger.error('R2 delete failed', { key, error: err.message })
-    return false
+    throw new ServiceUnavailableError('Durable media storage')
   }
 }
 

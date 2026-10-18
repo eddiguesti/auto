@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
+import '../styles/help-chat.css'
 
 // Quick help topics with better icons
 const QUICK_TOPICS = [
@@ -27,6 +28,11 @@ export default function HelpChatbot() {
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
   const abortControllerRef = useRef(null)
+  const launcherRef = useRef(null)
+  const closeChat = () => {
+    setIsOpen(false)
+    launcherRef.current?.focus()
+  }
 
   // Abort in-flight requests on unmount
   useEffect(() => {
@@ -39,13 +45,14 @@ export default function HelpChatbot() {
 
   // Auto-scroll to bottom
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    messagesEndRef.current?.scrollIntoView({ behavior: 'auto' })
   }, [messages, isTyping])
 
   // Focus input when opened
   useEffect(() => {
     if (isOpen) {
-      setTimeout(() => inputRef.current?.focus(), 300)
+      const focusTimer = setTimeout(() => inputRef.current?.focus(), 0)
+      return () => clearTimeout(focusTimer)
     }
   }, [isOpen])
 
@@ -76,10 +83,10 @@ export default function HelpChatbot() {
         signal: abortControllerRef.current.signal
       })
 
+      if (!res.ok) throw new Error('Support chat unavailable')
       const data = await res.json()
-
-      // Simulate typing delay for more natural feel
-      await new Promise(resolve => setTimeout(resolve, 500))
+      if (typeof data.response !== 'string' || !data.response.trim())
+        throw new Error('Support reply missing')
 
       setMessages(prev => [
         ...prev,
@@ -130,19 +137,23 @@ export default function HelpChatbot() {
     <>
       {/* Floating Chat Button */}
       <button
+        ref={launcherRef}
         onClick={() => setIsOpen(true)}
-        className={`fixed bottom-6 right-6 z-50 group transition-all duration-500 ${
-          isOpen ? 'scale-0 rotate-90 opacity-0' : 'scale-100 rotate-0 opacity-100'
-        }`}
+        className="memoir-help-launcher fixed bottom-6 right-6 z-40 group"
         aria-label="Open help chat"
+        aria-expanded={isOpen}
+        aria-controls="memoir-help-panel"
+        hidden={isOpen}
       >
-        {/* Pulse rings */}
-        <span className="absolute inset-0 rounded-full bg-amber-500/20 animate-ping" />
-        <span className="absolute inset-[-4px] rounded-full bg-gradient-to-r from-amber-500/20 to-orange-500/20 animate-pulse" />
-
         {/* Main button */}
-        <span className="relative flex items-center justify-center w-16 h-16 bg-gradient-to-br from-amber-500 to-amber-600 rounded-full shadow-lg shadow-amber-500/30 group-hover:shadow-xl group-hover:shadow-amber-500/40 group-hover:scale-105 transition-all">
-          <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <span className="relative flex items-center justify-center w-12 h-12 rounded-full bg-[#233a32] shadow-sm">
+          <svg
+            className="w-5 h-5 text-white"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -150,11 +161,6 @@ export default function HelpChatbot() {
               d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
             />
           </svg>
-
-          {/* Status dot */}
-          <span className="absolute top-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-white">
-            <span className="absolute inset-0 rounded-full bg-green-500 animate-ping opacity-75" />
-          </span>
         </span>
 
         {/* Tooltip */}
@@ -166,17 +172,24 @@ export default function HelpChatbot() {
 
       {/* Chat Panel */}
       <div
+        id="memoir-help-panel"
+        role="dialog"
+        aria-labelledby="memoir-help-heading"
+        hidden={!isOpen}
+        onKeyDown={event => {
+          if (event.key === 'Escape') closeChat()
+        }}
         className={`fixed bottom-6 right-6 w-[400px] max-w-[calc(100vw-32px)] h-[600px] max-h-[calc(100vh-80px)] z-50 transition-all duration-500 ease-out ${
           isOpen
             ? 'scale-100 opacity-100 translate-y-0'
             : 'scale-90 opacity-0 translate-y-4 pointer-events-none'
         }`}
       >
-        <div className="h-full bg-white rounded-3xl shadow-2xl shadow-ink/20 flex flex-col overflow-hidden border border-sepia/10">
+        <div className="memoir-help-surface h-full rounded-xl shadow-xl flex flex-col overflow-hidden border border-sepia/10">
           {/* Header */}
           <div className="relative overflow-hidden">
             {/* Background gradient */}
-            <div className="absolute inset-0 bg-gradient-to-br from-amber-500 via-amber-600 to-orange-600" />
+            <div className="absolute inset-0 bg-[#233a32]" />
 
             {/* Decorative shapes */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
@@ -190,22 +203,23 @@ export default function HelpChatbot() {
                   <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center border border-white/20">
                     <span className="text-2xl">💬</span>
                   </div>
-                  <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-amber-500" />
                 </div>
 
                 <div className="text-white">
-                  <h3 className="font-display text-lg">Hi there!</h3>
+                  <h3 id="memoir-help-heading" className="font-display text-lg">
+                    A little help
+                  </h3>
                   <p className="text-sm text-white/80 flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-                    Usually replies instantly
+                    Your AI support companion
                   </p>
                 </div>
               </div>
 
               {/* Close button */}
               <button
-                onClick={() => setIsOpen(false)}
-                className="w-10 h-10 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur flex items-center justify-center text-white transition-all hover:rotate-90"
+                onClick={closeChat}
+                aria-label="Close help chat"
+                className="w-12 h-12 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center text-white"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
@@ -220,7 +234,12 @@ export default function HelpChatbot() {
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-gradient-to-b from-amber-50/50 to-white">
+          <div
+            className="memoir-help-messages flex-1 overflow-y-auto p-5 space-y-4"
+            role="log"
+            aria-label="Help conversation"
+            aria-live="polite"
+          >
             {messages.map((msg, i) => (
               <div
                 key={i}
@@ -237,7 +256,7 @@ export default function HelpChatbot() {
                 <div
                   className={`max-w-[80%] ${
                     msg.role === 'user'
-                      ? 'bg-gradient-to-br from-amber-500 to-amber-600 text-white rounded-2xl rounded-br-md shadow-md shadow-amber-500/20'
+                      ? 'bg-[#233a32] text-white rounded-xl rounded-br-md'
                       : 'bg-white text-ink rounded-2xl rounded-bl-md shadow-md border border-sepia/5'
                   } px-4 py-3`}
                 >
@@ -328,6 +347,7 @@ export default function HelpChatbot() {
               <input
                 ref={inputRef}
                 type="text"
+                aria-label="Your question"
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 placeholder="Type your question..."
@@ -336,6 +356,7 @@ export default function HelpChatbot() {
               />
               <button
                 type="submit"
+                aria-label="Send question"
                 disabled={!input.trim() || loading}
                 className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-gradient-to-br from-amber-500 to-amber-600 text-white rounded-xl flex items-center justify-center hover:from-amber-600 hover:to-orange-600 disabled:opacity-40 disabled:hover:from-amber-500 disabled:hover:to-amber-600 transition-all shadow-md shadow-amber-500/20 hover:shadow-lg hover:shadow-amber-500/30 disabled:shadow-none"
               >

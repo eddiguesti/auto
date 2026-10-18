@@ -1,158 +1,165 @@
-import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { API_URL } from '../config'
+import { CONNECTION_ERROR } from '../lib/apiResponse'
 
 const AuthContext = createContext(null)
-
-// DEV: Auth bypass requires explicit environment variable
-// Set VITE_DEV_BYPASS=true in .env.local to enable
-// Security: Only works in development mode with explicit opt-in
 const DEV_BYPASS = import.meta.env.DEV && import.meta.env.VITE_DEV_BYPASS === 'true'
-const DEV_USER = {
-  id: 999999, // Use high ID that won't conflict with real users
-  email: 'dev-test@localhost',
-  name: 'Dev Test User'
+const DEV_USER = { id: 999999, email: 'dev-test@localhost', name: 'Dev Test User' }
+
+function initialToken() {
+  if (DEV_BYPASS) return 'dev-token'
+  const session = sessionStorage.getItem('token')
+  const legacy = localStorage.getItem('token')
+  if (!session && legacy) sessionStorage.setItem('token', legacy)
+  localStorage.removeItem('token')
+  return session || legacy || null
+}
+
+function validUser(user) {
+  return (
+    user &&
+    !Array.isArray(user) &&
+    typeof user === 'object' &&
+    (typeof user.id === 'number' || (typeof user.id === 'string' && user.id.trim()))
+  )
 }
 
 export function AuthProvider({ children }) {
-  // Migrate old localStorage token to sessionStorage (one-time, then clear it)
-  const migratedToken = (() => {
-    if (DEV_BYPASS) return 'dev-token'
-    const session = sessionStorage.getItem('token')
-    if (session) return session
-    const legacy = localStorage.getItem('token')
-    if (legacy) {
-      sessionStorage.setItem('token', legacy)
-      localStorage.removeItem('token')
-      return legacy
-    }
-    return null
-  })()
-
   const [user, setUser] = useState(DEV_BYPASS ? DEV_USER : null)
-  const [token, setToken] = useState(migratedToken)
+  const [token, setToken] = useState(initialToken)
   const [loading, setLoading] = useState(!DEV_BYPASS)
+  const [authError, setAuthError] = useState(null)
+  const tokenRef = useRef(token)
+  const userRef = useRef(user)
+  const verificationRef = useRef(0)
 
-  useEffect(() => {
-    if (DEV_BYPASS) return // Skip auth check in dev bypass mode
-
-    // Always clear any lingering localStorage token on mount
+  const clearSession = useCallback(() => {
+    tokenRef.current = null
+    userRef.current = null
+    verificationRef.current += 1
+    sessionStorage.removeItem('token')
     localStorage.removeItem('token')
-
-    if (token) {
-      fetchUser()
-    } else {
-      setLoading(false)
-    }
+    setToken(null)
+    setUser(null)
+    setAuthError(null)
+    setLoading(false)
   }, [])
 
   const logout = useCallback(async () => {
-    // Notify server of logout (for audit trail)
-    const currentToken = token
+    const currentToken = tokenRef.current
+    // Clear locally immediately, even when the logout audit service is unavailable.
+    clearSession()
     if (currentToken && currentToken !== 'dev-token') {
       try {
         await fetch(`${API_URL}/api/auth/logout`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${currentToken}` }
         })
-      } catch (err) {
-        // Continue with client-side logout even if server call fails
-        console.warn('Server logout notification failed:', err)
+      } catch {
+        /* Local logout already completed. */
       }
     }
-    sessionStorage.removeItem('token')
-    localStorage.removeItem('token') // Clean up any legacy localStorage tokens
-    setToken(null)
-    setUser(null)
-  }, [token])
+  }, [clearSession])
 
-  const fetchUser = useCallback(async () => {
-    try {
-      const res = await fetch(`${API_URL}/api/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      if (res.ok) {
-        const data = await res.json()
-        setUser(data.user)
-      } else {
-        // Token invalid, clear it
-        logout()
-      }
-    } catch (err) {
-      logout()
-    } finally {
-      setLoading(false)
-    }
-  }, [token, logout])
-
-  // Refresh user data (works in dev mode too)
   const refreshUser = useCallback(async () => {
-    try {
-      const res = await fetch(`${API_URL}/api/auth/me`, {
-        headers: { Authorization: `Bearer ${token || 'dev-token'}` }
-      })
-      if (res.ok) {
-        const data = await res.json()
-        setUser(data.user)
-      }
-    } catch (err) {
-      console.error('Failed to refresh user:', err)
+    const currentToken = tokenRef.current
+    if (!currentToken) {
+      setLoading(false)
+      return
     }
-  }, [token])
+    const verification = ++verificationRef.current
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 12000)
+    setLoading(!userRef.current)
+    setAuthError(null)
+    const isCurrent = () =>
+      tokenRef.current === currentToken && verificationRef.current === verification
+    try {
+      const response = await fetch(`${API_URL}/api/auth/me`, {
+        headers: { Authorization: `Bearer ${currentToken}` },
+        signal: controller.signal
+      })
+      if (!isCurrent()) return
+      if (response.status === 401 || response.status === 403) {
+        clearSession()
+        return
+      }
+      if (!response.ok) throw new Error('Session verification unavailable')
+      const data = await response.json()
+      if (!isCurrent()) return
+      if (!validUser(data?.user)) throw new Error('Invalid session response')
+      userRef.current = data.user
+      setUser(data.user)
+    } catch {
+      // A retained JWT is a retry credential, not proof of a verified identity.
+      if (isCurrent()) setAuthError(CONNECTION_ERROR)
+    } finally {
+      clearTimeout(timeout)
+      if (isCurrent()) setLoading(false)
+    }
+  }, [clearSession])
+
+  useEffect(() => {
+    if (DEV_BYPASS) return
+    refreshUser()
+    return () => {
+      verificationRef.current += 1
+    }
+  }, [refreshUser])
 
   const login = useCallback((userData, authToken) => {
+    if (!validUser(userData) || typeof authToken !== 'string' || !authToken.trim())
+      throw new Error('Invalid sign-in response')
+    verificationRef.current += 1
+    tokenRef.current = authToken
+    userRef.current = userData
     sessionStorage.setItem('token', authToken)
     setToken(authToken)
     setUser(userData)
+    setAuthError(null)
+    setLoading(false)
   }, [])
 
-  // Helper for authenticated fetch requests
   const authFetch = useCallback(
     async (url, options = {}) => {
-      const headers = {
-        ...options.headers
-      }
-
-      // Only add Authorization header if we have a token
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
-      }
-
-      // Add Content-Type for JSON if body is provided and not FormData
-      if (options.body && !(options.body instanceof FormData)) {
+      const currentToken = tokenRef.current
+      const headers = { ...options.headers }
+      if (currentToken) headers.Authorization = `Bearer ${currentToken}`
+      if (options.body && !(options.body instanceof FormData))
         headers['Content-Type'] = 'application/json'
-      }
-
-      // Prepend API_URL if url starts with /api
       const fullUrl = url.startsWith('/api') ? `${API_URL}${url}` : url
-
-      return fetch(fullUrl, {
-        ...options,
-        headers
-      })
+      const response = await fetch(fullUrl, { ...options, headers })
+      if (currentToken && tokenRef.current === currentToken && url.startsWith('/api')) {
+        let invalidSession = response.status === 401
+        if (response.status === 403) {
+          // A feature's scope denial must not revoke an otherwise valid sign-in.
+          try {
+            const body = await response.clone().json()
+            invalidSession =
+              body?.error === 'Invalid or expired token' ||
+              body?.code === 'TOKEN_REVOKED' ||
+              body?.code === 'INVALID_TOKEN'
+          } catch {
+            /* An unreadable forbidden response is not proof of revocation. */
+          }
+          if (/^\/api(?:\/v1)?\/auth\/me(?:\?|$)/.test(url)) invalidSession = true
+        }
+        if (invalidSession && tokenRef.current === currentToken) clearSession()
+      }
+      return response
     },
-    [token]
+    [clearSession]
   )
 
   const value = useMemo(
-    () => ({
-      user,
-      token,
-      loading,
-      login,
-      logout,
-      authFetch,
-      refreshUser
-    }),
-    [user, token, loading, login, logout, authFetch, refreshUser]
+    () => ({ user, token, loading, authError, login, logout, authFetch, refreshUser }),
+    [user, token, loading, authError, login, logout, authFetch, refreshUser]
   )
-
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 export const useAuth = () => {
   const context = useContext(AuthContext)
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider')
-  }
+  if (!context) throw new Error('useAuth must be used within an AuthProvider')
   return context
 }

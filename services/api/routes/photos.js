@@ -1,28 +1,16 @@
 import { Router } from 'express'
 import multer from 'multer'
-import { fileURLToPath } from 'url'
-import { dirname, join, extname } from 'path'
-import { existsSync, unlinkSync, mkdirSync, writeFileSync } from 'fs'
+import { pipeline } from 'node:stream/promises'
 import crypto from 'crypto'
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { requireDb } from '../middleware/requireDb.js'
 import { authenticateToken } from '../middleware/auth.js'
 import { createLogger } from '../utils/logger.js'
-import { r2Upload, r2Get, r2Delete } from '../utils/r2.js'
+import { objectStorage } from '../utils/objectStorage.js'
 import { photoRepository } from '../repositories/photoRepository.js'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
 
 const router = Router()
 const logger = createLogger('photos')
-
-// Local uploads directory (fallback when R2 is not configured)
-const uploadsDir = join(__dirname, '..', '..', '..', 'uploads')
-if (!existsSync(uploadsDir)) {
-  mkdirSync(uploadsDir, { recursive: true })
-  logger.info('Created uploads directory', { path: uploadsDir })
-}
 
 // Use memory storage so we can upload to R2 or save locally
 const upload = multer({
@@ -50,6 +38,13 @@ const MAGIC_BYTES = {
  * Verify uploaded file content matches declared MIME type
  */
 function verifyMagicBytes(buffer, mimetype) {
+  if (mimetype === 'image/webp') {
+    return (
+      buffer.length >= 12 &&
+      buffer.toString('ascii', 0, 4) === 'RIFF' &&
+      buffer.toString('ascii', 8, 12) === 'WEBP'
+    )
+  }
   const signatures = MAGIC_BYTES[mimetype]
   if (!signatures) return false
   return signatures.some(sig => {
@@ -58,9 +53,15 @@ function verifyMagicBytes(buffer, mimetype) {
   })
 }
 
-function generateFilename(originalname) {
+function generateFilename(mimetype) {
   const uniqueSuffix = crypto.randomBytes(8).toString('hex')
-  return `${Date.now()}-${uniqueSuffix}${extname(originalname)}`
+  const extensions = {
+    'image/jpeg': '.jpg',
+    'image/png': '.png',
+    'image/gif': '.gif',
+    'image/webp': '.webp'
+  }
+  return `${Date.now()}-${uniqueSuffix}${extensions[mimetype]}`
 }
 
 // Upload a photo
@@ -100,14 +101,8 @@ router.post(
       return res.status(403).json({ error: 'Not authorized to add photos to this story' })
     }
 
-    const filename = generateFilename(req.file.originalname)
-
-    // Try R2 first, fall back to local disk
-    const uploadedToR2 = await r2Upload(filename, req.file.buffer, req.file.mimetype)
-    if (!uploadedToR2) {
-      writeFileSync(join(uploadsDir, filename), req.file.buffer)
-      logger.info('Photo saved to local disk (R2 unavailable)', { filename })
-    }
+    const filename = generateFilename(req.file.mimetype)
+    await objectStorage.put(filename, req.file.buffer, req.file.mimetype)
 
     const photo = await photoRepository.create(db, {
       storyId: story_id,
@@ -148,28 +143,13 @@ router.get(
       return res.status(403).json({ error: 'Not authorized to access this photo' })
     }
 
-    // Try R2 first
-    const r2File = await r2Get(sanitizedFilename)
-    if (r2File) {
-      res.set('Content-Type', r2File.contentType)
-      r2File.body.on('error', err => {
-        logger.error('R2 stream error', {
-          filename: sanitizedFilename,
-          error: err.message,
-          requestId: req.id
-        })
-        if (!res.headersSent) {
-          res.status(500).json({ error: 'Failed to stream photo' })
-        }
-      })
-      r2File.body.pipe(res)
+    const photoFile = await objectStorage.get(sanitizedFilename)
+    if (photoFile) {
+      if (photoFile.contentType) res.type(photoFile.contentType)
+      else res.type(sanitizedFilename)
+      res.set('Cache-Control', 'private, no-store')
+      await pipeline(photoFile.body, res)
       return
-    }
-
-    // Fall back to local file
-    const filepath = join(uploadsDir, sanitizedFilename)
-    if (existsSync(filepath)) {
-      return res.sendFile(filepath)
     }
 
     res.status(404).json({ error: 'Photo not found' })
@@ -190,16 +170,9 @@ router.delete(
       return res.status(404).json({ error: 'Photo not found or not authorized' })
     }
 
+    // Keep ownership/reference metadata if durable deletion fails, so it can be retried.
+    await objectStorage.delete(photo.filename)
     await photoRepository.deleteById(db, id)
-
-    // Delete from R2
-    await r2Delete(photo.filename)
-
-    // Also clean up local file if it exists
-    const filepath = join(uploadsDir, photo.filename)
-    if (existsSync(filepath)) {
-      unlinkSync(filepath)
-    }
 
     res.json({ success: true })
   })
@@ -240,11 +213,8 @@ router.post(
     }
 
     // Save photo to storage
-    const filename = generateFilename(req.file.originalname)
-    const uploadedToR2 = await r2Upload(filename, req.file.buffer, req.file.mimetype)
-    if (!uploadedToR2) {
-      writeFileSync(join(uploadsDir, filename), req.file.buffer)
-    }
+    const filename = generateFilename(req.file.mimetype)
+    await objectStorage.put(filename, req.file.buffer, req.file.mimetype)
 
     // Analyse with Grok vision
     const analysis = await analyzePhoto(req.file.buffer, req.file.mimetype)

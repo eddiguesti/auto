@@ -17,19 +17,6 @@ export function useChapterStories(chapterId) {
 }
 
 /**
- * Fetch a single story answer by its ID.
- */
-export function useStoryById(storyId) {
-  const api = useApiClient()
-
-  return useQuery({
-    queryKey: queryKeys.stories.byId(storyId),
-    queryFn: () => api.get(`/api/stories/answer/${storyId}`),
-    enabled: Boolean(storyId)
-  })
-}
-
-/**
  * Fetch aggregated progress (answeredCount per chapter) for the dashboard.
  * Returns an object keyed by chapterId.
  */

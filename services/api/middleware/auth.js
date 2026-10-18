@@ -1,7 +1,12 @@
 // @ts-check
 import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
-import { isTokenBlacklisted, isUserTokenBlacklisted } from '../utils/tokenBlacklist.js'
+import {
+  isTokenBlacklisted,
+  isUserTokenBlacklisted,
+  assertCanonicalToken,
+  tokenRevocationKey
+} from '../utils/tokenBlacklist.js'
 
 // Dev user for local testing - bypasses auth in development
 const DEV_USER = {
@@ -19,7 +24,7 @@ export async function authenticateToken(req, res, next) {
   }
 
   const authHeader = req.headers['authorization']
-  const token = authHeader && authHeader.split(' ')[1] // Bearer TOKEN
+  const token = typeof authHeader === 'string' && /^Bearer (\S+)$/i.exec(authHeader)?.[1]
 
   if (!token) {
     return res.status(401).json({ error: 'Authentication required' })
@@ -34,22 +39,30 @@ export async function authenticateToken(req, res, next) {
       return res.status(500).json({ error: 'Server configuration error' })
     }
 
+    assertCanonicalToken(token)
     const decoded = jwt.verify(token, secret)
+    const database = req.app?.locals?.db
+    const revocationKey = tokenRevocationKey(decoded, token)
 
     // Check if this specific token has been blacklisted (logout / account deletion)
-    if (decoded.jti && (await isTokenBlacklisted(decoded.jti))) {
+    if (await isTokenBlacklisted(revocationKey, database)) {
       return res.status(401).json({ error: 'Token revoked' })
     }
 
     // Check if all user tokens were blacklisted (password reset)
-    if (decoded.iat && (await isUserTokenBlacklisted(decoded.id, decoded.iat))) {
+    if (decoded.iat && (await isUserTokenBlacklisted(decoded.id, decoded.iat, database))) {
       return res.status(401).json({ error: 'Token revoked' })
     }
 
     req.user = decoded // { id, email, jti }
     req.token = token
     next()
-  } catch (err) {
+  } catch (error) {
+    if (error.code === 'REVOCATION_UNAVAILABLE') {
+      return res
+        .status(503)
+        .json({ error: 'Token revocation service unavailable', code: error.code })
+    }
     return res.status(403).json({ error: 'Invalid or expired token' })
   }
 }
@@ -79,7 +92,12 @@ export function generateToken(user) {
       .trim()
       .replace(/^["']|["']$/g, '')
     // Validate format: must be like "7d", "24h", "60m", or a number
-    if (/^\d+[smhd]?$/.test(cleaned)) {
+    const numericSeconds = /^\d+$/.test(cleaned) ? Number(cleaned) : null
+    if (numericSeconds !== null && Number.isSafeInteger(numericSeconds) && numericSeconds > 0) {
+      // jsonwebtoken interprets bare strings as milliseconds, but numeric
+      // expiresIn values are seconds, matching our documented configuration.
+      expiresIn = numericSeconds
+    } else if (/^\d+[smhd]$/.test(cleaned)) {
       expiresIn = cleaned
     } else {
       console.warn(

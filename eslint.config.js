@@ -5,6 +5,8 @@ export default [
   // Ignore patterns
   {
     ignores: [
+      '**/.cloudflare/**',
+      '**/.wrangler/**',
       'node_modules/**',
       'apps/web/node_modules/**',
       'apps/web/dist/**',
@@ -14,6 +16,40 @@ export default [
       'coverage/**',
       '*.min.js'
     ]
+  },
+
+  // Explicit coverage for native Worker sources, including JSON module imports.
+  {
+    files: ['cloudflare/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: { ...globals.browser, ...globals.node }
+    },
+    rules: {
+      ...js.configs.recommended.rules,
+      'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      'no-console': 'off',
+      'prefer-const': 'error',
+      'no-var': 'error'
+    }
+  },
+
+  // Offline schema/export tooling and actual workerd/D1 tests run in Node.
+  {
+    files: ['cloudflare/**/*.mjs', 'tools/**/*.mjs'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: { ...globals.node, ...globals.es2021 }
+    },
+    rules: {
+      ...js.configs.recommended.rules,
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      'no-console': 'off',
+      'prefer-const': 'warn',
+      'no-var': 'error'
+    }
   },
 
   // Server/API code (Node.js ES modules)

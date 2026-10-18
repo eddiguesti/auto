@@ -8,7 +8,7 @@ export default function OnboardingTypeForm({ onSubmit, onBack }) {
   const [additionalContext, setAdditionalContext] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault()
     setIsSubmitting(true)
 
@@ -29,20 +29,19 @@ export default function OnboardingTypeForm({ onSubmit, onBack }) {
       <h2 className="text-2xl font-display text-ink mb-2 text-center">
         Tell me a bit about yourself
       </h2>
-      <p className="text-warmgray mb-6 text-center">
-        This helps personalize your memoir journey
-      </p>
+      <p className="text-warmgray mb-6 text-center">This helps personalize your memoir journey</p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Name */}
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">
+          <label htmlFor="onboarding-name" className="block text-sm font-medium text-ink mb-1">
             What's your name?
           </label>
           <input
+            id="onboarding-name"
             type="text"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={e => setName(e.target.value)}
             placeholder="e.g., Margaret, John, Elizabeth"
             className="w-full px-4 py-3 rounded-xl border border-sepia/20 focus:border-sepia focus:outline-none"
           />
@@ -50,13 +49,17 @@ export default function OnboardingTypeForm({ onSubmit, onBack }) {
 
         {/* Birth Place */}
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">
+          <label
+            htmlFor="onboarding-birthplace"
+            className="block text-sm font-medium text-ink mb-1"
+          >
             Where were you born?
           </label>
           <input
+            id="onboarding-birthplace"
             type="text"
             value={birthPlace}
-            onChange={(e) => setBirthPlace(e.target.value)}
+            onChange={e => setBirthPlace(e.target.value)}
             placeholder="e.g., Manchester, London, Birmingham"
             className="w-full px-4 py-3 rounded-xl border border-sepia/20 focus:border-sepia focus:outline-none"
           />
@@ -64,13 +67,14 @@ export default function OnboardingTypeForm({ onSubmit, onBack }) {
 
         {/* Birth Country */}
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">
+          <label htmlFor="onboarding-country" className="block text-sm font-medium text-ink mb-1">
             Country
           </label>
           <input
+            id="onboarding-country"
             type="text"
             value={birthCountry}
-            onChange={(e) => setBirthCountry(e.target.value)}
+            onChange={e => setBirthCountry(e.target.value)}
             placeholder="e.g., England, Scotland, Wales"
             className="w-full px-4 py-3 rounded-xl border border-sepia/20 focus:border-sepia focus:outline-none"
           />
@@ -78,30 +82,34 @@ export default function OnboardingTypeForm({ onSubmit, onBack }) {
 
         {/* Birth Year */}
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">
+          <label htmlFor="onboarding-year" className="block text-sm font-medium text-ink mb-1">
             What year were you born?
           </label>
           <select
+            id="onboarding-year"
             value={birthYear}
-            onChange={(e) => setBirthYear(e.target.value)}
+            onChange={e => setBirthYear(e.target.value)}
             className="w-full px-4 py-3 rounded-xl border border-sepia/20 focus:border-sepia focus:outline-none bg-white"
           >
             <option value="">Select year (optional)</option>
             {years.map(year => (
-              <option key={year} value={year}>{year}</option>
+              <option key={year} value={year}>
+                {year}
+              </option>
             ))}
           </select>
         </div>
 
         {/* Additional Context */}
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">
+          <label htmlFor="onboarding-context" className="block text-sm font-medium text-ink mb-1">
             Anything else you'd like to share?
             <span className="text-warmgray font-normal"> (optional)</span>
           </label>
           <textarea
+            id="onboarding-context"
             value={additionalContext}
-            onChange={(e) => setAdditionalContext(e.target.value)}
+            onChange={e => setAdditionalContext(e.target.value)}
             placeholder="e.g., I grew up on a farm, my family moved a lot, I was the youngest of 5 children..."
             rows={3}
             className="w-full px-4 py-3 rounded-xl border border-sepia/20 focus:border-sepia focus:outline-none resize-none"

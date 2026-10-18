@@ -114,5 +114,10 @@ export function setupMiddleware(app) {
   app.use('/api', globalLimiter)
   app.use(requestId)
   app.use(requestTiming)
-  app.use(express.json({ limit: '1mb' }))
+  const parseJson = express.json({ limit: '1mb' })
+  app.use((req, res, next) => {
+    // Stripe verifies the exact signed bytes; its route owns the raw parser.
+    if (req.path === '/api/webhooks/stripe') return next()
+    return parseJson(req, res, next)
+  })
 }

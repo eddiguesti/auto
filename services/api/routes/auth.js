@@ -2,7 +2,6 @@ import { Router } from 'express'
 import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
 import { OAuth2Client } from 'google-auth-library'
-import jwt from 'jsonwebtoken'
 import { generateToken, authenticateToken } from '../middleware/auth.js'
 import { blacklistToken, blacklistAllUserTokens } from '../utils/tokenBlacklist.js'
 import { asyncHandler } from '../middleware/asyncHandler.js'
@@ -414,15 +413,12 @@ router.post(
  *         description: Missing or invalid token
  */
 // 2. Returns success so client clears token
-// For full token invalidation, implement a Redis token blacklist
 router.post(
   '/logout',
   authenticateToken,
   asyncHandler(async (req, res) => {
     // Blacklist the current token so it can't be reused
-    if (req.user.jti) {
-      await blacklistToken(req.user)
-    }
+    await blacklistToken(req.user, req.token, req.app.locals.db)
     authLogger.info('User logged out', { userId: req.user.id, requestId: req.id })
     res.json({ success: true, message: 'Logged out successfully' })
   })

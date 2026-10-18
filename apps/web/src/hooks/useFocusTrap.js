@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 
 const FOCUSABLE_SELECTORS =
-  'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])'
+  'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
 /**
  * Traps keyboard focus within a modal container.
@@ -14,25 +14,30 @@ export function useFocusTrap(ref) {
     const el = ref.current
     if (!el) return
 
-    const focusable = Array.from(el.querySelectorAll(FOCUSABLE_SELECTORS))
-    const first = focusable[0]
-    const last = focusable[focusable.length - 1]
-
-    first?.focus()
+    const previousFocus = document.activeElement
+    const getFocusable = () =>
+      Array.from(el.querySelectorAll(FOCUSABLE_SELECTORS)).filter(
+        node => !node.closest('[hidden], [inert], [aria-hidden="true"]')
+      )
+    getFocusable()[0]?.focus()
 
     const handleKeyDown = e => {
       if (e.key !== 'Tab') return
+      // Steps can replace their controls while the modal stays mounted.
+      const focusable = getFocusable()
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
       if (focusable.length === 0) {
         e.preventDefault()
         return
       }
       if (e.shiftKey) {
-        if (document.activeElement === first) {
+        if (document.activeElement === first || !el.contains(document.activeElement)) {
           e.preventDefault()
           last?.focus()
         }
       } else {
-        if (document.activeElement === last) {
+        if (document.activeElement === last || !el.contains(document.activeElement)) {
           e.preventDefault()
           first?.focus()
         }
@@ -40,6 +45,9 @@ export function useFocusTrap(ref) {
     }
 
     el.addEventListener('keydown', handleKeyDown)
-    return () => el.removeEventListener('keydown', handleKeyDown)
+    return () => {
+      el.removeEventListener('keydown', handleKeyDown)
+      if (previousFocus instanceof HTMLElement && previousFocus.isConnected) previousFocus.focus()
+    }
   }, [ref])
 }

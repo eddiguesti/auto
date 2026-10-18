@@ -172,7 +172,7 @@ export default function CancellationPolicy() {
             </ul>
 
             <h3 className="font-display text-xl text-ink mb-2 mt-6">
-              4.3 Bundle Purchases (£299.00)
+              4.3 Bundle Purchases (£250.00)
             </h3>
             <ul className="list-disc list-inside text-warmgray mt-2 space-y-2">
               <li>

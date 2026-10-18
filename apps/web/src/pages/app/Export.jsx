@@ -13,7 +13,7 @@ export default function Export() {
   const [stories, setStories] = useState({})
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(null)
-  const [showBookOrder, setShowBookOrder] = useState(false)
+  const [showBookOrder, setShowBookOrder] = useState(searchParams.get('print') === '1')
   const [showVoiceSetup, setShowVoiceSetup] = useState(false)
   const [paymentSuccess, setPaymentSuccess] = useState(searchParams.get('success') === 'true')
 
@@ -308,15 +308,14 @@ export default function Export() {
                 />
               </svg>
             </div>
-            <h3 className="font-display text-xl text-ink mb-2">4 Printed Books</h3>
+            <h3 className="font-display text-xl text-ink mb-2">10 Hardback Memoirs</h3>
             <p className="text-sm text-warmgray mb-4">
-              4 beautiful colour royal hardcover books in cloth delivered to your door. Includes
-              audiobook and talk over the phone features.
+              Ten A5 matte hardbacks with up to 200 pages and eight colour photo pages. Includes
+              audiobook, phone interviews and delivery to one UK or French address.
             </p>
             <div className="flex items-baseline gap-2 mb-4">
-              <span className="text-2xl font-medium text-ink">£299</span>
-              <span className="text-sm text-warmgray line-through ml-1">£599</span>
-              <span className="text-xs text-sepia font-medium">50% off</span>
+              <span className="text-2xl font-medium text-ink">£250</span>
+              <span className="text-xs text-sepia font-medium">10 for the price of 5</span>
             </div>
             <button
               onClick={() => setShowBookOrder(true)}

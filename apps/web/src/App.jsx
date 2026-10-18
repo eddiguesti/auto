@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import { lazy, Suspense } from 'react'
+import { MotionConfig } from 'framer-motion'
 import { AuthProvider } from './context/AuthContext'
 import { SettingsProvider } from './context/SettingsContext'
 import { GOOGLE_CLIENT_ID } from './config'
@@ -26,35 +27,37 @@ const PageLoader = () => (
 function App() {
   return (
     <ErrorBoundary>
-      <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-        <AuthProvider>
-          <SettingsProvider>
-            <ToastProvider>
-              <div className="min-h-screen bg-parchment">
-                <Suspense fallback={<PageLoader />}>
-                  <Routes>
-                    {marketingRoutes()}
-                    {authRoutes()}
-                    {appRoutes()}
-                    {adminRoutes()}
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </Suspense>
+      <MotionConfig reducedMotion="user">
+        <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+          <AuthProvider>
+            <SettingsProvider>
+              <ToastProvider>
+                <div className="min-h-screen bg-parchment">
+                  <Suspense fallback={<PageLoader />}>
+                    <Routes>
+                      {marketingRoutes()}
+                      {authRoutes()}
+                      {appRoutes()}
+                      {adminRoutes()}
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </Suspense>
 
-                {/* Cookie Consent Banner */}
-                <Suspense fallback={null}>
-                  <CookieConsent />
-                </Suspense>
+                  {/* Cookie Consent Banner */}
+                  <Suspense fallback={null}>
+                    <CookieConsent />
+                  </Suspense>
 
-                {/* Help Chatbot */}
-                <Suspense fallback={null}>
-                  <HelpChatbot />
-                </Suspense>
-              </div>
-            </ToastProvider>
-          </SettingsProvider>
-        </AuthProvider>
-      </GoogleOAuthProvider>
+                  {/* Help Chatbot */}
+                  <Suspense fallback={null}>
+                    <HelpChatbot />
+                  </Suspense>
+                </div>
+              </ToastProvider>
+            </SettingsProvider>
+          </AuthProvider>
+        </GoogleOAuthProvider>
+      </MotionConfig>
     </ErrorBoundary>
   )
 }

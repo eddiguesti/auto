@@ -1,0 +1,33 @@
+.memoir-help-launcher[hidden],
+#memoir-help-panel[hidden] {
+  display: none !important;
+}
+.memoir-help-launcher {
+  bottom: max(20px, env(safe-area-inset-bottom));
+  right: 20px;
+}
+.memoir-help-launcher:focus-visible,
+#memoir-help-panel :focus-visible {
+  outline: 3px solid #a84730;
+  outline-offset: 4px;
+}
+.memoir-help-surface {
+  background: #fffcf7;
+}
+.memoir-help-messages {
+  background: #f7f3eb;
+}
+#memoir-help-panel {
+  max-height: calc(100dvh - 40px);
+  bottom: 20px;
+  right: 20px;
+}
+#memoir-help-panel p {
+  font-family: 'General Sans', system-ui, sans-serif;
+}
+@media (max-width: 600px) {
+  #memoir-help-panel {
+    bottom: 16px;
+    right: 16px;
+  }
+}

@@ -1,178 +1,157 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import {
+  DEFAULT_CONSENT,
+  readCookieConsent,
+  saveCookieConsent,
+  subscribeCookieConsent
+} from '../utils/cookieConsent'
+
+const buttonClass =
+  'min-h-11 rounded-lg border border-[#D9D5C9] px-5 py-2.5 text-sm font-medium text-[#233A32] transition hover:bg-[#F4F1E9] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#233A32]'
 
 export default function CookieConsent() {
   const [visible, setVisible] = useState(false)
   const [showPreferences, setShowPreferences] = useState(false)
-  const [preferences, setPreferences] = useState({
-    necessary: true, // Always required
-    analytics: false,
-    marketing: false
-  })
+  const [preferences, setPreferences] = useState(
+    () => readCookieConsent() || { ...DEFAULT_CONSENT }
+  )
+  const preferenceHeading = useRef(null)
+  const preferencesButton = useRef(null)
 
   useEffect(() => {
-    // Check if user has already made a choice
-    const consent = localStorage.getItem('cookie-consent')
-    if (!consent) {
-      // Show banner after a short delay for better UX
-      const timer = setTimeout(() => setVisible(true), 1000)
-      return () => clearTimeout(timer)
+    const timer = !readCookieConsent() ? setTimeout(() => setVisible(true), 1000) : null
+    const unsubscribe = subscribeCookieConsent((consent, detail) => {
+      clearTimeout(timer)
+      setPreferences(consent || { ...DEFAULT_CONSENT })
+      setVisible(detail?.reopen || !consent)
+      if (detail?.reopen) setShowPreferences(true)
+    })
+    return () => {
+      clearTimeout(timer)
+      unsubscribe()
     }
   }, [])
 
-  const acceptAll = () => {
-    const allConsent = { necessary: true, analytics: true, marketing: true }
-    localStorage.setItem('cookie-consent', JSON.stringify(allConsent))
-    localStorage.setItem('cookie-consent-date', new Date().toISOString())
-    setVisible(false)
-  }
+  useEffect(() => {
+    if (showPreferences) preferenceHeading.current?.focus()
+  }, [showPreferences])
 
-  const acceptSelected = () => {
-    localStorage.setItem('cookie-consent', JSON.stringify(preferences))
-    localStorage.setItem('cookie-consent-date', new Date().toISOString())
-    setVisible(false)
-  }
-
-  const rejectAll = () => {
-    const minimalConsent = { necessary: true, analytics: false, marketing: false }
-    localStorage.setItem('cookie-consent', JSON.stringify(minimalConsent))
-    localStorage.setItem('cookie-consent-date', new Date().toISOString())
+  const save = consent => {
+    saveCookieConsent({ ...consent, necessary: true, marketing: false })
     setVisible(false)
   }
 
   if (!visible) return null
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 p-4 sm:p-6">
-      <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl border border-sepia/20 overflow-hidden">
+    <section
+      aria-label="Cookie consent"
+      className="fixed bottom-0 left-0 right-0 z-50 p-4 sm:p-6 [&_p]:font-sans [&_button]:font-sans"
+      style={{ fontFamily: "'General Sans', system-ui, sans-serif" }}
+    >
+      <div className="mx-auto max-h-[70vh] max-w-[760px] overflow-y-auto rounded-xl border border-[#D9D5C9] bg-white p-5 text-[#233A32] shadow-lg sm:p-6">
         {!showPreferences ? (
-          // Simple view
-          <div className="p-6">
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                <svg className="w-6 h-6 text-amber-600" viewBox="0 0 24 24" fill="currentColor">
-                  <circle cx="12" cy="12" r="10" fill="currentColor" fillOpacity={0.2} stroke="currentColor" strokeWidth={1.5} />
-                  <circle cx="8" cy="10" r="1.5" />
-                  <circle cx="14" cy="8" r="1" />
-                  <circle cx="16" cy="13" r="1.5" />
-                  <circle cx="10" cy="15" r="1" />
-                  <circle cx="6" cy="14" r="0.75" />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <h3 className="font-display text-xl text-ink mb-2">We value your privacy</h3>
-                <p className="text-sm text-warmgray leading-relaxed mb-4">
-                  We use cookies to enhance your experience, analyse site traffic, and for marketing purposes.
-                  By clicking "Accept All", you consent to our use of cookies.
-                  Read our <a href="/privacy" className="text-sepia underline">Privacy Policy</a> and{' '}
-                  <a href="/cookies" className="text-sepia underline">Cookie Policy</a> for more information.
-                </p>
-                <div className="flex flex-wrap gap-3">
-                  <button
-                    onClick={acceptAll}
-                    className="px-6 py-2.5 bg-ink text-white rounded-full text-sm font-medium hover:bg-sepia transition"
-                  >
-                    Accept All
-                  </button>
-                  <button
-                    onClick={rejectAll}
-                    className="px-6 py-2.5 border border-sepia/30 text-ink rounded-full text-sm font-medium hover:bg-sepia/5 transition"
-                  >
-                    Reject All
-                  </button>
-                  <button
-                    onClick={() => setShowPreferences(true)}
-                    className="px-6 py-2.5 text-sepia text-sm font-medium hover:underline transition"
-                  >
-                    Manage Preferences
-                  </button>
-                </div>
-              </div>
+          <>
+            <h3 className="mb-2 font-display text-xl">Your privacy choices</h3>
+            <p className="mb-5 text-base leading-relaxed text-[#4F5C54]">
+              Essential cookies keep your account working. With your permission, analytics help us
+              improve Easy Memoir. You can change your choice in Settings.{' '}
+              <a
+                href="/privacy"
+                className="underline underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#233A32]"
+              >
+                Privacy policy
+              </a>
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={() => save({ ...DEFAULT_CONSENT, analytics: true })}
+                className={buttonClass}
+              >
+                Accept analytics
+              </button>
+              <button onClick={() => save(DEFAULT_CONSENT)} className={buttonClass}>
+                Essential only
+              </button>
+              <button
+                ref={preferencesButton}
+                onClick={() => setShowPreferences(true)}
+                className={`${buttonClass} border-transparent underline underline-offset-4`}
+              >
+                Preferences
+              </button>
             </div>
-          </div>
+          </>
         ) : (
-          // Detailed preferences view
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="font-display text-xl text-ink">Cookie Preferences</h3>
-              <button
-                onClick={() => setShowPreferences(false)}
-                className="text-warmgray hover:text-ink"
+          <>
+            <div className="mb-5 flex items-center justify-between gap-3">
+              <h3
+                ref={preferenceHeading}
+                tabIndex={-1}
+                className="font-display text-xl focus:outline-none"
               >
-                ← Back
+                Cookie preferences
+              </h3>
+              <button
+                onClick={() => {
+                  setShowPreferences(false)
+                  requestAnimationFrame(() => preferencesButton.current?.focus())
+                }}
+                className={buttonClass}
+              >
+                Back
               </button>
             </div>
-
-            <div className="space-y-4 mb-6">
-              {/* Necessary Cookies */}
-              <div className="p-4 bg-sepia/5 rounded-xl">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium text-ink">Necessary Cookies</h4>
-                  <span className="text-xs bg-sepia/20 text-sepia px-2 py-1 rounded">Always Active</span>
-                </div>
-                <p className="text-sm text-warmgray">
-                  These cookies are essential for the website to function properly. They enable basic features
-                  like page navigation, secure areas access, and remembering your login status.
-                </p>
+            <div className="mb-4 rounded-lg border border-[#D9D5C9] p-4">
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <h4 className="font-medium">Essential cookies</h4>
+                <span className="text-sm text-[#4F5C54]">Always active</span>
               </div>
-
-              {/* Analytics Cookies */}
-              <div className="p-4 border border-sepia/20 rounded-xl">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium text-ink">Analytics Cookies</h4>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={preferences.analytics}
-                      onChange={(e) => setPreferences(p => ({ ...p, analytics: e.target.checked }))}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sepia"></div>
-                  </label>
-                </div>
-                <p className="text-sm text-warmgray">
-                  These cookies help us understand how visitors interact with our website by collecting
-                  and reporting information anonymously. This helps us improve our service.
-                </p>
-              </div>
-
-              {/* Marketing Cookies */}
-              <div className="p-4 border border-sepia/20 rounded-xl">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium text-ink">Marketing Cookies</h4>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={preferences.marketing}
-                      onChange={(e) => setPreferences(p => ({ ...p, marketing: e.target.checked }))}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sepia"></div>
-                  </label>
-                </div>
-                <p className="text-sm text-warmgray">
-                  These cookies are used to track visitors across websites. The intention is to display
-                  ads that are relevant and engaging for the individual user.
-                </p>
-              </div>
+              <p className="text-base leading-relaxed text-[#4F5C54]">
+                These support sign-in, security and remembering your preferences.
+              </p>
             </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={acceptSelected}
-                className="flex-1 px-6 py-2.5 bg-ink text-white rounded-full text-sm font-medium hover:bg-sepia transition"
+            <div className="mb-5 rounded-lg border border-[#D9D5C9] p-4">
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <h4 id="analytics-cookie-label" className="font-medium">
+                  Analytics cookies
+                </h4>
+                <label className="relative inline-flex min-h-11 min-w-11 cursor-pointer items-center">
+                  <input
+                    type="checkbox"
+                    aria-labelledby="analytics-cookie-label"
+                    aria-describedby="analytics-cookie-description"
+                    checked={preferences.analytics}
+                    onChange={event =>
+                      setPreferences(previous => ({ ...previous, analytics: event.target.checked }))
+                    }
+                    className="peer sr-only"
+                  />
+                  <span
+                    aria-hidden="true"
+                    className="relative h-6 w-11 rounded-full bg-[#D9D5C9] after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-transform peer-checked:bg-[#233A32] peer-checked:after:translate-x-full peer-focus-visible:ring-2 peer-focus-visible:ring-[#233A32] peer-focus-visible:ring-offset-2"
+                  />
+                </label>
+              </div>
+              <p
+                id="analytics-cookie-description"
+                className="text-base leading-relaxed text-[#4F5C54]"
               >
-                Save Preferences
+                Optional usage events tell us which features are useful. Session recording is
+                disabled.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <button onClick={() => save(preferences)} className={buttonClass}>
+                Save preferences
               </button>
-              <button
-                onClick={acceptAll}
-                className="px-6 py-2.5 border border-sepia/30 text-ink rounded-full text-sm font-medium hover:bg-sepia/5 transition"
-              >
-                Accept All
+              <button onClick={() => save(DEFAULT_CONSENT)} className={buttonClass}>
+                Essential only
               </button>
             </div>
-          </div>
+          </>
         )}
       </div>
-    </div>
+    </section>
   )
 }

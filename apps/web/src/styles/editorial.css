@@ -1,0 +1,840 @@
+.memoir-editorial,
+.memoir-workspace {
+  --paper: #f7f3eb;
+  --sheet: #fffcf7;
+  --forest: #233a32;
+  --body: #4d5149;
+  --muted: #676b61;
+  --rule: #d9d5c9;
+  --sage: #e5eadd;
+  --accent: #a84730;
+  color: var(--forest);
+  background: var(--paper);
+  font-family: 'General Sans', system-ui, sans-serif;
+}
+.memoir-editorial p,
+.memoir-workspace p {
+  font-family: inherit;
+}
+.memoir-editorial h1,
+.memoir-editorial h2,
+.memoir-editorial h3,
+.memoir-workspace h1,
+.memoir-workspace h2,
+.memoir-workspace h3 {
+  font-family: 'Boska', Georgia, serif;
+  font-weight: 500;
+}
+.memoir-editorial em,
+.memoir-workspace em {
+  font-weight: 400;
+}
+.memoir-container {
+  width: min(100% - 112px, 1240px);
+  margin-inline: auto;
+}
+.memoir-editorial a,
+.memoir-workspace a {
+  color: inherit;
+}
+.memoir-editorial :is(a, button, summary):focus-visible,
+.memoir-workspace :is(a, button, summary):focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 5px;
+}
+.memoir-skip-link {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 100;
+  background: var(--forest);
+  color: white !important;
+  padding: 14px 20px;
+  transform: translateY(-200%);
+}
+.memoir-skip-link:focus {
+  transform: none;
+}
+.memoir-masthead {
+  border-bottom: 1px solid var(--rule);
+}
+.memoir-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  min-height: 100px;
+}
+.memoir-wordmark {
+  font-family: 'Boska', Georgia, serif !important;
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: -1.2px;
+  white-space: nowrap;
+}
+.memoir-wordmark span {
+  font-family: inherit;
+}
+.wordmark-dot {
+  color: var(--accent);
+}
+.memoir-nav-links,
+.memoir-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  font-size: 14px;
+  font-weight: 500;
+}
+.memoir-nav-links a,
+.memoir-signin {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+}
+.memoir-nav-links a:hover,
+.memoir-signin:hover {
+  text-decoration: underline;
+  text-underline-offset: 5px;
+}
+.memoir-button {
+  background: var(--forest);
+  color: var(--sheet) !important;
+  border: 1px solid var(--forest);
+  display: inline-flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 28px;
+  min-height: 56px;
+  padding: 16px 24px;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 500;
+  transition: background 180ms ease;
+  text-align: left;
+}
+.memoir-button:hover {
+  background: #385447;
+}
+.memoir-button span {
+  font-size: 22px;
+  line-height: 1;
+}
+.memoir-button-small {
+  font-size: 14px;
+  min-height: 48px;
+  padding: 12px 18px;
+  gap: 20px;
+}
+.memoir-button-outline {
+  background: transparent;
+  color: var(--forest) !important;
+}
+.memoir-button-outline:hover {
+  background: var(--sage);
+}
+.memoir-text-link {
+  display: inline-flex;
+  gap: 16px;
+  align-items: center;
+  min-height: 48px;
+  text-decoration: underline;
+  text-underline-offset: 5px;
+  font-size: 15px;
+  font-weight: 500;
+}
+.memoir-text-link:hover {
+  color: var(--accent);
+}
+.memoir-mobile-menu {
+  display: none;
+}
+.memoir-eyebrow {
+  font-size: 12px;
+  letter-spacing: 1.7px;
+  font-weight: 600;
+  line-height: 1.6;
+  text-transform: uppercase;
+}
+.eyebrow-rule {
+  display: inline-block;
+  width: 28px;
+  height: 1px;
+  background: var(--accent);
+  margin-right: 12px;
+  vertical-align: middle;
+}
+.memoir-hero {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 70px;
+  padding-block: 72px 94px;
+  align-items: start;
+}
+.memoir-hero-copy {
+  padding-top: 30px;
+}
+.memoir-hero h1 {
+  font-size: clamp(68px, 6.2vw, 88px);
+  line-height: 0.99;
+  letter-spacing: -2.6px;
+  margin: 27px 0 28px;
+}
+.memoir-hero h1 em {
+  color: #53654f;
+}
+.memoir-lead {
+  font-size: 18px;
+  line-height: 1.7;
+  color: var(--body);
+  max-width: 440px;
+}
+.memoir-action-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 22px;
+  margin-top: 30px;
+}
+.memoir-hero-note {
+  margin-top: 20px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.manuscript-figure {
+  margin: 0;
+  padding-top: 4px;
+  min-width: 0;
+}
+.manuscript-caption {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 18px;
+}
+.manuscript-caption span:first-child {
+  font-family: 'Lora', Georgia, serif;
+  font-style: italic;
+}
+.manuscript-sheet {
+  position: relative;
+  padding: 32px 44px 26px;
+  background: var(--sheet);
+  border: 1px solid #ddd8cb;
+  box-shadow:
+    5px 5px 0 #e9e4d9,
+    6px 6px 0 #d8d2c4,
+    14px 18px 40px #233a3210;
+  min-height: 570px;
+}
+.manuscript-running,
+.manuscript-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  letter-spacing: 1.8px;
+  gap: 16px;
+  color: var(--muted);
+}
+.manuscript-running {
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 16px;
+}
+.manuscript-chapter {
+  font-family: 'Boska', Georgia, serif;
+  font-size: 56px;
+  line-height: 1;
+  color: #a84730;
+  margin: 34px 0 18px;
+}
+.manuscript-sheet h2 {
+  font-size: 36px;
+  line-height: 1.07;
+  letter-spacing: -0.6px;
+  margin-bottom: 26px;
+}
+.manuscript-prose p {
+  font-family: 'Lora', Georgia, serif;
+  font-size: 16px;
+  line-height: 1.9;
+  color: var(--body);
+  margin-bottom: 17px;
+}
+.manuscript-prose p:first-child:first-letter {
+  font-size: 45px;
+  float: left;
+  line-height: 0.95;
+  margin: 7px 8px 0 0;
+  font-family: 'Boska', Georgia, serif;
+  color: var(--forest);
+}
+.manuscript-footer {
+  padding-top: 18px;
+  border-top: 1px solid var(--rule);
+  margin-top: 26px;
+}
+.sample-prompt {
+  padding: 22px 0 0 34px;
+  border-left: 1px solid var(--rule);
+  margin: 30px 0 0 12px;
+}
+.sample-prompt .memoir-eyebrow {
+  font-size: 10px;
+  color: var(--muted);
+}
+.sample-prompt p {
+  font-family: 'Lora', Georgia, serif;
+  font-style: italic;
+  font-size: 18px;
+  line-height: 1.6;
+  margin-top: 8px;
+}
+.memoir-section {
+  padding-block: 94px;
+}
+.memoir-section h2 {
+  font-size: clamp(42px, 4vw, 56px);
+  line-height: 1.06;
+  letter-spacing: -1px;
+  margin: 20px 0 26px;
+}
+.memoir-section-heading {
+  max-width: 650px;
+}
+.memoir-section-heading > p:last-child,
+.memoir-example-intro > p:not(.memoir-eyebrow) {
+  max-width: 470px;
+  font-size: 18px;
+  line-height: 1.75;
+  color: var(--body);
+}
+.memoir-process {
+  background: #eeeede;
+  border-block: 1px solid var(--rule);
+}
+.memoir-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 60px;
+  margin: 60px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.memoir-steps li {
+  border-top: 1px solid #c7cbbb;
+  padding-top: 22px;
+}
+.memoir-step-number {
+  font-family: 'Boska', Georgia, serif;
+  font-size: 30px;
+  color: var(--accent);
+}
+.memoir-steps h3 {
+  font-size: 34px;
+  margin: 20px 0 14px;
+}
+.memoir-steps p {
+  color: var(--body);
+  font-size: 16px;
+  line-height: 1.8;
+}
+.memoir-example {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 100px;
+  align-items: center;
+}
+.memoir-example-intro > .memoir-text-link {
+  margin-top: 24px;
+}
+.memoir-example-label {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 20px;
+}
+.memoir-memory {
+  padding: 26px 30px;
+  border: 1px solid var(--rule);
+  background: transparent;
+}
+.memoir-memory blockquote {
+  font-family: 'Lora', Georgia, serif;
+  font-style: italic;
+  font-size: 20px;
+  line-height: 1.7;
+  margin-top: 15px;
+}
+.memoir-draft {
+  padding: 32px 30px;
+  background: var(--sheet);
+  border: 1px solid var(--rule);
+  border-top: 0;
+}
+.memoir-draft p {
+  font-family: 'Lora', Georgia, serif;
+  font-size: 17px;
+  line-height: 1.8;
+  margin-top: 18px;
+}
+.memoir-draft-note {
+  display: block;
+  margin-top: 24px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.memoir-path-section {
+  background: var(--forest);
+  color: var(--sheet);
+}
+.memoir-path-section > .memoir-container > .memoir-eyebrow {
+  color: #c7d0bd;
+}
+.memoir-paths {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-top: 38px;
+}
+.memoir-paths > a {
+  padding: 26px 80px 10px 0;
+  display: block;
+}
+.memoir-paths > a + a {
+  padding-left: 70px;
+  border-left: 1px solid #ffffff35;
+  padding-right: 0;
+}
+.memoir-path-index {
+  font-size: 12px;
+  letter-spacing: 1.6px;
+  color: #c7d0bd;
+}
+.memoir-paths h2 {
+  margin-block: 22px;
+}
+.memoir-paths p {
+  font-size: 17px;
+  line-height: 1.75;
+  color: #d6dbcf;
+  max-width: 390px;
+}
+.memoir-path-link {
+  margin-top: 36px;
+  border-top: 1px solid #ffffff35;
+  padding: 20px 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  font-size: 15px;
+}
+.memoir-paths a:hover .memoir-path-link {
+  border-color: var(--sheet);
+}
+.memoir-pricing-invitation {
+  display: flex;
+  gap: 40px;
+  align-items: center;
+  justify-content: space-between;
+  padding-block: 66px;
+  border-bottom: 1px solid var(--rule);
+}
+.memoir-pricing-invitation h2 {
+  font-size: 36px;
+  line-height: 1.2;
+  margin: 14px 0;
+}
+.memoir-pricing-invitation p:last-child {
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--body);
+  max-width: 600px;
+}
+.memoir-pricing-invitation > .memoir-button {
+  flex-shrink: 0;
+}
+.memoir-faq {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 90px;
+}
+.memoir-faq details {
+  border-top: 1px solid var(--rule);
+}
+.memoir-faq details:last-child {
+  border-bottom: 1px solid var(--rule);
+}
+.memoir-faq summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 28px;
+  font-size: 17px;
+  font-weight: 500;
+  padding: 24px 0;
+  cursor: pointer;
+  list-style: none;
+}
+.memoir-faq summary::-webkit-details-marker {
+  display: none;
+}
+.memoir-faq summary span {
+  font-size: 24px;
+  font-weight: 400;
+  color: var(--accent);
+}
+.memoir-faq details[open] summary span {
+  transform: rotate(45deg);
+}
+.memoir-faq details p {
+  padding: 0 36px 26px 0;
+  font-size: 16px;
+  line-height: 1.8;
+  color: var(--body);
+}
+.memoir-closing {
+  text-align: center;
+  padding-block: 86px 94px;
+  background: var(--sage);
+  border-block: 1px solid var(--rule);
+}
+.memoir-closing h2 {
+  font-size: clamp(48px, 5vw, 68px);
+  line-height: 1.05;
+  letter-spacing: -1.8px;
+  margin: 22px 0 34px;
+}
+.memoir-footer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 46px;
+  padding-block: 52px 28px;
+}
+.memoir-footer p {
+  color: var(--muted);
+  font-size: 14px;
+  margin-top: 8px;
+}
+.memoir-footer nav {
+  display: flex;
+  align-items: start;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 30px;
+  font-size: 14px;
+}
+.memoir-footer nav a {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+.memoir-footer-bottom {
+  grid-column: 1/-1;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding-top: 24px;
+  border-top: 1px solid var(--rule);
+  color: var(--muted);
+  font-size: 12px;
+}
+.memoir-footer-bottom > div {
+  display: flex;
+  gap: 24px;
+}
+@media (max-width: 1100px) {
+  .memoir-container {
+    width: calc(100% - 64px);
+  }
+  .memoir-nav-links {
+    gap: 18px;
+  }
+  .memoir-nav-actions {
+    gap: 18px;
+  }
+  .memoir-hero {
+    gap: 42px;
+  }
+  .memoir-hero h1 {
+    font-size: 72px;
+  }
+  .manuscript-sheet {
+    padding-inline: 30px;
+  }
+  .memoir-example {
+    gap: 50px;
+  }
+  .memoir-paths > a {
+    padding-right: 50px;
+  }
+  .memoir-paths > a + a {
+    padding-left: 50px;
+  }
+}
+@media (max-width: 900px) {
+  .memoir-nav-links {
+    display: none;
+  }
+  .memoir-mobile-menu {
+    display: block;
+    position: relative;
+  }
+  .memoir-navigation {
+    min-height: 84px;
+    gap: 20px;
+  }
+  .memoir-nav-actions {
+    margin-left: auto;
+  }
+  .memoir-mobile-menu summary {
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    list-style: none;
+  }
+  .memoir-mobile-menu > div {
+    position: absolute;
+    z-index: 30;
+    top: 58px;
+    right: 0;
+    width: 220px;
+    background: var(--sheet);
+    padding: 12px 18px;
+    box-shadow: 0 8px 24px #233a3215;
+    border: 1px solid var(--rule);
+  }
+  .memoir-mobile-menu a {
+    display: flex;
+    align-items: center;
+    min-height: 48px;
+    font-size: 15px;
+  }
+  .memoir-hero {
+    gap: 30px;
+    padding-block: 50px 66px;
+  }
+  .memoir-hero h1 {
+    font-size: 62px;
+  }
+  .memoir-hero-copy {
+    padding-top: 18px;
+  }
+  .manuscript-sheet h2 {
+    font-size: 30px;
+  }
+  .manuscript-prose p {
+    font-size: 14px;
+  }
+  .manuscript-sheet {
+    padding: 26px;
+  }
+  .manuscript-running {
+    font-size: 8px;
+    letter-spacing: 1px;
+  }
+  .memoir-steps {
+    gap: 32px;
+  }
+  .memoir-faq {
+    gap: 50px;
+  }
+  .memoir-eyebrow {
+    font-size: 11px;
+    letter-spacing: 1.4px;
+  }
+}
+@media (max-width: 700px) {
+  .memoir-container {
+    width: calc(100% - 44px);
+  }
+  .memoir-navigation {
+    min-height: 78px;
+    gap: 18px;
+  }
+  .memoir-wordmark {
+    font-size: 28px;
+  }
+  .memoir-nav-actions {
+    display: none;
+  }
+  .memoir-mobile-menu {
+    margin-left: auto;
+  }
+  .memoir-hero {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    padding-block: 40px 56px;
+  }
+  .memoir-hero-copy {
+    padding-top: 0;
+  }
+  .memoir-hero h1 {
+    font-size: clamp(49px, 12vw, 66px);
+    line-height: 1.03;
+    letter-spacing: -1.6px;
+    margin: 22px 0;
+  }
+  .desktop-break {
+    display: none;
+  }
+  .memoir-lead {
+    font-size: 17px;
+    line-height: 1.7;
+    max-width: 500px;
+  }
+  .memoir-action-row {
+    gap: 18px;
+    margin-top: 26px;
+  }
+  .memoir-button {
+    padding: 16px 20px;
+    font-size: 15px;
+    gap: 20px;
+  }
+  .memoir-text-link {
+    font-size: 14px;
+  }
+  .memoir-hero-note {
+    font-size: 12px;
+    margin-top: 16px;
+  }
+  .manuscript-caption {
+    font-size: 11px;
+  }
+  .manuscript-sheet {
+    min-height: 0;
+    padding: 26px 28px;
+  }
+  .manuscript-chapter {
+    margin-top: 26px;
+    font-size: 48px;
+  }
+  .manuscript-sheet h2 {
+    font-size: 34px;
+  }
+  .manuscript-prose p {
+    font-size: 16px;
+    line-height: 1.8;
+  }
+  .sample-prompt {
+    margin-top: 24px;
+    padding: 10px 0 0 20px;
+  }
+  .sample-prompt p {
+    font-size: 16px;
+  }
+  .memoir-section {
+    padding-block: 60px;
+  }
+  .memoir-section h2 {
+    font-size: 42px;
+    letter-spacing: -0.8px;
+  }
+  .memoir-section-heading > p:last-child,
+  .memoir-example-intro > p:not(.memoir-eyebrow) {
+    font-size: 17px;
+  }
+  .memoir-steps {
+    grid-template-columns: 1fr;
+    gap: 26px;
+    margin-top: 38px;
+  }
+  .memoir-steps li {
+    display: grid;
+    grid-template-columns: 42px 1fr;
+    column-gap: 18px;
+  }
+  .memoir-step-number {
+    grid-row: 1/3;
+    padding-top: 6px;
+    font-size: 27px;
+  }
+  .memoir-steps h3 {
+    margin: 0 0 10px;
+    font-size: 30px;
+  }
+  .memoir-steps p {
+    font-size: 16px;
+  }
+  .memoir-example {
+    grid-template-columns: 1fr;
+    gap: 34px;
+  }
+  .memoir-memory,
+  .memoir-draft {
+    padding: 24px;
+  }
+  .memoir-memory blockquote {
+    font-size: 19px;
+  }
+  .memoir-draft p {
+    font-size: 16px;
+  }
+  .memoir-paths {
+    grid-template-columns: 1fr;
+    margin-top: 24px;
+  }
+  .memoir-paths > a {
+    padding: 18px 0 22px;
+  }
+  .memoir-paths > a + a {
+    border-left: 0;
+    border-top: 1px solid #ffffff35;
+    padding: 38px 0 0;
+  }
+  .memoir-paths h2 {
+    font-size: 42px;
+  }
+  .memoir-pricing-invitation {
+    flex-direction: column;
+    align-items: start;
+    gap: 28px;
+    padding-block: 48px;
+  }
+  .memoir-pricing-invitation h2 {
+    font-size: 32px;
+  }
+  .memoir-faq {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+  .memoir-faq summary {
+    font-size: 16px;
+    padding-block: 22px;
+    gap: 16px;
+  }
+  .memoir-faq details p {
+    padding-right: 12px;
+  }
+  .memoir-closing {
+    padding-block: 58px 64px;
+  }
+  .memoir-closing h2 {
+    font-size: 48px;
+    letter-spacing: -1px;
+  }
+  .memoir-footer {
+    grid-template-columns: 1fr;
+    gap: 28px;
+    padding-top: 38px;
+  }
+  .memoir-footer nav {
+    justify-content: start;
+    gap: 24px;
+  }
+  .memoir-footer-bottom {
+    flex-direction: column;
+    gap: 14px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .memoir-editorial *,
+  .memoir-workspace * {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}

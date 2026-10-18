@@ -36,9 +36,8 @@ export default function PricingSection({ onGetStarted }) {
           <PricingCard
             tier="Full Story"
             tierClassName="font-sans text-heritage-cta text-sm uppercase tracking-wider font-semibold mb-2"
-            price="\u00a3299"
-            originalPrice="\u00a3599"
-            subtitle="50% off \u2014 or 4 payments of \u00a3100/mo"
+            price="\u00a3250"
+            subtitle="10 hardbacks for the price of 5. Delivery included."
             features={FULL_STORY_FEATURES}
             buttonLabel="Write My First Chapter \u2014 Free"
             buttonClassName="w-full font-sans bg-heritage-cta text-white px-6 py-4 rounded-full text-base font-medium hover:bg-heritage-cta-hover transition-all shadow-lg shadow-heritage-cta/25"
@@ -48,12 +47,11 @@ export default function PricingSection({ onGetStarted }) {
           />
 
           <PricingCard
-            tier="Lifetime"
-            price="\u00a3299"
-            originalPrice="\u00a3599"
-            subtitle="50% off \u2014 or 4 payments of \u00a3100/mo"
+            tier="For Your Family"
+            price="\u00a3250"
+            subtitle="The complete memoir package, shared with family."
             features={LIFETIME_FEATURES}
-            buttonLabel="Get Lifetime Access"
+            buttonLabel="Start Your Family Memoir"
             buttonClassName="w-full font-sans bg-heritage-sepia text-white px-6 py-4 rounded-full text-base font-medium hover:bg-heritage-sepia-dark transition-all shadow-md"
             onAction={onGetStarted}
             vatNote
@@ -76,16 +74,18 @@ const FREE_FEATURES = [
 const FULL_STORY_FEATURES = [
   '52 chapters \u2014 one per week',
   'Unlimited voice conversations',
-  '4 colour royal hardcover books in cloth',
+  '10 A5 matte hardbacks with colour photographs',
+  'Up to 200 pages and 8 colour photo pages',
+  'Delivery to one UK or French address included',
   'Family sharing',
   'Priority support'
 ]
 
 const LIFETIME_FEATURES = [
   'Everything in Full Story',
-  'Unlimited chapters forever',
-  'All future features included',
-  'Best long-term value'
+  '12 months of memoir access',
+  'Audiobook and phone interviews',
+  'Ten copies to keep and share'
 ]
 
 function CheckIcon() {

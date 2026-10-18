@@ -9,28 +9,20 @@
  * (audiobook generation, EPUB, image generation) from blocking request handling.
  */
 
-import dotenv from 'dotenv'
-import { fileURLToPath } from 'url'
-import { dirname, join } from 'path'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-
-dotenv.config({ path: join(__dirname, '..', '..', '.env') })
-
-import { initDatabase } from '../api/db/index.js'
+import '../api/environment.js'
+import '../api/polyfills.js'
+import { runMigrations } from '../api/db/runner.js'
 import { initializeCronJobs } from '../api/cron/index.js'
 import { getQueue, stopQueue } from '../api/jobs/queue.js'
 import { JOB } from '../api/jobs/jobNames.js'
 import { processAudiobookJobs } from '../api/jobs/audiobookWorker.js'
+import { startPrintWorker } from '../api/jobs/printWorker.js'
 import pool from '../api/db/index.js'
+import { createShutdown, registerShutdown } from '../api/utils/lifecycle.js'
 
 async function main() {
   console.log('Worker starting...')
-  await initDatabase()
-
-  // ─── Cron jobs ──────────────────────────────────────────────────────────
-  initializeCronJobs()
+  await runMigrations(pool)
 
   // ─── pg-boss job queue ───────────────────────────────────────────────────
   const boss = await getQueue()
@@ -42,20 +34,27 @@ async function main() {
     processAudiobookJobs(jobs, boss, pool)
   )
 
+  const cronJobs = initializeCronJobs()
+  const printWorker = startPrintWorker(pool)
+
   console.log('Worker started — cron jobs and job queue active')
 
   // ─── Graceful shutdown ───────────────────────────────────────────────────
-  async function shutdown(signal) {
-    console.log(`Worker ${signal} — shutting down...`)
-    await stopQueue()
-    process.exit(0)
-  }
-
-  process.on('SIGTERM', () => shutdown('SIGTERM'))
-  process.on('SIGINT', () => shutdown('SIGINT'))
+  registerShutdown(
+    createShutdown({
+      stopCron: async () => {
+        cronJobs.stop()
+        await printWorker.stop()
+      },
+      stopQueue,
+      closeDatabase: () => pool.end()
+    })
+  )
 }
 
-main().catch(err => {
-  console.error('Worker failed to start:', err)
+main().catch(async err => {
+  console.error('Worker failed to start:', err.message)
+  await stopQueue().catch(() => {})
+  await pool.end().catch(() => {})
   process.exit(1)
 })

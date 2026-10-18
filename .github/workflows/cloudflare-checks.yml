@@ -1,0 +1,33 @@
+name: Cloudflare deployment checks
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+jobs:
+  frontend:
+    name: Build and verify Cloudflare frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run lint:cloudflare
+      - run: npm run test:cloudflare
+      - run: npm run test:data-migration
+      - run: npm run test:cloudflare:readiness
+      - name: Verify native D1 staging slice and bindings without deploying
+        run: npm run check:cloudflare:api
+      - run: npm run test:web
+      - run: npm run build:cloudflare
+      # Bundle/configuration check only. Deploy after the API and data migration
+      # are verified; CI never changes DNS or creates an incomplete live app.
+      - run: npx wrangler deploy --dry-run --outdir .cloudflare/bundle

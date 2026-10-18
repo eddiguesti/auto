@@ -5,6 +5,10 @@ node_modules/
 dist/
 build/
 .cache/
+.cloudflare/
+.wrangler/
+.dev.vars
+.dev.vars.*
 
 # Environment files (NEVER commit secrets)
 .env

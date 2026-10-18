@@ -83,7 +83,7 @@ export async function login(db, email, password) {
     throw err
   }
 
-  const { password_hash, ...safeUser } = user
+  const { password_hash: _passwordHash, ...safeUser } = user
   const token = generateToken(safeUser)
 
   return { user: safeUser, token }
@@ -93,9 +93,10 @@ export async function login(db, email, password) {
  * Invalidate a single token (logout).
  *
  * @param {object} decoded  - JWT payload
+ * @param {string} rawToken - Original JWT for legacy tokens without JTI
  */
-export async function logout(decoded) {
-  await blacklistToken(decoded)
+export async function logout(decoded, rawToken) {
+  await blacklistToken(decoded, rawToken)
 }
 
 /**

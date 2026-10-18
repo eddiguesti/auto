@@ -1,710 +1,437 @@
-import { useState, useEffect } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
-import {
-  IconBook,
-  IconBookmark,
-  IconGift,
-  IconX,
-  IconStack2,
-  IconHeadphones,
-  IconDiscount2
-} from '@tabler/icons-react'
+import { useFocusTrap } from '../hooks/useFocusTrap'
 
-// Package options with discounts
-const PACKAGES = {
-  single: {
-    id: 'single',
-    name: 'Single Copy',
-    quantity: 1,
-    discount: 0,
-    description: 'Perfect for yourself',
-    icon: 'book'
-  },
-  bundle10: {
-    id: 'bundle10',
-    name: '10 Book Bundle',
-    quantity: 10,
-    discount: 0.4,
-    description: 'Share with family - 40% OFF',
-    icon: 'stack',
-    popular: true
-  }
+const orderLabels = {
+  proof: 'Ready for your review',
+  queued: 'Approved — waiting for the printer',
+  submitting: 'Sending to the printer',
+  submitted: 'With the printer',
+  dispatched: 'Dispatched',
+  review: 'Our team needs to check this order'
 }
 
-// Audiobook pricing
-const AUDIOBOOK_PRICE = 19.99
-const AUDIOBOOK_BUNDLE_DISCOUNT = 0.4 // 40% off when bundled with books
-
-// Simple book cover preview - shows default cloth cover
-function BookPreview({ title, format, size = 'normal' }) {
-  const isHardcover = format === 'hardcover' || format === 'deluxe'
-
-  const sizes = {
-    small: { width: 140, height: 210 },
-    normal: { width: 200, height: 300 },
-    large: { width: 260, height: 390 }
-  }
-  const { width, height } = sizes[size] || sizes.normal
-
-  return (
-    <div className="flex flex-col items-center gap-3">
-      <div
-        className="rounded-r-lg overflow-hidden"
-        style={{
-          width,
-          height,
-          boxShadow: isHardcover
-            ? '4px 4px 20px rgba(0,0,0,0.4), -2px 0 10px rgba(0,0,0,0.1)'
-            : '2px 2px 12px rgba(0,0,0,0.3)'
-        }}
-      >
-        <div className="w-full h-full bg-gradient-to-br from-[#8b7355] via-[#6b5344] to-[#4a3728] flex flex-col justify-center p-5 relative">
-          <div className="text-center">
-            <h3
-              className="font-serif text-amber-100/80 leading-snug"
-              style={{
-                fontSize: size === 'large' ? '22px' : size === 'small' ? '14px' : '18px',
-                fontWeight: 500
-              }}
-            >
-              {title}
-            </h3>
-          </div>
-          {/* Shine effect */}
-          <div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              background: 'linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 50%)'
-            }}
-          />
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// Icon mapping for book formats using Tabler Icons
-const formatIcons = {
-  paperback: <IconBook size={40} className="text-sepia" stroke={1.5} />,
-  hardcover: <IconBookmark size={40} className="text-sepia" stroke={1.5} />,
-  deluxe: <IconGift size={40} className="text-sepia" stroke={1.5} />
-}
-
-// Format card component
-function FormatCard({ format, selected, onClick }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`relative p-5 rounded-2xl border-2 transition-all duration-300 text-center ${
-        selected
-          ? 'border-sepia bg-sepia/10 shadow-lg scale-[1.02]'
-          : 'border-sepia/20 hover:border-sepia/40 hover:shadow-md'
-      } ${format.popular ? 'ring-2 ring-amber-400/50' : ''}`}
-    >
-      {format.popular && (
-        <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-amber-400 text-amber-900 text-xs px-3 py-0.5 rounded-full font-medium">
-          Most Popular
-        </span>
-      )}
-      <div className="flex justify-center mb-2">
-        {formatIcons[format.icon] || formatIcons.paperback}
-      </div>
-      <div className="font-medium text-ink text-lg">{format.name}</div>
-      <div className="text-sm text-warmgray mt-1">{format.description}</div>
-      <div className="text-xl font-semibold text-sepia mt-3">{format.price}</div>
-    </button>
-  )
-}
-
-export default function BookOrderWizard({ userName, pageCount, onClose }) {
-  const { authFetch } = useAuth()
-  const [step, setStep] = useState(1)
-  const [loading, setLoading] = useState(true)
-  const [options, setOptions] = useState(null)
-
-  // Wizard state
-  const [selectedFormat, setSelectedFormat] = useState('hardcover')
-  const [selectedPackage, setSelectedPackage] = useState('single')
-  const [includeAudiobook, setIncludeAudiobook] = useState(false)
-  const [bookTitle, setBookTitle] = useState('My Life Story')
-  const [authorName, setAuthorName] = useState('')
-
-  // Shipping state
-  const [shipping, setShipping] = useState({
-    name: '',
-    email: '',
-    street1: '',
-    city: '',
-    postcode: '',
-    countryCode: 'GB'
+export default function BookOrderWizard({ userName, onClose }) {
+  const { user, authFetch } = useAuth()
+  const dialog = useRef(null)
+  useFocusTrap(dialog)
+  const [status, setStatus] = useState(null)
+  const [photos, setPhotos] = useState([])
+  const [selected, setSelected] = useState([])
+  const [title, setTitle] = useState(`${userName || 'My'}'s Life Story`)
+  const [author, setAuthor] = useState(userName || '')
+  const [proof, setProof] = useState(null)
+  const [viewed, setViewed] = useState({})
+  const [approved, setApproved] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const [address, setAddress] = useState({
+    addressee: userName || '',
+    address1: '',
+    address2: '',
+    town: '',
+    county: '',
+    postCode: '',
+    countryCode: 'GB',
+    email: user?.email || '',
+    telNumber: ''
   })
-
+  const confirming = new URLSearchParams(window.location.search).get('paid') === '1'
   useEffect(() => {
-    fetchOptions()
+    if (dialog.current) dialog.current.scrollTop = 0
+  }, [proof?.id])
+  useEffect(() => {
+    const previous = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = previous
+    }
   }, [])
 
-  const fetchOptions = async () => {
+  const json = useCallback(
+    async (path, options) => {
+      const response = await authFetch(path, options)
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.message || data.error || 'Please try again.')
+      return data
+    },
+    [authFetch]
+  )
+  const refresh = useCallback(async () => {
+    setStatus(await json('/api/print/status'))
+  }, [json])
+  useEffect(() => {
+    let active = true
+    Promise.all([json('/api/print/status'), json('/api/stories/all')])
+      .then(([data, stories]) => {
+        if (!active) return
+        setStatus(data)
+        const savedProof =
+          data.hasEntitlement && data.orders.find(order => order.status === 'proof')
+        if (savedProof)
+          setProof({
+            id: savedProof.id,
+            pageCount: savedProof.page_count,
+            colourPages: savedProof.colour_pages
+          })
+        const availablePhotos = stories.flatMap(story => story.photos || [])
+        setPhotos(availablePhotos)
+        setSelected(availablePhotos.slice(0, 8).map(photo => photo.id))
+      })
+      .catch(err => {
+        if (active) setError(err.message)
+      })
+    return () => {
+      active = false
+    }
+  }, [json])
+  useEffect(() => {
+    const timer = setInterval(() => {
+      void refresh().catch(() => {})
+    }, 10000)
+    return () => clearInterval(timer)
+  }, [refresh])
+  useEffect(() => {
+    const handleKey = event => {
+      if (event.key === 'Escape' && !busy) onClose()
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [busy, onClose])
+
+  async function action(work) {
+    setBusy(true)
+    setError('')
     try {
-      const res = await authFetch('/api/covers/options')
-      if (!res.ok) throw new Error('Failed to load options')
-      const data = await res.json()
-      setOptions(data)
+      await work()
     } catch (err) {
-      console.error('Failed to load options:', err)
+      setError(err.message)
     } finally {
-      setLoading(false)
+      setBusy(false)
     }
   }
-
-  const canProceedToStep2 = selectedFormat
-  const canProceedToStep3 =
-    shipping.name && shipping.email && shipping.street1 && shipping.city && shipping.postcode
-
-  // Calculate total price
-  const calculateTotal = () => {
-    if (!options) return { books: 0, audiobook: 0, total: 0, savings: 0 }
-
-    const format = options.bookFormats.find(f => f.id === selectedFormat)
-    const basePrice = parseFloat(format?.price?.replace('£', '') || 0)
-    const pkg = PACKAGES[selectedPackage]
-
-    // Books price with package discount
-    const booksFullPrice = basePrice * pkg.quantity
-    const booksPrice = booksFullPrice * (1 - pkg.discount)
-
-    // Audiobook price (40% off when bundled with 10 books)
-    let audiobookPrice = 0
-    if (includeAudiobook) {
-      audiobookPrice =
-        selectedPackage === 'bundle10'
-          ? AUDIOBOOK_PRICE * (1 - AUDIOBOOK_BUNDLE_DISCOUNT)
-          : AUDIOBOOK_PRICE
-    }
-
-    const total = booksPrice + audiobookPrice
-    const savings =
-      booksFullPrice -
-      booksPrice +
-      (includeAudiobook && selectedPackage === 'bundle10'
-        ? AUDIOBOOK_PRICE * AUDIOBOOK_BUNDLE_DISCOUNT
-        : 0)
-
-    return {
-      books: booksPrice,
-      audiobook: audiobookPrice,
-      total,
-      savings,
-      quantity: pkg.quantity
-    }
+  const checkout = () =>
+    action(async () => {
+      const data = await json('/api/payments/create-checkout', {
+        method: 'POST',
+        body: JSON.stringify({
+          productId: 'premium_bundle',
+          successUrl: `${window.location.origin}/export?print=1&paid=1`,
+          cancelUrl: `${window.location.origin}/export?print=1`
+        })
+      })
+      if (!/^https:\/\//.test(data.url || '')) throw new Error('Checkout could not be opened.')
+      window.location.assign(data.url)
+    })
+  const prepare = () =>
+    action(async () => {
+      const data = await json('/api/print/proof', {
+        method: 'POST',
+        body: JSON.stringify({ title, author, photoIds: selected })
+      })
+      setProof(data)
+      setViewed({})
+      setApproved(false)
+      await refresh()
+    })
+  const download = type =>
+    action(async () => {
+      const response = await authFetch(`/api/print/${proof.id}/proof/${type}`)
+      if (!response.ok) throw new Error('Your proof could not be downloaded.')
+      const url = URL.createObjectURL(await response.blob())
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `memoir-${type}-proof.pdf`
+      link.click()
+      setTimeout(() => URL.revokeObjectURL(url), 60000)
+      setViewed(previous => ({ ...previous, [type]: true }))
+    })
+  const submit = event => {
+    event.preventDefault()
+    void action(async () => {
+      await json(`/api/print/${proof.id}/approve`, {
+        method: 'POST',
+        body: JSON.stringify({ approved, address })
+      })
+      setProof(null)
+      setApproved(false)
+      await refresh()
+    })
   }
-
-  const pricing = calculateTotal()
-
-  if (loading) {
-    return (
-      <div className="fixed inset-0 bg-ink/50 backdrop-blur-sm flex items-center justify-center z-50">
-        <div className="bg-white rounded-2xl p-8 text-center shadow-2xl">
-          <div className="w-12 h-12 border-3 border-sepia border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-sepia">Loading book options...</p>
-        </div>
-      </div>
-    )
-  }
-
-  const steps = [
-    { num: 1, label: 'Book' },
-    { num: 2, label: 'Shipping' },
-    { num: 3, label: 'Review' }
-  ]
+  const inputClass =
+    'mt-1 w-full rounded-lg border border-sepia/25 bg-white px-3 py-2.5 text-ink focus:outline-none focus:ring-2 focus:ring-sepia'
+  const completedOrders = status?.orders.filter(order => order.status !== 'proof') || []
 
   return (
-    <div className="fixed inset-0 bg-ink/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 sm:p-2">
-      <div className="bg-gradient-to-b from-white to-cream rounded-t-2xl sm:rounded-2xl w-full max-w-[95vw] max-h-[98vh] sm:max-h-[96vh] flex flex-col shadow-2xl overflow-hidden">
-        {/* Header */}
-        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-sepia/10 flex justify-between items-center">
-          <div className="min-w-0 flex-1">
-            <h2 className="text-xl sm:text-2xl font-serif text-ink">Create Your Book</h2>
-            {/* Progress steps - compact on mobile */}
-            <div className="flex items-center gap-0.5 sm:gap-1 mt-2 overflow-x-auto">
-              {steps.map((s, i) => (
-                <div key={s.num} className="flex items-center flex-shrink-0">
-                  <div
-                    className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-medium transition-colors ${
-                      step > s.num
-                        ? 'bg-green-500 text-white'
-                        : step === s.num
-                          ? 'bg-sepia text-white'
-                          : 'bg-sepia/20 text-sepia/60'
-                    }`}
-                  >
-                    {step > s.num ? '✓' : s.num}
-                  </div>
-                  <span
-                    className={`ml-1 sm:ml-1.5 text-[10px] sm:text-xs hidden xs:inline ${step === s.num ? 'text-ink font-medium' : 'text-sepia/60'}`}
-                  >
-                    {s.label}
-                  </span>
-                  {i < steps.length - 1 && (
-                    <div className="w-3 sm:w-6 h-0.5 mx-1 sm:mx-2 bg-sepia/20" />
-                  )}
-                </div>
-              ))}
-            </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-6">
+      <section
+        ref={dialog}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="print-title"
+        className="w-full max-w-3xl max-h-[92vh] overflow-y-auto rounded-2xl bg-parchment shadow-2xl"
+      >
+        <header className="sticky top-0 z-10 bg-parchment flex items-start justify-between gap-4 p-6 sm:p-8 border-b border-sepia/15">
+          <div>
+            <p className="text-xs uppercase tracking-[0.2em] text-sepia mb-2">Your story, shared</p>
+            <h2 id="print-title" className="font-display text-3xl text-ink">
+              Ten books. One family story.
+            </h2>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full hover:bg-sepia/10 text-sepia/60 hover:text-sepia transition ml-2"
+            disabled={busy}
+            aria-label="Close book order"
+            className="rounded-full p-2 text-ink hover:bg-sepia/10 disabled:opacity-50"
           >
-            <IconX size={22} stroke={2} />
+            ✕
           </button>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto">
-          {/* Step 1: Choose Style */}
-          {step === 1 && options && (
-            <div className="p-4 sm:p-6 space-y-6 sm:space-y-8">
-              {/* Book Format */}
-              <div>
-                <h3 className="text-base sm:text-lg font-medium text-ink mb-3 sm:mb-4">
-                  Choose your book format
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-                  {options.bookFormats.map(format => (
-                    <FormatCard
-                      key={format.id}
-                      format={format}
-                      selected={selectedFormat === format.id}
-                      onClick={() => setSelectedFormat(format.id)}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* Package Selection */}
-              <div>
-                <h3 className="text-base sm:text-lg font-medium text-ink mb-3 sm:mb-4">
-                  Choose your package
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                  {/* Single Copy */}
-                  <button
-                    onClick={() => setSelectedPackage('single')}
-                    className={`relative p-5 rounded-2xl border-2 transition-all duration-300 text-left ${
-                      selectedPackage === 'single'
-                        ? 'border-sepia bg-sepia/10 shadow-lg'
-                        : 'border-sepia/20 hover:border-sepia/40 hover:shadow-md'
-                    }`}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-full bg-sepia/10 flex items-center justify-center">
-                        <IconBook size={24} className="text-sepia" stroke={1.5} />
-                      </div>
-                      <div>
-                        <div className="font-medium text-ink text-lg">Single Copy</div>
-                        <div className="text-sm text-warmgray">Perfect for yourself</div>
-                      </div>
-                    </div>
-                  </button>
-
-                  {/* 10 Book Bundle */}
-                  <button
-                    onClick={() => setSelectedPackage('bundle10')}
-                    className={`relative p-5 rounded-2xl border-2 transition-all duration-300 text-left ${
-                      selectedPackage === 'bundle10'
-                        ? 'border-sepia bg-sepia/10 shadow-lg ring-2 ring-amber-400/50'
-                        : 'border-sepia/20 hover:border-sepia/40 hover:shadow-md ring-2 ring-amber-400/50'
-                    }`}
-                  >
-                    <span className="absolute -top-2.5 left-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs px-3 py-0.5 rounded-full font-medium flex items-center gap-1">
-                      <IconDiscount2 size={14} />
-                      40% OFF
-                    </span>
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center">
-                        <IconStack2 size={24} className="text-amber-600" stroke={1.5} />
-                      </div>
-                      <div>
-                        <div className="font-medium text-ink text-lg">10 Book Bundle</div>
-                        <div className="text-sm text-warmgray">Share with family & friends</div>
-                        <div className="text-xs text-amber-600 font-medium mt-1">
-                          Save £
-                          {(
-                            parseFloat(
-                              options.bookFormats
-                                .find(f => f.id === selectedFormat)
-                                ?.price?.replace('£', '') || 0
-                            ) *
-                            10 *
-                            0.4
-                          ).toFixed(0)}
-                        </div>
-                      </div>
-                    </div>
-                  </button>
-                </div>
-              </div>
-
-              {/* Audiobook Add-on */}
-              <div>
-                <h3 className="text-base sm:text-lg font-medium text-ink mb-3 sm:mb-4">
-                  Add audiobook narration
-                </h3>
-                <button
-                  onClick={() => setIncludeAudiobook(!includeAudiobook)}
-                  className={`w-full relative p-5 rounded-2xl border-2 transition-all duration-300 text-left ${
-                    includeAudiobook
-                      ? 'border-sepia bg-sepia/10 shadow-lg'
-                      : 'border-sepia/20 hover:border-sepia/40 hover:shadow-md'
-                  }`}
+        </header>
+        <div className="p-6 sm:p-8 space-y-6">
+          <div className="rounded-xl bg-white p-5 border border-sepia/15 flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="font-display text-xl text-ink">10 hardbacks for the price of 5</p>
+              <p className="text-sm text-warmgray mt-2">
+                A5 · Matte printed cover · 115gsm coated paper
+              </p>
+              <p className="text-sm text-warmgray mt-1">
+                Up to 200 pages and 8 colour photo pages.
+              </p>
+            </div>
+            <div>
+              <p className="font-display text-4xl text-ink">£250</p>
+              <p className="text-xs text-warmgray mt-1">One payment. Delivery included.</p>
+            </div>
+            <p className="text-sm text-warmgray w-full">
+              Includes 12 months of memoir access, an audiobook and phone interviews. All ten copies
+              go to one UK or French address.
+            </p>
+          </div>
+          {error && (
+            <p role="alert" className="rounded-lg bg-red-50 p-4 text-red-800">
+              {error}
+            </p>
+          )}
+          {!status && !error && <p role="status">Loading your print package…</p>}
+          {status && !status.available && (
+            <p role="status" className="rounded-lg bg-amber-50 p-4 text-amber-900">
+              Book printing is being set up. You can keep writing; checkout and print submission
+              will open when it is ready.
+            </p>
+          )}
+          {status?.hasLegacyPackage && !status.hasEntitlement && !completedOrders.length && (
+            <p role="status" className="rounded-lg bg-amber-50 p-4 text-amber-900">
+              Your earlier book package is already paid for. Please contact support to arrange
+              printing under your original package terms.
+            </p>
+          )}
+          {completedOrders.map(order => (
+            <div key={order.id} className="rounded-xl border border-sepia/20 bg-white p-5">
+              <h3 className="font-display text-xl">{order.title}</h3>
+              <p role="status" className="mt-2">
+                {orderLabels[order.status]}
+              </p>
+              <p className="text-sm text-warmgray mt-2">10 hardbacks · {order.page_count} pages</p>
+              {order.tracking_url && (
+                <a
+                  href={order.tracking_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block mt-3 text-sepia underline"
                 >
-                  {selectedPackage === 'bundle10' && (
-                    <span className="absolute -top-2.5 right-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs px-3 py-0.5 rounded-full font-medium">
-                      40% OFF with bundle
-                    </span>
-                  )}
-                  <div className="flex items-center gap-4">
-                    <div
-                      className={`w-12 h-12 rounded-full flex items-center justify-center ${includeAudiobook ? 'bg-sepia/20' : 'bg-sepia/10'}`}
-                    >
-                      <IconHeadphones size={24} className="text-sepia" stroke={1.5} />
-                    </div>
-                    <div className="flex-1">
-                      <div className="font-medium text-ink text-lg">Professional AI Audiobook</div>
-                      <div className="text-sm text-warmgray">
-                        Your memoir read aloud with natural AI narration
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      {selectedPackage === 'bundle10' ? (
-                        <>
-                          <div className="text-lg font-semibold text-sepia">
-                            £{(AUDIOBOOK_PRICE * (1 - AUDIOBOOK_BUNDLE_DISCOUNT)).toFixed(2)}
-                          </div>
-                          <div className="text-xs text-warmgray line-through">
-                            £{AUDIOBOOK_PRICE.toFixed(2)}
-                          </div>
-                        </>
-                      ) : (
-                        <div className="text-lg font-semibold text-sepia">
-                          £{AUDIOBOOK_PRICE.toFixed(2)}
-                        </div>
-                      )}
-                    </div>
-                    <div
-                      className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
-                        includeAudiobook ? 'bg-sepia border-sepia' : 'border-sepia/30'
-                      }`}
-                    >
-                      {includeAudiobook && (
-                        <svg
-                          className="w-4 h-4 text-white"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={3}
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
-                      )}
-                    </div>
-                  </div>
-                </button>
-              </div>
-
-              {/* Book Title & Author */}
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-lg font-medium text-ink mb-2">Book title</label>
-                  <input
-                    type="text"
-                    value={bookTitle}
-                    onChange={e => setBookTitle(e.target.value)}
-                    className="w-full px-4 py-3 border border-sepia/20 rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-sepia/30"
-                    placeholder="Enter your book title"
-                  />
-                </div>
-                <div>
-                  <label className="block text-lg font-medium text-ink mb-2">Author name</label>
-                  <input
-                    type="text"
-                    value={authorName}
-                    onChange={e => setAuthorName(e.target.value)}
-                    className="w-full px-4 py-3 border border-sepia/20 rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-sepia/30"
-                    placeholder="Your name"
-                  />
-                </div>
-              </div>
-
-              {/* Price Summary */}
-              {pricing.savings > 0 && (
-                <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-200">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <IconDiscount2 size={20} className="text-amber-600" />
-                      <span className="text-amber-800 font-medium">
-                        You're saving £{pricing.savings.toFixed(2)}!
-                      </span>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-ink">£{pricing.total.toFixed(2)}</div>
-                      <div className="text-xs text-warmgray">
-                        {pricing.quantity} book{pricing.quantity > 1 ? 's' : ''}
-                        {includeAudiobook ? ' + audiobook' : ''}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                  Track your delivery
+                </a>
               )}
             </div>
+          ))}
+          {status?.available &&
+            !status.hasEntitlement &&
+            !status.hasLegacyPackage &&
+            !completedOrders.length &&
+            (confirming ? (
+              <p role="status">
+                Confirming your payment. This page updates automatically; please don’t pay again.
+              </p>
+            ) : (
+              <button
+                disabled={busy}
+                onClick={checkout}
+                className="w-full bg-ink text-white rounded-xl py-4 font-medium disabled:opacity-50"
+              >
+                {busy ? 'Opening checkout…' : 'Get the complete package — £250'}
+              </button>
+            ))}
+          {status?.available && status.hasEntitlement && !proof && (
+            <div className="space-y-4">
+              <h3 className="font-display text-2xl">Ready to finish your book?</h3>
+              <p className="text-sm text-warmgray">
+                Prepare a print proof from your saved memories. Nothing is printed until you review
+                it and confirm delivery.
+              </p>
+              <label className="block text-sm">
+                Book title
+                <input
+                  className={inputClass}
+                  value={title}
+                  onChange={event => setTitle(event.target.value)}
+                  maxLength={160}
+                />
+              </label>
+              <label className="block text-sm">
+                Author name
+                <input
+                  className={inputClass}
+                  value={author}
+                  onChange={event => setAuthor(event.target.value)}
+                  maxLength={100}
+                />
+              </label>
+              {photos.length > 0 && (
+                <fieldset className="rounded-xl border border-sepia/20 p-4">
+                  <legend className="px-2 text-sm">
+                    Photographs — {selected.length} of 8 selected
+                  </legend>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    {photos.map((photo, index) => (
+                      <label key={photo.id} className="flex gap-3 items-center text-sm">
+                        <input
+                          type="checkbox"
+                          checked={selected.includes(photo.id)}
+                          disabled={!selected.includes(photo.id) && selected.length >= 8}
+                          onChange={event =>
+                            setSelected(previous =>
+                              event.target.checked
+                                ? [...previous, photo.id]
+                                : previous.filter(id => id !== photo.id)
+                            )
+                          }
+                        />
+                        {photo.caption || `Photograph ${index + 1}`}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+              )}
+              <button
+                onClick={prepare}
+                disabled={busy || !title.trim() || !author.trim()}
+                className="w-full rounded-xl bg-ink py-4 text-white disabled:opacity-50"
+              >
+                {busy ? 'Preparing your print proof…' : 'Prepare my print proof'}
+              </button>
+            </div>
           )}
-
-          {/* Step 2: Shipping Details */}
-          {step === 2 && (
-            <div className="p-6">
-              <div className="max-w-lg mx-auto space-y-5">
-                <div>
-                  <label className="block text-sm font-medium text-ink mb-2">Full Name *</label>
-                  <input
-                    type="text"
-                    value={shipping.name}
-                    onChange={e => setShipping(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full px-4 py-3 border border-sepia/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-sepia/30"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-ink mb-2">Email *</label>
-                  <input
-                    type="email"
-                    value={shipping.email}
-                    onChange={e => setShipping(prev => ({ ...prev, email: e.target.value }))}
-                    className="w-full px-4 py-3 border border-sepia/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-sepia/30"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-ink mb-2">Address *</label>
-                  <input
-                    type="text"
-                    value={shipping.street1}
-                    onChange={e => setShipping(prev => ({ ...prev, street1: e.target.value }))}
-                    className="w-full px-4 py-3 border border-sepia/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-sepia/30"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-ink mb-2">City *</label>
+          {proof && (
+            <form onSubmit={submit} className="space-y-5">
+              <div>
+                <h3 className="font-display text-2xl">Review your finished book</h3>
+                <p className="text-sm text-warmgray mt-2">
+                  {proof.pageCount} pages, including {proof.colourPages} colour photo pages. Check
+                  spelling, photo quality and layout in both PDFs.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => download('text')}
+                  className="border border-sepia/30 rounded-lg px-4 py-3"
+                >
+                  Download interior proof
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => download('cover')}
+                  className="border border-sepia/30 rounded-lg px-4 py-3"
+                >
+                  Download cover proof
+                </button>
+              </div>
+              <h3 className="font-display text-xl">Where should we send your ten copies?</h3>
+              <div className="grid sm:grid-cols-2 gap-4">
+                {Object.entries({
+                  addressee: 'Full name',
+                  address1: 'Address line 1',
+                  address2: 'Address line 2 (optional)',
+                  town: 'Town / city',
+                  county: 'County / region (optional)',
+                  postCode: 'Postcode',
+                  email: 'Email',
+                  telNumber: 'Telephone (optional)'
+                }).map(([field, label]) => (
+                  <label key={field} className="block text-sm">
+                    {label}
                     <input
-                      type="text"
-                      value={shipping.city}
-                      onChange={e => setShipping(prev => ({ ...prev, city: e.target.value }))}
-                      className="w-full px-4 py-3 border border-sepia/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-sepia/30"
+                      type={field === 'email' ? 'email' : field === 'telNumber' ? 'tel' : 'text'}
+                      required={['addressee', 'address1', 'town', 'postCode', 'email'].includes(
+                        field
+                      )}
+                      maxLength={field === 'telNumber' ? 35 : field === 'email' ? 120 : 99}
+                      className={inputClass}
+                      value={address[field]}
+                      onChange={event =>
+                        setAddress(previous => ({ ...previous, [field]: event.target.value }))
+                      }
                     />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-ink mb-2">Postcode *</label>
-                    <input
-                      type="text"
-                      value={shipping.postcode}
-                      onChange={e => setShipping(prev => ({ ...prev, postcode: e.target.value }))}
-                      className="w-full px-4 py-3 border border-sepia/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-sepia/30"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-ink mb-2">Country *</label>
+                  </label>
+                ))}
+                <label className="block text-sm">
+                  Country
                   <select
-                    value={shipping.countryCode}
-                    onChange={e => setShipping(prev => ({ ...prev, countryCode: e.target.value }))}
-                    className="w-full px-4 py-3 border border-sepia/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-sepia/30 bg-white"
+                    className={inputClass}
+                    value={address.countryCode}
+                    onChange={event =>
+                      setAddress(previous => ({ ...previous, countryCode: event.target.value }))
+                    }
                   >
                     <option value="GB">United Kingdom</option>
-                    <option value="US">United States</option>
-                    <option value="CA">Canada</option>
-                    <option value="AU">Australia</option>
-                    <option value="DE">Germany</option>
                     <option value="FR">France</option>
-                    <option value="IE">Ireland</option>
                   </select>
-                </div>
+                </label>
               </div>
-            </div>
-          )}
-
-          {/* Step 3: Review */}
-          {step === 3 && (
-            <div className="p-6">
-              <div className="max-w-2xl mx-auto">
-                <div className="grid md:grid-cols-2 gap-8">
-                  {/* Book Preview */}
-                  <div className="flex flex-col items-center">
-                    <BookPreview
-                      title={bookTitle}
-                      authorName={authorName}
-                      format={selectedFormat}
-                      size="normal"
-                    />
-                    <div className="mt-4 text-center">
-                      <div className="font-medium text-ink">{bookTitle}</div>
-                      <div className="text-sm text-warmgray capitalize">{selectedFormat}</div>
-                    </div>
-                  </div>
-
-                  {/* Order Summary */}
-                  <div className="space-y-4">
-                    <div className="bg-white rounded-xl p-5 border border-sepia/10">
-                      <h4 className="font-medium text-ink mb-3">Order Summary</h4>
-                      <dl className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <dt className="text-warmgray">Format</dt>
-                          <dd className="text-ink font-medium capitalize">{selectedFormat}</dd>
-                        </div>
-                        <div className="flex justify-between">
-                          <dt className="text-warmgray">Quantity</dt>
-                          <dd className="text-ink font-medium">
-                            {pricing.quantity} book{pricing.quantity > 1 ? 's' : ''}
-                            {selectedPackage === 'bundle10' && (
-                              <span className="text-amber-600 ml-1">(40% off)</span>
-                            )}
-                          </dd>
-                        </div>
-                        <div className="flex justify-between">
-                          <dt className="text-warmgray">Cover</dt>
-                          <dd className="text-ink font-medium">Classic Cloth</dd>
-                        </div>
-                        <div className="flex justify-between">
-                          <dt className="text-warmgray">Pages</dt>
-                          <dd className="text-ink font-medium">~{pageCount || 50} pages</dd>
-                        </div>
-                        {includeAudiobook && (
-                          <div className="flex justify-between">
-                            <dt className="text-warmgray">Audiobook</dt>
-                            <dd className="text-ink font-medium">
-                              AI Narration
-                              {selectedPackage === 'bundle10' && (
-                                <span className="text-green-600 ml-1">(40% off)</span>
-                              )}
-                            </dd>
-                          </div>
-                        )}
-                      </dl>
-                    </div>
-
-                    <div className="bg-white rounded-xl p-5 border border-sepia/10">
-                      <h4 className="font-medium text-ink mb-3">Shipping To</h4>
-                      <p className="text-sm text-ink">
-                        {shipping.name}
-                        <br />
-                        {shipping.street1}
-                        <br />
-                        {shipping.city}, {shipping.postcode}
-                      </p>
-                    </div>
-
-                    <div className="bg-sepia/10 rounded-xl p-5">
-                      <dl className="space-y-2 text-sm mb-3">
-                        <div className="flex justify-between">
-                          <dt className="text-warmgray">Books ({pricing.quantity}x)</dt>
-                          <dd className="text-ink">£{pricing.books.toFixed(2)}</dd>
-                        </div>
-                        {includeAudiobook && (
-                          <div className="flex justify-between">
-                            <dt className="text-warmgray">Audiobook</dt>
-                            <dd className="text-ink">£{pricing.audiobook.toFixed(2)}</dd>
-                          </div>
-                        )}
-                        {pricing.savings > 0 && (
-                          <div className="flex justify-between text-green-600">
-                            <dt>You saved</dt>
-                            <dd>-£{pricing.savings.toFixed(2)}</dd>
-                          </div>
-                        )}
-                      </dl>
-                      <div className="flex justify-between items-center pt-3 border-t border-sepia/20">
-                        <span className="text-ink font-medium">Total</span>
-                        <span className="text-2xl font-semibold text-ink">
-                          £{pricing.total.toFixed(2)}
-                        </span>
-                      </div>
-                      <p className="text-xs text-warmgray mt-1">Includes shipping</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+              <label className="flex gap-3 text-sm items-start">
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  required
+                  checked={approved}
+                  disabled={!viewed.text || !viewed.cover}
+                  onChange={event => setApproved(event.target.checked)}
+                />
+                <span>
+                  I have reviewed both PDFs, finished my memoir and checked my address. Print these
+                  exact files and send all ten copies to this address.
+                </span>
+              </label>
+              <p className="text-xs text-warmgray">
+                Later edits to your memories won’t change these approved files. Personalised books
+                cannot be changed after submission.
+              </p>
+              <button
+                type="submit"
+                disabled={busy || !approved || !status?.available}
+                className="w-full rounded-xl bg-ink text-white py-4 disabled:opacity-50"
+              >
+                {busy ? 'Submitting…' : 'Finish my memoir & send to print — no extra payment'}
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => {
+                  setProof(null)
+                  setViewed({})
+                  setApproved(false)
+                }}
+                className="w-full text-sepia underline"
+              >
+                Go back and prepare a new proof
+              </button>
+            </form>
           )}
         </div>
-
-        {/* Footer */}
-        <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-sepia/10 bg-white/50">
-          <div className="flex flex-col-reverse sm:flex-row sm:justify-between sm:items-center gap-3">
-            <div className="hidden sm:block">
-              {step === 1 && selectedFormat && (
-                <div className="text-left">
-                  <span className="text-xl font-semibold text-ink">
-                    £{pricing.total.toFixed(2)}
-                  </span>
-                  {pricing.savings > 0 && (
-                    <span className="text-sm text-green-600 ml-2">
-                      Save £{pricing.savings.toFixed(2)}
-                    </span>
-                  )}
-                  <div className="text-xs text-warmgray">
-                    {pricing.quantity} book{pricing.quantity > 1 ? 's' : ''}
-                    {includeAudiobook ? ' + audiobook' : ''}
-                  </div>
-                </div>
-              )}
-            </div>
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
-              {step > 1 && (
-                <button
-                  onClick={() => setStep(s => s - 1)}
-                  className="w-full sm:w-auto px-6 py-3 border border-sepia/30 text-sepia rounded-xl hover:bg-sepia/5 transition font-medium order-2 sm:order-1"
-                >
-                  Back
-                </button>
-              )}
-              {step === 1 && (
-                <button
-                  onClick={() => setStep(2)}
-                  disabled={!canProceedToStep2}
-                  className="w-full sm:w-auto px-8 py-3.5 sm:py-3 bg-sepia text-white rounded-xl hover:bg-sepia/90 disabled:opacity-40 transition font-medium text-base order-1 sm:order-2"
-                >
-                  Continue to Shipping
-                </button>
-              )}
-              {step === 2 && (
-                <button
-                  onClick={() => setStep(3)}
-                  disabled={!canProceedToStep3}
-                  className="w-full sm:w-auto px-8 py-3.5 sm:py-3 bg-sepia text-white rounded-xl hover:bg-sepia/90 disabled:opacity-40 transition font-medium text-base order-1 sm:order-2"
-                >
-                  Review Order
-                </button>
-              )}
-              {step === 3 && (
-                <button
-                  onClick={() => {
-                    // TODO: Integrate with Stripe payment
-                    // TODO: Integrate Stripe payment flow
-                  }}
-                  className="w-full sm:w-auto px-8 py-3.5 sm:py-3 bg-ink text-white rounded-xl hover:bg-ink/90 transition font-medium text-base order-1 sm:order-2"
-                >
-                  Complete Order
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+      </section>
     </div>
   )
 }

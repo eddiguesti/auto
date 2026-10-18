@@ -35,6 +35,15 @@ function buildErrorResponse(error, message, requestId, isDevelopment, code = nul
  * @param {import('express').NextFunction} next
  */
 export function errorHandler(err, req, res, next) {
+  if (res.headersSent) return next(err)
+  // Multer limits are client errors; never disguise a rejected upload as an outage.
+  if (err.name === 'MulterError') {
+    const tooLarge = err.code === 'LIMIT_FILE_SIZE'
+    return res.status(tooLarge ? 413 : 400).json({
+      error: tooLarge ? 'File too large' : 'Invalid upload',
+      code: err.code
+    })
+  }
   const requestId = req.id || 'no-request-id'
   const isDevelopment = process.env.NODE_ENV === 'development'
 

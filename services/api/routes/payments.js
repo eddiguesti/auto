@@ -5,6 +5,14 @@ import { asyncHandler } from '../middleware/asyncHandler.js'
 import { requireDb } from '../middleware/requireDb.js'
 import { createLogger } from '../utils/logger.js'
 import { paymentRepository } from '../repositories/paymentRepository.js'
+import { checkoutRedirectUrl } from '../utils/checkoutRedirect.js'
+import {
+  PRODUCTS,
+  getPublicProducts,
+  PRINT_PACKAGE,
+  isPrintProduct
+} from '../../../packages/shared/payment-catalog.js'
+import { printConfigurationReady } from '../services/bookvault.js'
 
 const router = Router()
 const logger = createLogger('payments')
@@ -16,70 +24,6 @@ const getStripe = () => {
     throw new Error('STRIPE_SECRET_KEY not configured')
   }
   return new Stripe(key)
-}
-
-// Product prices (in pence for Stripe GBP)
-const PRODUCTS = {
-  export_style: {
-    name: 'Style Your Memoir',
-    description: 'Transform your writing in the style of famous authors',
-    price: 499, // £4.99
-    currency: 'gbp',
-    type: 'style'
-  },
-  export_ebook: {
-    name: 'eBook Export',
-    description: 'Download your memoir as an EPUB eBook',
-    price: 799, // £7.99
-    currency: 'gbp',
-    type: 'export'
-  },
-  export_audiobook: {
-    name: 'Audiobook Export',
-    description: 'Download your memoir as an MP3 audiobook',
-    price: 1499, // £14.99
-    currency: 'gbp',
-    type: 'audiobook'
-  },
-  printed_book: {
-    name: 'Printed Book',
-    description: '4 beautiful colour royal hardcover books in cloth, delivered to your door',
-    price: 29900, // £299
-    currency: 'gbp',
-    type: 'book'
-  },
-  premium_monthly: {
-    name: 'Premium Monthly',
-    description: 'Unlimited AI interviews, priority support',
-    price: 999, // £9.99/month
-    currency: 'gbp',
-    type: 'subscription',
-    interval: 'month'
-  },
-  premium_yearly: {
-    name: 'Premium Yearly',
-    description: 'Unlimited AI interviews, priority support (2 months free)',
-    price: 9999, // £99.99/year
-    currency: 'gbp',
-    type: 'subscription',
-    interval: 'year'
-  },
-  premium_bundle: {
-    name: 'Premium Bundle — Full Memoir + 4 Printed Books + Audiobook',
-    description:
-      '12 months access to all chapters + 4 colour royal hardcover books in cloth + audiobook + talk over the phone features',
-    price: 29900, // £299 (50% off £599)
-    currency: 'gbp',
-    type: 'premium_bundle'
-  },
-  onboarding_bundle: {
-    name: 'Welcome Bundle — Full Memoir + 4 Printed Books + Audiobook',
-    description:
-      '12 months access to all chapters + 4 colour royal hardcover books in cloth + audiobook + talk over the phone features (welcome offer)',
-    price: 29900, // £299 (50% off £599) — onboarding welcome price
-    currency: 'gbp',
-    type: 'premium_bundle' // Same type so webhook activates premium identically
-  }
 }
 
 /**
@@ -103,8 +47,8 @@ const PRODUCTS = {
  *               productId:
  *                 type: string
  *                 enum: [export_style, export_ebook, export_audiobook, printed_book, premium_monthly, premium_yearly]
- *               successUrl: { type: string, format: uri, description: "Must start with APP_URL" }
- *               cancelUrl: { type: string, format: uri, description: "Must start with APP_URL" }
+ *               successUrl: { type: string, format: uri, description: "Must use the APP_URL origin" }
+ *               cancelUrl: { type: string, format: uri, description: "Must use the APP_URL origin" }
  *     responses:
  *       200:
  *         description: Stripe Checkout URL
@@ -120,6 +64,7 @@ const PRODUCTS = {
 // Create checkout session
 router.post(
   '/create-checkout',
+  requireDb,
   asyncHandler(async (req, res) => {
     const { productId, successUrl, cancelUrl } = req.body
     const userId = req.user.id
@@ -129,22 +74,42 @@ router.post(
       return res.status(400).json({ error: 'Invalid product' })
     }
 
+    // Subscription ownership/renewal/cancellation require a durable lifecycle
+    // before accepting new recurring charges. Keep historical catalog IDs intact.
+    if (PRODUCTS[productId].type === 'subscription') {
+      return res.status(503).json({
+        error: 'Subscriptions are temporarily unavailable',
+        code: 'SUBSCRIPTIONS_UNAVAILABLE'
+      })
+    }
+
+    if (isPrintProduct(productId) && !printConfigurationReady()) {
+      return res.status(503).json({
+        error: 'Book printing is not available yet. Please try again later.',
+        code: 'PRINT_UNAVAILABLE'
+      })
+    }
+
     const stripe = getStripe()
     const product = PRODUCTS[productId]
 
     // Only allow redirect URLs on our own domain to prevent open redirect
     const appUrl = process.env.APP_URL || 'https://easymemoir.co.uk'
-    const safeSuccessUrl =
-      successUrl && successUrl.startsWith(appUrl) ? successUrl : `${appUrl}/export?success=true`
-    const safeCancelUrl =
-      cancelUrl && cancelUrl.startsWith(appUrl) ? cancelUrl : `${appUrl}/export?cancelled=true`
+    const safeSuccessUrl = checkoutRedirectUrl(successUrl, appUrl, '/export?success=true')
+    const safeCancelUrl = checkoutRedirectUrl(cancelUrl, appUrl, '/export?cancelled=true')
 
     const sessionConfig = {
       customer_email: userEmail,
       metadata: {
         userId: userId.toString(),
         productId,
-        productType: product.type
+        productType: product.type,
+        ...(isPrintProduct(productId)
+          ? {
+              printPackageVersion: PRINT_PACKAGE.version,
+              printQuantity: String(PRINT_PACKAGE.quantity)
+            }
+          : {})
       },
       success_url: safeSuccessUrl,
       cancel_url: safeCancelUrl
@@ -214,10 +179,25 @@ export async function handleStripeWebhook(req, res, db) {
 
   // Handle the event
   switch (event.type) {
-    case 'checkout.session.completed': {
+    case 'checkout.session.completed':
+    case 'checkout.session.async_payment_succeeded': {
       try {
         const session = event.data.object
+        // Checkout can complete before a delayed payment clears.
+        if (session.payment_status !== 'paid') break
         const { userId, productId, productType } = session.metadata
+        if (
+          session.metadata.printPackageVersion === PRINT_PACKAGE.version &&
+          (!isPrintProduct(productId) ||
+            session.amount_total !== PRINT_PACKAGE.price ||
+            session.currency !== PRINT_PACKAGE.currency ||
+            session.metadata.printQuantity !== '10')
+        ) {
+          logger.error('Print package payment does not match purchased terms', {
+            eventId: event.id
+          })
+          return res.status(400).json({ error: 'Invalid print package payment' })
+        }
 
         // Verify the userId exists in our database before granting anything
         const user = await paymentRepository.findUserById(db, userId)
@@ -244,6 +224,18 @@ export async function handleStripeWebhook(req, res, db) {
           productType,
           amount: session.amount_total
         })
+
+        // New purchased terms only; never reinterpret historical four-book payments.
+        if (
+          session.metadata.printPackageVersion === PRINT_PACKAGE.version &&
+          isPrintProduct(productId)
+        ) {
+          await db.query(
+            `INSERT INTO print_entitlements (id,user_id,stripe_session_id,package_version,quantity)
+            VALUES ($1,$2,$3,$4,$5) ON CONFLICT (stripe_session_id) DO NOTHING`,
+            [crypto.randomUUID(), userId, session.id, PRINT_PACKAGE.version, PRINT_PACKAGE.quantity]
+          )
+        }
 
         // Activate premium access for premium_bundle purchases (idempotent - only set if not already active)
         if (productType === 'premium_bundle') {
@@ -403,15 +395,17 @@ router.get(
  *                   currency: { type: string, example: gbp }
  *                   type: { type: string }
  */
-// Get available products/prices
-router.get('/products', (req, res) => {
-  const products = Object.entries(PRODUCTS).map(([id, product]) => ({
-    id,
-    ...product,
-    displayPrice: (product.price / 100).toFixed(2)
-  }))
+// One catalog for public discovery and authenticated checkout prices.
+export function listProducts(_req, res) {
+  res.json(
+    getPublicProducts().map(product =>
+      isPrintProduct(product.id)
+        ? { ...product, checkoutAvailable: printConfigurationReady() }
+        : product
+    )
+  )
+}
 
-  res.json(products)
-})
+router.get('/products', listProducts)
 
 export default router

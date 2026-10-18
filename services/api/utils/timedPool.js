@@ -11,6 +11,7 @@ const SLOW_QUERY_THRESHOLD_MS = 500
 const POOL_STATS_INTERVAL_MS = 60_000
 const POOL_WAIT_WARN_THRESHOLD = 5
 const AVG_QUERY_WARN_THRESHOLD_MS = 500
+const instrumentedPools = new WeakSet()
 
 /**
  * Extract operation type from SQL query
@@ -36,6 +37,8 @@ function getOperationType(sql) {
  */
 export function wrapPoolWithTiming(pool) {
   if (!pool) return pool
+  if (instrumentedPools.has(pool)) return pool
+  instrumentedPools.add(pool)
 
   // Store original query method
   const originalQuery = pool.query.bind(pool)

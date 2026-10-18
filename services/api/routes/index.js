@@ -22,7 +22,7 @@ import seoRouter from './seo.js'
 import exportRouter from './export.js'
 import audiobookRouter from './audiobook.js'
 import styleRouter from './style.js'
-import paymentsRouter, { handleStripeWebhook } from './payments.js'
+import paymentsRouter, { handleStripeWebhook, listProducts } from './payments.js'
 import supportRouter from './support.js'
 import telegramRouter, { handleTelegramWebhook } from './telegram.js'
 import onboardingRouter from './onboarding.js'
@@ -42,6 +42,7 @@ import analyticsRouter from './analytics.js'
 import telnyxCallRouter from './telnyxCall.js'
 import landingVoiceRouter from './landingVoice.js'
 import cspReportRouter from './cspReport.js'
+import printRouter, { servePrintFile } from './print.js'
 
 /**
  * Mount all API routes onto the Express app.
@@ -49,6 +50,10 @@ import cspReportRouter from './cspReport.js'
  */
 export function mountRoutes(app, { express, pool }) {
   // ── Public routes (no auth) ──────────────────────────────────────
+
+  // Only the read-only catalog is public; the payment router retains full-scope auth.
+  app.get(['/api/payments/products', '/api/v1/payments/products'], listProducts)
+  app.get('/api/print-files/:id/:type', servePrintFile)
 
   // Auth (with brute-force protection on login/register)
   app.use('/api/auth/login', authLimiter)
@@ -108,6 +113,7 @@ export function mountRoutes(app, { express, pool }) {
 
   // Full-scope only (magic link tokens cannot access these)
   app.use('/api/payments', authenticateToken, requireScope(), paymentsRouter)
+  app.use('/api/print', authenticateToken, requireScope(), printRouter)
   app.use('/api/user', authenticateToken, requireScope(), userRouter)
   app.use('/api/refunds', authenticateToken, requireScope(), refundsRouter)
 
@@ -158,6 +164,7 @@ export function mountRoutes(app, { express, pool }) {
   app.use('/api/v1/free-stories', authenticateToken, freeStoriesRouter)
 
   app.use('/api/v1/payments', authenticateToken, requireScope(), paymentsRouter)
+  app.use('/api/v1/print', authenticateToken, requireScope(), printRouter)
   app.use('/api/v1/user', authenticateToken, requireScope(), userRouter)
   app.use('/api/v1/refunds', authenticateToken, requireScope(), refundsRouter)
 

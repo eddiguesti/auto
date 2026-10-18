@@ -41,7 +41,6 @@ export default defineConfig({
           // Vendor chunks - rarely change, cache well
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
           'ui-vendor': ['@react-oauth/google', '@tabler/icons-react'],
-          'three-vendor': ['three'],
           'motion-vendor': ['framer-motion'],
           'analytics-vendor': ['posthog-js']
         }
@@ -66,6 +65,8 @@ export default defineConfig({
     // Print-on-demand secrets
     'process.env.LULU_CLIENT_KEY': 'undefined',
     'process.env.LULU_CLIENT_SECRET': 'undefined',
+    'process.env.BOOKVAULT_API_KEY': 'undefined',
+    'process.env.PRINT_FILE_SIGNING_SECRET': 'undefined',
     // Messaging secrets
     'process.env.TELEGRAM_BOT_TOKEN': 'undefined',
     'process.env.TELEGRAM_WEBHOOK_SECRET': 'undefined'

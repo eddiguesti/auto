@@ -1,0 +1,144 @@
+[
+  {
+    "name": "Stripe",
+    "sources": [
+      "services/api/routes/payments.js",
+      "services/api/routes/refunds.js",
+      "services/api/routes/admin.js"
+    ],
+    "settings": ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"],
+    "acceptance": [
+      "raw webhook bytes and signature",
+      "event deduplication and transactional entitlement",
+      "historical payments/refunds and subscription lifecycle audit"
+    ],
+    "nativeStatus": "not-migrated"
+  },
+  {
+    "name": "Google identity",
+    "sources": ["services/api/routes/auth.js"],
+    "settings": ["GOOGLE_CLIENT_ID"],
+    "acceptance": [
+      "provider token audience verification",
+      "existing account identity and collision handling"
+    ],
+    "nativeStatus": "not-migrated"
+  },
+  {
+    "name": "xAI",
+    "sources": [
+      "services/api/utils/grokClient.js",
+      "services/api/utils/voiceProxy.js",
+      "services/api/services/telnyxCallBridge.js"
+    ],
+    "settings": ["GROK_API_KEY"],
+    "acceptance": [
+      "AI quota and provider outage",
+      "authenticated realtime sessions and transcript durability"
+    ],
+    "nativeStatus": "not-migrated"
+  },
+  {
+    "name": "Replicate",
+    "sources": [
+      "services/api/routes/chapter-images.js",
+      "services/api/routes/onboarding.js",
+      "services/api/routes/stories.js"
+    ],
+    "settings": ["REPLICATE_API_TOKEN"],
+    "acceptance": ["image generation result ownership", "durable completion and retry idempotency"],
+    "nativeStatus": "not-migrated"
+  },
+  {
+    "name": "Fish Audio",
+    "sources": ["services/api/jobs/audiobookWorker.js", "services/api/routes/audiobook.js"],
+    "settings": ["FISH_AUDIO_API_KEY"],
+    "acceptance": [
+      "private voice samples and output storage",
+      "owner-scoped job polling",
+      "duplicate queue delivery"
+    ],
+    "nativeStatus": "not-migrated"
+  },
+  {
+    "name": "Resend",
+    "sources": ["services/api/services/emailService.js"],
+    "settings": ["RESEND_API_KEY", "EMAIL_FROM"],
+    "acceptance": [
+      "verification/reset delivery",
+      "notification opt-outs and durable queue retries"
+    ],
+    "nativeStatus": "not-migrated"
+  },
+  {
+    "name": "Telegram",
+    "sources": ["services/api/routes/telegram.js", "services/api/routes/support.js"],
+    "settings": ["TELEGRAM_BOT_TOKEN", "TELEGRAM_WEBHOOK_SECRET", "TELEGRAM_CHAT_ID"],
+    "acceptance": [
+      "webhook secret and duplicate delivery",
+      "chat linking ownership and transcripts"
+    ],
+    "nativeStatus": "not-migrated"
+  },
+  {
+    "name": "Telnyx",
+    "sources": ["services/api/routes/telnyxCall.js", "services/api/services/telnyxCallBridge.js"],
+    "settings": [
+      "TELNYX_API_KEY",
+      "TELNYX_CONNECTION_ID",
+      "TELNYX_PHONE_NUMBER",
+      "INTERNAL_CRON_SECRET"
+    ],
+    "acceptance": ["call/webhook authentication", "media stream lifecycle and durable transcripts"],
+    "nativeStatus": "not-migrated"
+  },
+  {
+    "name": "Lulu",
+    "sources": ["services/api/routes/lulu.js"],
+    "settings": ["LULU_CLIENT_KEY", "LULU_CLIENT_SECRET", "LULU_SANDBOX"],
+    "acceptance": [
+      "cost calculation and authenticated print ordering",
+      "sandbox versus production and provider failures"
+    ],
+    "nativeStatus": "not-migrated"
+  },
+  {
+    "name": "Private media",
+    "sources": [
+      "services/api/utils/objectStorage.js",
+      "services/api/utils/r2.js",
+      "cloudflare/api-storage.js",
+      "cloudflare/api/photos.js"
+    ],
+    "settings": ["R2_ENDPOINT", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_BUCKET"],
+    "nativeBindings": ["MEDIA"],
+    "acceptance": [
+      "source object enumeration and byte hashes",
+      "root photo keys plus voices/ and audiobooks/",
+      "owner checks, missing files and private caching"
+    ],
+    "nativeStatus": "partial-staging"
+  },
+  {
+    "name": "Redis",
+    "sources": [
+      "services/api/infrastructure/redis.js",
+      "services/api/infrastructure/tokenBlacklist.js",
+      "services/api/cron/lock.js"
+    ],
+    "settings": ["REDIS_URL"],
+    "acceptance": [
+      "D1 immediate revocation",
+      "exclusive durable scheduler/job claims",
+      "disposable cache may use KV"
+    ],
+    "nativeStatus": "partial-security-port"
+  },
+  {
+    "name": "Sentry",
+    "sources": ["services/api/infrastructure/sentry.js", "apps/web/src/main.jsx"],
+    "settings": ["SENTRY_DSN", "VITE_SENTRY_DSN"],
+    "acceptance": ["error redaction", "analytics consent with replay/performance disabled"],
+    "nativeStatus": "configuration-review-required"
+  }
+]

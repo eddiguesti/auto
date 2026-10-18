@@ -115,11 +115,14 @@ export const paymentRepository = {
    * @returns {Promise<boolean>}
    */
   async hasProductPayment(db, userId, productType) {
+    const eligibleTypes = ['export', 'audiobook'].includes(productType)
+      ? [productType, 'premium_bundle']
+      : [productType]
     const result = await db.query(
       `SELECT id FROM payments
-       WHERE user_id = $1 AND product_type = $2 AND status = 'completed'
+       WHERE user_id = $1 AND product_type = ANY($2::text[]) AND status = 'completed'
        LIMIT 1`,
-      [userId, productType]
+      [userId, eligibleTypes]
     )
     return result.rows.length > 0
   },

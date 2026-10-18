@@ -3,15 +3,19 @@ import { queryKeys } from '../../../lib/queryKeys'
 import { useApiClient } from '../../../lib/apiClient'
 
 /**
- * Fetch the current user's premium subscription status.
- * Returns { isPremium, expiresAt, plan }.
+ * Read the current user's verified entitlement from the account endpoint.
+ * The API does not expose a subscription plan; do not infer one from payments.
  */
 export function usePremiumStatus() {
   const api = useApiClient()
 
   return useQuery({
     queryKey: queryKeys.payments.status,
-    queryFn: () => api.get('/api/payments/status'),
+    queryFn: () => api.get('/api/auth/me'),
+    select: ({ user }) => ({
+      isPremium: Boolean(user.isPremium),
+      expiresAt: user.premium_until
+    }),
     staleTime: 10 * 60 * 1000 // Premium status changes infrequently — cache for 10 min
   })
 }

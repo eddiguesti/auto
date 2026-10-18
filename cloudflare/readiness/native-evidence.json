@@ -1,0 +1,218 @@
+{
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/api/payments/products",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api-staging.js",
+        "packages/shared/payment-catalog.js",
+        "cloudflare/api/native.test.mjs"
+      ],
+      "limitations": [
+        "Public immutable catalog only; checkout, webhooks, subscriptions and refunds remain unmigrated"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/health",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api-staging.js"]
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api-staging.js", "cloudflare/api/native.test.mjs"]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/logout",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api-staging.js", "cloudflare/api/native.test.mjs"]
+    },
+    {
+      "method": "GET",
+      "path": "/api/stories/all",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api-staging.js", "cloudflare/api/native.test.mjs"]
+    },
+    {
+      "method": "GET",
+      "path": "/api/stories/progress",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api-staging.js", "cloudflare/api/native.test.mjs"]
+    },
+    {
+      "method": "GET",
+      "path": "/api/stories/settings",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api-staging.js", "cloudflare/api/native.test.mjs"]
+    },
+    {
+      "method": "POST",
+      "path": "/api/stories/settings",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api-staging.js", "cloudflare/api/native.test.mjs"]
+    },
+    {
+      "method": "POST",
+      "path": "/api/stories",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api-staging.js", "cloudflare/api/native.test.mjs"]
+    },
+    {
+      "method": "GET",
+      "path": "/api/stories/:chapterId",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api-staging.js", "cloudflare/api/native.test.mjs"]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/auth-routes.js", "cloudflare/api/auth-native.test.mjs"],
+      "limitations": [
+        "Trusted client identity binding and ingress policy not deployed",
+        "Paid Workers bcrypt CPU profile not established"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/register",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/auth-routes.js", "cloudflare/api/auth-native.test.mjs"],
+      "limitations": [
+        "Real verification email delivery not accepted",
+        "Trusted client identity binding and ingress policy not deployed"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/verify-email",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/auth-routes.js", "cloudflare/api/auth-native.test.mjs"]
+    },
+    {
+      "method": "GET",
+      "path": "/api/user/phone-settings",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/account.js", "cloudflare/api/account-native.test.mjs"]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/user/phone-settings",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/account.js", "cloudflare/api/account-native.test.mjs"]
+    },
+    {
+      "method": "GET",
+      "path": "/api/user/export-data",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/account.js", "cloudflare/api/account-native.test.mjs"]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/user/delete-account",
+      "status": "not-migrated",
+      "evidence": ["cloudflare/api/account.js", "cloudflare/api/account-native.test.mjs"],
+      "limitations": [
+        "Fails closed: provider refunds/cancellation and complete media cleanup unavailable"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/onboarding/status",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/account.js", "cloudflare/api/account-native.test.mjs"]
+    },
+    {
+      "method": "POST",
+      "path": "/api/onboarding/preference",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/account.js", "cloudflare/api/account-native.test.mjs"]
+    },
+    {
+      "method": "POST",
+      "path": "/api/onboarding/context-form",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/account.js", "cloudflare/api/account-native.test.mjs"]
+    },
+    {
+      "method": "POST",
+      "path": "/api/onboarding/channel-preferences",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/account.js", "cloudflare/api/account-native.test.mjs"]
+    },
+    {
+      "method": "POST",
+      "path": "/api/onboarding/complete",
+      "status": "partial-staging",
+      "evidence": ["cloudflare/api/account.js", "cloudflare/api/account-native.test.mjs"],
+      "limitations": [
+        "Onboarding persistence implemented; artwork generation explicitly unavailable"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/onboarding/reset",
+      "status": "partial-staging",
+      "evidence": ["cloudflare/api/account.js", "cloudflare/api/account-native.test.mjs"],
+      "limitations": [
+        "Fails closed when artwork exists or is generating; provider cleanup not migrated"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/onboarding/voice-session",
+      "status": "not-migrated",
+      "evidence": ["cloudflare/api/account.js"],
+      "limitations": ["Explicit 501: voice onboarding unavailable"]
+    },
+    {
+      "method": "POST",
+      "path": "/api/onboarding/context",
+      "status": "not-migrated",
+      "evidence": ["cloudflare/api/account.js"],
+      "limitations": ["Explicit 501: voice onboarding unavailable"]
+    },
+    {
+      "method": "POST",
+      "path": "/api/photos",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/photos.js", "cloudflare/api/photos-native.test.mjs"],
+      "limitations": ["MEDIA bucket has not been enabled or copied"]
+    },
+    {
+      "method": "GET",
+      "path": "/api/photos/file/:filename",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/photos.js", "cloudflare/api/photos-native.test.mjs"]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/photos/:id",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/photos.js", "cloudflare/api/photos-native.test.mjs"]
+    },
+    {
+      "method": "GET",
+      "path": "/api/photos/story/:storyId",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/photos.js", "cloudflare/api/photos-native.test.mjs"]
+    },
+    {
+      "method": "POST",
+      "path": "/api/photos/analyze",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/photos.js", "cloudflare/api/photos-native.test.mjs"],
+      "limitations": ["Actual xAI provider and object persistence acceptance not established"]
+    },
+    {
+      "method": "GET",
+      "path": "/api/photos/my-photos",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/photos.js", "cloudflare/api/photos-native.test.mjs"]
+    }
+  ]
+}

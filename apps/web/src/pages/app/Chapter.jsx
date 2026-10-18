@@ -438,7 +438,7 @@ export default function Chapter() {
             these.
           </p>
           <p className="text-amber-700 text-sm font-medium">
-            Ready to continue your story? Unlock all 10 chapters and get 4 printed books.
+            Ready to continue your story? Unlock all 10 chapters and get 10 hardback books.
           </p>
         </div>
       )}

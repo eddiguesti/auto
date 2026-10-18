@@ -1,0 +1,201 @@
+{
+  "formatVersion": 1,
+  "productionReady": false,
+  "rule": "Every gate requires reviewed evidence from the real staging/source environment; local code or a provisioned resource is not production acceptance.",
+  "gates": [
+    {
+      "id": "source-access",
+      "status": "not-established",
+      "requiredEvidence": [
+        "read-only Railway PostgreSQL schema/settings audit",
+        "source Node/pg timezone and JWT signing policy",
+        "source application plus pgboss/non-public database backup and restore verification"
+      ],
+      "sources": [
+        "cloudflare/db/README.md",
+        "services/api/utils/config.js",
+        "services/api/cron/lock.js"
+      ]
+    },
+    {
+      "id": "data-round-trip",
+      "status": "not-established",
+      "requiredEvidence": [
+        "consistent source snapshot completion manifest",
+        "offline count/content hash/FK/sequence validation",
+        "fresh staging D1 import execution and remote full-content verification",
+        "final write freeze and repeat snapshot or audited delta transfer"
+      ],
+      "sources": [
+        "tools/scripts/cloudflare-data.mjs",
+        "tools/scripts/cloudflare-bound-data.mjs",
+        "cloudflare/db/mapping.json"
+      ]
+    },
+    {
+      "id": "private-media",
+      "status": "not-established",
+      "requiredEvidence": [
+        "source disk and existing object storage inventory",
+        "R2 enabled and isolated private bucket bound",
+        "unchanged original keys and complete per-object byte hashes",
+        "missing file, unauthorized owner and private-cache acceptance"
+      ],
+      "sources": ["services/api/utils/objectStorage.js", "cloudflare/api-storage.js"]
+    },
+    {
+      "id": "route-contracts",
+      "status": "not-established",
+      "requiredEvidence": [
+        "all route-parity.json entries implemented or explicitly retired with owner authorization",
+        "both actually mounted API prefixes and error/response shape acceptance",
+        "frontend static mismatches and dynamic caller contracts reconciled",
+        "global body limits, quotas, rate limits, CORS, CSP and private caching verified"
+      ],
+      "sources": [
+        "cloudflare/readiness/route-parity.json",
+        "services/api/routes/index.js",
+        "services/api/middleware/setup.js"
+      ]
+    },
+    {
+      "id": "identity-account",
+      "status": "not-established",
+      "requiredEvidence": [
+        "existing hash login, registration, Google identity and verification/reset delivery",
+        "expired/revoked token, immediate logout and scoped-token denial",
+        "owner isolation, premium entitlement, account updates and deletion retention",
+        "concurrent account and story writes with rollback"
+      ],
+      "sources": [
+        "services/api/routes/auth.js",
+        "services/api/routes/user.js",
+        "services/api/middleware/auth.js",
+        "cloudflare/api/native.test.mjs"
+      ]
+    },
+    {
+      "id": "trusted-auth-ingress",
+      "status": "not-established",
+      "requiredEvidence": [
+        "actual Cloudflare zone and direct custom domain route",
+        "independently verified WAF block for ALL Worker subrequests: cf.worker.upstream_zone ne \"\"",
+        "separate HMAC ingress secret in frontend/private identity service",
+        "AUTH_CLIENT_ID private staging service binding",
+        "hosted Paid Workers bcrypt12 CPU profile",
+        "no signed-IP assertions until operational zone/WAF verification; local booleans are not proof"
+      ],
+      "sources": [
+        "cloudflare/ingress-identity.js",
+        "cloudflare/auth-client-identity.js",
+        "cloudflare/INGRESS.md",
+        "cloudflare/wrangler.auth-identity.jsonc"
+      ]
+    },
+    {
+      "id": "payments-print",
+      "status": "not-established",
+      "requiredEvidence": [
+        "Stripe exact raw-byte signature verification and deduplicated events",
+        "historical payments/refunds preserved and exact money semantics",
+        "existing recurring subscriptions lifecycle audit",
+        "Lulu sandbox/production mode and print ordering authorization",
+        "provider callbacks updated only in the coordinated cutover window"
+      ],
+      "sources": [
+        "services/api/routes/payments.js",
+        "services/api/routes/refunds.js",
+        "services/api/routes/lulu.js"
+      ]
+    },
+    {
+      "id": "jobs-outbox",
+      "status": "not-established",
+      "requiredEvidence": [
+        "pending/inflight/failed pg-boss work inventoried and disposition reviewed",
+        "Queues plus durable owner-scoped status and transactional outbox",
+        "producer crash and duplicate delivery cannot duplicate output/charge",
+        "retry, dead-letter, timeout and worker restart recovery",
+        "complete memoir/EPUB/audiobook generation and private downloads"
+      ],
+      "sources": [
+        "services/api/jobs/jobNames.js",
+        "services/api/jobs/queue.js",
+        "services/api/jobs/audiobookWorker.js",
+        "cloudflare/api/migrations/0001_story_outbox.sql"
+      ]
+    },
+    {
+      "id": "scheduled-notifications",
+      "status": "not-established",
+      "requiredEvidence": [
+        "all five scheduledTasks ported and exercised",
+        "UTC midnight reset and Europe/London schedule verified across DST",
+        "one durable claim across instances and source/destination schedulers",
+        "email preferences, opt-outs, weekly topics and inactive reminders preserved",
+        "no notification duplicate on rollback or retry"
+      ],
+      "sources": [
+        "services/api/cron/index.js",
+        "services/api/cron/weeklyTasks.js",
+        "services/api/services/emailService.js"
+      ]
+    },
+    {
+      "id": "realtime-providers",
+      "status": "not-established",
+      "requiredEvidence": [
+        "Durable Object voice and Telnyx session coordination",
+        "single-use tickets, session expiration and revocation checks",
+        "transcript persistence and disconnect/provider failure cleanup",
+        "Telegram identity linking, webhook authentication and duplicate delivery",
+        "xAI, Replicate, Fish Audio and Resend provider outage acceptance"
+      ],
+      "sources": [
+        "services/api/utils/serverSetup.js",
+        "services/api/utils/voiceProxy.js",
+        "services/api/routes/telnyxCall.js",
+        "cloudflare/readiness/integrations.json"
+      ]
+    },
+    {
+      "id": "deployed-staging",
+      "status": "not-established",
+      "requiredEvidence": [
+        "isolated Worker with reviewed D1/R2/Queues/DO bindings",
+        "read-only preflight schema/settings/secret metadata pass",
+        "real deployed route/provider/authorization acceptance",
+        "capacity, observability, redacted errors and analytics-consent review",
+        "restore rehearsal and agreed rollback routing/provider plan"
+      ],
+      "sources": [
+        "wrangler.api-staging.jsonc",
+        "cloudflare/readiness/preflight.mjs",
+        "cloudflare/API_ARCHITECTURE.md"
+      ]
+    },
+    {
+      "id": "traffic-switch",
+      "status": "not-established",
+      "requiredEvidence": [
+        "approved completed acceptance record and source write freeze",
+        "final data/media verification before writes move",
+        "frontend API service binding targets accepted API Worker",
+        "DNS/provider callback switch and rollback window recorded",
+        "source kept available and protected through rollback window"
+      ],
+      "sources": ["wrangler.jsonc", "cloudflare/web.js"]
+    },
+    {
+      "id": "railway-retirement",
+      "status": "not-established",
+      "requiredEvidence": [
+        "destination sustained acceptance after cutover",
+        "final native source backup restore verified",
+        "all legacy jobs/media/integrations accounted for",
+        "explicit retirement authorization after rollback window"
+      ],
+      "sources": ["cloudflare/API_ARCHITECTURE.md", "railway.json"]
+    }
+  ]
+}

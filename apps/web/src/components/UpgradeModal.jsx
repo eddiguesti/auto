@@ -5,14 +5,10 @@ import { useFocusTrap } from '../hooks/useFocusTrap'
 const DISMISS_KEY = 'upgrade_dismissed_at'
 const DISMISS_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
 
-// Get current month name for the pricing section
-function getCurrentMonthName() {
-  return new Date().toLocaleDateString('en-GB', { month: 'long' })
-}
-
 export default function UpgradeModal({ onClose, memoriesCount = 0, variant = 'default' }) {
   const { user, authFetch } = useAuth()
   const [loading, setLoading] = useState(false)
+  const [checkoutError, setCheckoutError] = useState('')
   const [visible, setVisible] = useState(false)
   const modalRef = useRef(null)
   const firstName = user?.name?.split(' ')[0] || 'there'
@@ -31,6 +27,7 @@ export default function UpgradeModal({ onClose, memoriesCount = 0, variant = 'de
 
   const handleUpgrade = async () => {
     setLoading(true)
+    setCheckoutError('')
     try {
       const res = await authFetch('/api/payments/create-checkout', {
         method: 'POST',
@@ -40,12 +37,13 @@ export default function UpgradeModal({ onClose, memoriesCount = 0, variant = 'de
           cancelUrl: `${window.location.origin}/home?upgrade_dismissed=true`
         })
       })
-      if (res.ok) {
-        const data = await res.json()
-        window.location.href = data.url
-      }
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.message || data.error || 'Checkout is unavailable.')
+      if (!/^https:\/\//.test(data.url || '')) throw new Error('Checkout is unavailable.')
+      window.location.href = data.url
     } catch (err) {
       console.error('Checkout error:', err)
+      setCheckoutError(err.message)
     } finally {
       setLoading(false)
     }
@@ -138,7 +136,7 @@ export default function UpgradeModal({ onClose, memoriesCount = 0, variant = 'de
               { text: "Voice-to-text — speak your memories, we'll write them down", badge: null },
               { text: 'Personalised chapter artwork — 10 unique AI illustrations', badge: null },
               {
-                text: '4 beautiful colour royal hardcover books in cloth — delivered to your door',
+                text: '10 A5 matte hardbacks with up to 200 pages and 8 colour photo pages — UK or France delivery included',
                 badge: 'Included'
               },
               { text: 'Professional audiobook — narrated in your voice', badge: 'Included' },
@@ -175,14 +173,20 @@ export default function UpgradeModal({ onClose, memoriesCount = 0, variant = 'de
         {/* Section 3: Pricing */}
         <div className="mx-6 p-5 bg-gradient-to-br from-amber-50/80 to-stone-50/50 rounded-xl border border-amber-100/50">
           <div className="text-center">
-            <span className="text-stone-400 text-sm line-through">£599</span>
-            <div className="text-4xl font-bold text-ink mt-1 mb-1">£299</div>
+            <div className="text-4xl font-bold text-ink mt-1 mb-1">£250</div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-50 rounded-full mb-3">
               <span className="text-green-700 text-sm font-medium">
-                50% off — available this {getCurrentMonthName()}
+                10 hardbacks for the price of 5
               </span>
             </div>
-            <p className="text-xs text-stone-500 mt-1">Or 4 monthly payments of £100</p>
+            <p className="text-xs text-stone-500 mt-1">
+              One payment. Delivery to one address included.
+            </p>
+            {checkoutError && (
+              <p role="alert" className="text-sm text-red-700 mt-3">
+                {checkoutError}
+              </p>
+            )}
           </div>
         </div>
 

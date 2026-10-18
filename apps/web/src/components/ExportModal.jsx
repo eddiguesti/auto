@@ -142,13 +142,13 @@ function EbookCard({ visible, exportStatus, downloading, onClick }) {
 function PrintedBookCard({ visible, onClick }) {
   return (
     <ExportOptionCard
-      title="Printed Book"
-      description="Beautiful hardcover or paperback delivered to your door. The perfect gift."
+      title="10 Hardback Memoirs"
+      description="Ten A5 matte hardbacks with colour photographs. Delivery to one UK or French address included."
       className="bg-gradient-to-br from-stone-800 to-stone-900 text-white hover:shadow-2xl relative overflow-hidden"
       iconWrapperClass="bg-white/10 group-hover:bg-white/20 transition"
       cornerLabel="Most Popular"
       icon={<PackageIcon />}
-      priceOrStatus={<span className="font-semibold">From £29</span>}
+      priceOrStatus={<span className="font-semibold">£250 complete package</span>}
       actionIcon={
         <ChevronRightIcon className="text-white/70 group-hover:translate-x-1 transition" />
       }

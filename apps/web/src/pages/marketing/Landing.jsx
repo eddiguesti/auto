@@ -863,10 +863,9 @@ export default function Landing() {
                   Full Story
                 </p>
                 <div className="flex items-baseline gap-1">
-                  <span className="font-display text-5xl text-ink">£299</span>
-                  <span className="font-sans text-warmgray line-through text-sm ml-2">£599</span>
+                  <span className="font-display text-5xl text-ink">£250</span>
                 </div>
-                <p className="font-serif text-warmgray mt-1">50% off — or 4 payments of £100/mo</p>
+                <p className="font-serif text-warmgray mt-1">10 hardbacks for the price of 5. Delivery included.</p>
               </div>
 
               <ul className="space-y-3 mb-8">
@@ -911,7 +910,7 @@ export default function Landing() {
                     />
                   </svg>
                   <span className="font-serif text-warmgray">
-                    4 colour royal hardcover books in cloth
+                    10 A5 matte hardbacks, up to 200 pages with 8 colour photo pages
                   </span>
                 </li>
                 <li className="flex items-start gap-3">
@@ -957,13 +956,12 @@ export default function Landing() {
             <div className="bg-white rounded-3xl p-8 border border-sepia/20 shadow-md">
               <div className="mb-6">
                 <p className="font-sans text-sepia text-sm uppercase tracking-wider font-medium mb-2">
-                  Lifetime
+                  For Your Family
                 </p>
                 <div className="flex items-baseline gap-1">
-                  <span className="font-display text-5xl text-ink">£299</span>
-                  <span className="font-sans text-warmgray line-through text-sm ml-2">£599</span>
+                  <span className="font-display text-5xl text-ink">£250</span>
                 </div>
-                <p className="font-serif text-warmgray mt-1">50% off — or 4 payments of £100/mo</p>
+                <p className="font-serif text-warmgray mt-1">10 hardbacks, one UK or French delivery address.</p>
               </div>
 
               <ul className="space-y-3 mb-8">
@@ -993,7 +991,7 @@ export default function Landing() {
                       clipRule="evenodd"
                     />
                   </svg>
-                  <span className="font-serif text-warmgray">Unlimited chapters forever</span>
+                  <span className="font-serif text-warmgray">12 months of memoir access</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <svg
@@ -1007,7 +1005,7 @@ export default function Landing() {
                       clipRule="evenodd"
                     />
                   </svg>
-                  <span className="font-serif text-warmgray">All future features included</span>
+                  <span className="font-serif text-warmgray">Audiobook and phone interviews</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <svg
@@ -1021,7 +1019,7 @@ export default function Landing() {
                       clipRule="evenodd"
                     />
                   </svg>
-                  <span className="font-serif text-warmgray">Best long-term value</span>
+                  <span className="font-serif text-warmgray">Ten copies to keep and share</span>
                 </li>
               </ul>
 
@@ -1029,7 +1027,7 @@ export default function Landing() {
                 onClick={handleGetStarted}
                 className="w-full font-sans bg-sepia text-white px-6 py-3.5 rounded-full text-sm font-medium hover:bg-ink transition-all shadow-md"
               >
-                Get Lifetime Access
+                Start Your Family Memoir
               </button>
               <p className="font-sans text-warmgray/60 text-xs text-center mt-3">VAT included</p>
             </div>

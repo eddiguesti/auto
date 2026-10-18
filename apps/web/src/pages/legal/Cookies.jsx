@@ -1,11 +1,8 @@
 import { Link } from 'react-router-dom'
+import { resetCookieConsent } from '../../utils/cookieConsent'
 
 export default function Cookies() {
-  const openCookieSettings = () => {
-    // Clear existing consent to show banner again
-    localStorage.removeItem('cookie-consent')
-    window.location.reload()
-  }
+  const openCookieSettings = resetCookieConsent
 
   return (
     <div className="min-h-screen bg-cream">
@@ -21,7 +18,7 @@ export default function Cookies() {
       {/* Content */}
       <main className="max-w-4xl mx-auto px-6 py-12">
         <h1 className="font-display text-4xl text-ink mb-2">Cookie Policy</h1>
-        <p className="text-warmgray mb-8">Last updated: January 29, 2026</p>
+        <p className="text-warmgray mb-8">Technical storage inventory updated: 9 October 2026</p>
 
         <div className="prose prose-sepia max-w-none space-y-8">
           <section>
@@ -37,40 +34,59 @@ export default function Cookies() {
           <section>
             <h2 className="font-display text-2xl text-ink mb-4">How We Use Cookies</h2>
             <p className="text-warmgray leading-relaxed">
-              Easy Memoir uses cookies to provide a secure, personalized experience. Below is a
-              detailed breakdown of the cookies we use:
+              Easy Memoir uses cookies and browser storage for sign-in, preferences and optional
+              analytics. Cookies, local storage and session storage have different lifetimes:
             </p>
           </section>
 
           <section>
-            <h2 className="font-display text-2xl text-ink mb-4">Essential Cookies</h2>
+            <h2 className="font-display text-2xl text-ink mb-4">Essential browser storage</h2>
             <p className="text-warmgray leading-relaxed mb-4">
-              These cookies are necessary for the website to function and cannot be disabled.
+              This storage supports sign-in and remembers your choices. Local storage has no
+              automatic expiry in the app; you can clear it in your browser.
             </p>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-sepia/20">
-                    <th className="text-left py-2 pr-4 font-medium text-ink">Cookie Name</th>
-                    <th className="text-left py-2 pr-4 font-medium text-ink">Purpose</th>
-                    <th className="text-left py-2 font-medium text-ink">Duration</th>
+                    <th scope="col" className="text-left py-2 pr-4 font-medium text-ink">
+                      Name
+                    </th>
+                    <th scope="col" className="text-left py-2 pr-4 font-medium text-ink">
+                      Storage
+                    </th>
+                    <th scope="col" className="text-left py-2 pr-4 font-medium text-ink">
+                      Purpose and lifetime
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="text-warmgray">
                   <tr className="border-b border-sepia/10">
                     <td className="py-2 pr-4">token</td>
-                    <td className="py-2 pr-4">Authentication - keeps you logged in</td>
-                    <td className="py-2">7 days</td>
+                    <td className="py-2 pr-4">Session storage</td>
+                    <td className="py-2">
+                      Sign-in credential for the browser tab's session, subject to server token
+                      expiry. Removed on sign-out; older local-storage credentials are migrated and
+                      cleared.
+                    </td>
                   </tr>
                   <tr className="border-b border-sepia/10">
                     <td className="py-2 pr-4">cookie-consent</td>
-                    <td className="py-2 pr-4">Remembers your cookie preferences</td>
-                    <td className="py-2">1 year</td>
+                    <td className="py-2 pr-4">Local storage</td>
+                    <td className="py-2">
+                      Your optional analytics choice, until changed or cleared. If storage is
+                      blocked, your choice is remembered only in the current tab.
+                    </td>
                   </tr>
                   <tr className="border-b border-sepia/10">
                     <td className="py-2 pr-4">cookie-consent-date</td>
-                    <td className="py-2 pr-4">Records when consent was given</td>
-                    <td className="py-2">1 year</td>
+                    <td className="py-2 pr-4">Local storage</td>
+                    <td className="py-2">Time your preference was saved; no automatic expiry.</td>
+                  </tr>
+                  <tr className="border-b border-sepia/10">
+                    <td className="py-2 pr-4">speakingPace, voiceGender</td>
+                    <td className="py-2 pr-4">Local storage</td>
+                    <td className="py-2">Your interview voice preferences; no automatic expiry.</td>
                   </tr>
                 </tbody>
               </table>
@@ -78,80 +94,44 @@ export default function Cookies() {
           </section>
 
           <section>
-            <h2 className="font-display text-2xl text-ink mb-4">Analytics Cookies</h2>
+            <h2 className="font-display text-2xl text-ink mb-4">Optional analytics</h2>
             <p className="text-warmgray leading-relaxed mb-4">
-              These cookies help us understand how visitors interact with our website. All data is
-              anonymized and used only to improve our service.
+              Analytics starts only after you accept it. When configured, PostHog records usage
+              events and stores a browser identifier using cookies and local storage. The SDK
+              storage names include a project-specific prefix such as ph_[project]_posthog; expiry
+              depends on the SDK configuration, and local storage has no automatic browser expiry.
             </p>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-sepia/20">
-                    <th className="text-left py-2 pr-4 font-medium text-ink">Cookie Name</th>
-                    <th className="text-left py-2 pr-4 font-medium text-ink">Purpose</th>
-                    <th className="text-left py-2 font-medium text-ink">Duration</th>
-                  </tr>
-                </thead>
-                <tbody className="text-warmgray">
-                  <tr className="border-b border-sepia/10">
-                    <td className="py-2 pr-4">_ga</td>
-                    <td className="py-2 pr-4">Google Analytics - distinguishes users</td>
-                    <td className="py-2">2 years</td>
-                  </tr>
-                  <tr className="border-b border-sepia/10">
-                    <td className="py-2 pr-4">_gid</td>
-                    <td className="py-2 pr-4">Google Analytics - distinguishes users</td>
-                    <td className="py-2">24 hours</td>
-                  </tr>
-                  <tr className="border-b border-sepia/10">
-                    <td className="py-2 pr-4">_gat</td>
-                    <td className="py-2 pr-4">Google Analytics - throttles request rate</td>
-                    <td className="py-2">1 minute</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          <section>
-            <h2 className="font-display text-2xl text-ink mb-4">Marketing Cookies</h2>
             <p className="text-warmgray leading-relaxed mb-4">
-              These cookies may be set by our advertising partners to build a profile of your
-              interests and show relevant ads on other sites.
+              If PostHog is unavailable or not configured, accepted usage events may be sent to Easy
+              Memoir's own analytics endpoint. These events can include the page path, referring
+              page, time and event properties. We do not describe this data as fully anonymous.
             </p>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-sepia/20">
-                    <th className="text-left py-2 pr-4 font-medium text-ink">Cookie Name</th>
-                    <th className="text-left py-2 pr-4 font-medium text-ink">Purpose</th>
-                    <th className="text-left py-2 font-medium text-ink">Duration</th>
-                  </tr>
-                </thead>
-                <tbody className="text-warmgray">
-                  <tr className="border-b border-sepia/10">
-                    <td className="py-2 pr-4">_fbp</td>
-                    <td className="py-2 pr-4">Facebook - tracks visits across websites</td>
-                    <td className="py-2">3 months</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          <section>
-            <h2 className="font-display text-2xl text-ink mb-4">Third-Party Cookies</h2>
             <p className="text-warmgray leading-relaxed">
-              Some features use third-party services that may set their own cookies:
+              Choosing Essential only stops new analytics events and clears the SDK's stored
+              identifiers and queued events. Already transmitted events cannot be recalled by your
+              browser. Session recording is disabled.
             </p>
-            <ul className="list-disc list-inside text-warmgray mt-2 space-y-1">
-              <li>
-                <strong>Google Sign-In:</strong> Authentication cookies if you use Google to log in
-              </li>
-              <li>
-                <strong>Google Fonts:</strong> May set cookies when loading fonts
-              </li>
-            </ul>
+          </section>
+
+          <section>
+            <h2 className="font-display text-2xl text-ink mb-4">Advertising trackers</h2>
+            <p className="text-warmgray leading-relaxed">
+              The current application does not configure Google Analytics or Facebook advertising
+              pixels. These providers are not part of the analytics choice offered here.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="font-display text-2xl text-ink mb-4">Other external services</h2>
+            <p className="text-warmgray leading-relaxed">
+              Google Sign-In opens Google's authentication service when you choose to use it. That
+              service manages its own browser storage. Fonts are served with this website rather
+              than requested from Google Fonts.
+            </p>
+            <p className="text-warmgray leading-relaxed mt-3">
+              When error reporting is configured, Sentry receives application error reports.
+              Performance sampling and session replay are disabled in the current app configuration.
+            </p>
           </section>
 
           <section>
@@ -166,7 +146,7 @@ export default function Cookies() {
             </p>
             <button
               onClick={openCookieSettings}
-              className="px-6 py-2.5 bg-ink text-white rounded-full text-sm font-medium hover:bg-sepia transition"
+              className="min-h-11 px-6 py-2.5 bg-ink text-white rounded-full text-sm font-medium hover:bg-sepia transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
             >
               Manage Cookie Settings
             </button>
@@ -241,8 +221,7 @@ export default function Cookies() {
               <li>Use certain features of the service</li>
             </ul>
             <p className="text-warmgray mt-4">
-              Disabling analytics and marketing cookies will not affect your ability to use Easy
-              Memoir.
+              Rejecting optional analytics does not prevent you from using Easy Memoir.
             </p>
           </section>
 

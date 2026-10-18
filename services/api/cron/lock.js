@@ -7,6 +7,7 @@
  */
 
 import os from 'os'
+import { randomUUID } from 'node:crypto'
 import redis, { isRedisAvailable } from '../utils/redis.js'
 import { captureException } from '../utils/sentry.js'
 
@@ -33,7 +34,8 @@ export async function withCronLock(name, fn) {
 
   // Atomically acquire the lock: SET key value NX EX ttl
   // NX = only set if key does not exist → only one instance wins
-  const acquired = await redis.set(key, INSTANCE_ID, 'NX', 'EX', LOCK_TTL)
+  const owner = `${INSTANCE_ID}:${randomUUID()}`
+  const acquired = await redis.set(key, owner, 'NX', 'EX', LOCK_TTL)
 
   if (!acquired) {
     console.log(`[CRON] ${name} — skipped (lock held by another instance)`)
@@ -46,10 +48,13 @@ export async function withCronLock(name, fn) {
   } finally {
     // Release only if we still own the lock (guards against TTL expiry during long jobs)
     try {
-      const current = await redis.get(key)
-      if (current === INSTANCE_ID) {
-        await redis.del(key)
-      }
+      // Compare-and-delete must be atomic: GET then DEL can erase a newer owner.
+      await redis.eval(
+        "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end",
+        1,
+        key,
+        owner
+      )
     } catch (releaseErr) {
       // Non-critical — lock will expire on its own, but capture for observability
       captureException(releaseErr, { context: 'cron_lock_release', cronJob: name })

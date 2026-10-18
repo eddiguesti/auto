@@ -4,7 +4,7 @@
  * Usage in a component or hook:
  *   const api = useApiClient()
  *   const data = await api.get('/api/stories/progress')
- *   await api.post('/api/stories', { chapterId, questionId, answer })
+ *   await api.post('/api/stories', { chapter_id, question_id, answer })
  *
  * All methods:
  *  - Resolve with the parsed JSON body on 2xx
@@ -12,38 +12,16 @@
  */
 
 import { useAuth } from '../context/AuthContext'
-
-export class ApiError extends Error {
-  constructor(status, body) {
-    const message = body?.error?.message || body?.message || body?.error || `HTTP ${status}`
-    super(message)
-    this.name = 'ApiError'
-    this.status = status
-    this.body = body
-  }
-}
+import { fetchApiResponse } from './apiResponse'
+export { ApiError } from './apiResponse'
 
 function createClient(authFetch) {
   async function request(method, path, body, options = {}) {
-    const res = await authFetch(path, {
+    return fetchApiResponse(authFetch, path, {
       method,
       ...options,
       body: body !== undefined ? JSON.stringify(body) : undefined
     })
-
-    let parsed
-    const ct = res.headers.get('content-type') || ''
-    if (ct.includes('application/json')) {
-      parsed = await res.json()
-    } else {
-      parsed = await res.text()
-    }
-
-    if (!res.ok) {
-      throw new ApiError(res.status, parsed)
-    }
-
-    return parsed
   }
 
   return {

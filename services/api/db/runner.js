@@ -26,8 +26,27 @@ const MIGRATIONS_DIR = join(__dirname, 'migrations')
  * @param {import('pg').Pool} pool
  */
 export async function runMigrations(pool) {
+  const client = await pool.connect()
+  let locked = false
+  try {
+    // Session lock serializes API/worker startups and survives per-file COMMITs.
+    await client.query("SELECT pg_advisory_lock(hashtext('easy-memoir-schema-migrations'))")
+    locked = true
+    await applyMigrations(client)
+  } finally {
+    try {
+      if (locked) {
+        await client.query("SELECT pg_advisory_unlock(hashtext('easy-memoir-schema-migrations'))")
+      }
+    } finally {
+      client.release()
+    }
+  }
+}
+
+async function applyMigrations(client) {
   // Ensure the tracking table exists before we try to query it
-  await pool.query(`
+  await client.query(`
     CREATE TABLE IF NOT EXISTS schema_migrations (
       version VARCHAR(255) PRIMARY KEY,
       applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -44,7 +63,7 @@ export async function runMigrations(pool) {
   }
 
   // Fetch already-applied migration versions
-  const { rows } = await pool.query('SELECT version FROM schema_migrations')
+  const { rows } = await client.query('SELECT version FROM schema_migrations')
   const applied = new Set(rows.map(r => r.version))
 
   let appliedCount = 0
@@ -55,7 +74,6 @@ export async function runMigrations(pool) {
     const sqlPath = join(MIGRATIONS_DIR, filename)
     const sql = await readFile(sqlPath, 'utf8')
 
-    const client = await pool.connect()
     try {
       await client.query('BEGIN')
       await client.query(sql)
@@ -67,8 +85,6 @@ export async function runMigrations(pool) {
       await client.query('ROLLBACK')
       logger.error(`Migration failed, rolled back: ${filename}`, { error: err.message })
       throw new Error(`Migration ${filename} failed: ${err.message}`)
-    } finally {
-      client.release()
     }
   }
 
@@ -80,8 +96,8 @@ export async function runMigrations(pool) {
 
   // Seed reference data (idempotent upserts — safe to run on every startup)
   try {
-    await seedCollections(pool)
-    await seedPrompts(pool)
+    await seedCollections(client)
+    await seedPrompts(client)
   } catch (err) {
     logger.error('Seed data failed', { error: err.message })
     // Non-fatal: seeds are reference data, not schema

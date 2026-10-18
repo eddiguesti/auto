@@ -1,0 +1,117 @@
+{
+  "direction": "A life, in chapters",
+  "intent": "A calm editorial experience that makes preserving a life feel tangible, personal and manageable for older storytellers and their families.",
+  "designAuthoringModel": "GPT-6 Astra, High reasoning",
+  "implementationModel": "GPT-6.1 Sol, High reasoning",
+  "visualSystem": {
+    "colours": {
+      "paper": "#F7F3EB",
+      "sheet": "#FFFCF7",
+      "ink": "#233A32",
+      "body": "#4D5149",
+      "muted": "#676B61",
+      "rule": "#D9D5C9",
+      "accent": "#A84730",
+      "sage": "#E5EADD"
+    },
+    "typography": "Keep Boska for literary display headings, General Sans for UI and body copy, and Lora for memoir excerpts. Remove global span/div font-family overrides that break intentional inheritance. Self-host fonts if licensing permits; use stable fallback metrics.",
+    "sizes": "Desktop hero 72–88px, mobile hero 44–52px, section title 40–56px, application title 36–44px, body 18px / 1.6, labels at least 14px. Excerpts 18px / 1.75. Long copy limited to 58–66 characters per line.",
+    "layout": "Marketing width 1240px with desktop gutters 48–64px; application width 1120px. Mobile gutters 20–24px. Desktop editorial asymmetry, mobile authored stacking. Rule-separated sections and small chapter numerals; use fewer rounded containers.",
+    "surfaces": "Paper without full-screen SVG noise overlays. Fine one-pixel borders, 8–12px panel radius, restrained shadows only for a manuscript/book illustration. Solid forest primary buttons, outlined or underlined secondary actions.",
+    "motion": "One short entry transition per section, 180–350ms. No endless pulsing, shine, floating, autoplay carousels or scroll hijacking. Respect reduced motion for CSS and Framer Motion. Recording indicators must reflect actual state."
+  },
+  "marketingHome": {
+    "navigation": "Retain the EasyMemoir wordmark. Home link, How it works, Read a sample, Pricing, Sign in and one primary Start my story action. Collapse nonessential links into an accessible mobile disclosure menu.",
+    "hero": {
+      "eyebrow": "YOUR LIFE, IN YOUR WORDS",
+      "heading": "A lifetime of stories. A place to keep them.",
+      "body": "Talk or write about the moments that made you. Clio, your AI memoir companion, helps turn your memories into a story you can edit and share.",
+      "primary": "Start my story",
+      "secondary": "Read a sample",
+      "visual": "An art-directed manuscript/book spread, made from readable HTML and CSS. Label it Illustrative sample. Use chapter numeral, a large literary title, two readable excerpt paragraphs and a restrained running footer. Include a separate clearly labelled sample prompt. The visual remains visible on mobile below the actions; no hidden-lg-only storytelling.",
+      "composition": "Desktop 48/52 split, left text aligned to top third, right large book visual with generous air. Mobile headline and short copy first, CTA next, compact manuscript within the first two screens. Avoid forced full-viewport height."
+    },
+    "sequence": [
+      "Hero with a tangible preview of the outcome",
+      "Three numbered steps: Remember, Shape, Keep. Each is visible without carousel interaction.",
+      "One illustrative spoken-memory-to-edited-chapter example, clearly labelled as an example rather than a customer testimonial",
+      "Two understated paths: Write my own story / Help someone I love, with honest links to existing routes",
+      "A compact pricing invitation using verified offer data or linking to plans; no duplicate hardcoded commercial claims",
+      "Four native FAQ disclosures: voice versus typing, editing your draft, choosing which memories to include, downloading/printing where supported",
+      "Quiet closing invitation and useful footer"
+    ],
+    "removeOrReplace": [
+      "Repeated Why Choose, Memory Map and mode-selection feature sales sections",
+      "Auto-playing how-it-works carousel",
+      "Unproven review count, rating, testimonial, Most Popular badge and discount anchoring",
+      "Persistent mobile sales bar if it competes with cookie controls or obscures content"
+    ]
+  },
+  "dashboard": {
+    "hierarchy": "Stable application masthead with Your story, Chapters, Book preview and Settings. Greeting and compact completion status. Main content is one useful next action, followed by access to the user's chapters.",
+    "desktop": "Two-column 7/5 layout: large continuation panel on the left, compact memoir/book summary on the right; chapter list spans below. Max width 1120px instead of the existing 512px single column.",
+    "mobile": "One column, greeting, continuation panel, progress summary, chapters. Keep primary button easy to reach; chapter rows at least 64px high.",
+    "continuationPanel": "Show actual next chapter title and a question from chapters data. Start with a memory / Continue your story primary action according to saved progress. Secondary Write instead action. Preserve existing routes and data rather than simulate story state.",
+    "secondaryActions": "Offer Photo, Phone call, Quick memory and Preview book as secondary controls with text labels. Preserve features while removing six equally weighted entry choices.",
+    "states": "Warm empty state explains one small first step; progress shows saved memories rather than an enormous 0%. Skeleton maintains layout. Loading failure includes Retry. Completed state offers review and book preview. Distinguish server error from an empty story."
+  },
+  "onboarding": {
+    "priority": "Support the first successful memory before sales or channel setup.",
+    "presentation": "Calm page-like modal with clear title, Back, Save and finish later, and textual Step N of M. Maximum 720px width; content scrolls independently without hiding controls.",
+    "flow": "Keep currently functional API workflow, but use larger type and controls, shorten introductions and reduce ceremony. Talk and Type are equal accessible options; microphone access is requested only after choosing Talk. Provide typing fallback on permission or audio failure.",
+    "futureBehaviourChange": "Move channel selection and upgrades after the first saved memory if server contract and product requirements permit. Do not silently remove required onboarding persistence.",
+    "accessibility": "Focus moves to each new step heading, is trapped while modal is open and returns on close; Escape closes where safe; real labels for all fields; descriptive errors associated with controls; visible save status."
+  },
+  "assetAudit": {
+    "existingBrand": "Current site uses a text EasyMemoir wordmark. Do not invent a replacement logo.",
+    "blogImages": "Reviewed four existing blog JPEGs. They appear illustrative/synthetic, including impossible framed family trees and malformed book text. They must not be presented as authentic customer photographs, testimonials or physical product proof.",
+    "allowableUse": "Existing illustrations may support editorial/blog content with descriptive alt text. Prefer the manuscript-led hero over enlarging questionable images. Preserve all originals.",
+    "publicSiteCheck": "https://easymemoir.co.uk returned 404 through the web fetch during this audit; original photography could not be verified there.",
+    "generatedAssets": "None requested or generated."
+  },
+  "contentReconciliation": [
+    "Hero advertises one free chapter; index.html structured data advertises two.",
+    "PricingSection lists both Full Story and Lifetime at GBP299 discounted from GBP599, with four GBP100 instalments and different benefits. Confirm live product/Stripe data before replacing public offer claims.",
+    "Structured data advertises 4.9/500 reviews and Margaret T. testimonial without provenance found in the inspected source. Remove unless evidence can be supplied.",
+    "Do not promise 52 chapters, four books, phone availability, unlimited AI or future features beyond actual entitlements."
+  ],
+  "acceptanceChecks": [
+    "Inspect actual desktop and 390px/360px mobile renders, including the first fold and full-page rhythm.",
+    "No horizontal overflow at 320px; content remains usable at 200% zoom.",
+    "All primary tasks work with keyboard only and visible high-contrast focus.",
+    "Body and button text have at least 4.5:1 contrast; controls have adequate boundary contrast.",
+    "Interactive targets at least 44px, preferably 48px for primary actions.",
+    "Reduced-motion mode disables nonessential movement; no false live recording indicator.",
+    "No unverified claims, synthetic customer endorsements or misleading product imagery.",
+    "Verify authenticated dashboard empty/loading/error/complete states with local fixtures; never test by changing real user data."
+  ],
+  "renderedReview": {
+    "status": "requested-rendered-design-checks-complete",
+    "preview": "http://127.0.0.1:5174/",
+    "reviewed": ["Native desktop viewport and full-page composition", "390px by 844px mobile", "320px by 780px mobile", "Mobile navigation disclosure", "FAQ expansion using Enter and visible keyboard focus", "Linked sample memoir route"],
+    "passed": ["Coherent literary homepage composition and hierarchy", "Primary mobile CTA within first screen", "Manuscript retained on mobile", "No horizontal overflow at 390px or 320px", "Native FAQ disclosure responds to keyboard"],
+    "requestedRefinements": ["Restyle pulsing orange help launcher to calm forest treatment; remove unsupported availability dot", "Unify the prominent sample-memoir destination with the new visual system, label fiction, label pagination, remove unsupported price cards", "Raise essential dashboard mobile navigation and chapter metadata to at least 14px", "Check registration entry continuity"],
+    "finalReview": {
+      "dashboard": "Normal UI login to local fixture account only. Desktop and 390px renders pass composition and overflow review. Next-chapter panel and progress have clear hierarchy; secondary routes remain accessible.",
+      "sample": "Refined mobile sample reviewed. Explicit fictional label, consistent visual system, labelled navigation and readable chapter prose. Chapter selection changes page and focuses heading.",
+      "help": "Forest launcher and removal of decorative pulse verified. Development query tool still visually overlaps it in dev; production bundle omits the devtool.",
+      "onboarding": "Welcome, method selection and typing form inspected at 390px. Welcome monogram/button/body refinements verified. Method step has clipped bottom helper text with duplicate progress dots; request sent to Sol to compact cards and remove duplicate dots. Typing fields lack associated accessible names in observed AX tree; request sent for htmlFor/id associations.",
+      "screenshots": [".cloudflare/review/dashboard-desktop.jpg", ".cloudflare/review/dashboard-mobile.jpg"],
+      "consent": "Sent implementation owner concise banner styling guidance: cream/forest, compact explanation, equal prominence for accept/reject, 44px controls, accessible preferences."
+    },
+    "supportingPageReview": {
+      "reviewed": ["How it works desktop and 390px mobile", "Gift desktop", "About 391px mobile", "FAQ 390px mobile and keyboard Enter expansion", "Pricing 391px mobile error state", "Cookies 390px mobile", "Consent notice and preferences 390px mobile"],
+      "result": "Shared editorial shell is consistent, readable and calm. Large display headings wrap naturally; numbered section rhythm and clear rules give the supporting pages structure. FAQ keyboard interaction and visible focus work. Consent notice uses readable sans-serif copy, equal accept/reject prominence, and a correctly named analytics switch. No new blocking visual defect observed.",
+      "limitations": "Current fixture catalog request failed; pricing presented a useful retry state. Fixture login failed with Unexpected end of JSON input, so the final onboarding label/overflow fixes could not be rechecked in this pass. These failures were reported to root as local environment blockers.",
+      "screenshots": [".cloudflare/review/how-it-works-desktop.jpg", ".cloudflare/review/gift-desktop.jpg", ".cloudflare/review/about-mobile.jpg", ".cloudflare/review/consent-mobile.jpg", ".cloudflare/review/consent-banner-mobile.jpg"]
+    },
+    "fixtureRestoredFinalChecks": {
+      "pricing": "Loaded catalog verified in actual browser: Premium Monthly GBP9.99/month and Premium Yearly GBP99.99/year both explicitly unavailable to purchase, with no purchase controls. Bundle and export rows display catalog data. Readable restrained desktop cards; screenshot saved.",
+      "onboarding": "Normal local fixture login succeeded. Settings has no visible restart control; reused the existing onboarding entry URL already verified in earlier source/UI checks. At390x844 the method step now fits its helper text, duplicate dots are gone, and both choices remain accessible. Typing form fields expose proper associated names in the AX tree, including birth-year select and optional context. Focus moves to each heading. Finish later closes correctly.",
+      "screenshots": [".cloudflare/review/pricing-loaded-desktop.jpg", ".cloudflare/review/onboarding-method-mobile.jpg", ".cloudflare/review/onboarding-form-mobile.jpg"],
+      "result": "Previously requested visual and input-label corrections verified. No further blocking design defect observed in the reviewed scope. Browser viewport restored."
+    },
+    "notYetVerified": ["Every authenticated loading/error/completed state rendered", "Live production integrations and commercial product fulfillment are outside design sign-off"],
+    "note": "Astra reviewed actual screenshots and sent concrete revisions to Sol. All dashboard data was a local fixture. Screenshot artifacts moved to ignored review directory. Responsive viewport override reset after inspection."
+  }
+}

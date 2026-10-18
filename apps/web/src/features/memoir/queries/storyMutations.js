@@ -11,26 +11,15 @@ export function useSaveStory() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ chapterId, questionId, answer }) =>
-      api.post('/api/stories/save', { chapterId, questionId, answer }),
+    mutationFn: ({ chapterId, questionId, answer, totalQuestions }) =>
+      api.post('/api/stories', {
+        chapter_id: chapterId,
+        question_id: questionId,
+        answer,
+        ...(totalQuestions !== undefined ? { total_questions: totalQuestions } : {})
+      }),
     onSuccess: (_, { chapterId }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.stories.chapter(chapterId) })
-      queryClient.invalidateQueries({ queryKey: queryKeys.stories.all })
-    }
-  })
-}
-
-/**
- * Delete a story answer by ID.
- * Invalidates all story caches so the chapter re-fetches.
- */
-export function useDeleteStory() {
-  const api = useApiClient()
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: storyId => api.delete(`/api/stories/${storyId}`),
-    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.stories.all })
     }
   })
