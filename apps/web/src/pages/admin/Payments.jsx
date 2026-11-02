@@ -37,6 +37,16 @@ function StatusBadge({ status }) {
   )
 }
 
+const refundLabels = {
+  created: 'Refund requested',
+  lookup: 'Verifying refund',
+  effect_started: 'Refund pending',
+  pending: 'Refund pending',
+  succeeded: 'Refund confirmed',
+  failed: 'Refund needs review',
+  needs_reconciliation: 'Refund needs review'
+}
+
 function Pagination({ meta, onPageChange }) {
   const totalPages = Math.ceil(meta.total / meta.limit)
 
@@ -76,6 +86,7 @@ export default function AdminPayments() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [refundLoading, setRefundLoading] = useState(null)
+  const [refundNotice, setRefundNotice] = useState(null)
 
   const loadPayments = useCallback(
     async (page = 1) => {
@@ -109,24 +120,65 @@ export default function AdminPayments() {
 
   async function handleProcessRefund(paymentId) {
     const confirmed = window.confirm(
-      'Are you sure you want to process this refund? This will mark the refund as approved and the payment as refunded.'
+      'Request a refund through Stripe? The payment is marked refunded only after Stripe confirms success. Pending or uncertain outcomes may require review.'
     )
     if (!confirmed) return
 
     setRefundLoading(paymentId)
+    setRefundNotice(null)
+    const updateRefundState = (state, status) =>
+      setPayments(current =>
+        current.map(payment =>
+          payment.id === paymentId
+            ? { ...payment, refund_state: state, ...(status ? { status } : {}) }
+            : payment
+        )
+      )
     try {
       const res = await authFetch(`/api/admin/refunds/${paymentId}/process`, {
         method: 'POST'
       })
 
-      if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || 'Failed to process refund')
+      const data = await res.json()
+      if (res.status === 202 && data.status === 'pending') {
+        updateRefundState('pending')
+        setRefundNotice(
+          data.message ||
+            'Stripe is still processing the refund. The payment has not been marked refunded.'
+        )
+      } else if (res.ok && data.success === true && data.status === 'succeeded') {
+        updateRefundState('succeeded', 'refunded')
+        setRefundNotice('Stripe confirmed the refund.')
+      } else if (!res.ok) {
+        if (data.code === 'REFUND_PROCESSING') updateRefundState('pending')
+        else if (data.code === 'REFUND_RECONCILIATION_REQUIRED')
+          updateRefundState('needs_reconciliation')
+        else if (
+          [
+            'REFUND_FAILED',
+            'REFUND_MANUAL_REVIEW_REQUIRED',
+            'REFUND_PAYMENT_MISMATCH',
+            'REFUND_CHARGE_MISMATCH'
+          ].includes(data.code)
+        )
+          updateRefundState('failed')
+        setRefundNotice(
+          data.code === 'REFUND_RECONCILIATION_REQUIRED'
+            ? 'The refund outcome needs review. Do not submit another refund; the payment has not been marked refunded.'
+            : data.error ||
+                'The refund could not be confirmed. Refresh the payments before trying again.'
+        )
+        return
+      } else {
+        throw new Error('Unrecognized refund outcome')
       }
 
       await loadPayments(meta.page)
-    } catch (err) {
-      alert(err.message)
+    } catch {
+      updateRefundState('needs_reconciliation')
+      setRefundNotice(
+        'The refund outcome could not be confirmed. Refresh the payments and review the refund before submitting another request.'
+      )
     } finally {
       setRefundLoading(null)
     }
@@ -152,6 +204,14 @@ export default function AdminPayments() {
         {error && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
             {error}
+          </div>
+        )}
+        {refundNotice && (
+          <div
+            role="status"
+            className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-warm-brown text-sm"
+          >
+            {refundNotice}
           </div>
         )}
 
@@ -212,20 +272,26 @@ export default function AdminPayments() {
                       </td>
                       <td className="px-6 py-3">
                         <StatusBadge status={p.status} />
+                        {p.refund_state && refundLabels[p.refund_state] && (
+                          <p className="text-xs text-warm-brown/70 mt-1">
+                            {refundLabels[p.refund_state]}
+                          </p>
+                        )}
                       </td>
                       <td className="px-6 py-3 text-warm-brown/60 text-xs">
                         {formatDate(p.created_at)}
                       </td>
                       <td className="px-6 py-3">
-                        {p.status === 'completed' && (
-                          <button
-                            onClick={() => handleProcessRefund(p.id)}
-                            disabled={refundLoading === p.id}
-                            className="px-3 py-1 text-xs border border-red-200 text-red-600 rounded hover:bg-red-50 transition disabled:opacity-50"
-                          >
-                            {refundLoading === p.id ? 'Processing...' : 'Refund'}
-                          </button>
-                        )}
+                        {p.status === 'completed' &&
+                          (!p.refund_state || ['created', 'lookup'].includes(p.refund_state)) && (
+                            <button
+                              onClick={() => handleProcessRefund(p.id)}
+                              disabled={refundLoading !== null}
+                              className="px-3 py-1 text-xs border border-red-200 text-red-600 rounded hover:bg-red-50 transition disabled:opacity-50"
+                            >
+                              {refundLoading === p.id ? 'Processing...' : 'Refund'}
+                            </button>
+                          )}
                         {p.status === 'refunded' && (
                           <span className="text-xs text-warm-brown/40">Refunded</span>
                         )}

@@ -1,9 +1,10 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "easy-memoir-api-staging",
-  "account_id": "df3d63daad6e36a66171d8ae6b368da7",
+  "account_id": "bbdbba416f07c76f4c2754f8a61807f4",
   "main": "cloudflare/api-staging.js",
   "compatibility_date": "2026-10-09",
+  "compatibility_flags": ["nodejs_compat"],
   "workers_dev": false,
   "preview_urls": false,
   "routes": [],
@@ -12,16 +13,75 @@
   "limits": { "cpu_ms": 5000 },
   "vars": {
     "NATIVE_API_STAGE": "local-d1-slice",
-    // Deliberate local test policy. Verify actual source Node/pg timezone before cutover.
-    "SOURCE_TIMESTAMP_TIMEZONE": "UTC"
+    // Fresh database: all native timestamp writes use UTC.
+    "SOURCE_TIMESTAMP_TIMEZONE": "UTC",
+    "AUTH_RATE_MODE": "account-budget",
+    "APP_URL": "https://easy-memoir-web-staging.easy-memoir.workers.dev",
+    "PUBLISHING_ENABLED": "false",
+    "PRINT_CONFIGURATION_READY": "false",
+    "TELNYX_CALLS_ENABLED": "false",
+    "TELNYX_CALLBACKS_VERIFIED": "false",
+    "NOTIFICATION_DELIVERY_ENABLED": "false",
+    "TELEGRAM_ENABLED": "false",
+    "GENERATION_QUEUE_NAME": "easy-memoir-generation-staging",
+    "VOICE_COMPILE_QUEUE_NAME": "easy-memoir-voice-compile-staging",
+    "PRINT_QUEUE_NAME": "easy-memoir-print-staging",
+    "ARTWORK_QUEUE_NAME": "easy-memoir-artwork-staging"
   },
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "easy-memoir-staging-local",
-      // Local-only sentinel: replace with a separately provisioned STAGING database before any deployment.
-      "database_id": "00000000-0000-0000-0000-000000000001",
+      "database_name": "easy-memoir-staging",
+      "database_id": "64811ce9-8843-47d6-91b0-a112a1974f90",
       "migrations_dir": "cloudflare/api/migrations"
     }
-  ]
+  ],
+  "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "easy-memoir-media-staging" }],
+  "durable_objects": {
+    "bindings": [
+      { "name": "VOICE_SESSIONS", "class_name": "VoiceSession" },
+      { "name": "PHONE_SESSIONS", "class_name": "PhoneSession" }
+    ]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["VoiceSession", "PhoneSession"] }],
+  "queues": {
+    "producers": [
+      { "binding": "GENERATION_QUEUE", "queue": "easy-memoir-generation-staging" },
+      { "binding": "VOICE_COMPILE_QUEUE", "queue": "easy-memoir-voice-compile-staging" },
+      { "binding": "PRINT_QUEUE", "queue": "easy-memoir-print-staging" },
+      { "binding": "ARTWORK_QUEUE", "queue": "easy-memoir-artwork-staging" }
+    ],
+    "consumers": [
+      {
+        "queue": "easy-memoir-generation-staging",
+        "max_batch_size": 1,
+        "max_batch_timeout": 5,
+        "max_retries": 5
+      },
+      {
+        "queue": "easy-memoir-voice-compile-staging",
+        "max_batch_size": 1,
+        "max_batch_timeout": 5,
+        "max_retries": 5
+      },
+      {
+        "queue": "easy-memoir-print-staging",
+        "max_batch_size": 1,
+        "max_batch_timeout": 5,
+        "max_retries": 5
+      },
+      {
+        "queue": "easy-memoir-artwork-staging",
+        "max_batch_size": 1,
+        "max_batch_timeout": 5,
+        "max_retries": 5
+      }
+    ]
+  },
+  "triggers": { "crons": ["* * * * *"] },
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+    "logs": { "invocation_logs": false }
+  }
 }

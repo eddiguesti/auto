@@ -1,13 +1,13 @@
 {
   "$schema": "../node_modules/wrangler/config-schema.json",
   "name": "easy-memoir-migration-staging",
-  "account_id": "df3d63daad6e36a66171d8ae6b368da7",
+  "account_id": "bbdbba416f07c76f4c2754f8a61807f4",
   "compatibility_date": "2026-10-09",
   "d1_databases": [
     {
       "binding": "MIGRATION_DB",
-      "database_name": "easymemoir-migration-staging",
-      "database_id": "3e7dc7e9-9813-41bc-95fb-ac3a51f51b2b"
+      "database_name": "easy-memoir-staging",
+      "database_id": "64811ce9-8843-47d6-91b0-a112a1974f90"
     }
   ]
 }

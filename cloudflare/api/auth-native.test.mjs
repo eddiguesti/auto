@@ -1,3 +1,4 @@
+import { sqlStatements } from './fixtures/sql-statements.mjs'
 import { after, before, beforeEach, test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile, readdir } from 'node:fs/promises'
@@ -8,12 +9,13 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { createHash } from 'node:crypto'
 import { tokenLifetime } from './auth.js'
+import { createAuthRepository } from './auth-repository.js'
 import { signClientIdentity } from '../ingress-identity.js'
 
 const secret = 'auth-native-test-secret-longer-than-32-characters'
 const password = 'StrongPassword9'
 let runtime, db, importedHash
-let identityFails, emailFails, identityRequests, emails
+let identityFails, emailFails, identityRequests, emails, emailRequests
 const bundle = fileURLToPath(
   new URL('../../.cloudflare/api-tests/auth-worker.mjs', import.meta.url)
 )
@@ -24,6 +26,7 @@ before(async () => {
     bundle: true,
     format: 'esm',
     platform: 'browser',
+    external: ['cloudflare:workers', 'node:buffer'],
     target: 'es2022'
   })
   const bundled = await readFile(bundle, 'utf8')
@@ -37,12 +40,14 @@ before(async () => {
       modules: true,
       scriptPath: bundle,
       compatibilityDate: '2026-10-09',
+      compatibilityFlags: ['nodejs_compat'],
       bindings: {
         JWT_SECRET: secret,
         JWT_EXPIRES_IN: '3600',
         NATIVE_API_STAGE: 'local-d1-slice',
         SOURCE_TIMESTAMP_TIMEZONE: 'UTC',
-        APP_URL: 'https://easymemoir.co.uk'
+        APP_URL: 'https://easymemoir.co.uk',
+        RESEND_API_KEY: 'fake-resend-test-key'
       },
       d1Databases: { DB: '00000000-0000-0000-0000-000000000002' },
       serviceBindings: {
@@ -58,6 +63,11 @@ before(async () => {
             : Response.json({ subject: 'ip:203.0.113.42' })
         },
         EMAIL_PROVIDER: async request => {
+          emailRequests.push({
+            url: request.url,
+            method: request.method,
+            authorization: request.headers.get('Authorization')
+          })
           emails.push(await request.json())
           return emailFails
             ? new Response('unavailable', { status: 503 })
@@ -72,13 +82,7 @@ before(async () => {
     .sort()
   for (const file of ['../db/schema.sql', ...migrationNames.map(name => `./migrations/${name}`)]) {
     const ddl = await readFile(new URL(file, import.meta.url), 'utf8')
-    const statements = ddl
-      .split('\n')
-      .filter(line => !line.trim().startsWith('--'))
-      .join('\n')
-      .split(';')
-      .map(value => value.trim())
-      .filter(Boolean)
+    const statements = sqlStatements(ddl)
     await db.batch(statements.map(statement => db.prepare(statement)))
   }
   importedHash = await bcrypt.hash(password, 12)
@@ -89,6 +93,7 @@ beforeEach(async () => {
   emailFails = false
   identityRequests = []
   emails = []
+  emailRequests = []
   await db.batch(
     ['auth_rate_limits', 'token_blacklist', 'user_token_invalidation', 'users', 'collections'].map(
       table => db.prepare(`DELETE FROM ${table}`)
@@ -343,6 +348,7 @@ test('missing bound identity provider cannot be bypassed using Cloudflare-lookin
       modules: true,
       scriptPath: bundle,
       compatibilityDate: '2026-10-09',
+      compatibilityFlags: ['nodejs_compat'],
       bindings: {
         JWT_SECRET: secret,
         NATIVE_API_STAGE: 'local-d1-slice',
@@ -458,7 +464,7 @@ test('expired and deleted-user verification links are rejected, and a failed upd
   )
 })
 
-test('JWT lifetime matches source numeric seconds/unit defaults and unsupported auth is explicit', async () => {
+test('JWT lifetime matches source numeric seconds/unit defaults and Google validates its credential body', async () => {
   for (const [input, expected] of [
     ['3600', 3600],
     ['"3600"', 3600],
@@ -468,15 +474,10 @@ test('JWT lifetime matches source numeric seconds/unit defaults and unsupported 
     ['0', 604800]
   ])
     assert.equal(tokenLifetime(input), expected)
-  for (const path of [
-    '/auth/google',
-    '/auth/forgot-password',
-    '/auth/reset-password',
-    '/auth/resend-verification'
-  ]) {
+  for (const path of ['/auth/google']) {
     const response = await request(`/api${path}`, {})
-    assert.equal(response.status, 501)
-    assert.equal((await response.json()).code, 'NOT_MIGRATED')
+    assert.equal(response.status, 400)
+    assert.equal((await response.json()).error, 'Validation failed')
   }
 })
 
@@ -491,6 +492,7 @@ test('real workerd API-to-identity service binding verifies signed ingress, meth
     bundle: true,
     format: 'esm',
     platform: 'browser',
+    external: ['cloudflare:workers', 'node:buffer'],
     target: 'es2022'
   })
   const paired = new Miniflare(
@@ -501,6 +503,7 @@ test('real workerd API-to-identity service binding verifies signed ingress, meth
           modules: true,
           scriptPath: bundle,
           compatibilityDate: '2026-10-09',
+          compatibilityFlags: ['nodejs_compat'],
           bindings: {
             JWT_SECRET: secret,
             NATIVE_API_STAGE: 'local-d1-slice',
@@ -514,6 +517,7 @@ test('real workerd API-to-identity service binding verifies signed ingress, meth
           modules: true,
           scriptPath: identityBundle,
           compatibilityDate: '2026-10-09',
+          compatibilityFlags: ['nodejs_compat'],
           bindings: { AUTH_INGRESS_SECRET: ingressSecret }
         }
       ]
@@ -528,6 +532,9 @@ test('real workerd API-to-identity service binding verifies signed ingress, meth
       pairedDb.prepare(
         'CREATE TABLE auth_rate_limits(subject_hash TEXT PRIMARY KEY,window_started_at INTEGER,attempts INTEGER)'
       ),
+      pairedDb.prepare(
+        'CREATE TABLE password_reset_tokens(id INTEGER PRIMARY KEY,user_id INTEGER,token_hash TEXT,expires_at TEXT,used_at TEXT,created_at TEXT)'
+      ),
       pairedDb
         .prepare('INSERT INTO users(id,email,name,password_hash) VALUES(1,?,?,?)')
         .bind('imported@example.com', 'Imported', importedHash)
@@ -538,9 +545,9 @@ test('real workerd API-to-identity service binding verifies signed ingress, meth
       AUTH_INGRESS_HOST: 'easymemoir.example',
       AUTH_INGRESS_SECRET: ingressSecret
     }
-    const incoming = path => {
+    const incoming = (path, method = 'POST') => {
       const value = new Request(`https://easymemoir.example${path}`, {
-        method: 'POST',
+        method,
         headers: { 'CF-Connecting-IP': '192.0.2.1' }
       })
       Object.defineProperty(value, 'cf', { value: { colo: 'LHR' } })
@@ -563,7 +570,366 @@ test('real workerd API-to-identity service binding verifies signed ingress, meth
       503
     )
     assert.equal((await call('forged')).status, 503)
+    const verifyPath = '/api/v1/auth/verify-reset-token'
+    const recoveryIdentity = await signClientIdentity(incoming(verifyPath, 'GET'), policy)
+    const recovery = await paired.dispatchFetch(
+      `https://api-staging.invalid${verifyPath}?token=unknown`,
+      {
+        headers: { 'X-EasyMemoir-Client-Identity': recoveryIdentity }
+      }
+    )
+    assert.equal(recovery.status, 200)
+    assert.deepEqual(await recovery.json(), { valid: false })
+    const invalidMethod = await signClientIdentity(incoming(verifyPath, 'POST'), policy)
+    assert.equal(invalidMethod, null)
   } finally {
     await paired.dispose()
   }
+})
+
+const recoverySuccess = {
+  success: true,
+  message: 'If an account exists with that email, you will receive a password reset link shortly.'
+}
+const hashToken = value => createHash('sha256').update(value).digest('hex')
+const rawEmailToken = message => /token=([a-f0-9]{64})/.exec(message.html)[1]
+const userToken = (extra = {}) =>
+  jwt.sign({ id: 1, email: 'imported@example.com', ...extra }, secret, { expiresIn: '1h' })
+async function seedReset(raw, expiry = '2099-01-01 00:00:00.123456+00') {
+  return db
+    .prepare(
+      'INSERT INTO password_reset_tokens(user_id,token_hash,expires_at) VALUES(1,?,?) RETURNING id'
+    )
+    .bind(hashToken(raw), expiry)
+    .first()
+}
+function verifyReset(raw, prefix = '/api') {
+  return runtime.dispatchFetch(
+    `https://api-staging.invalid${prefix}/auth/verify-reset-token?token=${encodeURIComponent(raw)}`
+  )
+}
+
+test('forgot password uses identical anti-enumeration responses and stores only a hashed one-hour reset token', async () => {
+  await db.prepare("UPDATE users SET name='<Imported>' WHERE id=1").run()
+  const known = await request('/api/auth/forgot-password', { email: ' IMPORTED@EXAMPLE.COM ' })
+  assert.equal(known.status, 200)
+  assert.deepEqual(await known.json(), recoverySuccess)
+  const missing = await request('/api/v1/auth/forgot-password', { email: 'missing@example.com' })
+  assert.equal(missing.status, 200)
+  assert.deepEqual(await missing.json(), recoverySuccess)
+  assert.equal(emails.length, 1)
+  assert.deepEqual(emailRequests[0], {
+    url: 'https://api.resend.com/emails',
+    method: 'POST',
+    authorization: 'Bearer fake-resend-test-key'
+  })
+  assert.equal(emails[0].subject, 'Reset Your Password - Easy Memoir')
+  assert.equal(emails[0].to, 'imported@example.com')
+  assert.ok(emails[0].html.includes('&lt;Imported&gt;'))
+  const raw = rawEmailToken(emails[0]),
+    stored = await db
+      .prepare('SELECT token_hash,expires_at,created_at FROM password_reset_tokens')
+      .first()
+  assert.equal(stored.token_hash, hashToken(raw))
+  assert.ok(!JSON.stringify(stored).includes(raw))
+  assert.equal(
+    Date.parse(stored.expires_at.replace(' ', 'T') + 'Z') -
+      Date.parse(stored.created_at.replace(' ', 'T') + 'Z'),
+    3600000
+  )
+  assert.equal((await verifyReset(raw)).status, 200)
+  assert.deepEqual(await (await verifyReset(raw, '/api/v1')).json(), { valid: true })
+})
+
+test('forgot password hides Google-only, deleted accounts, provider failure and per-account send limits', async () => {
+  const unknown = await request('/api/auth/forgot-password', { email: 'missing@example.com' })
+  assert.deepEqual(await unknown.json(), recoverySuccess)
+  await db.prepare('UPDATE users SET password_hash=NULL WHERE id=1').run()
+  assert.deepEqual(
+    await (await request('/api/auth/forgot-password', { email: 'imported@example.com' })).json(),
+    recoverySuccess
+  )
+  assert.equal(emails.length, 0)
+  await db
+    .prepare("UPDATE users SET password_hash=?,deleted_at='2026-10-09 00:00:00' WHERE id=1")
+    .bind(importedHash)
+    .run()
+  assert.deepEqual(
+    await (await request('/api/auth/forgot-password', { email: 'imported@example.com' })).json(),
+    recoverySuccess
+  )
+  assert.equal(emails.length, 0)
+  await db.prepare('UPDATE users SET deleted_at=NULL WHERE id=1').run()
+  emailFails = true
+  assert.deepEqual(
+    await (await request('/api/auth/forgot-password', { email: 'imported@example.com' })).json(),
+    recoverySuccess
+  )
+  assert.equal(emails.length, 1)
+  assert.equal(
+    (await db.prepare('SELECT COUNT(*) AS count FROM password_reset_tokens').first()).count,
+    1
+  )
+})
+
+test('concurrent forgot-password requests atomically enforce three emails per 15 minutes and replace old tokens', async () => {
+  const responses = await Promise.all(
+    Array.from({ length: 4 }, (_, i) =>
+      request(`${i % 2 ? '/api' : '/api/v1'}/auth/forgot-password`, {
+        email: 'imported@example.com'
+      })
+    )
+  )
+  for (const response of responses) {
+    assert.equal(response.status, 200)
+    assert.deepEqual(await response.json(), recoverySuccess)
+  }
+  assert.equal(emails.length, 3)
+  const rows = (await db.prepare('SELECT token_hash,used_at FROM password_reset_tokens').all())
+    .results
+  assert.equal(rows.length, 3)
+  assert.equal(rows.filter(row => row.used_at === null).length, 1)
+  const active = rows.find(row => row.used_at === null)
+  assert.ok(emails.some(message => hashToken(rawEmailToken(message)) === active.token_hash))
+})
+
+test('reset passwords are bcrypt12, tokens are consumed once and every older login is revoked', async () => {
+  const raw = 'test-password-reset',
+    next = 'NewStrongPassword8'
+  await seedReset(raw)
+  // PostgreSQL-exported +00 instants must advance as well as native D1 values.
+  await db
+    .prepare(
+      "INSERT INTO user_token_invalidation(user_id,invalidated_at) VALUES(1,'2000-01-01 00:00:00.123456+00')"
+    )
+    .run()
+  const old = userToken({ iat: Math.floor(Date.now() / 1000) - 60 })
+  assert.equal(
+    (
+      await runtime.dispatchFetch('https://api-staging.invalid/api/auth/me', {
+        headers: { Authorization: `Bearer ${old}` }
+      })
+    ).status,
+    200
+  )
+  const response = await request('/api/v1/auth/reset-password', {
+    token: raw,
+    password: ` ${next} `
+  })
+  assert.equal(response.status, 200)
+  assert.deepEqual(await response.json(), {
+    success: true,
+    message:
+      'Your password has been reset successfully. You can now sign in with your new password.'
+  })
+  const user = await db.prepare('SELECT password_hash FROM users WHERE id=1').first()
+  assert.match(user.password_hash, /^\$2b\$12\$/)
+  assert.equal(await bcrypt.compare(next, user.password_hash), true)
+  assert.equal(
+    (
+      await runtime.dispatchFetch('https://api-staging.invalid/api/auth/me', {
+        headers: { Authorization: `Bearer ${old}` }
+      })
+    ).status,
+    401
+  )
+  assert.deepEqual(await (await verifyReset(raw)).json(), { valid: false })
+  assert.equal(
+    (await request('/api/auth/reset-password', { token: raw, password: 'AnotherPassword7' }))
+      .status,
+    400
+  )
+  assert.equal((await request('/api/auth/login', login())).status, 401)
+  assert.equal((await request('/api/auth/login', login({ password: next }))).status, 200)
+})
+
+test('D1 reset batches serialize same-millisecond token consumption without letting the rejected request change the password', async () => {
+  const raw = 'concurrent-reset',
+    token = await seedReset(raw),
+    now = Date.now()
+  const repository = createAuthRepository(db, { wallClockTimeZone: 'UTC' })
+  const outcomes = await Promise.all(
+    ['winner-one', 'winner-two'].map(passwordHash =>
+      repository.resetPassword({
+        tokenId: token.id,
+        userId: 1,
+        hash: hashToken(raw),
+        passwordHash,
+        now
+      })
+    )
+  )
+  assert.equal(outcomes.filter(Boolean).length, 1)
+  assert.equal(
+    (await db.prepare('SELECT password_hash FROM users WHERE id=1').first()).password_hash,
+    ['winner-one', 'winner-two'][outcomes.findIndex(Boolean)]
+  )
+  assert.equal(
+    (
+      await db
+        .prepare('SELECT COUNT(*) AS count FROM user_token_invalidation WHERE user_id=1')
+        .first()
+    ).count,
+    1
+  )
+})
+
+test('password reset rejects expired/deleted accounts and invalid input without replacing a password', async () => {
+  await seedReset('expired-reset', '2000-01-01 00:00:00+00')
+  assert.equal(
+    (
+      await request('/api/auth/reset-password', {
+        token: 'expired-reset',
+        password: 'AnotherPassword7'
+      })
+    ).status,
+    400
+  )
+  assert.deepEqual(await (await verifyReset('expired-reset')).json(), { valid: false })
+  await seedReset('deleted-reset')
+  await db.prepare("UPDATE users SET deleted_at='2026-10-09 00:00:00' WHERE id=1").run()
+  assert.equal(
+    (
+      await request('/api/auth/reset-password', {
+        token: 'deleted-reset',
+        password: 'AnotherPassword7'
+      })
+    ).status,
+    400
+  )
+  assert.deepEqual(await (await verifyReset('deleted-reset')).json(), { valid: false })
+  await db.prepare('UPDATE users SET deleted_at=NULL WHERE id=1').run()
+  for (const input of [
+    {},
+    { token: 'deleted-reset' },
+    { token: 'deleted-reset', password: 'short' },
+    { token: 'deleted-reset', password: 'alllowercase9' }
+  ])
+    assert.equal((await request('/api/auth/reset-password', input)).status, 400)
+  assert.equal(
+    (await db.prepare('SELECT password_hash FROM users WHERE id=1').first()).password_hash,
+    importedHash
+  )
+})
+
+test('a revocation storage failure rolls back password replacement and token consumption together', async () => {
+  const raw = 'reset-rollback'
+  await seedReset(raw)
+  await db
+    .prepare(
+      "CREATE TRIGGER reject_reset_revocation BEFORE INSERT ON user_token_invalidation BEGIN SELECT RAISE(ABORT,'revocation storage rejected'); END"
+    )
+    .run()
+  try {
+    assert.equal(
+      (await request('/api/auth/reset-password', { token: raw, password: 'AnotherPassword7' }))
+        .status,
+      503
+    )
+    assert.equal(
+      (await db.prepare('SELECT password_hash FROM users WHERE id=1').first()).password_hash,
+      importedHash
+    )
+    assert.equal(
+      (await db.prepare('SELECT used_at FROM password_reset_tokens').first()).used_at,
+      null
+    )
+  } finally {
+    await db.prepare('DROP TRIGGER reject_reset_revocation').run()
+  }
+  assert.equal(
+    (await request('/api/auth/reset-password', { token: raw, password: 'AnotherPassword7' }))
+      .status,
+    200
+  )
+})
+
+test('resend verification is authenticated/full-scope, limited atomically, sends real adapter payload and verifies only the latest link', async () => {
+  assert.equal((await request('/api/auth/resend-verification', {})).status, 401)
+  assert.equal(
+    (
+      await request(
+        '/api/auth/resend-verification',
+        {},
+        { Authorization: `Bearer ${userToken({ scope: 'magic_link' })}` }
+      )
+    ).status,
+    403
+  )
+  const headers = { Authorization: `Bearer ${userToken()}` }
+  const responses = await Promise.all(
+    Array.from({ length: 3 }, (_, i) =>
+      request(`${i % 2 ? '/api' : '/api/v1'}/auth/resend-verification`, {}, headers)
+    )
+  )
+  assert.deepEqual(responses.map(response => response.status).sort(), [200, 200, 429])
+  assert.equal(emails.length, 2)
+  const active = await db
+    .prepare('SELECT token_hash FROM email_verification_tokens WHERE used_at IS NULL')
+    .first()
+  const raw = rawEmailToken(
+    emails.find(message => hashToken(rawEmailToken(message)) === active.token_hash)
+  )
+  assert.equal((await request('/api/auth/verify-email', { token: raw })).status, 200)
+  const verified = await request('/api/auth/resend-verification', {}, headers)
+  assert.deepEqual(await verified.json(), { success: true, message: 'Email already verified' })
+  assert.equal(emails.length, 2)
+})
+
+test('verification resend hides provider diagnostics and refuses revoked or deleted-user credentials', async () => {
+  const token = userToken(),
+    headers = { Authorization: `Bearer ${token}` }
+  emailFails = true
+  const failed = await request('/api/auth/resend-verification', {}, headers)
+  assert.equal(failed.status, 502)
+  assert.deepEqual(await failed.json(), { error: 'Email provider unavailable' })
+  assert.equal(
+    (await db.prepare('SELECT COUNT(*) AS count FROM email_verification_tokens').first()).count,
+    1
+  )
+  const claims = jwt.decode(token)
+  await db
+    .prepare(
+      "INSERT INTO token_blacklist(jti,user_id,expires_at) VALUES(?,1,'2099-01-01 00:00:00+00')"
+    )
+    .bind(claims.jti || `sha256:${hashToken(token)}`)
+    .run()
+  assert.equal((await request('/api/auth/resend-verification', {}, headers)).status, 401)
+  await db.prepare('DELETE FROM token_blacklist').run()
+  await db.prepare("UPDATE users SET deleted_at='2026-10-09 00:00:00' WHERE id=1").run()
+  assert.equal((await request('/api/auth/resend-verification', {}, headers)).status, 401)
+  assert.equal(emails.length, 1)
+})
+
+test('all password recovery operations fail closed without trusted identity and enforce the shared network limit', async () => {
+  identityFails = true
+  assert.equal(
+    (await request('/api/auth/forgot-password', { email: 'imported@example.com' })).status,
+    503
+  )
+  assert.equal(
+    (await request('/api/auth/reset-password', { token: 'any', password: 'AnotherPassword7' }))
+      .status,
+    503
+  )
+  assert.equal((await verifyReset('any')).status, 503)
+  assert.equal(
+    (await request('/api/auth/resend-verification', {}, { Authorization: `Bearer ${userToken()}` }))
+      .status,
+    503
+  )
+  assert.equal(emails.length, 0)
+  identityFails = false
+  await db
+    .prepare('INSERT INTO auth_rate_limits(subject_hash,window_started_at,attempts) VALUES(?,?,10)')
+    .bind(hashToken('ip:203.0.113.42'), Math.floor(Date.now() / 1000))
+    .run()
+  for (const call of [
+    () => request('/api/auth/forgot-password', { email: 'imported@example.com' }),
+    () => request('/api/auth/reset-password', { token: 'any', password: 'AnotherPassword7' }),
+    () => verifyReset('any'),
+    () => request('/api/auth/resend-verification', {}, { Authorization: `Bearer ${userToken()}` })
+  ])
+    assert.equal((await call()).status, 429)
+  assert.equal(emails.length, 0)
 })

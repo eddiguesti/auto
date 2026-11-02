@@ -77,6 +77,9 @@ export async function buildInventory() {
     ...(await files('apps/web/src')),
     ...(await files('packages/shared')),
     ...(await files('cloudflare/api')),
+    ...(await files('cloudflare/jobs')),
+    ...(await files('cloudflare/notifications')),
+    ...(await files('cloudflare/phone')),
     ...nativeEntryFiles
   ].sort()
   const sources = new Map()
@@ -193,7 +196,8 @@ export async function buildInventory() {
                 : null
         } else if (
           node.callee.type === 'MemberExpression' &&
-          methods.has(node.callee.property.name)
+          methods.has(node.callee.property.name) &&
+          node.callee.property.name !== 'all'
         ) {
           method = node.callee.property.name.toUpperCase()
         }

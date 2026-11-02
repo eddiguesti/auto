@@ -1,9 +1,18 @@
-const AUTH_PATH = /^\/api(?:\/v1)?\/auth\/(login|register|verify-email)$/
+const AUTH_PATH =
+  /^\/api(?:\/v1)?\/(?:auth\/(?:login|register|google|verify-email|forgot-password|reset-password|verify-reset-token|resend-verification)|landing-voice\/session)$/
 const AUDIENCE = 'easy-memoir-api'
 const encoder = new TextEncoder()
 
 export function authenticationPath(path) {
   return AUTH_PATH.test(path)
+}
+
+export function authenticationRequest(request) {
+  const path = new URL(request.url).pathname
+  return (
+    authenticationPath(path) &&
+    request.method === (path.endsWith('/verify-reset-token') ? 'GET' : 'POST')
+  )
 }
 
 export function canonicalIpSubject(value) {
@@ -76,7 +85,7 @@ async function key(secret) {
 
 export async function signClientIdentity(request, env, now = Date.now()) {
   const url = new URL(request.url)
-  if (request.method !== 'POST' || !authenticationPath(url.pathname)) return null
+  if (!authenticationRequest(request)) return null
   // This policy must be backed by a verified WAF rule blocking ALL Worker
   // subrequests via cf.worker.upstream_zone, not a client-controlled marker.
   // Default configuration deliberately does not enable identity assertions.
@@ -98,6 +107,7 @@ export async function signClientIdentity(request, env, now = Date.now()) {
         v: 1,
         aud: AUDIENCE,
         path: url.pathname,
+        method: request.method,
         ip,
         iat: Math.floor(now / 1000),
         nonce: crypto.randomUUID()
@@ -127,6 +137,7 @@ export async function verifyClientIdentity(assertion, path, secret, now = Date.n
     claims.v !== 1 ||
     claims.aud !== AUDIENCE ||
     claims.path !== path ||
+    claims.method !== (path.endsWith('/verify-reset-token') ? 'GET' : 'POST') ||
     !Number.isInteger(claims.iat) ||
     claims.iat > seconds + 5 ||
     claims.iat < seconds - 30 ||

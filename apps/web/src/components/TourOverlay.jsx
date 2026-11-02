@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useSettings } from '../context/SettingsContext'
+import { voiceSocketUrl } from '../lib/voiceSocket'
 
 // Tour step definitions with more detailed guidance
 const TOUR_STEPS = [
@@ -50,7 +51,7 @@ const TOUR_STEPS = [
 ]
 
 export default function TourOverlay({ onComplete, onSkip }) {
-  const { authFetch, token: jwtToken } = useAuth()
+  const { authFetch } = useAuth()
   const { getVoice } = useSettings()
   const [currentStep, setCurrentStep] = useState(0)
   const [isVisible, setIsVisible] = useState(false)
@@ -142,8 +143,7 @@ export default function TourOverlay({ onComplete, onSkip }) {
         const tokenRes = await authFetch('/api/voice/session', {
           method: 'POST',
           body: JSON.stringify({
-            instructions: `Say this naturally: "${stepData.lisaScript}"`,
-            voice: getVoice()
+            chapterId: 'earliest-memories'
           })
         })
 
@@ -154,16 +154,13 @@ export default function TourOverlay({ onComplete, onSkip }) {
           return
         }
 
-        await tokenRes.json() // consume session metadata (session_id etc)
-        if (!jwtToken) {
+        const session = await tokenRes.json()
+        if (unmountedRef.current) {
           clearTimeout(speakingTimeoutRef.current)
           setIsClioSpeaking(false)
           return
         }
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-        const ws = new WebSocket(
-          `${protocol}//${window.location.host}/api/voice/ws?token=${jwtToken}`
-        )
+        const ws = new WebSocket(voiceSocketUrl(session.ticket))
 
         wsRef.current = ws
 

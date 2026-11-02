@@ -2,6 +2,35 @@ import { describe, it, expect, vi } from 'vitest'
 import worker from './web.js'
 
 describe('Cloudflare frontend routing', () => {
+  it('permits idempotency preflights only for the configured exact app origin', async () => {
+    const env = { APP_URL: 'https://memoir.example', API: { fetch: vi.fn() } }
+    for (const origin of [
+      'https://memoir.example',
+      'https://memoir.example.evil.test',
+      'https://other.example'
+    ]) {
+      const response = await worker.fetch(
+        new Request('https://memoir.example/api/export/epub', {
+          method: 'OPTIONS',
+          headers: {
+            Origin: origin,
+            'Access-Control-Request-Headers': 'Authorization, Content-Type, Idempotency-Key'
+          }
+        }),
+        env
+      )
+      assertOrigin(response, origin === 'https://memoir.example')
+    }
+    expect(env.API.fetch).not.toHaveBeenCalled()
+    function assertOrigin(response, allowed) {
+      expect(response.status).toBe(allowed ? 204 : 403)
+      expect(response.headers.get('Access-Control-Allow-Origin')).toBe(
+        allowed ? 'https://memoir.example' : null
+      )
+      if (allowed)
+        expect(response.headers.get('Access-Control-Allow-Headers')).toContain('Idempotency-Key')
+    }
+  })
   it.each(['/api', '/api/health', '/api/photos/file/family.jpg', '/api/unknown'])(
     'sends %s to the API rather than the SPA',
     async path => {

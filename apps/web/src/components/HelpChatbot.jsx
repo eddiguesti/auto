@@ -13,7 +13,11 @@ const QUICK_TOPICS = [
 ]
 
 export default function HelpChatbot() {
-  const { user } = useAuth()
+  const { user, authFetch } = useAuth()
+  return <HelpConversation key={user?.id ?? 'anonymous'} user={user} authFetch={authFetch} />
+}
+
+function HelpConversation({ user, authFetch }) {
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState([
     {
@@ -71,7 +75,8 @@ export default function HelpChatbot() {
       }
       abortControllerRef.current = new AbortController()
 
-      const res = await fetch('/api/support/chat', {
+      const send = user ? authFetch : fetch
+      const res = await send('/api/support/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -97,6 +102,7 @@ export default function HelpChatbot() {
         }
       ])
     } catch (err) {
+      if (err.name === 'AbortError') return
       console.error('Chat error:', err)
       setMessages(prev => [
         ...prev,

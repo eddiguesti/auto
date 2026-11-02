@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { chapters } from '../../data/chapters'
 import StyleSelector from '../../components/StyleSelector'
 import StylePreviewModal from '../../components/StylePreviewModal'
+import { waitForStyle } from '../../lib/writingJobs'
 import {
   IconArrowLeft,
   IconLoader2,
@@ -37,16 +38,13 @@ export default function PreviewStyle() {
   const [applyProgress, setApplyProgress] = useState(null)
   const [showRevertConfirm, setShowRevertConfirm] = useState(false)
   const [reverting, setReverting] = useState(false)
+  const styleController = useRef(null)
+  const styleJobKey = `memoir-style-job:${user?.id}`
 
   // Current chapter being viewed
   const [activeChapter, setActiveChapter] = useState(null)
 
-  useEffect(() => {
-    fetchAllStories()
-    fetchStylePreferences()
-  }, [])
-
-  const fetchAllStories = async () => {
+  const fetchAllStories = useCallback(async () => {
     try {
       setError(null)
       const res = await authFetch('/api/stories/all')
@@ -78,9 +76,9 @@ export default function PreviewStyle() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [authFetch])
 
-  const fetchStylePreferences = async () => {
+  const fetchStylePreferences = useCallback(async () => {
     try {
       const res = await authFetch('/api/style/preferences')
       if (res.ok) {
@@ -92,7 +90,7 @@ export default function PreviewStyle() {
     } catch (err) {
       console.error('Error fetching style preferences:', err)
     }
-  }
+  }, [authFetch])
 
   const savePreferences = async (tones, narrative, authorStyle) => {
     try {
@@ -178,13 +176,24 @@ export default function PreviewStyle() {
   }
 
   const handleApplyAll = async () => {
+    if (applying) return
     setApplying(true)
     setApplyProgress({ current: 0, total: 0 })
+    setError(null)
+    const controller = new AbortController()
+    styleController.current?.abort()
+    styleController.current = controller
 
     try {
+      const savedJob = sessionStorage.getItem(styleJobKey)
+      if (savedJob) {
+        await completeStyle(savedJob, controller)
+        return
+      }
       const res = await authFetch('/api/style/apply-all', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Idempotency-Key': crypto.randomUUID() },
+        signal: controller.signal,
         body: JSON.stringify({
           tones: selectedTones,
           narrative: selectedNarrative,
@@ -198,6 +207,14 @@ export default function PreviewStyle() {
       }
 
       const data = await res.json()
+      if (res.status === 202) {
+        if (typeof data.jobId !== 'string' || !data.jobId)
+          throw new Error('Invalid style job response.')
+        sessionStorage.setItem(styleJobKey, data.jobId)
+        await completeStyle(data.jobId, controller)
+        return
+      }
+      if (controller.signal.aborted) return
       setApplyProgress({
         current: data.transformedCount,
         total: data.totalStories,
@@ -208,12 +225,61 @@ export default function PreviewStyle() {
       await fetchAllStories()
       setShowPreview(false)
     } catch (err) {
-      console.error('Apply all error:', err)
-      setError(err.message)
+      if (err.terminal) sessionStorage.removeItem(styleJobKey)
+      if (!controller.signal.aborted) setError(err.message)
     } finally {
-      setApplying(false)
+      if (!controller.signal.aborted) setApplying(false)
     }
   }
+
+  const completeStyle = useCallback(
+    async (jobId, controller) => {
+      const data = await waitForStyle(authFetch, jobId, {
+        signal: controller.signal,
+        maxWaitMs: 60 * 60 * 1000,
+        onProgress: progress => {
+          if (!controller.signal.aborted)
+            setApplyProgress({ current: progress.transformedCount, total: progress.totalStories })
+        }
+      })
+      if (controller.signal.aborted) return
+      sessionStorage.removeItem(styleJobKey)
+      setApplyProgress({ current: data.transformedCount, total: data.totalStories, complete: true })
+      await fetchAllStories()
+      if (data.errors?.length)
+        setError(
+          `${data.errors.length} memories changed while the style was being applied and were kept as you saved them. Review those chapters before publishing.`
+        )
+      setShowPreview(false)
+    },
+    [authFetch, fetchAllStories, styleJobKey]
+  )
+
+  const resumeStyle = useCallback(
+    async jobId => {
+      const controller = new AbortController()
+      styleController.current?.abort()
+      styleController.current = controller
+      setApplying(true)
+      try {
+        await completeStyle(jobId, controller)
+      } catch (err) {
+        if (err.terminal) sessionStorage.removeItem(styleJobKey)
+        if (!controller.signal.aborted) setError(err.message)
+      } finally {
+        if (!controller.signal.aborted) setApplying(false)
+      }
+    },
+    [completeStyle, styleJobKey]
+  )
+
+  useEffect(() => {
+    fetchAllStories()
+    fetchStylePreferences()
+    const savedJob = sessionStorage.getItem(styleJobKey)
+    if (savedJob) resumeStyle(savedJob)
+    return () => styleController.current?.abort()
+  }, [fetchAllStories, fetchStylePreferences, resumeStyle, styleJobKey])
 
   const handleRevert = async () => {
     setReverting(true)
@@ -224,6 +290,10 @@ export default function PreviewStyle() {
 
       if (!res.ok) throw new Error('Failed to revert')
 
+      styleController.current?.abort()
+      sessionStorage.removeItem(styleJobKey)
+      setApplying(false)
+      setApplyProgress(null)
       await fetchAllStories()
       setShowRevertConfirm(false)
     } catch (err) {
@@ -436,20 +506,35 @@ export default function PreviewStyle() {
       {/* Apply Progress Overlay */}
       {applying && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-8 max-w-sm w-full mx-4 text-center">
+          <div
+            className="bg-white rounded-2xl p-8 max-w-sm w-full mx-4 text-center"
+            role="status"
+            aria-live="polite"
+          >
             <IconLoader2 size={48} className="text-accent animate-spin mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-ink mb-2">Transforming Your Stories</h3>
             <p className="text-sm text-sepia/60 mb-4">
-              Please wait while we apply your selected style to all stories...
+              Your stories are being updated. You can continue writing and return here to check
+              progress.
             </p>
             {applyProgress && applyProgress.total > 0 && (
-              <div className="w-full bg-sepia/10 rounded-full h-2 mb-2">
+              <div
+                className="w-full bg-sepia/10 rounded-full h-2 mb-2"
+                role="progressbar"
+                aria-label="Memories updated"
+                aria-valuemin={0}
+                aria-valuemax={applyProgress.total}
+                aria-valuenow={applyProgress.current}
+              >
                 <div
                   className="bg-accent h-2 rounded-full transition-all"
                   style={{ width: `${(applyProgress.current / applyProgress.total) * 100}%` }}
                 />
               </div>
             )}
+            <Link to="/home" className="inline-block mt-4 text-accent underline">
+              Continue writing
+            </Link>
           </div>
         </div>
       )}

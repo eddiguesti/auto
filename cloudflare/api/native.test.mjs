@@ -7,7 +7,7 @@ import { Miniflare, convertV4MiniflareOptions } from 'miniflare'
 import jwt from 'jsonwebtoken'
 import { createRepositories } from './repositories.js'
 import { createMappedCodec, timestampToApi } from './value-codecs.js'
-import { getPublicProducts } from '../../packages/shared/payment-catalog.js'
+import { getNativePublicProducts } from './payments.js'
 
 const secret = 'native-test-secret-for-HS256-at-least-32-characters'
 const root = fileURLToPath(new URL('../../', import.meta.url))
@@ -22,6 +22,7 @@ before(async () => {
     entryPoints: [`${root}/cloudflare/api-staging.js`],
     outfile: bundle,
     bundle: true,
+    external: ['cloudflare:workers', 'node:buffer'],
     format: 'esm',
     platform: 'browser',
     target: 'es2022'
@@ -32,6 +33,7 @@ before(async () => {
       modules: true,
       scriptPath: bundle,
       compatibilityDate: '2026-10-09',
+      compatibilityFlags: ['nodejs_compat'],
       bindings: {
         JWT_SECRET: secret,
         NATIVE_API_STAGE: 'local-d1-slice',
@@ -109,7 +111,7 @@ test('both prefixes expose the authoritative catalog anonymously while payment m
     const response = await request(`${prefix}/payments/products`, { auth: null })
     assert.equal(response.status, 200)
     const products = await response.json()
-    assert.deepEqual(products, getPublicProducts())
+    assert.deepEqual(products, getNativePublicProducts({}))
     assert.deepEqual(Object.fromEntries(products.map(product => [product.id, product.price])), {
       export_style: 499,
       export_ebook: 799,
@@ -143,9 +145,12 @@ test('both prefixes expose the authoritative catalog anonymously while payment m
       ).status,
       403
     )
-    const unavailable = await request(`${prefix}/payments/create-checkout`, { method: 'POST' })
-    assert.equal(unavailable.status, 501)
-    assert.equal((await unavailable.json()).code, 'NOT_MIGRATED')
+    const unavailable = await request(`${prefix}/payments/create-checkout`, {
+      method: 'POST',
+      body: { productId: 'export_ebook' }
+    })
+    assert.equal(unavailable.status, 503)
+    assert.equal((await unavailable.json()).code, 'PUBLISHING_UNAVAILABLE')
   }
 })
 
@@ -156,6 +161,7 @@ test('public catalog requires no D1, identity provider, signing secret or timezo
       modules: true,
       scriptPath: bundle,
       compatibilityDate: '2026-10-09',
+      compatibilityFlags: ['nodejs_compat'],
       bindings: { NATIVE_API_STAGE: 'local-d1-slice' }
     })
   )
@@ -165,7 +171,7 @@ test('public catalog requires no D1, identity provider, signing secret or timezo
         `https://api-staging.invalid${prefix}/payments/products`
       )
       assert.equal(response.status, 200)
-      assert.deepEqual(await response.json(), getPublicProducts())
+      assert.deepEqual(await response.json(), getNativePublicProducts({}))
     }
   } finally {
     await catalogOnly.dispose()
@@ -415,6 +421,30 @@ test('logout immediately revokes JTI tokens across sequential requests', async (
   assert.deepEqual(await rejected.json(), { error: 'Token revoked' })
 })
 
+test('user-wide revocation advances exported +00 timestamps and preserves later invalidations', async () => {
+  const auth = token()
+  await db
+    .prepare(
+      "INSERT INTO user_token_invalidation(user_id,invalidated_at) VALUES(1,'2000-01-01 00:00:00.123456+00')"
+    )
+    .run()
+  assert.equal((await request('/api/stories/all', { auth })).status, 200)
+  const repository = createRepositories(db, { wallClockTimeZone: 'UTC' })
+  await repository.invalidateUserTokens(1)
+  assert.equal((await request('/api/stories/all', { auth })).status, 401)
+  await db
+    .prepare(
+      "UPDATE user_token_invalidation SET invalidated_at='2099-01-01 00:00:00.123456+00' WHERE user_id=1"
+    )
+    .run()
+  await repository.invalidateUserTokens(1)
+  assert.equal(
+    (await db.prepare('SELECT invalidated_at FROM user_token_invalidation WHERE user_id=1').first())
+      .invalidated_at,
+    '2099-01-01 00:00:00.123456+00'
+  )
+})
+
 test('an actual revocation table outage fails closed instead of bypassing logout checks', async () => {
   await db.exec('ALTER TABLE token_blacklist RENAME TO unavailable_token_blacklist')
   try {
@@ -426,8 +456,8 @@ test('an actual revocation table outage fails closed instead of bypassing logout
   }
 })
 
-test('legacy magic-link tokens without JTI get single-token fingerprint revocation', async () => {
-  const auth = token(1, { jti: undefined, scope: 'magic_link' })
+test('legacy tokens without JTI get single-token fingerprint revocation', async () => {
+  const auth = token(1, { jti: undefined })
   assert.equal((await request('/api/stories/all', { auth })).status, 200)
   assert.equal((await request('/api/auth/logout', { method: 'POST', auth })).status, 200)
   assert.equal((await request('/api/stories/all', { auth })).status, 401)
@@ -479,12 +509,18 @@ test('user-level invalidation honors issuance seconds and deleted accounts canno
   assert.equal((await request('/api/stories/all', { auth: token(2) })).status, 401)
 })
 
-test('scoped tokens retain story access and cannot enter full-scope payment/account routes', async () => {
+test('scoped tokens cannot read account-wide stories or enter full-scope payment/account routes', async () => {
   const auth = token(1, { scope: 'magic_link' })
-  assert.equal((await request('/api/stories/all', { auth })).status, 200)
+  assert.equal((await request('/api/stories/all', { auth })).status, 403)
   for (const path of ['/api/payments/history', '/api/v1/user/profile', '/api/refunds/request']) {
-    assert.equal((await request(path, { auth })).status, 403)
-    assert.equal((await request(path)).status, 501)
+    const options = path.includes('/refunds/request')
+      ? { method: 'POST', body: { type: 'other' } }
+      : {}
+    assert.equal((await request(path, { ...options, auth })).status, 403)
+    assert.equal(
+      (await request(path, options)).status,
+      path.includes('/payments/history') ? 200 : path.includes('/refunds/request') ? 404 : 501
+    )
   }
 })
 
@@ -518,4 +554,64 @@ test('mapping codec preserves exact JSON/decimal storage and refuses unsafe nume
     '2025-02-01T01:02:03.123Z'
   )
   assert.throws(() => timestampToApi('2025-02-01 01:02:03.123456', 'timestamp'), /verified UTC/)
+})
+
+test('raw story edits invalidate compiled prose atomically while preserving stale reviewed chapters and other owners', async () => {
+  const saved = await (await request('/api/stories', { method: 'POST', body: story })).json()
+  await db.batch([
+    db
+      .prepare(
+        "UPDATE stories SET compiled_content='Old compilation', compiled_at='2000-01-01 00:00:00' WHERE id=?"
+      )
+      .bind(saved.id),
+    db.prepare(
+      "INSERT INTO chapter_reviews(user_id,chapter_id,polished_text,updated_at) VALUES(1,'earliest-memories','Author-reviewed text','2000-01-01 00:00:00')"
+    ),
+    db.prepare(
+      "INSERT INTO stories(user_id,chapter_id,question_id,answer,compiled_content,compiled_at) VALUES(2,'earliest-memories','other','Other owner','Other compiled','2000-01-01 00:00:00')"
+    )
+  ])
+  const edited = await request('/api/stories', {
+    method: 'POST',
+    body: { ...story, answer: 'An edited raw memory.' }
+  })
+  assert.equal(edited.status, 200)
+  const row = await db.prepare('SELECT * FROM stories WHERE id=?').bind(saved.id).first()
+  assert.equal(row.answer, 'An edited raw memory.')
+  assert.equal(row.compiled_content, null)
+  assert.equal(row.compiled_at, null)
+  const review = await db.prepare('SELECT * FROM chapter_reviews WHERE user_id=1').first()
+  assert.equal(review.polished_text, 'Author-reviewed text')
+  assert.ok(
+    new Date(row.updated_at.replace(' ', 'T') + 'Z') >
+      new Date(review.updated_at.replace(' ', 'T') + 'Z')
+  )
+  assert.equal(
+    (await db.prepare('SELECT compiled_content FROM stories WHERE user_id=2').first())
+      .compiled_content,
+    'Other compiled'
+  )
+})
+
+test('settings writes remain authoritative and do not erase reviewed or compiled chapter content', async () => {
+  await db.batch([
+    db.prepare(
+      "INSERT INTO stories(user_id,chapter_id,question_id,answer,compiled_content) VALUES(1,'earliest-memories','q','Raw','Compiled')"
+    ),
+    db.prepare(
+      "INSERT INTO chapter_reviews(user_id,chapter_id,polished_text) VALUES(1,'earliest-memories','Final review')"
+    )
+  ])
+  await request('/api/stories/settings', { method: 'POST', body: { name: 'New author' } })
+  assert.equal((await (await request('/api/stories/settings')).json()).name, 'New author')
+  assert.equal(
+    (await db.prepare('SELECT compiled_content FROM stories WHERE user_id=1').first())
+      .compiled_content,
+    'Compiled'
+  )
+  assert.equal(
+    (await db.prepare('SELECT polished_text FROM chapter_reviews WHERE user_id=1').first())
+      .polished_text,
+    'Final review'
+  )
 })

@@ -156,6 +156,8 @@ export default function AudioVisualizer({
 
     const canvas = canvasRef.current
     const ctx = canvas.getContext('2d')
+    // Browsers can decline a canvas context; voice interviewing still works.
+    if (!ctx) return
     const { width, height } = config
     const centerX = width / 2
     const centerY = height / 2

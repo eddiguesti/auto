@@ -30,7 +30,7 @@ export default function EmailVerificationBanner() {
       const data = await res.json()
 
       if (res.ok) {
-        setResendMessage('Verification email sent! Check your inbox.')
+        setResendMessage(data.message || 'Verification link requested. Please check your inbox.')
         setTimeout(() => refreshUser(), 2000)
       } else {
         setResendMessage(data.error || 'Failed to send email')
@@ -69,8 +69,9 @@ export default function EmailVerificationBanner() {
             </div>
             <div className="flex-1">
               <p className="text-sm text-amber-900">
-                <span className="font-medium">Please verify your email address.</span> We sent a
-                verification link to <span className="font-medium">{user.email}</span>.
+                <span className="font-medium">Please verify your email address.</span> You can
+                request a verification link for <span className="font-medium">{user.email}</span>{' '}
+                below.
               </p>
               {resendMessage && (
                 <p
@@ -87,7 +88,7 @@ export default function EmailVerificationBanner() {
               disabled={resending}
               className="text-sm font-medium text-amber-800 hover:text-amber-900 underline disabled:opacity-50"
             >
-              {resending ? 'Sending...' : 'Resend Email'}
+              {resending ? 'Sending...' : 'Send verification link'}
             </button>
             <button
               onClick={handleDismiss}

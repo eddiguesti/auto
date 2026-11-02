@@ -57,7 +57,7 @@ export function createRepositories(db, { wallClockTimeZone, now = () => new Date
         .prepare(
           `INSERT INTO user_token_invalidation (user_id, invalidated_at) VALUES (?, ?)
         ON CONFLICT (user_id) DO UPDATE SET invalidated_at =
-          CASE WHEN julianday(excluded.invalidated_at) > julianday(user_token_invalidation.invalidated_at)
+          CASE WHEN julianday(CASE WHEN substr(excluded.invalidated_at,-3)='+00' THEN substr(excluded.invalidated_at,1,length(excluded.invalidated_at)-3)||'Z' ELSE excluded.invalidated_at END) > julianday(CASE WHEN substr(user_token_invalidation.invalidated_at,-3)='+00' THEN substr(user_token_invalidation.invalidated_at,1,length(user_token_invalidation.invalidated_at)-3)||'Z' ELSE user_token_invalidation.invalidated_at END)
           THEN excluded.invalidated_at ELSE user_token_invalidation.invalidated_at END`
         )
         .bind(userId, time('instant'))
@@ -105,6 +105,8 @@ export function createRepositories(db, { wallClockTimeZone, now = () => new Date
     },
     async saveStory(userId, { chapterId, questionId, answer, totalQuestions }) {
       const timestamp = time()
+      // Raw edits invalidate compiled prose but retain the author's reviewed chapter.
+      // Its updated_at comparison marks that review stale for canonical publishing.
       // Core mutation and side-effect intent are one real D1 batch transaction.
       // The outbox consumer is deliberately not implemented/deployed in this slice.
       const permitted = `u.id = ? AND u.deleted_at IS NULL AND
@@ -115,7 +117,7 @@ export function createRepositories(db, { wallClockTimeZone, now = () => new Date
           .prepare(
             `INSERT INTO stories (user_id, chapter_id, question_id, answer, created_at, updated_at)
           SELECT u.id, ?, ?, ?, ?, ? FROM users u WHERE ${permitted}
-          ON CONFLICT (user_id, chapter_id, question_id) DO UPDATE SET answer = excluded.answer, updated_at = excluded.updated_at
+          ON CONFLICT (user_id, chapter_id, question_id) DO UPDATE SET answer = excluded.answer, compiled_content = NULL, compiled_at = NULL, updated_at = excluded.updated_at
           RETURNING id`
           )
           .bind(

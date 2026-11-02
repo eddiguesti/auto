@@ -31,3 +31,4 @@ jobs:
       # Bundle/configuration check only. Deploy after the API and data migration
       # are verified; CI never changes DNS or creates an incomplete live app.
       - run: npx wrangler deploy --dry-run --outdir .cloudflare/bundle
+      - run: npx wrangler deploy --config cloudflare/wrangler.web-staging.jsonc --dry-run --outdir .cloudflare/web-staging-bundle

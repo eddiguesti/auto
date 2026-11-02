@@ -3,7 +3,11 @@ import assert from 'node:assert/strict'
 import { Miniflare, convertV4MiniflareOptions } from 'miniflare'
 import { build } from 'esbuild'
 import { fileURLToPath } from 'node:url'
-import { canonicalIpSubject, signClientIdentity } from './ingress-identity.js'
+import {
+  canonicalIpSubject,
+  signClientIdentity,
+  authenticationRequest
+} from './ingress-identity.js'
 import web from './web.js'
 
 const root = fileURLToPath(new URL('../', import.meta.url))
@@ -40,11 +44,13 @@ after(async () => {
 })
 function incoming(
   path = '/api/auth/login',
-  { ip = '192.0.2.1', headers = {}, cf = { colo: 'LHR' } } = {}
+  { ip = '192.0.2.1', headers = {}, cf = { colo: 'LHR' }, method = 'POST' } = {}
 ) {
   const request = new Request(`https://easymemoir.example${path}`, {
-    method: 'POST',
-    body: JSON.stringify({ email: 'private@example.invalid', password: 'never-log-this' }),
+    method,
+    ...(method === 'GET'
+      ? {}
+      : { body: JSON.stringify({ email: 'private@example.invalid', password: 'never-log-this' }) }),
     headers: { 'Content-Type': 'application/json', 'CF-Connecting-IP': ip, ...headers }
   })
   // Platform evidence for this offline unit fixture. Public callers cannot set
@@ -172,4 +178,36 @@ test('frontend replaces spoofed identity without consuming auth body; unverified
   })
   assert.equal(failure.status, 503)
   assert.equal(calls, 0)
+})
+
+test('recovery and resend paths receive method-bound trusted assertions on both API prefixes', async () => {
+  for (const prefix of ['/api', '/api/v1']) {
+    for (const path of [
+      'forgot-password',
+      'reset-password',
+      'resend-verification',
+      'verify-reset-token'
+    ]) {
+      const method = path === 'verify-reset-token' ? 'GET' : 'POST'
+      const uri = `${prefix}/auth/${path}`
+      const original = incoming(uri, { method })
+      assert.equal(authenticationRequest(original), true)
+      const assertion = await signClientIdentity(original, policy)
+      assert.equal((await verify(assertion, uri)).status, 200)
+      assert.equal(
+        authenticationRequest(incoming(uri, { method: method === 'GET' ? 'POST' : 'GET' })),
+        false
+      )
+      assert.equal(
+        await signClientIdentity(
+          incoming(uri, { method: method === 'GET' ? 'POST' : 'GET' }),
+          policy
+        ),
+        null
+      )
+      const [payload] = assertion.split('.')
+      const claims = JSON.parse(Buffer.from(payload, 'base64url').toString())
+      assert.equal(claims.method, method)
+    }
+  }
 })

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useVoiceRecording } from './useVoiceRecording'
 import { waitForAudiobook } from '../lib/audiobookJob'
+import { waitForEpub } from '../lib/writingJobs'
 
 function triggerDownload(blob, filename) {
   const url = window.URL.createObjectURL(blob)
@@ -34,7 +35,9 @@ export function useExport({ userName = 'My', successPath = '/export' } = {}) {
   const { authFetch, user } = useAuth()
   const mountedRef = useRef(true)
   const jobController = useRef(null)
+  const epubController = useRef(null)
   const jobKey = `memoir-audiobook-job:${user?.id}`
+  const epubJobKey = `memoir-epub-job:${user?.id}`
 
   const [exportStatus, setExportStatus] = useState(null)
   const [audiobookStatus, setAudiobookStatus] = useState(null)
@@ -69,6 +72,7 @@ export function useExport({ userName = 'My', successPath = '/export' } = {}) {
     return () => {
       mountedRef.current = false
       jobController.current?.abort()
+      epubController.current?.abort()
     }
   }, [fetchStatus])
 
@@ -94,24 +98,51 @@ export function useExport({ userName = 'My', successPath = '/export' } = {}) {
   )
 
   const handleDownloadEpub = useCallback(async () => {
-    if (!exportStatus?.canExport) {
+    if (downloading) return
+    let jobId = sessionStorage.getItem(epubJobKey)
+    if (!jobId && !exportStatus?.canExport) {
       handlePayment('export_ebook')
       return
     }
     setDownloading(true)
+    setError(null)
+    const controller = new AbortController()
+    epubController.current?.abort()
+    epubController.current = controller
     try {
-      const res = await authFetch('/api/export/epub')
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        throw new Error(body.message || body.error || 'Failed to download eBook.')
+      let blob
+      if (!jobId) {
+        const res = await authFetch('/api/export/epub', {
+          signal: controller.signal,
+          headers: { 'Idempotency-Key': crypto.randomUUID() }
+        })
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}))
+          throw new Error(body.message || body.error || 'Failed to download eBook.')
+        }
+        if (res.status === 202) {
+          const job = await res.json()
+          if (typeof job.jobId !== 'string' || !job.jobId)
+            throw new Error('Invalid eBook request response.')
+          jobId = job.jobId
+          sessionStorage.setItem(epubJobKey, jobId)
+        } else {
+          if (!res.headers.get('content-type')?.startsWith('application/epub+zip'))
+            throw new Error('Invalid eBook download response.')
+          blob = await res.blob()
+        }
       }
-      triggerDownload(await res.blob(), `${userName}_Life_Story.epub`)
+      if (jobId) blob = await waitForEpub(authFetch, jobId, { signal: controller.signal })
+      if (!mountedRef.current || controller.signal.aborted) return
+      triggerDownload(blob, `${userName}_Life_Story.epub`)
+      sessionStorage.removeItem(epubJobKey)
     } catch (err) {
-      if (mountedRef.current) setError(err.message)
+      if (err.terminal) sessionStorage.removeItem(epubJobKey)
+      if (mountedRef.current && err.name !== 'AbortError') setError(err.message)
     } finally {
       if (mountedRef.current) setDownloading(false)
     }
-  }, [exportStatus, authFetch, userName, handlePayment])
+  }, [exportStatus, authFetch, userName, handlePayment, downloading, epubJobKey])
 
   const handleGenerateAudiobook = useCallback(
     async (useOwnVoice = false) => {
