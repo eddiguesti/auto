@@ -60,7 +60,9 @@ afterAll(async () => {
 beforeEach(() => {
   vi.resetAllMocks()
   db.connect.mockResolvedValue({ query, release })
-  query.mockResolvedValue({ rows: [] })
+  query.mockImplementation(async sql => ({
+    rows: sql.includes('SELECT id FROM users') ? [{ id: 7 }] : []
+  }))
   mocks.interior.mockResolvedValue({ bytes: Buffer.from('text'), pageCount: 200, colourPages: 1 })
   mocks.cover.mockResolvedValue(Buffer.from('cover'))
   mocks.specification.mockResolvedValue({
@@ -99,7 +101,9 @@ describe('owned, approved print snapshots', () => {
     query
       .mockResolvedValueOnce({ rows: [{ id }] })
       .mockResolvedValueOnce({ rows: [{ count: '0' }] })
-      .mockResolvedValue({ rows: [] })
+      .mockImplementation(async sql => ({
+        rows: sql.includes('SELECT id FROM users') ? [{ id: 7 }] : []
+      }))
     const response = await post('/proof', {
       title: 'Memoir',
       author: 'Alice',
@@ -115,7 +119,9 @@ describe('owned, approved print snapshots', () => {
       `print/7/${result.id}/text.pdf`,
       `print/7/${result.id}/cover.pdf`
     ])
-    expect(query.mock.calls.at(-1)[1].at(-1)).toBe('supplier-generated-sku')
+    expect(
+      query.mock.calls.find(([sql]) => sql.includes('INSERT INTO print_orders'))[1].at(-1)
+    ).toBe('supplier-generated-sku')
   })
   it('requires explicit proof approval before opening a database transaction', async () => {
     expect((await post(`/${id}/approve`, { address })).status).toBe(400)

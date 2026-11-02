@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useVoiceRecording } from './useVoiceRecording'
+import { waitForAudiobook } from '../lib/audiobookJob'
 
 function triggerDownload(blob, filename) {
   const url = window.URL.createObjectURL(blob)
@@ -30,25 +31,23 @@ function readBlobAsDataURL(blob) {
  * @param {string} [options.successPath] - Path for payment success redirect (e.g. '/export').
  */
 export function useExport({ userName = 'My', successPath = '/export' } = {}) {
-  const { authFetch } = useAuth()
+  const { authFetch, user } = useAuth()
   const mountedRef = useRef(true)
+  const jobController = useRef(null)
+  const jobKey = `memoir-audiobook-job:${user?.id}`
 
   const [exportStatus, setExportStatus] = useState(null)
   const [audiobookStatus, setAudiobookStatus] = useState(null)
   const [downloading, setDownloading] = useState(false)
   const [generatingAudiobook, setGeneratingAudiobook] = useState(false)
+  const [audiobookJobPending, setAudiobookJobPending] = useState(() =>
+    Boolean(sessionStorage.getItem(jobKey))
+  )
   const [uploadingVoice, setUploadingVoice] = useState(false)
   const [voiceConsent, setVoiceConsent] = useState(false)
   const [error, setError] = useState(null)
 
   const voice = useVoiceRecording({ maxDuration: 30000 })
-
-  useEffect(() => {
-    fetchStatus()
-    return () => {
-      mountedRef.current = false
-    }
-  }, [])
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -64,6 +63,15 @@ export function useExport({ userName = 'My', successPath = '/export' } = {}) {
     }
   }, [authFetch])
 
+  useEffect(() => {
+    mountedRef.current = true
+    fetchStatus()
+    return () => {
+      mountedRef.current = false
+      jobController.current?.abort()
+    }
+  }, [fetchStatus])
+
   const handlePayment = useCallback(
     async productId => {
       try {
@@ -78,7 +86,7 @@ export function useExport({ userName = 'My', successPath = '/export' } = {}) {
         if (!res.ok) throw new Error('Payment setup failed')
         const { url } = await res.json()
         window.location.href = url
-      } catch (err) {
+      } catch {
         if (mountedRef.current) setError('Failed to start payment.')
       }
     },
@@ -93,10 +101,13 @@ export function useExport({ userName = 'My', successPath = '/export' } = {}) {
     setDownloading(true)
     try {
       const res = await authFetch('/api/export/epub')
-      if (!res.ok) throw new Error('Download failed')
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.message || body.error || 'Failed to download eBook.')
+      }
       triggerDownload(await res.blob(), `${userName}_Life_Story.epub`)
     } catch (err) {
-      if (mountedRef.current) setError('Failed to download eBook.')
+      if (mountedRef.current) setError(err.message)
     } finally {
       if (mountedRef.current) setDownloading(false)
     }
@@ -104,25 +115,66 @@ export function useExport({ userName = 'My', successPath = '/export' } = {}) {
 
   const handleGenerateAudiobook = useCallback(
     async (useOwnVoice = false) => {
-      if (!audiobookStatus?.canGenerate) {
+      if (generatingAudiobook) return
+      let jobId = sessionStorage.getItem(jobKey)
+      if (!jobId && !audiobookStatus?.canGenerate) {
         handlePayment('export_audiobook')
         return
       }
       setGeneratingAudiobook(true)
+      setError(null)
+      jobController.current?.abort()
+      const controller = new AbortController()
+      jobController.current = controller
       try {
-        const res = await authFetch('/api/audiobook/generate', {
-          method: 'POST',
-          body: JSON.stringify({ useOwnVoice })
-        })
-        if (!res.ok) throw new Error('Generation failed')
-        triggerDownload(await res.blob(), `${userName}_Life_Story_Audiobook.mp3`)
+        if (!jobId) {
+          const res = await authFetch('/api/audiobook/generate', {
+            method: 'POST',
+            body: JSON.stringify({ useOwnVoice }),
+            signal: controller.signal
+          })
+          if (!res.ok) {
+            const body = await res.json().catch(() => ({}))
+            throw new Error(body.error || 'Could not start audiobook generation.')
+          }
+          const job = await res.json()
+          if (typeof job.jobId !== 'string' || !job.jobId)
+            throw new Error('Invalid audiobook request response.')
+          jobId = job.jobId
+          sessionStorage.setItem(jobKey, jobId)
+          setAudiobookJobPending(true)
+        }
+        const audio = await waitForAudiobook(authFetch, jobId, { signal: controller.signal })
+        if (!mountedRef.current || controller.signal.aborted) return
+        triggerDownload(audio, `${userName}_Life_Story_Audiobook.mp3`)
+        sessionStorage.removeItem(jobKey)
+        setAudiobookJobPending(false)
+        await fetchStatus()
       } catch (err) {
-        if (mountedRef.current) setError('Failed to generate audiobook.')
+        if (err.terminal) {
+          sessionStorage.removeItem(jobKey)
+          setAudiobookJobPending(false)
+        }
+        if (mountedRef.current && err.name !== 'AbortError') setError(err.message)
       } finally {
-        if (mountedRef.current) setGeneratingAudiobook(false)
+        if (mountedRef.current && !controller.signal.aborted) setGeneratingAudiobook(false)
       }
     },
-    [audiobookStatus, authFetch, userName, handlePayment]
+    [audiobookStatus, authFetch, userName, handlePayment, jobKey, generatingAudiobook, fetchStatus]
+  )
+
+  const handleDownloadAudiobook = useCallback(
+    async filename => {
+      try {
+        const res = await authFetch(`/api/audiobook/download/${encodeURIComponent(filename)}`)
+        if (!res.ok || !res.headers.get('content-type')?.startsWith('audio/'))
+          throw new Error('Could not download this audiobook. Please try again.')
+        triggerDownload(await res.blob(), filename)
+      } catch (err) {
+        if (mountedRef.current) setError(err.message)
+      }
+    },
+    [authFetch]
   )
 
   /**
@@ -145,7 +197,7 @@ export function useExport({ userName = 'My', successPath = '/export' } = {}) {
       voice.clearRecording()
       setVoiceConsent(false)
       return true
-    } catch (err) {
+    } catch {
       if (mountedRef.current) setError('Failed to upload voice sample.')
       return false
     } finally {
@@ -167,6 +219,8 @@ export function useExport({ userName = 'My', successPath = '/export' } = {}) {
     audiobookStatus,
     downloading,
     generatingAudiobook,
+    audiobookJobPending,
+    handleDownloadAudiobook,
     uploadingVoice,
     voiceConsent,
     setVoiceConsent,

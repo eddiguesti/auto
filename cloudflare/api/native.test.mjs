@@ -114,11 +114,11 @@ test('both prefixes expose the authoritative catalog anonymously while payment m
       export_style: 499,
       export_ebook: 799,
       export_audiobook: 1499,
-      printed_book: 29900,
+      printed_book: 25000,
       premium_monthly: 999,
       premium_yearly: 9999,
-      premium_bundle: 29900,
-      onboarding_bundle: 29900
+      premium_bundle: 25000,
+      onboarding_bundle: 25000
     })
     assert.equal(
       products.find(product => product.id === 'premium_monthly').checkoutAvailable,

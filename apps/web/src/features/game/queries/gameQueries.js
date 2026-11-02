@@ -1,16 +1,19 @@
 import { useQuery } from '@tanstack/react-query'
 import { queryKeys } from '../../../lib/queryKeys'
 import { useApiClient } from '../../../lib/apiClient'
+import { useAuth } from '../../../context/AuthContext'
 
 /**
  * Fetch the current user's game state (streak, points, level).
  */
 export function useGameState() {
   const api = useApiClient()
+  const { user } = useAuth()
 
   return useQuery({
-    queryKey: queryKeys.game.state,
-    queryFn: () => api.get('/api/game/state')
+    queryKey: queryKeys.game.state(user?.id),
+    enabled: Boolean(user?.id),
+    queryFn: ({ signal }) => api.get('/api/game/state', { signal })
   })
 }
 
@@ -19,9 +22,11 @@ export function useGameState() {
  */
 export function useAchievements() {
   const api = useApiClient()
+  const { user } = useAuth()
 
   return useQuery({
-    queryKey: queryKeys.game.achievements,
-    queryFn: () => api.get('/api/game/achievements')
+    queryKey: queryKeys.game.achievements(user?.id),
+    enabled: Boolean(user?.id),
+    queryFn: ({ signal }) => api.get('/api/game/achievements', { signal })
   })
 }

@@ -22,6 +22,8 @@ export default function Export() {
     audiobookStatus,
     downloading,
     generatingAudiobook,
+    audiobookJobPending,
+    handleDownloadAudiobook,
     uploadingVoice,
     voiceConsent,
     setVoiceConsent,
@@ -40,8 +42,13 @@ export default function Export() {
 
   const fetchAllStories = async () => {
     try {
-      const storiesRes = await authFetch('/api/stories/all')
-      if (!storiesRes.ok) throw new Error('Failed to load stories')
+      const storiesRes = await authFetch('/api/export/manuscript')
+      if (!storiesRes.ok) {
+        const body = await storiesRes.json().catch(() => ({}))
+        throw new Error(
+          body.message || body.error || 'Unable to load your memoir. Please try again.'
+        )
+      }
       const storiesData = await storiesRes.json()
       const organized = {}
       storiesData.forEach(story => {
@@ -51,7 +58,7 @@ export default function Export() {
       setStories(organized)
     } catch (err) {
       console.error('Error fetching stories:', err)
-      setLoadError('Unable to load your stories. Please try refreshing the page.')
+      setLoadError(err.message)
     } finally {
       setLoading(false)
     }
@@ -381,9 +388,11 @@ export default function Export() {
               >
                 {generatingAudiobook
                   ? 'Generating...'
-                  : audiobookStatus?.canGenerate
-                    ? 'Generate Audiobook'
-                    : 'Buy & Generate'}
+                  : audiobookJobPending
+                    ? 'Resume Audiobook Download'
+                    : audiobookStatus?.canGenerate
+                      ? 'Generate Audiobook'
+                      : 'Buy & Generate'}
               </button>
 
               {audiobookStatus?.hasVoiceModel ? (
@@ -460,7 +469,15 @@ export default function Export() {
             <div className="max-w-md mx-auto text-left">
               <p className="text-sm text-warmgray mb-3 font-medium">Chapters included:</p>
               <ul className="space-y-2">
-                {chapters.map(chapter => {
+                {[
+                  ...chapters,
+                  ...Object.keys(stories)
+                    .filter(id => !chapters.some(chapter => chapter.id === id))
+                    .map(id => ({
+                      id,
+                      title: Object.values(stories[id])[0]?.chapter_title || 'Other Memories'
+                    }))
+                ].map(chapter => {
                   const chapterStories = stories[chapter.id]
                   const storyCount = chapterStories
                     ? Object.values(chapterStories).filter(s => s.answer?.trim()).length
@@ -483,6 +500,24 @@ export default function Export() {
             </p>
           </div>
         </div>
+      )}
+
+      {audiobookStatus?.previousAudiobooks?.length > 0 && (
+        <section className="my-8 print:hidden" aria-label="Completed audiobooks">
+          <h2 className="font-display text-xl mb-3">Your completed audiobooks</h2>
+          <ul className="space-y-2">
+            {audiobookStatus.previousAudiobooks.map(book => (
+              <li key={book.filename}>
+                <button
+                  className="underline text-purple-700"
+                  onClick={() => handleDownloadAudiobook(book.filename)}
+                >
+                  Download audiobook from {new Date(book.created_at).toLocaleDateString()}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       {/* Voice Setup Modal */}

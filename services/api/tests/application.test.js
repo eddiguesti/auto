@@ -4,7 +4,10 @@ import jwt from 'jsonwebtoken'
 
 let server
 let base
-const query = vi.fn(async () => ({ rows: [] }))
+const query = vi.fn(async (sql, values) => ({
+  rows:
+    sql === 'SELECT id FROM users WHERE id = $1 AND deleted_at IS NULL' ? [{ id: values[0] }] : []
+}))
 const database = { query, totalCount: 0, idleCount: 0, waitingCount: 0 }
 beforeAll(async () => {
   const app = createApp({ database, serveStatic: false })

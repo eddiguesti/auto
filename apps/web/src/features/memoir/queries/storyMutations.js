@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '../../../lib/queryKeys'
 import { useApiClient } from '../../../lib/apiClient'
+import { useAuth } from '../../../context/AuthContext'
 
 /**
  * Save (upsert) a single story answer.
@@ -8,6 +9,7 @@ import { useApiClient } from '../../../lib/apiClient'
  */
 export function useSaveStory() {
   const api = useApiClient()
+  const { user } = useAuth()
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -19,7 +21,7 @@ export function useSaveStory() {
         ...(totalQuestions !== undefined ? { total_questions: totalQuestions } : {})
       }),
     onSuccess: (_, { chapterId }) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.stories.chapter(chapterId) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.stories.chapter(chapterId, user?.id) })
       queryClient.invalidateQueries({ queryKey: queryKeys.stories.all })
     }
   })

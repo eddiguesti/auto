@@ -54,6 +54,7 @@ export function useExportModal({ onClose, userName }) {
     audiobookStatus: exportCore.audiobookStatus,
     downloading: exportCore.downloading,
     generatingAudiobook: exportCore.generatingAudiobook,
+    audiobookJobPending: exportCore.audiobookJobPending,
     showBookOrder,
     setShowBookOrder,
     showVoiceSetup,

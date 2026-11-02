@@ -1,26 +1,49 @@
-services:
-  - type: web
-    name: easy-memoir-api
-    runtime: node
-    region: frankfurt
-    plan: free
-    buildCommand: npm install && cd apps/web && npm install && npm run build
-    startCommand: npm start
+# Both services use the same durable database and R2 bucket. Configure secrets in
+# the shared group; recordings/print files must not depend on instance-local disk.
+envVarGroups:
+  - name: easy-memoir-shared
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 10000
+      - key: ALLOW_LOCAL_UPLOADS
+        value: 'false'
       - key: DATABASE_URL
         sync: false
       - key: JWT_SECRET
-        sync: false
-      - key: JWT_EXPIRES_IN
-        value: 7d
-      - key: GOOGLE_CLIENT_ID
         sync: false
       - key: GOOGLE_CLIENT_SECRET
         sync: false
       - key: GROK_API_KEY
         sync: false
+      - key: FISH_AUDIO_API_KEY
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_ENDPOINT
+        sync: false
+      - key: R2_BUCKET
+        sync: false
+      - key: APP_URL
+        sync: false
+services:
+  - type: web
+    name: easy-memoir-api
+    runtime: node
+    region: frankfurt
+    plan: starter
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    envVars:
+      - fromGroup: easy-memoir-shared
     healthCheckPath: /api/health
+  - type: worker
+    name: easy-memoir-worker
+    runtime: node
+    region: frankfurt
+    plan: starter
+    buildCommand: npm ci
+    startCommand: npm run worker
+    envVars:
+      - fromGroup: easy-memoir-shared

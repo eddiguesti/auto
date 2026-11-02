@@ -5,9 +5,49 @@ import path from 'node:path'
 
 export const directory = path.dirname(fileURLToPath(import.meta.url))
 export const root = path.resolve(directory, '../..')
-const sourceDirectory = path.join(root, 'services/api/db/migrations')
+const migrationDirectory = path.join(root, 'services/api/db/migrations')
 export const quoteIdentifier = value => `"${value.replaceAll('"', '""')}"`
 export const digest = value => createHash('sha256').update(value).digest('hex')
+export const normalizeSource = value => value.replace(/\r\n?/g, '\n')
+
+// Preserve the supported CHECK expressions rather than silently dropping them.
+function extractChecks(value) {
+  const checks = []
+  let rest = value
+  for (let match; (match = /\bCHECK\s*\(/i.exec(rest)); ) {
+    let depth = 1,
+      quoted = false,
+      end = match.index + match[0].length
+    const start = end
+    for (; end < rest.length && depth; end++) {
+      const ch = rest[end]
+      if (ch === "'") {
+        if (quoted && rest[end + 1] === "'") {
+          end++
+          continue
+        }
+        quoted = !quoted
+      }
+      if (!quoted) {
+        if (ch === '(') depth++
+        if (ch === ')') depth--
+      }
+    }
+    if (depth) throw new Error('Unclosed CHECK constraint')
+    const expression = rest.slice(start, end - 1).trim()
+    // These expressions are portable to SQLite; reject functions/casts and
+    // unsupported PostgreSQL expressions until deliberately mapped.
+    const scalar = "(?:-?\\d+|'(?:[^']|'')*')"
+    const supported = new RegExp(
+      `^\\w+\\s*(?:(?:=|<>|!=|<=|>=|<|>)\\s*${scalar}|BETWEEN\\s+${scalar}\\s+AND\\s+${scalar}|IN\\s*\\(\\s*${scalar}(?:\\s*,\\s*${scalar})*\\s*\\))$`,
+      'i'
+    )
+    if (!supported.test(expression)) throw new Error(`Unsupported CHECK expression: ${expression}`)
+    checks.push(expression)
+    rest = rest.slice(0, match.index) + rest.slice(end)
+  }
+  return { checks, rest }
+}
 
 // This is deliberately a compiler for the audited repository grammar, not a
 // general PostgreSQL converter. An unrecognised declaration aborts generation.
@@ -38,10 +78,11 @@ function splitDeclarations(value) {
 
 function column(declaration) {
   const match = declaration.match(
-    /^(\w+)\s+(SERIAL|INTEGER|INT|BOOLEAN|TIMESTAMPTZ|TIMESTAMP|DATE|TEXT\[\]|TEXT|JSONB|DECIMAL\(3,2\)|VARCHAR\((?:100|255)\))(.*)$/i
+    /^(\w+)\s+(SERIAL|INTEGER|INT|BOOLEAN|TIMESTAMPTZ|TIMESTAMP|DATE|TEXT\[\]|TEXT|UUID|JSONB|DECIMAL\(3,2\)|VARCHAR\((?:100|255)\))(.*)$/i
   )
   if (!match) throw new Error(`Unsupported column: ${declaration}`)
-  const [, name, sourceType, rest] = match
+  const [, name, sourceType, modifiers] = match
+  const { checks, rest } = extractChecks(modifiers)
   const type = sourceType.toUpperCase()
   const kind =
     type === 'SERIAL' || type === 'INTEGER' || type === 'INT'
@@ -52,15 +93,17 @@ function column(declaration) {
           ? 'json'
           : type === 'TEXT[]'
             ? 'text-array'
-            : type === 'DECIMAL(3,2)'
-              ? 'decimal'
-              : type === 'TIMESTAMPTZ'
-                ? 'instant'
-                : type === 'TIMESTAMP'
-                  ? 'timestamp'
-                  : type === 'DATE'
-                    ? 'date'
-                    : 'text'
+            : type === 'UUID'
+              ? 'uuid'
+              : type === 'DECIMAL(3,2)'
+                ? 'decimal'
+                : type === 'TIMESTAMPTZ'
+                  ? 'instant'
+                  : type === 'TIMESTAMP'
+                    ? 'timestamp'
+                    : type === 'DATE'
+                      ? 'date'
+                      : 'text'
   const primary = /\bPRIMARY KEY\b/i.test(rest)
   const nullable = !primary && !/\bNOT NULL\b/i.test(rest)
   const reference = rest.match(/REFERENCES (\w+)\((\w+)\)(?: ON DELETE (CASCADE|SET NULL))?/i)
@@ -92,6 +135,7 @@ function column(declaration) {
     primary,
     serial: type === 'SERIAL',
     unique: /\bUNIQUE\b/i.test(rest),
+    ...(checks.length ? { checks } : {}),
     sourceDefaultSql,
     defaultSql,
     reference: reference
@@ -100,30 +144,36 @@ function column(declaration) {
   }
 }
 
-export async function compile() {
+export async function compile({ sourceDirectory = migrationDirectory } = {}) {
   const names = (await readdir(sourceDirectory)).filter(name => /\.(sql|js)$/.test(name)).sort()
   const sources = await Promise.all(
     names.map(async name => ({
       name,
-      text: await readFile(path.join(sourceDirectory, name), 'utf8')
+      text: normalizeSource(await readFile(path.join(sourceDirectory, name), 'utf8'))
     }))
   )
-  const baseline = sources
-    .find(source => source.name === '001_full_baseline.sql')
-    .text.replace(/--[^\n]*/g, '')
   const tables = []
-  for (const match of baseline.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)\s*\(([\s\S]*?)\);/g)) {
-    const table = { name: match[1], columns: [], unique: [] }
-    for (const declaration of splitDeclarations(match[2])) {
-      const unique = declaration.match(/^UNIQUE\(([^)]+)\)$/)
-      if (unique) table.unique.push(unique[1].split(',').map(value => value.trim()))
-      else table.columns.push(column(declaration))
+  // Later migrations may introduce entire tables, not just columns. Inspect
+  // every declaration, including duplicates guarded by IF NOT EXISTS.
+  for (const source of sources.filter(source => source.name.endsWith('.sql'))) {
+    const sql = source.text.replace(/--[^\n]*/g, '')
+    for (const match of sql.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)\s*\(([\s\S]*?)\);/g)) {
+      const table = { name: match[1], columns: [], unique: [] }
+      for (const declaration of splitDeclarations(match[2])) {
+        const unique = declaration.match(/^UNIQUE\(([^)]+)\)$/)
+        if (unique) table.unique.push(unique[1].split(',').map(value => value.trim()))
+        else table.columns.push(column(declaration))
+      }
+      const existing = tables.find(item => item.name === table.name)
+      if (!existing) tables.push(table)
+      else if (JSON.stringify(existing) !== JSON.stringify(table))
+        throw new Error(`Conflicting table declaration: ${table.name}`)
     }
-    tables.push(table)
   }
   // Process every guarded additive SQL alteration, including baseline safety
   // additions. Existing declarations are compared rather than overwritten.
   for (const source of sources.filter(source => source.name.endsWith('.sql'))) {
+    const sql = source.text.replace(/--[^\n]*/g, '')
     for (const match of source.text.matchAll(
       /ALTER TABLE (\w+) ADD COLUMN IF NOT EXISTS ([^;]+);/g
     )) {
@@ -134,6 +184,14 @@ export async function compile() {
       if (!existing) table.columns.push(added)
       else if (JSON.stringify(existing) !== JSON.stringify(added))
         throw new Error(`Conflicting column addition: ${table.name}.${added.name}`)
+    }
+    for (const match of sql.matchAll(/ALTER TABLE (\w+) ALTER COLUMN (\w+) DROP NOT NULL;/g)) {
+      const item = tables
+        .find(table => table.name === match[1])
+        ?.columns.find(item => item.name === match[2])
+      if (!item || item.primary)
+        throw new Error(`Unknown/nonnullable ALTER target ${match[1]}.${match[2]}`)
+      item.nullable = true
     }
     const statements = source.text
       .replace(/--[^\n]*/g, '')
@@ -200,10 +258,13 @@ export async function compile() {
             sql += item.serial ? ' PRIMARY KEY AUTOINCREMENT' : ' PRIMARY KEY NOT NULL'
           else if (!item.nullable) sql += ' NOT NULL'
           if (item.unique) sql += ' UNIQUE'
+          for (const check of item.checks || []) sql += ` CHECK (${check})`
           if (item.defaultSql !== undefined) sql += ` DEFAULT ${item.defaultSql}`
           if (item.kind === 'integer')
             sql += ` CHECK (${q} IS NULL OR ${q} BETWEEN -2147483648 AND 2147483647)`
           if (item.kind === 'boolean') sql += ` CHECK (${q} IS NULL OR ${q} IN (0, 1))`
+          if (item.kind === 'uuid')
+            sql += ` CHECK (${q} IS NULL OR (length(${q}) = 36 AND substr(${q},9,1) = '-' AND substr(${q},14,1) = '-' AND substr(${q},19,1) = '-' AND substr(${q},24,1) = '-' AND length(replace(${q},'-','')) = 32 AND replace(${q},'-','') NOT GLOB '*[^0-9a-f]*'))`
           const varchar = item.sourceType.match(/^VARCHAR\((\d+)\)$/)
           if (varchar) sql += ` CHECK (${q} IS NULL OR length(${q}) <= ${varchar[1]})`
           if (item.kind === 'decimal')

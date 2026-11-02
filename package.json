@@ -28,9 +28,9 @@
     "deploy:cloudflare:web": "npm run build:cloudflare && npm run test:cloudflare && wrangler deploy",
     "start": "node services/api/index.js",
     "install-all": "npm install && cd apps/web && npm install",
-    "audit": "npm audit && cd apps/web && npm audit",
+    "audit": "npm audit --audit-level=high",
     "audit:fix": "npm audit fix && cd apps/web && npm audit fix",
-    "security:check": "npm run audit && npm run build:validate",
+    "security:check": "npm run audit && npm run lint:security && npm run build:validate",
     "test": "vitest run --config vitest.config.js",
     "test:watch": "vitest --config vitest.config.js",
     "test:coverage": "vitest run --config vitest.config.js --coverage",
@@ -48,12 +48,15 @@
     "dev:worker": "node --watch services/worker/index.js",
     "backup:verify": "node tools/scripts/verify-backup.js",
     "lint": "npm run lint:server && npm run lint:client",
-    "lint:server": "eslint services/api/ --fix",
-    "lint:client": "cd apps/web && eslint src/ --fix",
+    "lint:server": "eslint services/api/",
+    "lint:client": "cd apps/web && eslint src/",
     "format": "prettier --write \"services/api/**/*.js\" \"*.js\" \"apps/web/src/**/*.{js,jsx}\"",
     "format:check": "prettier --check \"services/api/**/*.js\" \"*.js\" \"apps/web/src/**/*.{js,jsx}\"",
     "backup": "bash tools/scripts/backup-db.sh",
-    "prepare": "husky"
+    "prepare": "husky",
+    "lint:security": "eslint --config eslint.security.config.js services/api/",
+    "test:postgres": "vitest run --config vitest.config.js services/api/tests/*.postgres.test.js services/api/tests/backupRestore.test.js",
+    "verify": "npm run lint && npm run lint:security && npm run lint:cloudflare && npm run format:check && npm run test:all && npm run test:cloudflare && npm run test:data-migration && npm run test:cloudflare:readiness && npm run check:cloudflare:api && npm run build:cloudflare"
   },
   "engines": {
     "node": ">=22.12.0"
@@ -74,10 +77,10 @@
     "helmet": "^8.1.0",
     "ioredis": "5.9.2",
     "jsonwebtoken": "^9.0.3",
-    "multer": "2.4.0",
+    "multer": "2.5.0",
     "node-cron": "^4.2.1",
     "node-pg-migrate": "8.0.4",
-    "openai": "^4.56.0",
+    "openai": "7.47.0",
     "pdf-lib": "1.17.1",
     "pg": "^8.17.2",
     "pg-boss": "12.15.0",
@@ -90,7 +93,7 @@
   "devDependencies": {
     "@eslint/js": "^9.0.0",
     "@playwright/test": "1.59.1",
-    "@vitest/coverage-v8": "4.1.11",
+    "@vitest/coverage-v8": "4.1.12",
     "esbuild": "0.28.2",
     "eslint": "^9.0.0",
     "espree": "10.4.0",
@@ -99,7 +102,14 @@
     "lint-staged": "^15.0.0",
     "miniflare": "5.20261006.1-alpha",
     "prettier": "^3.0.0",
-    "vitest": "4.1.11",
-    "wrangler": "4.149.0"
+    "vitest": "4.1.12",
+    "wrangler": "4.156.2",
+    "eslint-plugin-security": "4.0.0",
+    "eslint-plugin-no-secrets": "2.2.1"
+  },
+  "overrides": {
+    "dompurify": "^3.4.17",
+    "body-parser": "^1.20.9",
+    "undici": "^7.30.1"
   }
 }

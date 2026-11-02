@@ -119,33 +119,33 @@ Express.js API server. Entry point: `services/api/index.js`
 
 Each file is a self-contained Express router handling one feature area.
 
-| File                | What it does                                                                                                                      |
-| ------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `auth.js`           | Registration, login, Google OAuth, password reset. Public endpoint with rate limiting for brute-force protection.                 |
-| `stories.js`        | CRUD for life story answers. Each story is tied to a chapter and question. Handles AI image generation for chapter illustrations. |
-| `photos.js`         | Photo upload (multer) and retrieval. Authenticated file serving to prevent unauthorized access.                                   |
-| `ai.js`             | AI-powered story enhancement, follow-up question generation, and conversational interview via Grok API.                           |
-| `voice.js`          | Voice recording upload, transcription, and multi-question voice interview sessions.                                               |
-| `memory.js`         | Memory graph — entities (people, places, events), relationships between entities, and mentions linking entities to stories.       |
-| `audiobook.js`      | Audiobook generation via Fish.audio. Supports default TTS voices and custom voice cloning.                                        |
-| `export.js`         | Story export to EPUB and PDF formats for download.                                                                                |
-| `covers.js`         | Book cover design generation — users pick templates and customize.                                                                |
-| `lulu.js`           | Legacy Lulu configuration endpoints.                                        |
+| File                | What it does                                                                                                                                                |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `auth.js`           | Registration, login, Google OAuth, password reset. Public endpoint with rate limiting for brute-force protection.                                           |
+| `stories.js`        | CRUD for life story answers. Each story is tied to a chapter and question. Handles AI image generation for chapter illustrations.                           |
+| `photos.js`         | Photo upload (multer) and retrieval. Authenticated file serving to prevent unauthorized access.                                                             |
+| `ai.js`             | AI-powered story enhancement, follow-up question generation, and conversational interview via Grok API.                                                     |
+| `voice.js`          | Voice recording upload, transcription, and multi-question voice interview sessions.                                                                         |
+| `memory.js`         | Memory graph — entities (people, places, events), relationships between entities, and mentions linking entities to stories.                                 |
+| `audiobook.js`      | Audiobook generation via Fish.audio. Supports default TTS voices and custom voice cloning.                                                                  |
+| `export.js`         | Story export to EPUB and PDF formats for download.                                                                                                          |
+| `covers.js`         | Book cover design generation — users pick templates and customize.                                                                                          |
+| `lulu.js`           | Legacy Lulu configuration endpoints.                                                                                                                        |
 | `print.js`          | £250 complete memoir package: ten A5 hardbacks, immutable PDF approval and Bookvault fulfilment. See [activation instructions](docs/bookvault-printing.md). |
-| `payments.js`       | Stripe payment processing. Creates checkout sessions, handles webhooks, manages premium subscriptions.                            |
-| `style.js`          | Writing style preferences — tone, narrative voice, detail level. Stored per-user.                                                 |
-| `seo.js`            | Server-rendered public landing pages for SEO (pre-renders meta tags for social sharing).                                          |
-| `game.js`           | Gamification engine — daily streaks, achievements, collections, daily prompts. Drives engagement.                                 |
-| `notifications.js`  | Push notification management and in-app notification delivery.                                                                    |
-| `user.js`           | User profile, GDPR data export, account deletion.                                                                                 |
-| `onboarding.js`     | Post-signup flow — captures preferences, triggers first prompt, sets up initial state.                                            |
-| `support.js`        | AI-powered support chatbot. Public endpoint so users can get help even when logged out.                                           |
-| `newsletter.js`     | Email newsletter subscription and unsubscribe management.                                                                         |
-| `memos.js`          | Quick voice memos — free-form recordings that aren't tied to a specific chapter/question.                                         |
-| `magicLink.js`      | Magic link authentication for no-password access via email (used in weekly topic emails).                                         |
-| `telegram.js`       | Telegram bot integration — alternative input channel. Users can answer prompts via Telegram.                                      |
-| `chapter-images.js` | AI-generated personalized chapter illustrations using Replicate image models.                                                     |
-| `telnyxCall.js`     | Phone call interviews via Telnyx + xAI Realtime API. WebSocket streaming for live audio.                                          |
+| `payments.js`       | Stripe payment processing. Creates checkout sessions, handles webhooks, manages premium subscriptions.                                                      |
+| `style.js`          | Writing style preferences — tone, narrative voice, detail level. Stored per-user.                                                                           |
+| `seo.js`            | Server-rendered public landing pages for SEO (pre-renders meta tags for social sharing).                                                                    |
+| `game.js`           | Gamification engine — daily streaks, achievements, collections, daily prompts. Drives engagement.                                                           |
+| `notifications.js`  | Push notification management and in-app notification delivery.                                                                                              |
+| `user.js`           | User profile, GDPR data export, account deletion.                                                                                                           |
+| `onboarding.js`     | Post-signup flow — captures preferences, triggers first prompt, sets up initial state.                                                                      |
+| `support.js`        | AI-powered support chatbot. Public endpoint so users can get help even when logged out.                                                                     |
+| `newsletter.js`     | Email newsletter subscription and unsubscribe management.                                                                                                   |
+| `memos.js`          | Quick voice memos — free-form recordings that aren't tied to a specific chapter/question.                                                                   |
+| `magicLink.js`      | Magic link authentication for no-password access via email (used in weekly topic emails).                                                                   |
+| `telegram.js`       | Telegram bot integration — alternative input channel. Users can answer prompts via Telegram.                                                                |
+| `chapter-images.js` | AI-generated personalized chapter illustrations using Replicate image models.                                                                               |
+| `telnyxCall.js`     | Phone call interviews via Telnyx + xAI Realtime API. WebSocket streaming for live audio.                                                                    |
 
 ### `middleware/` — Request Processing Pipeline
 
@@ -420,19 +420,19 @@ React Native Expo app (iOS/Android/Web). Entry point: `apps/mobile/App.tsx`
 
 ## Tech Stack
 
-| Layer            | Technology                                                                  |
-| ---------------- | --------------------------------------------------------------------------- |
-| **Web Frontend** | React 18, Vite, TailwindCSS, React Router 6                                 |
-| **Mobile**       | React Native, Expo, TypeScript, React Navigation                            |
-| **Backend**      | Node.js, Express 4, ES Modules                                              |
-| **Database**     | PostgreSQL (Supabase/Neon cloud)                                            |
-| **AI**           | Grok (xAI) for conversation & text, Replicate for images                    |
-| **Voice**        | Fish.audio (TTS/audiobook), Telnyx (phone calls), xAI Realtime (live voice) |
-| **Payments**     | Stripe (checkout, webhooks, subscriptions)                                  |
+| Layer            | Technology                                                                                                                                                      |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Web Frontend** | React 18, Vite, TailwindCSS, React Router 6                                                                                                                     |
+| **Mobile**       | React Native, Expo, TypeScript, React Navigation                                                                                                                |
+| **Backend**      | Node.js, Express 4, ES Modules                                                                                                                                  |
+| **Database**     | PostgreSQL (Supabase/Neon cloud)                                                                                                                                |
+| **AI**           | Grok (xAI) for conversation & text, Replicate for images                                                                                                        |
+| **Voice**        | Fish.audio (TTS/audiobook), Telnyx (phone calls), xAI Realtime (live voice)                                                                                     |
+| **Payments**     | Stripe (checkout, webhooks, subscriptions)                                                                                                                      |
 | **Print**        | Bookvault personalised transient orders (Node API + worker); legacy Lulu endpoints remain available. See [activation instructions](docs/bookvault-printing.md). |
-| **Email**        | Resend (transactional emails)                                               |
-| **Auth**         | JWT + Google OAuth + Magic Links                                            |
-| **Deploy**       | Railway or Render (Node.js + static hosting)                                |
+| **Email**        | Resend (transactional emails)                                                                                                                                   |
+| **Auth**         | JWT + Google OAuth + Magic Links                                                                                                                                |
+| **Deploy**       | Railway or Render (Node.js + static hosting)                                                                                                                    |
 
 ---
 
@@ -489,3 +489,7 @@ npm run format           # Prettier format all files
 - **No APM/monitoring** — integrate Sentry for error tracking and DataDog/New Relic for performance monitoring.
 - **No offline support** — web app requires internet. Service Workers would enable offline story writing.
 - **No database schema diagram** — visualize the 30+ table schema with dbdocs.io or Mermaid diagrams.
+
+## Repair verification
+
+See [audit repair verification](docs/guides/audit-repair-verification.md) for the full test commands, database test requirements, worker deployment, provider configuration and remaining dependency advisories.

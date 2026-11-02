@@ -1,7 +1,7 @@
 // @ts-check
 /**
  * Photo repository — encapsulates all database access for the photos table.
- * All queries verify user ownership via the stories JOIN to prevent unauthorized access.
+ * All queries verify direct ownership, falling back to the story owner for legacy photos to prevent unauthorized access.
  * @typedef {import('../types/index.js').Photo} Photo
  * @typedef {import('../types/index.js').DbClient} DbClient
  */
@@ -55,8 +55,8 @@ export const photoRepository = {
     const result = await db.query(
       `SELECT ${PHOTO_COLUMNS}
        FROM photos p
-       JOIN stories s ON p.story_id = s.id
-       WHERE p.filename = $1 AND s.user_id = $2`,
+       LEFT JOIN stories s ON p.story_id = s.id
+       WHERE p.filename = $1 AND COALESCE(p.user_id, s.user_id) = $2`,
       [filename, userId]
     )
     return result.rows[0] || null
@@ -74,8 +74,8 @@ export const photoRepository = {
     const result = await db.query(
       `SELECT ${PHOTO_COLUMNS}
        FROM photos p
-       JOIN stories s ON p.story_id = s.id
-       WHERE p.id = $1 AND s.user_id = $2`,
+       LEFT JOIN stories s ON p.story_id = s.id
+       WHERE p.id = $1 AND COALESCE(p.user_id, s.user_id) = $2`,
       [photoId, userId]
     )
     return result.rows[0] || null
@@ -92,8 +92,8 @@ export const photoRepository = {
     const result = await db.query(
       `SELECT ${PHOTO_COLUMNS}
        FROM photos p
-       JOIN stories s ON p.story_id = s.id
-       WHERE p.story_id = $1 AND s.user_id = $2
+       LEFT JOIN stories s ON p.story_id = s.id
+       WHERE p.story_id = $1 AND COALESCE(p.user_id, s.user_id) = $2
        ORDER BY p.created_at`,
       [storyId, userId]
     )

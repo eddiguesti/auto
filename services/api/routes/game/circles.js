@@ -1,12 +1,14 @@
 // /life-story/services/api/routes/game/circles.js
 
 import { Router } from 'express'
-import pool from '../../db/index.js'
+import defaultPool from '../../db/index.js'
 import { asyncHandler } from '../../middleware/asyncHandler.js'
 import validate from '../../middleware/validate.js'
 import { gameSchemas } from '../../schemas/index.js'
 import { generateUniqueInviteCode } from '../../utils/inviteCode.js'
 import { awardAchievement } from '../../services/gameService.js'
+import { createLogger } from '../../utils/logger.js'
+const logger = createLogger('memory-circles')
 
 const router = Router()
 
@@ -22,6 +24,7 @@ router.post(
   '/circle/create',
   validate(gameSchemas.createCircle),
   asyncHandler(async (req, res) => {
+    const pool = req.app.locals.db || defaultPool
     const userId = req.user.id
     const { circleName } = req.validatedBody
 
@@ -81,6 +84,7 @@ router.post(
 router.get(
   '/circle',
   asyncHandler(async (req, res) => {
+    const pool = req.app.locals.db || defaultPool
     const userId = req.user.id
 
     // Find circle user is part of
@@ -176,13 +180,14 @@ router.post(
   '/circle/join/:inviteCode',
   validate(gameSchemas.joinCircle),
   asyncHandler(async (req, res) => {
+    const pool = req.app.locals.db || defaultPool
     const userId = req.user.id
     const { inviteCode } = req.validatedParams
     const { displayName } = req.validatedBody || {}
 
     // Find circle with this code
     const circle = await pool.query(
-      `SELECT id, user_id, name, description, invite_code, invite_code_expires, created_at, updated_at
+      `SELECT id, owner_user_id, circle_name, max_members, invite_code, invite_code_expires, created_at, updated_at
        FROM memory_circles
        WHERE invite_code = $1 AND invite_code_expires > NOW()`,
       [inviteCode.toUpperCase()]
@@ -238,7 +243,11 @@ router.post(
     )
 
     // Award achievement
-    await awardAchievement(userId, 'family_joined')
+    try {
+      await awardAchievement(userId, 'family_joined')
+    } catch (error) {
+      logger.warn('Circle joined; achievement update deferred', { error: error.message })
+    }
 
     res.json({
       success: true,
@@ -258,6 +267,7 @@ router.post(
 router.post(
   '/circle/regenerate-invite',
   asyncHandler(async (req, res) => {
+    const pool = req.app.locals.db || defaultPool
     const userId = req.user.id
 
     const circle = await pool.query('SELECT id FROM memory_circles WHERE owner_user_id = $1', [
@@ -299,6 +309,7 @@ router.post(
 router.delete(
   '/circle/member/:memberId',
   asyncHandler(async (req, res) => {
+    const pool = req.app.locals.db || defaultPool
     const userId = req.user.id
     const { memberId } = req.params
 
@@ -351,6 +362,7 @@ router.delete(
 router.post(
   '/circle/leave',
   asyncHandler(async (req, res) => {
+    const pool = req.app.locals.db || defaultPool
     const userId = req.user.id
 
     const membership = await pool.query(

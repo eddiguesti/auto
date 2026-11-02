@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { PDFDocument, rgb } from 'pdf-lib'
 import fontkit from '@pdf-lib/fontkit'
-import { chapters } from '@easy-memoir/shared/chapters'
+import { manuscriptChapters } from './manuscript.js'
 import { PRINT_PACKAGE } from '../../../packages/shared/payment-catalog.js'
 import { ValidationError } from '../utils/errors.js'
 
@@ -69,14 +69,6 @@ function ensureGlyphs(text, font) {
 export async function generateInterior({ title, author, stories, photos = [], readPhoto }) {
   if (!stories.some(story => story.answer?.trim()))
     throw new ValidationError('Write some memories before preparing your book.')
-  if (
-    stories.some(
-      story => story.answer?.trim() && !chapters.some(chapter => chapter.id === story.chapter_id)
-    )
-  )
-    throw new ValidationError(
-      'A memory has an unrecognised chapter. Please contact support before printing so no text is left out.'
-    )
   if (photos.length > PRINT_PACKAGE.maxPhotos)
     throw new ValidationError('Choose up to eight photographs for this package.')
   const document = await PDFDocument.create()
@@ -134,10 +126,10 @@ export async function generateInterior({ title, author, stories, photos = [], re
   text('A life remembered', 16, 24, true)
   y -= 30
   text('Created with Easy Memoir', 10, 16, true)
-  for (const chapter of chapters) {
+  for (const chapter of manuscriptChapters(stories)) {
     const entries = stories
       .filter(s => s.chapter_id === chapter.id && s.answer?.trim())
-      .sort((a, b) => a.question_id.localeCompare(b.question_id))
+      .sort((a, b) => a.question_id.localeCompare(b.question_id, undefined, { numeric: true }))
     if (!entries.length) continue
     newPage()
     y -= 25

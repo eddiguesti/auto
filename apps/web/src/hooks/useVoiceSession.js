@@ -8,9 +8,12 @@ import { useSettings } from '../context/SettingsContext'
 import { base64ToArrayBuffer, arrayBufferToBase64 } from '../utils/audio'
 import { buildInstructions } from '../utils/voiceInstructions'
 import { VOICE_CONFIG } from '../data/voiceConfig'
+import { readDraft } from './useDraftAutosave'
 
 export function useVoiceSession({ chapter, initialQuestionIndex = 0, photoContext = null }) {
-  const { authFetch, token: jwtToken } = useAuth()
+  const { authFetch, token: jwtToken, user } = useAuth()
+  const draftKey = `memoir-draft:${user?.id}:voice:${chapter?.id}`
+  const recovered = useRef(readDraft(draftKey))
   const { getPaceSettings, getVoice } = useSettings()
 
   const [phase, setPhase] = useState('ready') // 'ready' | 'connecting' | 'active' | 'compiling' | 'ended'
@@ -18,11 +21,13 @@ export function useVoiceSession({ chapter, initialQuestionIndex = 0, photoContex
   const [isSpeechDetected, setIsSpeechDetected] = useState(false)
   const [isSpeaking, setIsSpeaking] = useState(false)
   const [error, setError] = useState(null)
-  const [conversationHistory, setConversationHistory] = useState([])
+  const [conversationHistory, setConversationHistory] = useState(recovered.current.history || [])
   const [onboardingContext, setOnboardingContext] = useState(null)
-  const [sessionId, setSessionId] = useState(null)
+  const [sessionId, setSessionId] = useState(recovered.current.sessionId || null)
   const [questionsAnswered, setQuestionsAnswered] = useState([])
-  const [questionIndex, setQuestionIndex] = useState(initialQuestionIndex)
+  const [questionIndex, setQuestionIndex] = useState(
+    recovered.current.questionIndex ?? initialQuestionIndex
+  )
   const [compiledSummary, setCompiledSummary] = useState(null)
 
   // Refs for WebSocket, audio, and lifecycle
@@ -38,16 +43,39 @@ export function useVoiceSession({ chapter, initialQuestionIndex = 0, photoContex
   const mountedRef = useRef(true)
   const currentSourceRef = useRef(null)
   const greetingTimeoutRef = useRef(null)
-  const sessionIdRef = useRef(null)
-  const historyRef = useRef([])
+  const sessionIdRef = useRef(recovered.current.sessionId || null)
+  const historyRef = useRef(recovered.current.history || [])
+  const saveTranscriptRef = useRef(null)
   const advanceRef = useRef(null)
+  const advancingRef = useRef(false)
+  const messageHandlerRef = useRef(null)
 
   const question = chapter?.questions[questionIndex] || chapter?.questions[0]
 
   // Keep refs in sync
   useEffect(() => {
     historyRef.current = conversationHistory
-  }, [conversationHistory])
+    if (conversationHistory.some(item => item.role === 'user')) {
+      try {
+        sessionStorage.setItem(
+          draftKey,
+          JSON.stringify({
+            history: conversationHistory,
+            sessionId: sessionIdRef.current,
+            questionIndex
+          })
+        )
+      } catch {
+        /* Save errors remain visible. */
+      }
+    }
+  }, [conversationHistory, draftKey, questionIndex, sessionId])
+
+  const appendConversation = useCallback(item => {
+    const next = [...historyRef.current, item]
+    historyRef.current = next
+    setConversationHistory(next)
+  }, [])
 
   // Fetch session context on mount
   useEffect(() => {
@@ -55,7 +83,7 @@ export function useVoiceSession({ chapter, initialQuestionIndex = 0, photoContex
     authFetch(`/api/voice/config?chapter=${chapter.id}`)
       .then(res => (res.ok ? res.json() : null))
       .then(data => {
-        if (data?.session) {
+        if (data?.session && !recovered.current.history?.length) {
           setSessionId(data.session.id)
           sessionIdRef.current = data.session.id
           setQuestionsAnswered(data.session.questionsAnswered || [])
@@ -80,7 +108,7 @@ export function useVoiceSession({ chapter, initialQuestionIndex = 0, photoContex
         }
       })
       .catch(() => {})
-  }, [chapter?.id])
+  }, [chapter?.id, chapter?.questions.length, authFetch])
 
   // --- Audio playback ---
   const playNextAudio = useCallback(async () => {
@@ -131,7 +159,11 @@ export function useVoiceSession({ chapter, initialQuestionIndex = 0, photoContex
   // --- Transcript saving ---
   const saveCurrentTranscript = useCallback(async () => {
     const history = historyRef.current
-    if (!sessionIdRef.current || history.length === 0) return
+    if (history.length === 0) return true
+    if (!sessionIdRef.current) {
+      setError('Your transcript is kept in this tab. Reconnect before saving it.')
+      return false
+    }
     const userText = history
       .filter(m => m.role === 'user')
       .map(m => m.content)
@@ -140,7 +172,7 @@ export function useVoiceSession({ chapter, initialQuestionIndex = 0, photoContex
       .filter(m => m.role === 'assistant')
       .map(m => m.content)
       .join('\n\n')
-    if (!userText) return
+    if (!userText) return true
 
     try {
       const res = await authFetch('/api/voice/transcript', {
@@ -153,40 +185,57 @@ export function useVoiceSession({ chapter, initialQuestionIndex = 0, photoContex
           ai_transcript: aiText
         })
       })
-      if (res.ok) {
-        const data = await res.json()
-        setQuestionsAnswered(data.questions_answered || [])
+      if (!res.ok) throw new Error('Transcript save failed')
+      const data = await res.json()
+      if (historyRef.current !== history) {
+        setError(
+          'More speech arrived while saving. Your transcript is kept in this tab; please try saving again.'
+        )
+        return false
       }
+      setQuestionsAnswered(data.questions_answered || [])
+      sessionStorage.removeItem(draftKey)
+      return true
     } catch {
-      /* best-effort */
+      setError(
+        'Your transcript has not been saved. It is kept in this tab. Please try again before continuing.'
+      )
+      return false
     }
-  }, [questionIndex, chapter])
+  }, [questionIndex, chapter, authFetch, draftKey])
+  saveTranscriptRef.current = saveCurrentTranscript
 
   // --- Advance to next question ---
   const advanceToNextQuestion = useCallback(async () => {
-    await saveCurrentTranscript()
-    setConversationHistory([])
-    historyRef.current = []
-    const nextIdx = questionIndex + 1
-    if (nextIdx < chapter.questions.length) {
-      setQuestionIndex(nextIdx)
-      if (wsRef.current?.readyState === WebSocket.OPEN) {
-        wsRef.current.send(
-          JSON.stringify({
-            type: 'session.update',
-            session: {
-              instructions: buildInstructions(
-                chapter,
-                chapter.questions[nextIdx],
-                questionsAnswered,
-                compiledSummary,
-                onboardingContext,
-                photoContext
-              )
-            }
-          })
-        )
+    if (advancingRef.current) return
+    advancingRef.current = true
+    try {
+      if (!(await saveCurrentTranscript())) return
+      setConversationHistory([])
+      historyRef.current = []
+      const nextIdx = questionIndex + 1
+      if (nextIdx < chapter.questions.length) {
+        setQuestionIndex(nextIdx)
+        if (wsRef.current?.readyState === WebSocket.OPEN) {
+          wsRef.current.send(
+            JSON.stringify({
+              type: 'session.update',
+              session: {
+                instructions: buildInstructions(
+                  chapter,
+                  chapter.questions[nextIdx],
+                  questionsAnswered,
+                  compiledSummary,
+                  onboardingContext,
+                  photoContext
+                )
+              }
+            })
+          )
+        }
       }
+    } finally {
+      advancingRef.current = false
     }
   }, [
     saveCurrentTranscript,
@@ -312,7 +361,7 @@ export function useVoiceSession({ chapter, initialQuestionIndex = 0, photoContex
       ws.onmessage = event => {
         if (!mountedRef.current) return
         const data = JSON.parse(event.data)
-        handleWsMessage(data)
+        messageHandlerRef.current?.(data)
       }
 
       ws.onerror = () => {
@@ -334,7 +383,19 @@ export function useVoiceSession({ chapter, initialQuestionIndex = 0, photoContex
       setError(err.message)
       setPhase('ready')
     }
-  }, [chapter, question, questionsAnswered, compiledSummary, onboardingContext, photoContext])
+  }, [
+    chapter,
+    question,
+    questionsAnswered,
+    compiledSummary,
+    onboardingContext,
+    photoContext,
+    authFetch,
+    getPaceSettings,
+    getVoice,
+    jwtToken,
+    phase
+  ])
 
   // Handle WebSocket messages
   const handleWsMessage = useCallback(
@@ -349,7 +410,7 @@ export function useVoiceSession({ chapter, initialQuestionIndex = 0, photoContex
 
         case 'conversation.item.input_audio_transcription.completed':
           if (data.transcript) {
-            setConversationHistory(prev => [...prev, { role: 'user', content: data.transcript }])
+            appendConversation({ role: 'user', content: data.transcript })
             // Detect frustration with pacing and adapt dynamically + persistently
             const transcriptLower = data.transcript.toLowerCase()
             const isCutOff =
@@ -395,7 +456,7 @@ export function useVoiceSession({ chapter, initialQuestionIndex = 0, photoContex
         case 'response.output_audio_transcript.done': {
           const aiText = currentAiTranscriptRef.current
           if (aiText) {
-            setConversationHistory(prev => [...prev, { role: 'assistant', content: aiText }])
+            appendConversation({ role: 'assistant', content: aiText })
             const lower = aiText.toLowerCase()
             if (VOICE_CONFIG.TRANSITION_PHRASES.some(p => lower.includes(p))) {
               advanceRef.current?.()
@@ -425,8 +486,10 @@ export function useVoiceSession({ chapter, initialQuestionIndex = 0, photoContex
           break
       }
     },
-    [playNextAudio]
+    [playNextAudio, appendConversation]
   )
+
+  messageHandlerRef.current = handleWsMessage
 
   // --- Full disconnect ---
   const disconnect = useCallback(() => {
@@ -466,34 +529,44 @@ export function useVoiceSession({ chapter, initialQuestionIndex = 0, photoContex
   const endConversation = useCallback(async () => {
     disconnect()
     setPhase('compiling')
-    if (conversationHistory.length > 0) await saveCurrentTranscript()
+    if (!(await saveCurrentTranscript())) {
+      setPhase('active')
+      return
+    }
     if (sessionIdRef.current) {
       try {
-        await authFetch('/api/voice/end-session', {
+        const response = await authFetch('/api/voice/end-session', {
           method: 'POST',
           body: JSON.stringify({ session_id: sessionIdRef.current })
         })
+        if (!response.ok) throw new Error('Could not finish the session')
       } catch {
-        /* best-effort */
+        setError(
+          'Your transcript is saved, but the interview could not be finished. Please try again.'
+        )
+        setPhase('active')
+        return
       }
     }
     setPhase('ended')
-  }, [disconnect, conversationHistory, saveCurrentTranscript])
+  }, [disconnect, conversationHistory, saveCurrentTranscript, authFetch])
 
-  const resetError = useCallback(() => {
+  const resetError = useCallback(async () => {
+    if (!(await saveCurrentTranscript())) return
     setError(null)
     setPhase('ready')
     hasStartedRef.current = false
-  }, [])
+  }, [saveCurrentTranscript])
 
   // Cleanup on unmount
   useEffect(() => {
     mountedRef.current = true
     return () => {
       mountedRef.current = false
+      void saveTranscriptRef.current?.()
       disconnect()
     }
-  }, [])
+  }, [disconnect])
 
   return {
     phase,

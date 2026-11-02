@@ -3,35 +3,51 @@
   "sources": [
     {
       "name": "001_baseline.js",
-      "sha256": "e97dce76d55180fb491dda88660c500c89f3772ebce14103d164c1fa33ea4072"
+      "sha256": "81adf3899a6fa86618791cfd96b06fd090d6b03a44bbab07d147393820a79188"
     },
     {
       "name": "001_full_baseline.sql",
-      "sha256": "5591e3571b7b3820c72a5aff5e8ac9f9bbb6b988c7dbdac615150ce64f60891b"
+      "sha256": "eeeb8f232deaea126276fd97b77e4e95682a3b5006aba0afe948bbee69150999"
     },
     {
       "name": "002_add_indexes.js",
-      "sha256": "cca7cd2b49fd52c78c7db56e0fd79e83488801ecb1e5a542fe02b3a622faec08"
+      "sha256": "9fc033cbf9c55ee9b5e85ad91feb44e59e5e95accf476529cf61c9a502439154"
     },
     {
       "name": "002_soft_delete_users.sql",
-      "sha256": "3772b7602b6355d65b9d410d449d9c9829db57277f01f1b39ee7f5d82557a18f"
+      "sha256": "4529a8fcb6f250daf6a9e4969ec4928e57a5f91fb5a29100d1cf7088a690a6ac"
     },
     {
       "name": "003_add_admin_column.js",
-      "sha256": "eda76c0903e489c5a1b5424ae2827c8370f64b991d358ae4458ee914b8a81595"
+      "sha256": "81fb705c4ab1cd79d8c534d6277dcd7c4e6ac7af47552eacf680fea196eb994f"
     },
     {
       "name": "003_payments_audit_log.sql",
-      "sha256": "28547747fd243b714bf80a64d33227a134b2da2c3e288d04f6c3a1b618cdbe3a"
+      "sha256": "0e3260385332237a3c33002d41d75d2a965167a617c7167b092ad2f8c59f3e51"
     },
     {
       "name": "004_photo_prompts.sql",
-      "sha256": "3969c9066518be7daee0b37a8ca0e36ad592383f2205b2777bbe1385dcdf882f"
+      "sha256": "3018f40c42c224e13734db87f2f8ed394e3b9d701a5ebf8f7bcddb40fea21127"
+    },
+    {
+      "name": "005_print_orders.sql",
+      "sha256": "897c59e329ebf1d4d1ef67e4b69a8239ccf40bb2a5a34bcf344caf9ea53057aa"
+    },
+    {
+      "name": "006_data_integrity.sql",
+      "sha256": "e70495f91e72e03c38030eee7dc7409ce622ed02c853a0cdd1f1aacb77a26283"
+    },
+    {
+      "name": "007_voice_security.sql",
+      "sha256": "c03bf52853182f177be4b6175b975a44bf33927b20eee5777c334a5b35ffee9d"
+    },
+    {
+      "name": "008_voice_uploads.sql",
+      "sha256": "d2fa47c2155ef5b67cb0fd43a94719dbd621177d3b28a164e7a72845fe61342f"
     },
     {
       "name": "add_performance_indexes.sql",
-      "sha256": "f7a6c33dd53a6a181f7f7e92f8f542e68b33b809f9a4d554acac390792fd1ddd"
+      "sha256": "32d464d76458b90f7f3154eb338efbc4057c5e21db2de2b75e5f404a47619787"
     }
   ],
   "tables": [
@@ -4772,6 +4788,582 @@
         }
       ],
       "unique": []
+    },
+    {
+      "name": "print_entitlements",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "UUID",
+          "kind": "uuid",
+          "nullable": false,
+          "primary": true,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "stripe_session_id",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": true,
+          "reference": {
+            "table": "payments",
+            "column": "stripe_session_id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "package_version",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "quantity",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "checks": ["quantity = 10"]
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMPTZ",
+          "kind": "instant",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "NOW()",
+          "defaultSql": "(strftime('%Y-%m-%d %H:%M:%f+00', 'now'))"
+        }
+      ],
+      "unique": []
+    },
+    {
+      "name": "print_orders",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "UUID",
+          "kind": "uuid",
+          "nullable": false,
+          "primary": true,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "entitlement_id",
+          "sourceType": "UUID",
+          "kind": "uuid",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": true,
+          "reference": {
+            "table": "print_entitlements",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "status",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "checks": ["status IN ('proof','queued','submitting','submitted','dispatched','review')"],
+          "sourceDefaultSql": "'proof'",
+          "defaultSql": "'proof'"
+        },
+        {
+          "name": "title",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "text_key",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "cover_key",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "page_count",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "checks": ["page_count BETWEEN 32 AND 200"]
+        },
+        {
+          "name": "colour_pages",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "checks": ["colour_pages BETWEEN 0 AND 8"]
+        },
+        {
+          "name": "product_sku",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "shipping_address",
+          "sourceType": "JSONB",
+          "kind": "json",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "approved_at",
+          "sourceType": "TIMESTAMPTZ",
+          "kind": "instant",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "provider_id",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "provider_status",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "tracking_url",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "tracking_number",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "last_error",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMPTZ",
+          "kind": "instant",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "NOW()",
+          "defaultSql": "(strftime('%Y-%m-%d %H:%M:%f+00', 'now'))"
+        },
+        {
+          "name": "updated_at",
+          "sourceType": "TIMESTAMPTZ",
+          "kind": "instant",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "NOW()",
+          "defaultSql": "(strftime('%Y-%m-%d %H:%M:%f+00', 'now'))"
+        }
+      ],
+      "unique": []
+    },
+    {
+      "name": "media_deletion_jobs",
+      "columns": [
+        {
+          "name": "object_key",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": true,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "attempts",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "0",
+          "defaultSql": "0"
+        },
+        {
+          "name": "last_error",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "next_attempt_at",
+          "sourceType": "TIMESTAMPTZ",
+          "kind": "instant",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "NOW()",
+          "defaultSql": "(strftime('%Y-%m-%d %H:%M:%f+00', 'now'))"
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMPTZ",
+          "kind": "instant",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "NOW()",
+          "defaultSql": "(strftime('%Y-%m-%d %H:%M:%f+00', 'now'))"
+        }
+      ],
+      "unique": []
+    },
+    {
+      "name": "generated_exports",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "format",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMPTZ",
+          "kind": "instant",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "NOW()",
+          "defaultSql": "(strftime('%Y-%m-%d %H:%M:%f+00', 'now'))"
+        }
+      ],
+      "unique": []
+    },
+    {
+      "name": "audiobook_generation_requests",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "SERIAL",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": true,
+          "unique": false
+        },
+        {
+          "name": "user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "job_id",
+          "sourceType": "UUID",
+          "kind": "uuid",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": true
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMPTZ",
+          "kind": "instant",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "NOW()",
+          "defaultSql": "(strftime('%Y-%m-%d %H:%M:%f+00', 'now'))"
+        }
+      ],
+      "unique": []
+    },
+    {
+      "name": "voice_connection_leases",
+      "columns": [
+        {
+          "name": "user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": false,
+          "primary": true,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "lease_id",
+          "sourceType": "UUID",
+          "kind": "uuid",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "expires_at",
+          "sourceType": "TIMESTAMPTZ",
+          "kind": "instant",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        }
+      ],
+      "unique": []
+    },
+    {
+      "name": "telnyx_webhook_events",
+      "columns": [
+        {
+          "name": "event_id",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": true,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "expires_at",
+          "sourceType": "TIMESTAMPTZ",
+          "kind": "instant",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        }
+      ],
+      "unique": []
+    },
+    {
+      "name": "voice_uploads",
+      "columns": [
+        {
+          "name": "id",
+          "sourceType": "UUID",
+          "kind": "uuid",
+          "nullable": false,
+          "primary": true,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "user_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "story_id",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "reference": {
+            "table": "stories",
+            "column": "id",
+            "onDelete": "SET NULL"
+          }
+        },
+        {
+          "name": "object_key",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": true
+        },
+        {
+          "name": "content_type",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "transcript",
+          "sourceType": "TEXT",
+          "kind": "text",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "duration",
+          "sourceType": "INTEGER",
+          "kind": "integer",
+          "nullable": true,
+          "primary": false,
+          "serial": false,
+          "unique": false
+        },
+        {
+          "name": "created_at",
+          "sourceType": "TIMESTAMPTZ",
+          "kind": "instant",
+          "nullable": false,
+          "primary": false,
+          "serial": false,
+          "unique": false,
+          "sourceDefaultSql": "NOW()",
+          "defaultSql": "(strftime('%Y-%m-%d %H:%M:%f+00', 'now'))"
+        }
+      ],
+      "unique": []
     }
   ],
   "indexes": [
@@ -5257,6 +5849,48 @@
       "unique": false,
       "table": "photos",
       "columns": "chapter_id"
+    },
+    {
+      "name": "print_orders_user_idx",
+      "unique": false,
+      "table": "print_orders",
+      "columns": "user_id, created_at DESC"
+    },
+    {
+      "name": "print_orders_pending_idx",
+      "unique": false,
+      "table": "print_orders",
+      "columns": "status, updated_at"
+    },
+    {
+      "name": "media_deletion_pending_idx",
+      "unique": false,
+      "table": "media_deletion_jobs",
+      "columns": "next_attempt_at"
+    },
+    {
+      "name": "generated_exports_user_idx",
+      "unique": false,
+      "table": "generated_exports",
+      "columns": "user_id, created_at"
+    },
+    {
+      "name": "audiobook_generation_requests_user_idx",
+      "unique": false,
+      "table": "audiobook_generation_requests",
+      "columns": "user_id, created_at"
+    },
+    {
+      "name": "telnyx_webhook_events_expiry_idx",
+      "unique": false,
+      "table": "telnyx_webhook_events",
+      "columns": "expires_at"
+    },
+    {
+      "name": "voice_uploads_user_idx",
+      "unique": false,
+      "table": "voice_uploads",
+      "columns": "user_id"
     },
     {
       "name": "idx_stories_user_chapter_question",

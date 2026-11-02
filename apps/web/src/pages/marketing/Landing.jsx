@@ -865,7 +865,9 @@ export default function Landing() {
                 <div className="flex items-baseline gap-1">
                   <span className="font-display text-5xl text-ink">£250</span>
                 </div>
-                <p className="font-serif text-warmgray mt-1">10 hardbacks for the price of 5. Delivery included.</p>
+                <p className="font-serif text-warmgray mt-1">
+                  10 hardbacks for the price of 5. Delivery included.
+                </p>
               </div>
 
               <ul className="space-y-3 mb-8">
@@ -961,7 +963,9 @@ export default function Landing() {
                 <div className="flex items-baseline gap-1">
                   <span className="font-display text-5xl text-ink">£250</span>
                 </div>
-                <p className="font-serif text-warmgray mt-1">10 hardbacks, one UK or French delivery address.</p>
+                <p className="font-serif text-warmgray mt-1">
+                  10 hardbacks, one UK or French delivery address.
+                </p>
               </div>
 
               <ul className="space-y-3 mb-8">

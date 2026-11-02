@@ -4,11 +4,12 @@ import { chapters } from '../../data/chapters'
 import { useAuth } from '../../context/AuthContext'
 import { usePremium } from '../../hooks/usePremium'
 import { useToast } from '../../components/Toast'
+import { readDraft, useDraftAutosave } from '../../hooks/useDraftAutosave'
 
-export default function ChapterReview() {
+function ChapterReview() {
   const { chapterId } = useParams()
   const navigate = useNavigate()
-  const { authFetch } = useAuth()
+  const { authFetch, user } = useAuth()
   const { isChapterLocked } = usePremium()
   const toast = useToast()
 
@@ -19,18 +20,34 @@ export default function ChapterReview() {
   const [loading, setLoading] = useState(true)
   const [rewriting, setRewriting] = useState(false)
   const [clioLoading, setClioLoading] = useState(false)
-  const [saveStatus, setSaveStatus] = useState(null)
   const [hasReview, setHasReview] = useState(false)
   const [answeredCount, setAnsweredCount] = useState(0)
   const [hasChangedSincePolish, setHasChangedSincePolish] = useState(false)
   const [showClioPanel, setShowClioPanel] = useState(true)
 
-  const saveTimeoutRef = useRef(null)
-  const abortControllerRef = useRef(null)
   const clioEndRef = useRef(null)
   const textareaRef = useRef(null)
 
   const chapter = useMemo(() => chapters.find(c => c.id === chapterId), [chapterId])
+  const draftKey = `memoir-draft:${user?.id}:review:${chapterId}`
+  const recoveredTextRef = useRef(readDraft(draftKey).text)
+  const savedTextRef = useRef(null)
+  const autosave = useDraftAutosave({
+    draftKey,
+    delay: 1500,
+    save: async (_key, polishedText) => {
+      const res = await authFetch(`/api/chapter-review/${chapterId}/save`, {
+        method: 'PUT',
+        body: JSON.stringify({ polishedText })
+      })
+      if (!res.ok) throw new Error('Failed to save chapter')
+    },
+    onSaved: (_key, text) => {
+      savedTextRef.current = text
+      setOriginalPolishedText(text)
+    }
+  })
+  const saveStatus = autosave.status
 
   // Redirect if locked
   useEffect(() => {
@@ -38,15 +55,6 @@ export default function ChapterReview() {
       navigate('/home', { replace: true })
     }
   }, [chapterId, chapter, isChapterLocked, navigate])
-
-  // Fetch existing review on mount
-  useEffect(() => {
-    fetchReview()
-    return () => {
-      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
-      if (abortControllerRef.current) abortControllerRef.current.abort()
-    }
-  }, [chapterId])
 
   // Scroll Clio panel to bottom on new messages
   useEffect(() => {
@@ -67,15 +75,15 @@ export default function ChapterReview() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
   }, [polishedText, originalPolishedText])
 
-  const fetchReview = async () => {
+  const fetchReview = useCallback(async () => {
     setLoading(true)
     try {
       const res = await authFetch(`/api/chapter-review/${chapterId}`)
       if (res.ok) {
         const data = await res.json()
         if (data.review) {
-          setPolishedText(data.review.polishedText)
-          setOriginalPolishedText(data.review.polishedText)
+          setPolishedText(recoveredTextRef.current ?? data.review.polishedText)
+          setOriginalPolishedText(savedTextRef.current ?? data.review.polishedText)
           setClioHistory(data.review.clioHistory || [])
           setHasReview(true)
         }
@@ -87,7 +95,11 @@ export default function ChapterReview() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [authFetch, chapterId])
+
+  useEffect(() => {
+    void fetchReview()
+  }, [fetchReview])
 
   const handleRewrite = async () => {
     if (
@@ -95,6 +107,7 @@ export default function ChapterReview() {
       !confirm('This will replace the current polished text and clear Clio history. Continue?')
     )
       return
+    if (!(await autosave.flush())) return
     setRewriting(true)
     try {
       const res = await authFetch(`/api/chapter-review/${chapterId}/rewrite`, { method: 'POST' })
@@ -120,6 +133,7 @@ export default function ChapterReview() {
   const handleClioSubmit = async e => {
     e?.preventDefault()
     if (!clioInput.trim() || clioLoading) return
+    if (!(await autosave.flush())) return
     const instruction = clioInput.trim()
     setClioInput('')
     setClioHistory(prev => [...prev, { role: 'user', content: instruction }])
@@ -160,36 +174,13 @@ export default function ChapterReview() {
     }
   }
 
+  const updateDraft = autosave.update
   const handleTextChange = useCallback(
     newText => {
       setPolishedText(newText)
-      setSaveStatus('saving')
-
-      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
-      if (abortControllerRef.current) abortControllerRef.current.abort()
-
-      saveTimeoutRef.current = setTimeout(async () => {
-        const controller = new AbortController()
-        abortControllerRef.current = controller
-        try {
-          const res = await authFetch(`/api/chapter-review/${chapterId}/save`, {
-            method: 'PUT',
-            body: JSON.stringify({ polishedText: newText }),
-            signal: controller.signal
-          })
-          if (res.ok) {
-            setSaveStatus('saved')
-            setOriginalPolishedText(newText)
-            setTimeout(() => setSaveStatus(prev => (prev === 'saved' ? null : prev)), 2000)
-          } else {
-            setSaveStatus('error')
-          }
-        } catch (err) {
-          if (err.name !== 'AbortError') setSaveStatus('error')
-        }
-      }, 1500)
+      updateDraft('text', newText)
     },
-    [chapterId, authFetch]
+    [updateDraft]
   )
 
   if (!chapter) {
@@ -259,10 +250,15 @@ export default function ChapterReview() {
                 Saved
               </span>
             )}
-            {saveStatus === 'error' && <span className="text-xs text-red-500">Save failed</span>}
+            {saveStatus === 'error' && (
+              <button onClick={() => autosave.flush()} className="text-xs text-red-500">
+                Draft kept — retry save
+              </button>
+            )}
 
             {/* Toggle Clio panel */}
             <button
+              aria-expanded={showClioPanel}
               onClick={() => setShowClioPanel(p => !p)}
               className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
                 showClioPanel ? 'bg-sepia text-white' : 'bg-sepia/10 text-sepia hover:bg-sepia/20'
@@ -517,7 +513,11 @@ export default function ChapterReview() {
 
       {/* Mobile Clio panel (bottom sheet) */}
       {showClioPanel && hasReview && (
-        <div className="lg:hidden fixed inset-x-0 bottom-0 z-40 bg-white border-t border-sepia/15 shadow-lg rounded-t-2xl max-h-[60vh] flex flex-col">
+        <div
+          role="region"
+          aria-label="Clio editing assistant"
+          className="lg:hidden fixed inset-x-0 bottom-0 z-40 bg-white border-t border-sepia/15 shadow-lg rounded-t-2xl max-h-[60vh] flex flex-col"
+        >
           {/* Handle */}
           <div className="flex justify-center pt-2 pb-1">
             <div className="w-10 h-1 bg-sepia/20 rounded-full" />
@@ -529,6 +529,7 @@ export default function ChapterReview() {
               <h3 className="font-display text-warm-brown text-sm font-medium">Ask Clio</h3>
             </div>
             <button
+              aria-label="Close Clio"
               onClick={() => setShowClioPanel(false)}
               className="text-sepia/40 hover:text-sepia p-1"
             >
@@ -620,4 +621,10 @@ export default function ChapterReview() {
       )}
     </div>
   )
+}
+
+export default function ChapterReviewPage() {
+  const { chapterId } = useParams()
+  const { user } = useAuth()
+  return <ChapterReview key={`${user?.id}:${chapterId}`} />
 }

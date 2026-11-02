@@ -10,9 +10,23 @@ import { SECRET_ENV_VARS } from './validateEnv.js'
  * Patterns that indicate sensitive data (case-insensitive matching)
  */
 const SENSITIVE_KEYS = [
-  'password', 'passwd', 'secret', 'token', 'apikey', 'api_key',
-  'authorization', 'auth', 'bearer', 'credential', 'private',
-  'jwt', 'session', 'cookie', 'key', 'cert', 'certificate'
+  'password',
+  'passwd',
+  'secret',
+  'token',
+  'apikey',
+  'api_key',
+  'authorization',
+  'auth',
+  'bearer',
+  'credential',
+  'private',
+  'jwt',
+  'session',
+  'cookie',
+  'key',
+  'cert',
+  'certificate'
 ]
 
 /**
@@ -108,7 +122,8 @@ const LOG_LEVELS = {
 }
 
 // Get log level from environment (default to 'info' in production, 'debug' in development)
-const currentLevel = LOG_LEVELS[process.env.LOG_LEVEL] ??
+const currentLevel =
+  LOG_LEVELS[process.env.LOG_LEVEL] ??
   (process.env.NODE_ENV === 'production' ? LOG_LEVELS.info : LOG_LEVELS.debug)
 
 /**
@@ -123,9 +138,7 @@ function formatLog(level, message, context = {}) {
   const timestamp = new Date().toISOString()
   // Redact sensitive data from context before logging
   const safeContext = redactObject(context)
-  const contextStr = Object.keys(safeContext).length > 0
-    ? ` ${JSON.stringify(safeContext)}`
-    : ''
+  const contextStr = Object.keys(safeContext).length > 0 ? ` ${JSON.stringify(safeContext)}` : ''
   // Also redact the message itself in case secrets are passed directly
   const safeMessage = redactString(message)
   return `[${timestamp}] [${level.toUpperCase()}] ${safeMessage}${contextStr}`
@@ -147,9 +160,8 @@ export function createLogger(namespace = '') {
      */
     error(message, context = {}) {
       if (currentLevel >= LOG_LEVELS.error) {
-        const ctx = context instanceof Error
-          ? { error: context.message, stack: context.stack }
-          : context
+        const ctx =
+          context instanceof Error ? { error: context.message, stack: context.stack } : context
         console.error(formatLog('error', prefix + message, ctx))
       }
     },
@@ -193,9 +205,7 @@ export function createLogger(namespace = '') {
      * @returns {Object} Child logger instance
      */
     child(childNamespace) {
-      const newNamespace = namespace
-        ? `${namespace}:${childNamespace}`
-        : childNamespace
+      const newNamespace = namespace ? `${namespace}:${childNamespace}` : childNamespace
       return createLogger(newNamespace)
     }
   }

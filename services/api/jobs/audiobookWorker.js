@@ -11,9 +11,10 @@
  * @typedef {import('../types/index.js').DbClient} DbClient
  */
 
+import { randomUUID } from 'node:crypto'
 import { objectStorage } from '../utils/objectStorage.js'
 import { detectAudioType } from '../utils/mediaType.js'
-import { chapters } from '@easy-memoir/shared/chapters'
+import { resolveManuscript, manuscriptChapters } from '../services/manuscript.js'
 import { audiobookRepository } from '../repositories/audiobookRepository.js'
 import { storyRepository } from '../repositories/storyRepository.js'
 import { createLogger } from '../utils/logger.js'
@@ -76,7 +77,11 @@ async function _processOne(job, db) {
   }
 
   // Get all stories with content
-  const storyRows = await storyRepository.findWithContent(db, userId)
+  const storyRows = await resolveManuscript(
+    db,
+    userId,
+    await storyRepository.findWithContent(db, userId)
+  )
   if (storyRows.length === 0) {
     throw new Error('No stories to convert to audiobook')
   }
@@ -91,7 +96,7 @@ async function _processOne(job, db) {
 
   // Build full text for TTS
   let fullText = `${userName}'s Life Story. An Autobiography.\n\n`
-  for (const chapter of chapters) {
+  for (const chapter of manuscriptChapters(storyRows)) {
     const chapterStories = stories[chapter.id]
     if (!chapterStories || chapterStories.length === 0) continue
     fullText += `Chapter: ${chapter.title}. ${chapter.subtitle}.\n\n`
@@ -114,7 +119,8 @@ async function _processOne(job, db) {
     audioResponse = await fetch(`${FISH_API_URL}/tts`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${apiKey}`, model: 's1' },
-      body: formData
+      body: formData,
+      signal: AbortSignal.timeout(120000)
     })
   } else {
     audioResponse = await fetch(`${FISH_API_URL}/tts`, {
@@ -124,7 +130,8 @@ async function _processOne(job, db) {
         'Content-Type': 'application/json',
         model: 's1'
       },
-      body: JSON.stringify({ text: fullText, format: 'mp3' })
+      body: JSON.stringify({ text: fullText, format: 'mp3' }),
+      signal: AbortSignal.timeout(120000)
     })
   }
 
@@ -137,10 +144,40 @@ async function _processOne(job, db) {
   const audioBuffer = await audioResponse.arrayBuffer()
 
   const safeName = userName.replace(/[^a-zA-Z0-9]/g, '_')
-  const filename = `${safeName}_Life_Story_${Date.now()}.mp3`
-  await objectStorage.put(`audiobooks/${filename}`, Buffer.from(audioBuffer), 'audio/mpeg')
-
-  await audiobookRepository.saveAudiobook(db, userId, filename, useOwnVoice ? 'custom' : 'default')
+  const filename = `${userId}_${safeName}_Life_Story_${randomUUID()}.mp3`
+  // Account deletion locks this same row before capturing media keys. The
+  // result is either recorded before deletion's snapshot or never written.
+  // Reserve erasure before the object write. A crash or DB failure after the
+  // upload leaves a durable cleanup marker instead of an untracked private file.
+  const objectKey = `audiobooks/${filename}`
+  await db.query(
+    "INSERT INTO media_deletion_jobs (object_key,next_attempt_at) VALUES ($1,NOW()+INTERVAL '1 hour') ON CONFLICT (object_key) DO NOTHING",
+    [objectKey]
+  )
+  const client = await db.connect()
+  try {
+    await client.query('BEGIN')
+    const owner = await client.query('SELECT id FROM users WHERE id=$1 FOR UPDATE', [userId])
+    if (!owner.rows.length) throw new Error('Account no longer exists')
+    await objectStorage.put(`audiobooks/${filename}`, Buffer.from(audioBuffer), 'audio/mpeg')
+    await audiobookRepository.saveAudiobook(
+      client,
+      userId,
+      filename,
+      useOwnVoice ? 'custom' : 'default'
+    )
+    await client.query('INSERT INTO generated_exports (user_id, format) VALUES ($1, $2)', [
+      userId,
+      'audiobook'
+    ])
+    await client.query('DELETE FROM media_deletion_jobs WHERE object_key=$1', [objectKey])
+    await client.query('COMMIT')
+  } catch (error) {
+    await client.query('ROLLBACK')
+    throw error
+  } finally {
+    client.release()
+  }
 
   logger.info('Audiobook job complete', { jobId: job.id, filename })
   return { filename }

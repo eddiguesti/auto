@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react'
 import {
   View,
   Text,
@@ -6,133 +6,146 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
-  Alert,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Audio } from 'expo-av';
-import api from '../services/api';
-import { useGame } from '../context/GameContext';
-import { colors, spacing, borderRadius } from '../utils/theme';
+  Alert
+} from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { Audio } from 'expo-av'
+import api from '../services/api'
+import { useGame } from '../context/GameContext'
+import { colors, spacing, borderRadius } from '../utils/theme'
 
 export default function ReviewScreen({ navigation, route }: any) {
-  const { prompt, audioUri, duration } = route.params;
-  const { refreshGameState } = useGame();
+  const { prompt, audioUri, duration } = route.params
+  const { refreshGameState } = useGame()
 
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [playbackPosition, setPlaybackPosition] = useState(0);
-  const [transcript, setTranscript] = useState(route.params.transcript || '');
-  const [isTranscribing, setIsTranscribing] = useState(!route.params.transcript);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [sound, setSound] = useState<Audio.Sound | null>(null)
+  const soundRef = useRef<Audio.Sound | null>(null)
+  const mountedRef = useRef(true)
+  const soundRequestRef = useRef(0)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [playbackPosition, setPlaybackPosition] = useState(0)
+  const [transcript, setTranscript] = useState(route.params.transcript || '')
+  const [isTranscribing, setIsTranscribing] = useState(!route.params.transcript)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [audioUrl, setAudioUrl] = useState<string | null>(null)
 
   useEffect(() => {
-    loadSound();
+    mountedRef.current = true
+    loadSound()
     if (!route.params.transcript) {
-      transcribeAudio();
+      transcribeAudio()
     }
 
     return () => {
-      if (sound) {
-        sound.unloadAsync();
-      }
-    };
-  }, []);
+      mountedRef.current = false
+      void soundRef.current?.unloadAsync()
+    }
+  }, [])
 
   const loadSound = async () => {
+    const requestId = ++soundRequestRef.current
     try {
       const { sound: audioSound } = await Audio.Sound.createAsync(
         { uri: audioUri },
         { shouldPlay: false },
         onPlaybackStatusUpdate
-      );
-      setSound(audioSound);
+      )
+      if (!mountedRef.current || requestId !== soundRequestRef.current) {
+        await audioSound.unloadAsync()
+        return
+      }
+      soundRef.current = audioSound
+      setSound(audioSound)
     } catch (error) {
-      console.error('Failed to load sound:', error);
+      console.error('Failed to load sound:', error)
     }
-  };
+  }
 
   const onPlaybackStatusUpdate = (status: any) => {
     if (status.isLoaded) {
-      setPlaybackPosition(status.positionMillis / 1000);
-      setIsPlaying(status.isPlaying);
+      setPlaybackPosition(status.positionMillis / 1000)
+      setIsPlaying(status.isPlaying)
       if (status.didJustFinish) {
-        setIsPlaying(false);
-        setPlaybackPosition(0);
+        setIsPlaying(false)
+        setPlaybackPosition(0)
       }
     }
-  };
+  }
 
   const transcribeAudio = async () => {
-    setIsTranscribing(true);
+    setIsTranscribing(true)
     try {
       // Upload audio and get transcription
-      const response = await api.uploadAudio(audioUri);
-      if (response.data?.transcript) {
-        setTranscript(response.data.transcript);
+      const response = await api.uploadAudio(audioUri)
+      setAudioUrl(response.audioUrl)
+      if (response.transcript) {
+        setTranscript(response.transcript)
       }
     } catch (error) {
-      console.error('Transcription failed:', error);
+      console.error('Transcription failed:', error)
       // Allow user to continue without transcript
-      setTranscript('(Transcription unavailable - your voice recording will still be saved)');
+      Alert.alert(
+        'Recording not uploaded',
+        'Your recording is still on this device. Please try again before saving.'
+      )
     } finally {
-      setIsTranscribing(false);
+      setIsTranscribing(false)
     }
-  };
+  }
 
   const togglePlayback = async () => {
-    if (!sound) return;
+    if (!sound) return
 
     if (isPlaying) {
-      await sound.pauseAsync();
+      await sound.pauseAsync()
     } else {
       if (playbackPosition >= duration) {
-        await sound.setPositionAsync(0);
+        await sound.setPositionAsync(0)
       }
-      await sound.playAsync();
+      await sound.playAsync()
     }
-  };
+  }
 
   const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+    const mins = Math.floor(seconds / 60)
+    const secs = Math.floor(seconds % 60)
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
 
   const handleReRecord = async () => {
     if (sound) {
-      await sound.unloadAsync();
+      await sound.unloadAsync()
     }
-    navigation.goBack();
-  };
+    navigation.goBack()
+  }
 
   const handleSubmit = async () => {
-    setIsSubmitting(true);
+    setIsSubmitting(true)
     try {
       // Upload audio and complete prompt
-      const uploadResponse = await api.uploadAudio(audioUri);
-      await api.completePrompt(prompt.id, transcript, uploadResponse.data?.audioUrl);
+      const uploadedUrl = audioUrl || (await api.uploadAudio(audioUri)).audioUrl
+      setAudioUrl(uploadedUrl)
+      await api.completePrompt(prompt.id, transcript, uploadedUrl)
 
       // Refresh game state to update XP, streak, etc.
-      await refreshGameState();
+      await refreshGameState()
 
       // Navigate to celebration screen
       navigation.replace('Celebration', {
         prompt,
-        transcript,
-      });
+        transcript
+      })
     } catch (error) {
-      console.error('Submit failed:', error);
-      Alert.alert(
-        'Submission Failed',
-        'Failed to save your memory. Please try again.',
-        [{ text: 'OK' }]
-      );
+      console.error('Submit failed:', error)
+      Alert.alert('Submission Failed', 'Failed to save your memory. Please try again.', [
+        { text: 'OK' }
+      ])
     } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false)
     }
-  };
+  }
 
-  const progressPercent = duration > 0 ? (playbackPosition / duration) * 100 : 0;
+  const progressPercent = duration > 0 ? (playbackPosition / duration) * 100 : 0
 
   return (
     <SafeAreaView style={styles.container}>
@@ -154,19 +167,13 @@ export default function ReviewScreen({ navigation, route }: any) {
 
         {/* Audio Player */}
         <View style={styles.playerCard}>
-          <TouchableOpacity
-            style={styles.playButton}
-            onPress={togglePlayback}
-            disabled={!sound}
-          >
+          <TouchableOpacity style={styles.playButton} onPress={togglePlayback} disabled={!sound}>
             <Text style={styles.playIcon}>{isPlaying ? '⏸️' : '▶️'}</Text>
           </TouchableOpacity>
 
           <View style={styles.progressContainer}>
             <View style={styles.progressBar}>
-              <View
-                style={[styles.progressFill, { width: `${progressPercent}%` }]}
-              />
+              <View style={[styles.progressFill, { width: `${progressPercent}%` }]} />
             </View>
             <View style={styles.timeContainer}>
               <Text style={styles.timeText}>{formatTime(playbackPosition)}</Text>
@@ -204,13 +211,13 @@ export default function ReviewScreen({ navigation, route }: any) {
         </TouchableOpacity>
       </View>
     </SafeAreaView>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.parchment,
+    backgroundColor: colors.parchment
   },
   header: {
     flexDirection: 'row',
@@ -219,46 +226,46 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: colors.cream,
+    borderBottomColor: colors.cream
   },
   backButton: {
-    padding: spacing.sm,
+    padding: spacing.sm
   },
   backText: {
     color: colors.sepia,
-    fontSize: 16,
+    fontSize: 16
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: colors.ink,
+    color: colors.ink
   },
   headerSpacer: {
-    width: 80,
+    width: 80
   },
   content: {
-    flex: 1,
+    flex: 1
   },
   contentContainer: {
     padding: spacing.lg,
-    gap: spacing.lg,
+    gap: spacing.lg
   },
   promptCard: {
     backgroundColor: colors.cream,
     padding: spacing.lg,
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.lg
   },
   promptLabel: {
     fontSize: 12,
     color: colors.sepia,
     textTransform: 'uppercase',
     letterSpacing: 1,
-    marginBottom: spacing.xs,
+    marginBottom: spacing.xs
   },
   promptText: {
     fontSize: 18,
     color: colors.ink,
-    lineHeight: 26,
+    lineHeight: 26
   },
   playerCard: {
     backgroundColor: colors.white,
@@ -271,7 +278,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
-    elevation: 2,
+    elevation: 2
   },
   playButton: {
     width: 56,
@@ -279,33 +286,33 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     backgroundColor: colors.sepia,
     justifyContent: 'center',
-    alignItems: 'center',
+    alignItems: 'center'
   },
   playIcon: {
-    fontSize: 24,
+    fontSize: 24
   },
   progressContainer: {
-    flex: 1,
+    flex: 1
   },
   progressBar: {
     height: 6,
     backgroundColor: colors.cream,
     borderRadius: 3,
-    overflow: 'hidden',
+    overflow: 'hidden'
   },
   progressFill: {
     height: '100%',
     backgroundColor: colors.sepia,
-    borderRadius: 3,
+    borderRadius: 3
   },
   timeContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: spacing.xs,
+    marginTop: spacing.xs
   },
   timeText: {
     fontSize: 12,
-    color: colors.sepia,
+    color: colors.sepia
   },
   transcriptCard: {
     backgroundColor: colors.white,
@@ -316,46 +323,46 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
-    elevation: 2,
+    elevation: 2
   },
   transcriptLabel: {
     fontSize: 12,
     color: colors.sepia,
     textTransform: 'uppercase',
     letterSpacing: 1,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.sm
   },
   transcribingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.sm
   },
   transcribingText: {
     color: colors.sepia,
-    fontSize: 14,
+    fontSize: 14
   },
   transcriptText: {
     fontSize: 16,
     color: colors.ink,
-    lineHeight: 24,
+    lineHeight: 24
   },
   footer: {
     padding: spacing.lg,
     borderTopWidth: 1,
-    borderTopColor: colors.cream,
+    borderTopColor: colors.cream
   },
   submitButton: {
     backgroundColor: colors.sepia,
     paddingVertical: spacing.md,
     borderRadius: borderRadius.lg,
-    alignItems: 'center',
+    alignItems: 'center'
   },
   submitButtonDisabled: {
-    opacity: 0.6,
+    opacity: 0.6
   },
   submitButtonText: {
     color: colors.white,
     fontSize: 18,
-    fontWeight: '600',
-  },
-});
+    fontWeight: '600'
+  }
+})

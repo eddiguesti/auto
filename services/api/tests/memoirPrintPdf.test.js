@@ -51,7 +51,7 @@ describe('print-ready memoir files', () => {
     expect(document.getPageCount()).toBe(1)
     expect(document.getPages()[0].getWidth()).toBeCloseTo((348 * 72) / 25.4)
   })
-  it('rejects missing photos, unsupported characters and unknown chapters instead of silently dropping content', async () => {
+  it('rejects missing photos and unsupported characters instead of silently dropping content', async () => {
     await expect(
       generateInterior({
         ...memoir,
@@ -62,12 +62,17 @@ describe('print-ready memoir files', () => {
     await expect(generateInterior({ ...memoir, title: 'My story 😀' })).rejects.toThrow(
       'cannot render'
     )
-    await expect(
-      generateInterior({
-        ...memoir,
-        stories: [{ chapter_id: 'unknown', answer: 'Keep this memory' }]
-      })
-    ).rejects.toThrow('no text is left out')
+  })
+  it('includes standalone and family memory sections in the printable manuscript', async () => {
+    const result = await generateInterior({
+      ...memoir,
+      stories: [
+        { chapter_id: 'standalone-memories', question_id: 'free-1', answer: 'A standalone memory' },
+        { chapter_id: 'family-prompts', question_id: 'family-1', answer: 'My family memory' }
+      ]
+    })
+    expect(result.pageCount).toBe(32)
+    expect(result.bytes.length).toBeGreaterThan(1000)
   })
   it('rejects a manuscript beyond the package page limit', async () => {
     await expect(

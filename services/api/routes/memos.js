@@ -3,6 +3,7 @@ import { asyncHandler } from '../middleware/asyncHandler.js'
 import { requireDb } from '../middleware/requireDb.js'
 import validate from '../middleware/validate.js'
 import { memoSchemas } from '../schemas/index.js'
+import { ValidationError, ForbiddenError } from '../utils/errors.js'
 import { createLogger } from '../utils/logger.js'
 
 const logger = createLogger('memos')
@@ -69,6 +70,28 @@ router.post(
     const db = req.app.locals.db
     const userId = req.user.id
     const { title, audio_url, transcript, duration } = req.validatedBody
+    if (!audio_url && !transcript?.trim())
+      throw new ValidationError('Provide a recording or transcript.')
+    if (audio_url) {
+      const recording =
+        /^\/api\/voice\/uploads\/([a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12})$/i.exec(audio_url)
+      if (recording) {
+        const owned = await db.query('SELECT id FROM voice_uploads WHERE id=$1 AND user_id=$2', [
+          recording[1],
+          userId
+        ])
+        if (!owned.rows.length)
+          throw new ForbiddenError('Recording does not belong to your account.')
+      } else {
+        let url
+        try {
+          url = new URL(audio_url)
+        } catch {
+          throw new ValidationError('Invalid recording URL.')
+        }
+        if (url.protocol !== 'https:') throw new ValidationError('Recording URL must use HTTPS.')
+      }
+    }
 
     const result = await db.query(
       `
@@ -76,7 +99,13 @@ router.post(
       VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       RETURNING id, title, audio_url, transcript, duration, created_at, updated_at
     `,
-      [userId, title || null, audio_url, transcript || null, duration || null]
+      [
+        userId,
+        title || null,
+        audio_url || '',
+        transcript || null,
+        duration === undefined ? null : Math.round(duration)
+      ]
     )
 
     logger.info('Created memo', { userId, memoId: result.rows[0].id })

@@ -17,6 +17,7 @@ import { getQueue, stopQueue } from '../api/jobs/queue.js'
 import { JOB } from '../api/jobs/jobNames.js'
 import { processAudiobookJobs } from '../api/jobs/audiobookWorker.js'
 import { startPrintWorker } from '../api/jobs/printWorker.js'
+import { startMediaDeletionWorker } from '../api/services/mediaDeletion.js'
 import pool from '../api/db/index.js'
 import { createShutdown, registerShutdown } from '../api/utils/lifecycle.js'
 
@@ -36,6 +37,7 @@ async function main() {
 
   const cronJobs = initializeCronJobs()
   const printWorker = startPrintWorker(pool)
+  const mediaDeletionWorker = startMediaDeletionWorker(pool)
 
   console.log('Worker started — cron jobs and job queue active')
 
@@ -45,6 +47,7 @@ async function main() {
       stopCron: async () => {
         cronJobs.stop()
         await printWorker.stop()
+        await mediaDeletionWorker.stop()
       },
       stopQueue,
       closeDatabase: () => pool.end()

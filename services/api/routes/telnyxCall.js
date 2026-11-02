@@ -1,10 +1,17 @@
-import { Router } from 'express'
+import { Router, raw } from 'express'
 import { TelnyxCallBridge, getBridge } from '../services/telnyxCallBridge.js'
 import { createLogger } from '../utils/logger.js'
-import { authenticateToken } from '../middleware/auth.js'
+import { authenticateToken, requireScope } from '../middleware/auth.js'
 import { requireDb } from '../middleware/requireDb.js'
 import { asyncHandler } from '../middleware/asyncHandler.js'
+import { reserveAIUsage } from '../middleware/aiQuota.js'
 import { ConfigurationError, ExternalServiceError } from '../utils/errors.js'
+
+import {
+  createTelnyxStreamToken,
+  verifyTelnyxWebhook,
+  secretMatches
+} from '../utils/telnyxSecurity.js'
 
 const router = Router()
 const logger = createLogger('telnyx-call')
@@ -16,6 +23,7 @@ const logger = createLogger('telnyx-call')
 router.post(
   '/request-call',
   authenticateToken,
+  requireScope(),
   requireDb,
   asyncHandler(async (req, res) => {
     const db = req.app.locals.db
@@ -52,16 +60,15 @@ router.post(
     const connectionId = process.env.TELNYX_CONNECTION_ID
     const fromNumber = process.env.TELNYX_PHONE_NUMBER
 
-    if (!apiKey || !connectionId || !fromNumber) {
+    if (!apiKey || !connectionId || !fromNumber || !process.env.GROK_API_KEY) {
       throw new ConfigurationError('Telnyx')
     }
 
     const appUrl = process.env.APP_URL || 'https://easymemoir.co.uk'
     const wsUrl = appUrl.replace('https://', 'wss://').replace('http://', 'ws://')
+    const stream = createTelnyxStreamToken(userId)
 
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 15000)
-
+    await reserveAIUsage(db, Number(userId))
     const response = await fetch('https://api.telnyx.com/v2/calls', {
       method: 'POST',
       headers: {
@@ -72,7 +79,7 @@ router.post(
         connection_id: connectionId,
         to: phoneNumber,
         from: fromNumber,
-        stream_url: `${wsUrl}/api/telnyx/media-stream`,
+        stream_url: `${wsUrl}/api/telnyx/media-stream?token=${encodeURIComponent(stream.token)}`,
         stream_bidirectional_mode: 'mp',
         stream_bidirectional_codec: 'L16',
         stream_track: 'both_tracks',
@@ -80,13 +87,13 @@ router.post(
         client_state: Buffer.from(
           JSON.stringify({
             userId,
+            streamNonce: stream.nonce,
             prompt: { text: 'Free conversation — let the user share any memory or story they like' }
           })
         ).toString('base64')
       }),
-      signal: controller.signal
+      signal: AbortSignal.timeout(15000)
     })
-    clearTimeout(timeoutId)
 
     if (!response.ok) {
       const error = await response.text()
@@ -125,13 +132,7 @@ router.post(
 router.post(
   '/call',
   asyncHandler(async (req, res) => {
-    // Verify internal auth - reject if secret is not configured or doesn't match
-    const expectedSecret = process.env.INTERNAL_CRON_SECRET
-    if (
-      !expectedSecret ||
-      !req.headers['x-internal-secret'] ||
-      req.headers['x-internal-secret'] !== expectedSecret
-    ) {
+    if (!secretMatches(req.headers['x-internal-secret'], process.env.INTERNAL_CRON_SECRET)) {
       return res.status(403).json({ error: 'Unauthorized' })
     }
 
@@ -146,18 +147,18 @@ router.post(
     const connectionId = process.env.TELNYX_CONNECTION_ID
     const fromNumber = process.env.TELNYX_PHONE_NUMBER
 
-    if (!apiKey || !connectionId || !fromNumber) {
+    if (!apiKey || !connectionId || !fromNumber || !process.env.GROK_API_KEY) {
       throw new ConfigurationError('Telnyx')
     }
 
     // Build the WebSocket URL for media streaming
     const appUrl = process.env.APP_URL || 'https://easymemoir.co.uk'
     const wsUrl = appUrl.replace('https://', 'wss://').replace('http://', 'ws://')
+    const stream = createTelnyxStreamToken(userId)
 
     // Initiate the call via Telnyx Call Control API
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 15000)
 
+    await reserveAIUsage(db, Number(userId))
     const response = await fetch('https://api.telnyx.com/v2/calls', {
       method: 'POST',
       headers: {
@@ -168,7 +169,7 @@ router.post(
         connection_id: connectionId,
         to: phoneNumber,
         from: fromNumber,
-        stream_url: `${wsUrl}/api/telnyx/media-stream`,
+        stream_url: `${wsUrl}/api/telnyx/media-stream?token=${encodeURIComponent(stream.token)}`,
         stream_bidirectional_mode: 'mp',
         stream_bidirectional_codec: 'L16',
         stream_track: 'both_tracks',
@@ -176,13 +177,13 @@ router.post(
         client_state: Buffer.from(
           JSON.stringify({
             userId,
+            streamNonce: stream.nonce,
             prompt
           })
         ).toString('base64')
       }),
-      signal: controller.signal
+      signal: AbortSignal.timeout(15000)
     })
-    clearTimeout(timeoutId)
 
     if (!response.ok) {
       const error = await response.text()
@@ -219,106 +220,118 @@ router.post(
  * POST /api/telnyx/webhook
  * Telnyx call event webhooks (answered, hangup, etc.)
  */
-router.post('/webhook', async (req, res) => {
-  // Verify Telnyx webhook signature headers are present
-  const sigHeader = req.headers['telnyx-signature-ed25519']
-  const timestamp = req.headers['telnyx-timestamp']
-
-  if (!sigHeader || !timestamp) {
-    logger.warn('Telnyx webhook rejected — missing signature headers')
-    return res.status(400).json({ error: 'Missing signature headers' })
-  }
-
-  // Always respond 200 quickly to Telnyx
-  res.status(200).json({ ok: true })
-
-  try {
-    const event = req.body?.data
-    if (!event) return
-
-    const eventType = event.event_type
-    const callControlId = event.payload?.call_control_id
+router.post(
+  '/webhook',
+  raw({ type: 'application/json', limit: '1mb' }),
+  asyncHandler(async (req, res) => {
+    if (!process.env.TELNYX_PUBLIC_KEY)
+      return res.status(503).json({ error: 'Phone webhook verification unavailable' })
+    if (!verifyTelnyxWebhook(req.body, req.headers, process.env.TELNYX_PUBLIC_KEY))
+      return res.status(400).json({ error: 'Invalid webhook signature or timestamp' })
+    let event
+    try {
+      event = JSON.parse(req.body.toString('utf8')).data
+    } catch {
+      return res.status(400).json({ error: 'Invalid webhook body' })
+    }
+    if (
+      !event ||
+      typeof event.id !== 'string' ||
+      event.id.length > 200 ||
+      typeof event.event_type !== 'string' ||
+      typeof event.payload?.call_control_id !== 'string'
+    )
+      return res.status(400).json({ error: 'Invalid call event' })
     const db = req.app.locals.db
-
-    logger.info('Telnyx webhook', { eventType, callControlId })
-
-    switch (eventType) {
-      case 'call.initiated':
-        if (db) {
-          await db.query(
-            `UPDATE telnyx_calls SET call_status = 'initiated', updated_at = NOW() WHERE call_control_id = $1`,
-            [callControlId]
-          )
-        }
-        break
-
-      case 'call.answered':
-        if (db) {
-          await db.query(
-            `UPDATE telnyx_calls SET call_status = 'answered', answered_at = NOW(), updated_at = NOW() WHERE call_control_id = $1`,
-            [callControlId]
-          )
-        }
-        break
-
-      case 'call.hangup': {
-        if (db) {
-          await db.query(
-            `UPDATE telnyx_calls SET call_status = 'completed', ended_at = NOW(), updated_at = NOW() WHERE call_control_id = $1`,
-            [callControlId]
-          )
-        }
-
-        // Clean up bridge if still active
-        const bridge = getBridge(callControlId)
-        if (bridge) {
-          bridge.handleCallEnd()
-        }
-        break
+    if (!db) return res.status(503).json({ error: 'Phone event storage unavailable' })
+    const client = await db.connect()
+    try {
+      await client.query('BEGIN')
+      await client.query('DELETE FROM telnyx_webhook_events WHERE expires_at < NOW()')
+      const claimed = await client.query(
+        `INSERT INTO telnyx_webhook_events (event_id, expires_at)
+       VALUES ($1, NOW() + INTERVAL '1 day') ON CONFLICT (event_id) DO NOTHING RETURNING event_id`,
+        [event.id]
+      )
+      if (!claimed.rows.length) {
+        await client.query('COMMIT')
+        return res.json({ ok: true })
       }
+      const afterCommit = await processTelnyxEvent(event, client)
+      await client.query('COMMIT')
+      // Bridge writes use the main pool, after releasing this transaction's call-row lock.
+      if (afterCommit) await afterCommit()
+      return res.json({ ok: true })
+    } catch (error) {
+      await client.query('ROLLBACK')
+      throw error
+    } finally {
+      client.release()
+    }
+  })
+)
 
-      case 'streaming.started': {
-        const streamId = event.payload?.stream_id
-        if (db) {
-          await db.query(
-            `UPDATE telnyx_calls SET stream_id = $1, call_status = 'streaming', updated_at = NOW() WHERE call_control_id = $2`,
-            [streamId, callControlId]
-          )
-        }
-        break
+export async function processTelnyxEvent(event, db) {
+  const callControlId = event.payload.call_control_id
+  const known = await db.query('SELECT user_id FROM telnyx_calls WHERE call_control_id = $1', [
+    callControlId
+  ])
+  if (!known.rows[0]) return
+  switch (event.event_type) {
+    case 'call.initiated':
+      await db.query(
+        `UPDATE telnyx_calls SET call_status = 'initiated', updated_at = NOW()
+        WHERE call_control_id = $1 AND call_status = 'initiated'`,
+        [callControlId]
+      )
+      break
+    case 'call.answered':
+      await db.query(
+        `UPDATE telnyx_calls SET call_status = 'answered', answered_at = NOW(), updated_at = NOW()
+        WHERE call_control_id = $1 AND ended_at IS NULL`,
+        [callControlId]
+      )
+      break
+    case 'call.hangup':
+      await db.query(
+        `UPDATE telnyx_calls SET call_status = 'completed', ended_at = NOW(), updated_at = NOW()
+        WHERE call_control_id = $1`,
+        [callControlId]
+      )
+      return async () => {
+        await getBridge(callControlId)?.handleCallEnd()
       }
-
-      case 'streaming.stopped':
-        // Streaming ended, bridge cleanup handled by WebSocket close
-        break
-
-      case 'call.machine.detection.ended':
-        // If answering machine detected, hang up
-        if (event.payload?.result === 'machine') {
-          logger.info('Answering machine detected, hanging up', { callControlId })
-          const apiKey = process.env.TELNYX_API_KEY
-          await fetch(`https://api.telnyx.com/v2/calls/${callControlId}/actions/hangup`, {
+    case 'streaming.started':
+      await db.query(
+        `UPDATE telnyx_calls SET stream_id = $1, call_status = 'streaming', updated_at = NOW()
+        WHERE call_control_id = $2 AND ended_at IS NULL`,
+        [event.payload.stream_id, callControlId]
+      )
+      break
+    case 'call.machine.detection.ended':
+      if (event.payload.result === 'machine') {
+        const response = await fetch(
+          `https://api.telnyx.com/v2/calls/${encodeURIComponent(callControlId)}/actions/hangup`,
+          {
             method: 'POST',
             headers: {
-              Authorization: `Bearer ${apiKey}`,
+              Authorization: `Bearer ${process.env.TELNYX_API_KEY}`,
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify({})
-          }).catch(err => logger.error('Hangup failed', { error: err.message }))
-
-          if (db) {
-            await db.query(
-              `UPDATE telnyx_calls SET call_status = 'machine_detected', ended_at = NOW(), updated_at = NOW() WHERE call_control_id = $1`,
-              [callControlId]
-            )
+            body: JSON.stringify({ command_id: event.id }),
+            signal: AbortSignal.timeout(5000)
           }
-        }
-        break
-    }
-  } catch (err) {
-    logger.error('Webhook processing error', { error: err.message })
+        )
+        if (!response.ok) throw new ExternalServiceError('Telnyx')
+        await db.query(
+          `UPDATE telnyx_calls SET call_status = 'machine_detected', ended_at = NOW(), updated_at = NOW()
+          WHERE call_control_id = $1`,
+          [callControlId]
+        )
+      }
+      break
   }
-})
+}
 
 /**
  * Handle Telnyx media stream WebSocket upgrade.
@@ -327,8 +340,27 @@ router.post('/webhook', async (req, res) => {
  * @param {WebSocket} ws - The Telnyx WebSocket connection
  * @param {object} db - Database pool
  */
-export async function handleTelnyxMediaStream(ws, db) {
+export async function handleTelnyxMediaStream(ws, db, streamClaims) {
   logger.info('Telnyx media stream WebSocket connected')
+  const durationLimit = setTimeout(() => {
+    const close = () => ws.close(1000, 'Call interview time limit reached')
+    const callId = ws.telnyxCallControlId
+    if (!callId) return close()
+    // Closing a media stream alone can leave the telephone call billable.
+    void fetch(`https://api.telnyx.com/v2/calls/${encodeURIComponent(callId)}/actions/hangup`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.TELNYX_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ command_id: streamClaims.nonce }),
+      signal: AbortSignal.timeout(5000)
+    })
+      .catch(error => logger.error('Call duration-limit hangup failed', { error: error.message }))
+      .finally(close)
+  }, 30 * 60_000)
+  durationLimit.unref?.()
+  ws.once('close', () => clearTimeout(durationLimit))
 
   // Wait for the 'start' event to get the call_control_id from client_state
   const startTimeout = setTimeout(() => {
@@ -336,9 +368,8 @@ export async function handleTelnyxMediaStream(ws, db) {
     ws.close()
   }, 15000)
 
+  ws.once('close', () => clearTimeout(startTimeout))
   ws.once('message', async data => {
-    clearTimeout(startTimeout)
-
     try {
       const msg = JSON.parse(data)
 
@@ -347,7 +378,8 @@ export async function handleTelnyxMediaStream(ws, db) {
         ws.once('message', async startData => {
           try {
             const startMsg = JSON.parse(startData)
-            await initBridge(startMsg, ws, db)
+            clearTimeout(startTimeout)
+            await initBridge(startMsg, ws, db, streamClaims)
           } catch (err) {
             logger.error('Failed to init bridge on start', { error: err.message })
             ws.close()
@@ -355,7 +387,8 @@ export async function handleTelnyxMediaStream(ws, db) {
         })
       } else if (msg.event === 'start') {
         // Sometimes start comes directly
-        await initBridge(msg, ws, db)
+        clearTimeout(startTimeout)
+        await initBridge(msg, ws, db, streamClaims)
       } else {
         logger.warn('Unexpected first message', { event: msg.event })
         ws.close()
@@ -370,7 +403,7 @@ export async function handleTelnyxMediaStream(ws, db) {
 /**
  * Initialize the bridge from a Telnyx 'start' event
  */
-async function initBridge(startMsg, ws, db) {
+async function initBridge(startMsg, ws, db, streamClaims) {
   const callControlId = startMsg.start?.call_control_id
   const streamId = startMsg.stream_id
 
@@ -391,31 +424,34 @@ async function initBridge(startMsg, ws, db) {
     // Try to look up from DB
   }
 
-  // If we don't have client state from the message, look it up from our DB
-  let userId = clientState.userId
-  let prompt = clientState.prompt
-
-  if (!userId && db) {
-    const callRecord = await db.query(
-      `SELECT user_id, prompt_text, prompt_chapter_id, prompt_question_id FROM telnyx_calls WHERE call_control_id = $1`,
-      [callControlId]
-    )
-    if (callRecord.rows[0]) {
-      userId = callRecord.rows[0].user_id
-      prompt = {
-        text: callRecord.rows[0].prompt_text,
-        chapter_id: callRecord.rows[0].prompt_chapter_id,
-        question_id: callRecord.rows[0].prompt_question_id
-      }
-    }
-  }
-
-  if (!userId) {
-    logger.error('Could not determine userId for call', { callControlId })
-    ws.close()
+  if (
+    !db ||
+    !streamClaims ||
+    clientState.streamNonce !== streamClaims.nonce ||
+    clientState.userId !== streamClaims.userId
+  ) {
+    ws.close(1008, 'Invalid call stream')
     return
   }
+  // Do not trust stream-supplied user IDs or prompts: resolve ownership from the call record.
+  const callRecord = await db.query(
+    `SELECT user_id, prompt_text, prompt_chapter_id, prompt_question_id FROM telnyx_calls
+     WHERE call_control_id = $1 AND user_id = $2 AND ended_at IS NULL`,
+    [callControlId, streamClaims.userId]
+  )
+  const record = callRecord.rows[0]
+  if (!record || getBridge(callControlId)) {
+    ws.close(1008, 'Unknown or already active call')
+    return
+  }
+  const userId = record.user_id
+  const prompt = {
+    text: record.prompt_text,
+    chapter_id: record.prompt_chapter_id,
+    question_id: record.prompt_question_id
+  }
 
+  ws.telnyxCallControlId = callControlId
   logger.info('Starting bridge', { callControlId, streamId, userId })
 
   const bridge = new TelnyxCallBridge({

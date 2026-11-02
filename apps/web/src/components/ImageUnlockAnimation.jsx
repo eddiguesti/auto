@@ -6,22 +6,26 @@ export default function ImageUnlockAnimation({ imageUrl, chapterTitle, onComplet
   const hasSkipped = useRef(false)
 
   // Generate stable particle positions
-  const particles = useMemo(() =>
-    [...Array(30)].map((_, i) => ({
-      left: Math.random() * 100,
-      top: Math.random() * 100,
-      delay: Math.random() * 2,
-      duration: 1 + Math.random() * 2,
-      size: 1 + Math.random() * 3
-    })), []
+  const particles = useMemo(
+    () =>
+      [...Array(30)].map((_, i) => ({
+        left: Math.random() * 100,
+        top: Math.random() * 100,
+        delay: Math.random() * 2,
+        duration: 1 + Math.random() * 2,
+        size: 1 + Math.random() * 3
+      })),
+    []
   )
 
   // Light ray positions
-  const rays = useMemo(() =>
-    [...Array(8)].map((_, i) => ({
-      rotation: i * 45,
-      delay: i * 0.1
-    })), []
+  const rays = useMemo(
+    () =>
+      [...Array(8)].map((_, i) => ({
+        rotation: i * 45,
+        delay: i * 0.1
+      })),
+    []
   )
 
   useEffect(() => {
@@ -84,9 +88,11 @@ export default function ImageUnlockAnimation({ imageUrl, chapterTitle, onComplet
       />
 
       {/* Animated light rays */}
-      <div className={`absolute inset-0 flex items-center justify-center overflow-hidden transition-opacity duration-500 ${
-        phase === 'reveal' ? 'opacity-100' : 'opacity-0'
-      }`}>
+      <div
+        className={`absolute inset-0 flex items-center justify-center overflow-hidden transition-opacity duration-500 ${
+          phase === 'reveal' ? 'opacity-100' : 'opacity-0'
+        }`}
+      >
         {rays.map((ray, i) => (
           <div
             key={i}
@@ -115,7 +121,10 @@ export default function ImageUnlockAnimation({ imageUrl, chapterTitle, onComplet
               height: `${p.size}px`,
               background: 'radial-gradient(circle, #fcd34d 0%, #f59e0b 100%)',
               boxShadow: '0 0 6px 2px rgba(252,211,77,0.5)',
-              animation: phase !== 'enter' ? `sparkleFloat ${p.duration}s ease-in-out ${p.delay}s infinite` : 'none'
+              animation:
+                phase !== 'enter'
+                  ? `sparkleFloat ${p.duration}s ease-in-out ${p.delay}s infinite`
+                  : 'none'
             }}
           />
         ))}
@@ -127,14 +136,18 @@ export default function ImageUnlockAnimation({ imageUrl, chapterTitle, onComplet
           phase === 'enter'
             ? 'duration-500 opacity-0 scale-50'
             : phase === 'reveal'
-            ? 'duration-700 opacity-100 scale-100'
-            : phase === 'hold'
-            ? 'duration-300 opacity-100 scale-100'
-            : 'duration-600 opacity-0 scale-90 translate-y-8'
+              ? 'duration-700 opacity-100 scale-100'
+              : phase === 'hold'
+                ? 'duration-300 opacity-100 scale-100'
+                : 'duration-600 opacity-0 scale-90 translate-y-8'
         }`}
         style={{
-          transform: phase === 'enter' ? 'scale(0.5) rotateX(30deg)' :
-                     phase === 'exit' ? 'scale(0.9) translateY(32px)' : 'scale(1)'
+          transform:
+            phase === 'enter'
+              ? 'scale(0.5) rotateX(30deg)'
+              : phase === 'exit'
+                ? 'scale(0.9) translateY(32px)'
+                : 'scale(1)'
         }}
       >
         {/* Outer animated glow */}
@@ -143,7 +156,8 @@ export default function ImageUnlockAnimation({ imageUrl, chapterTitle, onComplet
             phase === 'hold' || phase === 'reveal' ? 'opacity-100' : 'opacity-0'
           }`}
           style={{
-            background: 'radial-gradient(ellipse at center, rgba(245,158,11,0.4) 0%, rgba(180,83,9,0.2) 40%, transparent 70%)',
+            background:
+              'radial-gradient(ellipse at center, rgba(245,158,11,0.4) 0%, rgba(180,83,9,0.2) 40%, transparent 70%)',
             animation: phase === 'hold' ? 'glowPulse 2s ease-in-out infinite' : 'none'
           }}
         />
@@ -154,9 +168,10 @@ export default function ImageUnlockAnimation({ imageUrl, chapterTitle, onComplet
           style={{
             width: 'min(85vw, 900px)',
             aspectRatio: '16/10',
-            boxShadow: phase === 'hold'
-              ? '0 0 60px 20px rgba(245,158,11,0.3), 0 25px 50px -12px rgba(0,0,0,0.5)'
-              : '0 25px 50px -12px rgba(0,0,0,0.5)'
+            boxShadow:
+              phase === 'hold'
+                ? '0 0 60px 20px rgba(245,158,11,0.3), 0 25px 50px -12px rgba(0,0,0,0.5)'
+                : '0 25px 50px -12px rgba(0,0,0,0.5)'
           }}
         >
           {/* Page texture overlay */}
@@ -178,7 +193,9 @@ export default function ImageUnlockAnimation({ imageUrl, chapterTitle, onComplet
                 src={imageUrl}
                 alt={chapterTitle}
                 className={`w-full h-full object-cover transition-all duration-1000 ${
-                  phase === 'reveal' || phase === 'hold' ? 'brightness-100 saturate-100' : 'brightness-50 saturate-50'
+                  phase === 'reveal' || phase === 'hold'
+                    ? 'brightness-100 saturate-100'
+                    : 'brightness-50 saturate-50'
                 }`}
                 style={{ aspectRatio: '16/9' }}
               />
@@ -220,9 +237,7 @@ export default function ImageUnlockAnimation({ imageUrl, chapterTitle, onComplet
           phase === 'hold' ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
         }`}
       >
-        <p className="text-white/30 text-sm animate-pulse">
-          Tap anywhere to continue
-        </p>
+        <p className="text-white/30 text-sm animate-pulse">Tap anywhere to continue</p>
       </div>
 
       {/* CSS Keyframes */}

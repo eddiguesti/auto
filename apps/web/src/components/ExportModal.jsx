@@ -65,6 +65,7 @@ export default function ExportModal({ onClose, userName }) {
             visible={modal.shown}
             audiobookStatus={modal.audiobookStatus}
             generatingAudiobook={modal.generatingAudiobook}
+            audiobookJobPending={modal.audiobookJobPending}
             onGenerate={modal.handleGenerateAudiobook}
             onSetupVoice={() => modal.setShowVoiceSetup(true)}
           />
@@ -163,6 +164,7 @@ function AudiobookCard({
   visible,
   audiobookStatus,
   generatingAudiobook,
+  audiobookJobPending,
   onGenerate,
   onSetupVoice
 }) {
@@ -194,6 +196,7 @@ function AudiobookCard({
       <AudiobookActions
         audiobookStatus={audiobookStatus}
         generatingAudiobook={generatingAudiobook}
+        audiobookJobPending={audiobookJobPending}
         onGenerate={onGenerate}
         onSetupVoice={onSetupVoice}
       />
@@ -201,7 +204,13 @@ function AudiobookCard({
   )
 }
 
-function AudiobookActions({ audiobookStatus, generatingAudiobook, onGenerate, onSetupVoice }) {
+function AudiobookActions({
+  audiobookStatus,
+  generatingAudiobook,
+  audiobookJobPending,
+  onGenerate,
+  onSetupVoice
+}) {
   return (
     <div className="flex gap-2 mt-3">
       <button
@@ -212,7 +221,7 @@ function AudiobookActions({ audiobookStatus, generatingAudiobook, onGenerate, on
         disabled={generatingAudiobook}
         className="flex-1 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 disabled:opacity-50 transition"
       >
-        {generatingAudiobook ? 'Creating...' : 'Generate'}
+        {generatingAudiobook ? 'Creating...' : audiobookJobPending ? 'Resume download' : 'Generate'}
       </button>
       {audiobookStatus?.hasVoiceModel ? (
         <button

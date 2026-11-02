@@ -6,7 +6,7 @@ import { usePremiumStatus } from '../../features/payments/queries/paymentQueries
 import MemoryMap from '../../components/MemoryMap'
 
 const { authFetch } = vi.hoisted(() => ({ authFetch: vi.fn() }))
-vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ authFetch }) }))
+vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ authFetch, user: { id: 1 } }) }))
 
 function wrapper() {
   const client = new QueryClient({

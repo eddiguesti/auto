@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { chapters } from '../../data/chapters'
 import QuestionCard from '../../components/QuestionCard'
 import AIAssistant from '../../components/AIAssistant'
@@ -9,192 +10,124 @@ import { useAuth } from '../../context/AuthContext'
 import { usePremium } from '../../hooks/usePremium'
 import { useChapterStories } from '../../features/memoir/queries/storyQueries'
 import { useChapterAI } from '../../features/memoir/hooks/useChapterAI'
+import { queryKeys } from '../../lib/queryKeys'
+import { readDraft, useDraftAutosave } from '../../hooks/useDraftAutosave'
 import UpgradeModal from '../../components/UpgradeModal'
 import QuestionCardSkeleton from '../../components/skeletons/QuestionCardSkeleton'
 
-export default function Chapter() {
+function Chapter() {
   const { chapterId } = useParams()
   const navigate = useNavigate()
-  const { authFetch } = useAuth()
+  const { authFetch, user } = useAuth()
+  const queryClient = useQueryClient()
   const { isChapterLocked, isPremium } = usePremium()
-
-  // Server state via React Query — replaces manual useEffect+setState fetch
+  const chapter = useMemo(() => chapters.find(c => c.id === chapterId), [chapterId])
   const {
     data: rawStories,
     isLoading: answersLoading,
     refetch: refetchStories
   } = useChapterStories(chapterId)
-
-  // Convert API array to local keyed map: { questionId: { answer, id, photos } }
+  const draftKey = `memoir-draft:${user?.id}:answers:${chapterId}`
   const [answers, setAnswers] = useState({})
+  const answersRef = useRef(answers)
+  answersRef.current = answers
+  const [currentQuestion, setCurrentQuestion] = useState(0)
+  const { showAI, aiContext, openAIAssistant, closeAIAssistant } = useChapterAI()
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [showMemoryTriggers, setShowMemoryTriggers] = useState(false)
+  const [skippedQuestions, setSkippedQuestions] = useState([])
+  const [showIllustration, setShowIllustration] = useState(false)
+
+  const autosave = useDraftAutosave({
+    draftKey,
+    save: async (questionId, answer) => {
+      const res = await authFetch('/api/stories', {
+        method: 'POST',
+        body: JSON.stringify({
+          chapter_id: chapterId,
+          question_id: questionId,
+          answer,
+          total_questions: chapter?.questions.length
+        })
+      })
+      if (!res.ok) throw new Error('Failed to save')
+      const saved = await res.json()
+      await queryClient.cancelQueries({ queryKey: queryKeys.stories.chapter(chapterId, user?.id) })
+      queryClient.setQueryData(queryKeys.stories.chapter(chapterId, user?.id), (old = []) => {
+        const existing = old.find(story => story.question_id === questionId)
+        const row = {
+          ...existing,
+          id: saved.id || existing?.id,
+          question_id: questionId,
+          chapter_id: chapterId,
+          answer,
+          photos: existing?.photos || []
+        }
+        return [...old.filter(story => story.question_id !== questionId), row]
+      })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.progress(user?.id) })
+    }
+  })
+  const saveStatus = autosave.status
+  const lastError = autosave.error
+
   useEffect(() => {
     if (!rawStories) return
     const map = {}
     rawStories.forEach(story => {
       map[story.question_id] = { answer: story.answer, id: story.id, photos: story.photos || [] }
     })
-    setAnswers(map)
-  }, [rawStories])
-  const [currentQuestion, setCurrentQuestion] = useState(0)
-  const { showAI, aiContext, openAIAssistant, closeAIAssistant } = useChapterAI()
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
-  const saveTimeoutRef = useRef({})
-  const abortControllersRef = useRef({})
-  const [pendingSaves, setPendingSaves] = useState({}) // Track unsaved changes
-  const [saveStatus, setSaveStatus] = useState(null) // 'saving' | 'saved' | 'error'
-  const [lastError, setLastError] = useState(null)
-  const [showMemoryTriggers, setShowMemoryTriggers] = useState(false)
-  const [skippedQuestions, setSkippedQuestions] = useState([])
-  const [showIllustration, setShowIllustration] = useState(false)
-
-  const chapter = useMemo(() => chapters.find(c => c.id === chapterId), [chapterId])
-
-  // Redirect locked chapters to home
-  useEffect(() => {
-    if (chapter && isChapterLocked(chapterId)) {
-      navigate('/home', { replace: true })
+    for (const [questionId, answer] of Object.entries(readDraft(draftKey))) {
+      map[questionId] = { ...map[questionId], answer }
     }
-  }, [chapterId, chapter, isChapterLocked])
+    setAnswers(map)
+  }, [rawStories, draftKey])
 
-  // Memoize pending saves check
-  const hasPendingSaves = useMemo(() => Object.values(pendingSaves).some(Boolean), [pendingSaves])
+  useEffect(() => {
+    if (chapter && isChapterLocked(chapterId)) navigate('/home', { replace: true })
+  }, [chapterId, chapter, isChapterLocked, navigate])
 
-  // Memoize beforeunload handler to prevent recreation
-  const handleBeforeUnload = useCallback(
-    e => {
-      if (hasPendingSaves) {
-        e.preventDefault()
-        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?'
-        return e.returnValue
-      }
+  const saveAnswer = useCallback(
+    (questionId, answer) => {
+      setAnswers(prev => ({ ...prev, [questionId]: { ...prev[questionId], answer } }))
+      autosave.update(questionId, answer)
     },
-    [hasPendingSaves]
+    [autosave.update]
   )
 
-  // Warn user before closing/navigating with unsaved changes
   useEffect(() => {
-    window.addEventListener('beforeunload', handleBeforeUnload)
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
-  }, [handleBeforeUnload])
-
-  useEffect(() => {
-    if (chapter && chapterId === 'earliest-memories' && !answersLoading) {
-      prefillFromOnboarding()
-    }
-
-    // Cleanup timeouts and abort in-flight saves on unmount
+    if (
+      chapterId !== 'earliest-memories' ||
+      answersLoading ||
+      !rawStories ||
+      rawStories.some(story => story.question_id === 'birth-details' && story.answer?.trim()) ||
+      readDraft(draftKey)['birth-details']
+    )
+      return
+    let active = true
+    void authFetch('/api/onboarding/status')
+      .then(async res => {
+        if (!res.ok) return
+        const data = await res.json()
+        if (
+          !active ||
+          !data.completed ||
+          (!data.birthPlace && !data.birthYear) ||
+          answersRef.current['birth-details']?.answer?.trim()
+        )
+          return
+        const place = [data.birthPlace, data.birthCountry].filter(Boolean).join(', ')
+        const answer =
+          [place && `I was born in ${place}`, data.birthYear && `in ${data.birthYear}`]
+            .filter(Boolean)
+            .join(' ') + '.'
+        saveAnswer('birth-details', answer)
+      })
+      .catch(() => {})
     return () => {
-      Object.values(saveTimeoutRef.current).forEach(timeout => {
-        if (timeout) clearTimeout(timeout)
-      })
-      Object.values(abortControllersRef.current).forEach(controller => {
-        if (controller) controller.abort()
-      })
+      active = false
     }
-  }, [chapterId])
-
-  // Pre-fill birth-details answer from onboarding data if user hasn't answered it yet
-  const prefillFromOnboarding = async () => {
-    try {
-      const res = await authFetch('/api/onboarding/status')
-      if (!res.ok) return
-      const data = await res.json()
-      if (!data.completed) return
-
-      const birthPlace = data.birthPlace
-      const birthCountry = data.birthCountry
-      const birthYear = data.birthYear
-      if (!birthPlace && !birthYear) return
-
-      // Only pre-fill if birth-details hasn't been answered yet
-      setAnswers(prev => {
-        if (prev['birth-details']?.answer?.trim()) return prev
-
-        const parts = []
-        if (birthPlace && birthCountry) {
-          parts.push(`I was born in ${birthPlace}, ${birthCountry}`)
-        } else if (birthPlace) {
-          parts.push(`I was born in ${birthPlace}`)
-        }
-        if (birthYear) {
-          parts.push(`in ${birthYear}`)
-        }
-
-        const prefilled = parts.join(' ') + '.'
-        // Save to backend so it persists
-        authFetch('/api/stories', {
-          method: 'POST',
-          body: JSON.stringify({
-            chapter_id: 'earliest-memories',
-            question_id: 'birth-details',
-            answer: prefilled
-          })
-        }).catch(err => console.error('Error pre-filling birth details:', err))
-
-        return {
-          ...prev,
-          'birth-details': { ...prev['birth-details'], answer: prefilled }
-        }
-      })
-    } catch (err) {
-      console.error('Error fetching onboarding data:', err)
-    }
-  }
-
-  const saveAnswer = async (questionId, answer) => {
-    // Clear existing timeout for this question
-    if (saveTimeoutRef.current[questionId]) {
-      clearTimeout(saveTimeoutRef.current[questionId])
-    }
-
-    // Update local state immediately
-    setAnswers(prev => ({
-      ...prev,
-      [questionId]: { ...prev[questionId], answer }
-    }))
-
-    // Mark this question as having pending changes
-    setPendingSaves(prev => ({ ...prev, [questionId]: true }))
-    setSaveStatus('saving')
-    setLastError(null)
-
-    // Debounce the save
-    saveTimeoutRef.current[questionId] = setTimeout(async () => {
-      // Abort any previous in-flight save for this question
-      if (abortControllersRef.current[questionId]) {
-        abortControllersRef.current[questionId].abort()
-      }
-      const controller = new AbortController()
-      abortControllersRef.current[questionId] = controller
-
-      try {
-        const res = await authFetch('/api/stories', {
-          method: 'POST',
-          body: JSON.stringify({
-            chapter_id: chapterId,
-            question_id: questionId,
-            answer,
-            total_questions: chapter.questions.length
-          }),
-          signal: controller.signal
-        })
-        if (!res.ok) {
-          throw new Error('Failed to save')
-        }
-        // Mark as saved successfully
-        setPendingSaves(prev => ({ ...prev, [questionId]: false }))
-        setSaveStatus('saved')
-        // Clear saved status after 2 seconds
-        setTimeout(() => setSaveStatus(prev => (prev === 'saved' ? null : prev)), 2000)
-      } catch (err) {
-        if (err.name === 'AbortError') return // Superseded by newer save
-        console.error('Error saving answer:', err)
-        setSaveStatus('error')
-        setLastError('Failed to save. Please check your connection.')
-        // Keep pending flag so user is warned before leaving
-      }
-    }, 1000)
-  }
+  }, [chapterId, answersLoading, rawStories, draftKey, authFetch, saveAnswer])
 
   // Memoize derived values (must be before early return to satisfy rules of hooks)
   const answeredCount = useMemo(
@@ -227,7 +160,7 @@ export default function Chapter() {
       {/* Header */}
       <header className="mb-6 sm:mb-8">
         <Link
-          to="/"
+          to="/home"
           className="text-sepia/70 hover:text-sepia transition inline-flex items-center gap-2 mb-6 py-1 text-sm"
         >
           <span>←</span>
@@ -284,7 +217,6 @@ export default function Chapter() {
               // Retry saving the current answer
               const currentAnswer = answers[question.id]?.answer || ''
               if (currentAnswer) {
-                setLastError(null)
                 saveAnswer(question.id, currentAnswer)
               }
             }}
@@ -553,4 +485,11 @@ export default function Chapter() {
       )}
     </div>
   )
+}
+
+// Remount chapter-local editor state when either the chapter or account changes.
+export default function ChapterPage() {
+  const { chapterId } = useParams()
+  const { user } = useAuth()
+  return <Chapter key={`${user?.id}:${chapterId}`} />
 }
