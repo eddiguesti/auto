@@ -154,6 +154,8 @@ jobs:
       - run: npm run test:postgres
         env:
           TEST_DATABASE_URL: postgresql://memoir:integration-test-only@127.0.0.1:5432/easy_memoir_test # example credential for the isolated CI service
+          PG_DUMP_PATH: /usr/lib/postgresql/16/bin/pg_dump
+          PSQL_PATH: /usr/lib/postgresql/16/bin/psql
 
   mobile:
     name: Mobile types, transport contracts and Android bundle
