@@ -5,7 +5,7 @@ import { setupMiddleware } from '../middleware/setup.js'
 
 let server
 let base
-const stripe = new Stripe('sk_test_test-only')
+const stripe = new Stripe('sk_test_fake-only')
 const secret = 'whsec_test-only'
 beforeAll(async () => {
   const app = express()
