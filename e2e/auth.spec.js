@@ -19,11 +19,10 @@ test.describe('Authentication Flow', () => {
 
   test('Google OAuth button is present on login page', async ({ page }) => {
     await page.goto('/login')
-    // Google sign-in button or iframe
-    const googleBtn = page.locator(
-      '[data-testid="google-login"], iframe[src*="google"], button:has-text("Google"), div[id*="google"]'
-    )
-    await expect(googleBtn.first()).toBeVisible({ timeout: 10000 })
+    // Google uses a div with role="button" and localizes its accessible name.
+    await expect(page.getByRole('button', { name: /Google/i }).first()).toBeVisible({
+      timeout: 10000
+    })
   })
 
   test('can navigate to register page', async ({ page }) => {

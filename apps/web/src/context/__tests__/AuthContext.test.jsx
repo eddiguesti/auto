@@ -3,6 +3,7 @@ import { render, screen, act, waitFor, fireEvent } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { AuthProvider, useAuth } from '../AuthContext'
 import ProtectedRoute from '../../components/ProtectedRoute'
+import { queryClient } from '../../lib/queryClient'
 
 // Mock config
 vi.mock('../../config', () => ({ API_URL: '' }))
@@ -326,4 +327,28 @@ describe('AuthContext', () => {
 
     spy.mockRestore()
   })
+})
+
+it('clears private cached stories on logout and refuses deferred writes from the previous account', async () => {
+  let auth
+  renderWithAuth(value => {
+    auth = value
+  })
+  await waitFor(() => expect(auth.loading).toBe(false))
+  act(() => auth.login({ id: 1 }, 'account-a-token'))
+  const deferredWrite = auth.authFetch
+  queryClient.setQueryData(
+    ['stories', 1, 'chapter', 'childhood'],
+    [{ answer: 'Private account A story' }]
+  )
+  await act(async () => {
+    await auth.logout()
+  })
+  expect(queryClient.getQueryCache().getAll()).toHaveLength(0)
+  act(() => auth.login({ id: 2 }, 'account-b-token'))
+  mockFetch.mockClear()
+  await expect(deferredWrite('/api/stories', { method: 'POST', body: '{}' })).rejects.toThrow(
+    'Sign-in changed'
+  )
+  expect(mockFetch).not.toHaveBeenCalled()
 })

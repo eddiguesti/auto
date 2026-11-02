@@ -11,7 +11,7 @@ export default function OnboardingComplete({ context, onContinue }) {
 
   // Build personalized message
   const getPersonalizedMessage = () => {
-    if (!context) return "Your personalized journey awaits!"
+    if (!context) return 'Your personalized journey awaits!'
 
     const parts = []
     if (context.birth_place) {
@@ -24,16 +24,18 @@ export default function OnboardingComplete({ context, onContinue }) {
     if (parts.length > 0) {
       return `Starting your story from ${parts.join(', ')}...`
     }
-    return "Your personalized journey awaits!"
+    return 'Your personalized journey awaits!'
   }
 
   return (
     <div className="text-center py-4">
       {/* Animated checkmark */}
       <div className="relative w-20 h-20 mx-auto mb-6">
-        <div className={`absolute inset-0 rounded-full bg-green-100 transition-transform duration-500 ${
-          showCheck ? 'scale-100' : 'scale-0'
-        }`} />
+        <div
+          className={`absolute inset-0 rounded-full bg-green-100 transition-transform duration-500 ${
+            showCheck ? 'scale-100' : 'scale-0'
+          }`}
+        />
         <svg
           className={`absolute inset-0 w-20 h-20 text-green-500 transition-all duration-500 delay-200 ${
             showCheck ? 'opacity-100 scale-100' : 'opacity-0 scale-50'
@@ -42,22 +44,13 @@ export default function OnboardingComplete({ context, onContinue }) {
           stroke="currentColor"
           viewBox="0 0 24 24"
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2.5}
-            d="M5 13l4 4L19 7"
-          />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
         </svg>
       </div>
 
-      <h2 className="text-2xl font-display text-ink mb-2">
-        You're All Set!
-      </h2>
+      <h2 className="text-2xl font-display text-ink mb-2">You're All Set!</h2>
 
-      <p className="text-warmgray mb-2">
-        {getPersonalizedMessage()}
-      </p>
+      <p className="text-warmgray mb-2">{getPersonalizedMessage()}</p>
 
       <p className="text-sm text-warmgray/70 mb-8">
         We're creating personalized artwork for each chapter of your life.
@@ -79,9 +72,7 @@ export default function OnboardingComplete({ context, onContinue }) {
             </div>
           </div>
         </div>
-        <p className="text-xs text-warmgray/60 mt-2">
-          Your chapter artwork is being generated...
-        </p>
+        <p className="text-xs text-warmgray/60 mt-2">Your chapter artwork is being generated...</p>
       </div>
 
       <button

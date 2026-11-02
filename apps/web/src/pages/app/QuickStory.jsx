@@ -1,117 +1,220 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 
-export default function QuickStory() {
-  const { authFetch } = useAuth()
-  const navigate = useNavigate()
-  const [title, setTitle] = useState('')
-  const [content, setContent] = useState('')
+function StoryLibrary() {
+  const { authFetch, user } = useAuth()
+  const draftKey = `memoir-draft:${user?.id}:standalone`
+  const readDraft = () => {
+    try {
+      return JSON.parse(sessionStorage.getItem(draftKey) || '{}')
+    } catch {
+      return {}
+    }
+  }
+  const [title, setTitle] = useState(() => readDraft().title || '')
+  const [content, setContent] = useState(() => readDraft().content || '')
+  const [editingId, setEditingId] = useState(() => readDraft().editingId || null)
+  const [stories, setStories] = useState([])
+  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState(null)
+  const [hasMore, setHasMore] = useState(false)
 
-  const handleSave = async () => {
-    if (!content.trim()) return
+  const load = useCallback(
+    async (offset = 0) => {
+      setLoading(true)
+      try {
+        const res = await authFetch(`/api/free-stories?limit=50&offset=${offset}`)
+        if (!res.ok) throw new Error('Could not load your saved stories. Please try again.')
+        const body = await res.json()
+        if (!Array.isArray(body.data)) throw new Error('Could not load your saved stories.')
+        setStories(old => (offset ? [...old, ...body.data] : body.data))
+        setHasMore(body.data.length === 50)
+      } catch (err) {
+        setError(err.message)
+      } finally {
+        setLoading(false)
+      }
+    },
+    [authFetch]
+  )
+
+  useEffect(() => {
+    void load()
+  }, [load])
+  useEffect(() => {
+    try {
+      if (content || title)
+        sessionStorage.setItem(draftKey, JSON.stringify({ title, content, editingId }))
+      else sessionStorage.removeItem(draftKey)
+    } catch {
+      /* Server saves remain available without browser storage. */
+    }
+  }, [title, content, editingId, draftKey])
+
+  const handleSave = async event => {
+    event.preventDefault()
+    if (!content.trim() || saving) return
     setSaving(true)
     setError(null)
     try {
-      const res = await authFetch('/api/free-stories', {
-        method: 'POST',
-        body: JSON.stringify({
-          title: title.trim() || null,
-          content: content.trim()
-        })
-      })
-      if (res.ok) {
-        setSaved(true)
-        setTimeout(() => navigate('/home'), 1200)
-      } else {
-        const data = await res.json()
-        setError(data.error || 'Failed to save. Please try again.')
+      const res = await authFetch(
+        editingId ? `/api/free-stories/${editingId}` : '/api/free-stories',
+        {
+          method: editingId ? 'PUT' : 'POST',
+          body: JSON.stringify({ title: title.trim() || null, content: content.trim() })
+        }
+      )
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error || 'Failed to save. Your draft is kept in this tab.')
       }
+      setTitle('')
+      setContent('')
+      setEditingId(null)
+      setSaved(true)
+      sessionStorage.removeItem(draftKey)
+      await load()
     } catch (err) {
-      console.error('Save error:', err)
-      setError('Something went wrong. Please try again.')
+      setError(err.message)
     } finally {
       setSaving(false)
     }
   }
 
-  if (saved) {
-    return (
-      <div className="max-w-2xl mx-auto px-4 py-16 text-center page-enter">
-        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg
-            className="w-8 h-8 text-green-600"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
-        </div>
-        <h2 className="text-2xl font-display text-ink mb-2">Story saved</h2>
-        <p className="text-sepia/60">Your memory has been preserved.</p>
-      </div>
-    )
+  const edit = story => {
+    if ((content || title) && !window.confirm('Replace the current draft with this saved story?'))
+      return
+    setTitle(story.title || '')
+    setContent(story.content)
+    setEditingId(story.id)
+    setSaved(false)
+    window.scrollTo?.({ top: 0, behavior: 'smooth' })
+  }
+  const remove = async story => {
+    if (!window.confirm('Delete this story from your memoir?')) return
+    try {
+      const res = await authFetch(`/api/free-stories/${story.id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Could not delete the story.')
+      await load()
+    } catch (err) {
+      setError(err.message)
+    }
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8 page-enter">
-      <button
-        onClick={() => navigate('/home')}
-        className="flex items-center gap-2 text-sepia/60 hover:text-sepia transition mb-6"
-      >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-        </svg>
-        Back
-      </button>
-
-      <h1 className="text-2xl sm:text-3xl font-display text-ink mb-2">Tell a Story</h1>
-      <p className="text-sepia/60 mb-8">
-        Write whatever comes to mind. A memory, a moment, a feeling.
+    <main className="max-w-2xl mx-auto px-4 py-8 page-enter">
+      <Link to="/home" className="text-sepia/60 hover:text-sepia">
+        ← Back to your memoir
+      </Link>
+      <h1 className="text-3xl font-display text-ink mt-6 mb-2">Tell a Story</h1>
+      <p className="text-sepia/60 mb-6">
+        Write a memory in your own words. Saved stories are included in your memoir and can be
+        edited below.
       </p>
-
-      {error && <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>}
-
-      <input
-        type="text"
-        value={title}
-        onChange={e => setTitle(e.target.value)}
-        placeholder="Give it a title (optional)"
-        className="w-full px-4 py-3 border border-sepia/15 rounded-xl mb-4 text-lg bg-white focus:border-sepia/40 focus:outline-none focus:ring-2 focus:ring-sepia/10 transition placeholder:text-sepia/30"
-      />
-
-      <textarea
-        value={content}
-        onChange={e => setContent(e.target.value)}
-        placeholder="Start writing your story..."
-        className="w-full px-4 py-4 border border-sepia/15 rounded-xl min-h-[300px] text-base bg-white resize-y focus:border-sepia/40 focus:outline-none focus:ring-2 focus:ring-sepia/10 transition placeholder:text-sepia/30 leading-relaxed"
-        autoFocus
-      />
-
-      <div className="flex items-center justify-between mt-6">
-        <span className="text-sepia/40 text-sm">
-          {content.length > 0 ? `${content.trim().split(/\s+/).filter(Boolean).length} words` : ''}
-        </span>
-        <div className="flex gap-3">
+      {error && (
+        <div role="alert" className="p-3 mb-4 bg-red-50 text-red-700 rounded-lg">
+          {error}
+        </div>
+      )}
+      {saved && (
+        <p role="status" className="text-green-700 mb-4">
+          Story saved. You can reopen it in Your stories below.
+        </p>
+      )}
+      <form onSubmit={handleSave}>
+        <h2 className="text-lg font-medium mb-3">{editingId ? 'Edit story' : 'New story'}</h2>
+        <label htmlFor="story-title" className="block mb-1">
+          Title (optional)
+        </label>
+        <input
+          id="story-title"
+          value={title}
+          onChange={e => {
+            setTitle(e.target.value)
+            setSaved(false)
+          }}
+          maxLength={200}
+          className="w-full px-4 py-3 border border-sepia/20 rounded-xl mb-4"
+        />
+        <label htmlFor="story-content" className="block mb-1">
+          Your story
+        </label>
+        <textarea
+          id="story-content"
+          value={content}
+          onChange={e => {
+            setContent(e.target.value)
+            setSaved(false)
+          }}
+          required
+          className="w-full px-4 py-4 border border-sepia/20 rounded-xl min-h-[300px] leading-relaxed"
+        />
+        <div className="flex justify-between items-center mt-4 mb-10 gap-4">
+          <span className="text-sm text-sepia/60">
+            {content.trim().split(/\s+/).filter(Boolean).length} words · Draft kept in this tab
+          </span>
           <button
-            onClick={() => navigate('/home')}
-            className="px-5 py-2.5 text-sepia/60 hover:text-sepia rounded-xl transition"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
+            type="submit"
             disabled={!content.trim() || saving}
-            className="px-8 py-2.5 bg-sepia text-white rounded-xl font-medium hover:bg-sepia/90 disabled:opacity-40 disabled:cursor-not-allowed transition"
+            className="px-6 py-3 bg-sepia text-white rounded-xl disabled:opacity-40"
           >
-            {saving ? 'Saving...' : 'Save Story'}
+            {saving ? 'Saving...' : editingId ? 'Save Changes' : 'Save Story'}
           </button>
         </div>
-      </div>
-    </div>
+      </form>
+      <section aria-labelledby="saved-stories-heading">
+        <h2 id="saved-stories-heading" className="text-2xl font-display mb-4">
+          Your stories
+        </h2>
+        {loading && <p role="status">Loading stories...</p>}
+        {!loading && !stories.length && (
+          <p className="text-sepia/60">Your saved stories will appear here.</p>
+        )}
+        <ul className="space-y-4">
+          {stories.map(story => (
+            <li key={story.id} className="p-4 border border-sepia/20 rounded-xl">
+              <h3 className="font-medium">{story.title || 'Untitled story'}</h3>
+              <p className="text-sepia/70 whitespace-pre-wrap mt-2">
+                {story.content.slice(0, 250)}
+                {story.content.length > 250 ? '…' : ''}
+              </p>
+              <div className="flex gap-4 mt-3">
+                <button
+                  onClick={() => edit(story)}
+                  className="underline"
+                  aria-label={`Edit ${story.title || 'untitled story'}`}
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => remove(story)}
+                  className="text-red-700 underline"
+                  aria-label={`Delete ${story.title || 'untitled story'}`}
+                >
+                  Delete
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+        {hasMore && (
+          <button
+            disabled={loading}
+            onClick={() => load(stories.length)}
+            className="underline mt-4"
+          >
+            Load more stories
+          </button>
+        )}
+      </section>
+    </main>
   )
+}
+
+export default function QuickStory() {
+  const { user } = useAuth()
+  return <StoryLibrary key={user?.id} />
 }

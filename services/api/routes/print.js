@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { randomUUID } from 'node:crypto'
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { requireDb } from '../middleware/requireDb.js'
+import { resolveManuscript } from '../services/manuscript.js'
 import { storyRepository } from '../repositories/storyRepository.js'
 import { objectStorage } from '../utils/objectStorage.js'
 import { PRINT_PACKAGE } from '../../../packages/shared/payment-catalog.js'
@@ -85,7 +86,11 @@ router.post(
     )
     if (Number(recent.rows[0].count) >= 10)
       throw new ValidationError('Please wait before preparing another proof.')
-    const stories = await storyRepository.findWithPhotos(db, userId)
+    const stories = await resolveManuscript(
+      db,
+      userId,
+      await storyRepository.findWithPhotos(db, userId)
+    )
     const allPhotos = stories.flatMap(story => story.photos || [])
     const requested = req.body.photoIds
     if (
@@ -114,22 +119,46 @@ router.post(
     const id = randomUUID(),
       textKey = `print/${userId}/${id}/text.pdf`,
       coverKey = `print/${userId}/${id}/cover.pdf`
-    await objectStorage.put(textKey, interior.bytes, 'application/pdf')
-    await objectStorage.put(coverKey, cover, 'application/pdf')
-    await db.query(
-      `INSERT INTO print_orders (id,user_id,title,text_key,cover_key,page_count,colour_pages,product_sku)
+    // A failed write/transaction leaves erasure work behind rather than an
+    // untracked private proof. Account deletion uses the same user row lock.
+    for (const key of [textKey, coverKey]) {
+      await db.query(
+        "INSERT INTO media_deletion_jobs (object_key,next_attempt_at) VALUES ($1,NOW()+INTERVAL '1 hour') ON CONFLICT (object_key) DO NOTHING",
+        [key]
+      )
+    }
+    const client = await db.connect()
+    try {
+      await client.query('BEGIN')
+      const owner = await client.query('SELECT id FROM users WHERE id=$1 FOR UPDATE', [userId])
+      if (!owner.rows.length) throw new ForbiddenError('Account unavailable')
+      await objectStorage.put(textKey, interior.bytes, 'application/pdf')
+      await objectStorage.put(coverKey, cover, 'application/pdf')
+      await client.query(
+        `INSERT INTO print_orders (id,user_id,title,text_key,cover_key,page_count,colour_pages,product_sku)
     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-      [
-        id,
-        userId,
-        title.trim(),
+        [
+          id,
+          userId,
+          title.trim(),
+          textKey,
+          coverKey,
+          interior.pageCount,
+          interior.colourPages,
+          specification.sku
+        ]
+      )
+      await client.query('DELETE FROM media_deletion_jobs WHERE object_key IN ($1,$2)', [
         textKey,
-        coverKey,
-        interior.pageCount,
-        interior.colourPages,
-        specification.sku
-      ]
-    )
+        coverKey
+      ])
+      await client.query('COMMIT')
+    } catch (error) {
+      await client.query('ROLLBACK')
+      throw error
+    } finally {
+      client.release()
+    }
     res.status(201).json({ id, pageCount: interior.pageCount, colourPages: interior.colourPages })
   })
 )

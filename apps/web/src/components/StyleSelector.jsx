@@ -1,5 +1,12 @@
 import { useState } from 'react'
-import { IconBook, IconFeather, IconSun, IconAnchor, IconCheck, IconSparkles } from '@tabler/icons-react'
+import {
+  IconBook,
+  IconFeather,
+  IconSun,
+  IconAnchor,
+  IconCheck,
+  IconSparkles
+} from '@tabler/icons-react'
 import { styleOptions } from '../data/styleOptions'
 
 const authorIcons = {
@@ -20,7 +27,7 @@ function StyleSelector({
 }) {
   const [expandedSample, setExpandedSample] = useState(null)
 
-  const toggleTone = (toneId) => {
+  const toggleTone = toneId => {
     if (selectedTones.includes(toneId)) {
       onTonesChange(selectedTones.filter(t => t !== toneId))
     } else {
@@ -53,9 +60,11 @@ function StyleSelector({
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                      isSelected ? 'border-accent bg-accent' : 'border-sepia/30'
-                    }`}>
+                    <div
+                      className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                        isSelected ? 'border-accent bg-accent' : 'border-sepia/30'
+                      }`}
+                    >
                       {isSelected && <IconCheck size={14} className="text-white" />}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -67,7 +76,7 @@ function StyleSelector({
 
                 {/* Sample preview toggle */}
                 <button
-                  onClick={(e) => {
+                  onClick={e => {
                     e.stopPropagation()
                     setExpandedSample(expandedSample === tone.id ? null : tone.id)
                   }}
@@ -108,9 +117,11 @@ function StyleSelector({
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                      isSelected ? 'border-accent' : 'border-sepia/30'
-                    }`}>
+                    <div
+                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                        isSelected ? 'border-accent' : 'border-sepia/30'
+                      }`}
+                    >
                       {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-accent" />}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -121,7 +132,7 @@ function StyleSelector({
                 </button>
 
                 <button
-                  onClick={(e) => {
+                  onClick={e => {
                     e.stopPropagation()
                     setExpandedSample(expandedSample === narrative.id ? null : narrative.id)
                   }}
@@ -144,7 +155,9 @@ function StyleSelector({
       {/* Author Style - Single select with cards */}
       <section>
         <h3 className="text-lg font-semibold text-sepia mb-2">Author Inspiration</h3>
-        <p className="text-sm text-sepia/60 mb-4">Optional: Write in the style of a famous author</p>
+        <p className="text-sm text-sepia/60 mb-4">
+          Optional: Write in the style of a famous author
+        </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {styleOptions.authors.map(author => {
@@ -163,9 +176,11 @@ function StyleSelector({
                   }`}
                 >
                   <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                      isSelected ? 'bg-accent text-white' : 'bg-sepia/10 text-sepia/60'
-                    }`}>
+                    <div
+                      className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                        isSelected ? 'bg-accent text-white' : 'bg-sepia/10 text-sepia/60'
+                      }`}
+                    >
                       <Icon size={24} stroke={1.5} />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -181,7 +196,7 @@ function StyleSelector({
                 </button>
 
                 <button
-                  onClick={(e) => {
+                  onClick={e => {
                     e.stopPropagation()
                     setExpandedSample(expandedSample === author.id ? null : author.id)
                   }}

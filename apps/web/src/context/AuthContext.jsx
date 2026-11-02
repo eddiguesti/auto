@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { API_URL } from '../config'
 import { CONNECTION_ERROR } from '../lib/apiResponse'
+import { queryClient } from '../lib/queryClient'
 
 const AuthContext = createContext(null)
 const DEV_BYPASS = import.meta.env.DEV && import.meta.env.VITE_DEV_BYPASS === 'true'
@@ -34,6 +35,8 @@ export function AuthProvider({ children }) {
   const verificationRef = useRef(0)
 
   const clearSession = useCallback(() => {
+    void queryClient.cancelQueries()
+    queryClient.clear()
     tokenRef.current = null
     userRef.current = null
     verificationRef.current += 1
@@ -110,6 +113,10 @@ export function AuthProvider({ children }) {
   const login = useCallback((userData, authToken) => {
     if (!validUser(userData) || typeof authToken !== 'string' || !authToken.trim())
       throw new Error('Invalid sign-in response')
+    if (userRef.current?.id !== userData.id) {
+      void queryClient.cancelQueries()
+      queryClient.clear()
+    }
     verificationRef.current += 1
     tokenRef.current = authToken
     userRef.current = userData
@@ -122,7 +129,9 @@ export function AuthProvider({ children }) {
 
   const authFetch = useCallback(
     async (url, options = {}) => {
-      const currentToken = tokenRef.current
+      // A deferred write from a previous account must never adopt the new account's token.
+      const currentToken = token
+      if (currentToken !== tokenRef.current) throw new Error('Sign-in changed. Please try again.')
       const headers = { ...options.headers }
       if (currentToken) headers.Authorization = `Bearer ${currentToken}`
       if (options.body && !(options.body instanceof FormData))
@@ -148,7 +157,7 @@ export function AuthProvider({ children }) {
       }
       return response
     },
-    [clearSession]
+    [clearSession, token]
   )
 
   const value = useMemo(

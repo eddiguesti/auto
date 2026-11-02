@@ -10,20 +10,20 @@
 export const queryKeys = {
   stories: {
     all: ['stories'],
-    chapter: chapterId => ['stories', 'chapter', chapterId],
+    chapter: (chapterId, userId) => ['stories', userId, 'chapter', chapterId],
     byId: storyId => ['stories', storyId]
   },
   game: {
-    state: ['game', 'state'],
-    achievements: ['game', 'achievements']
+    state: userId => ['game', userId, 'state'],
+    achievements: userId => ['game', userId, 'achievements']
   },
   user: {
     profile: userId => ['user', userId],
     onboarding: userId => ['user', userId, 'onboarding']
   },
   payments: {
-    status: ['payments', 'status'],
-    history: ['payments', 'history']
+    status: userId => ['payments', userId, 'status'],
+    history: userId => ['payments', userId, 'history']
   },
   dashboard: {
     progress: userId => ['dashboard', userId, 'progress']

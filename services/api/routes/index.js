@@ -15,6 +15,7 @@ import storiesRouter from './stories.js'
 import photosRouter from './photos.js'
 import aiRouter from './ai.js'
 import voiceRouter from './voice.js'
+import voiceUploadRouter from './voiceUpload.js'
 import luluRouter from './lulu.js'
 import memoryRouter from './memory.js'
 import coversRouter from './covers.js'
@@ -95,7 +96,7 @@ export function mountRoutes(app, { express, pool }) {
   app.use('/api/stories', authenticateToken, storiesRouter)
   app.use('/api/photos', authenticateToken, photosRouter)
   app.use('/api/ai', authenticateToken, checkAIQuota, aiRouter)
-  app.use('/api/voice', authenticateToken, checkAIQuota, voiceRouter)
+  app.use('/api/voice', authenticateToken, voiceUploadRouter, voiceRouter)
   app.use('/api/memory', authenticateToken, memoryRouter)
   app.use('/api/lulu', authenticateToken, luluRouter)
   app.use('/api/covers', authenticateToken, coversRouter)
@@ -147,7 +148,7 @@ export function mountRoutes(app, { express, pool }) {
   app.use('/api/v1/stories', authenticateToken, storiesRouter)
   app.use('/api/v1/photos', authenticateToken, photosRouter)
   app.use('/api/v1/ai', authenticateToken, checkAIQuota, aiRouter)
-  app.use('/api/v1/voice', authenticateToken, checkAIQuota, voiceRouter)
+  app.use('/api/v1/voice', authenticateToken, voiceUploadRouter, voiceRouter)
   app.use('/api/v1/memory', authenticateToken, memoryRouter)
   app.use('/api/v1/lulu', authenticateToken, luluRouter)
   app.use('/api/v1/covers', authenticateToken, coversRouter)

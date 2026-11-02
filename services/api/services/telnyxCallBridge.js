@@ -326,7 +326,7 @@ NEVER:
     // Save transcript if we have content
     if (this.userTranscript && this.db) {
       try {
-        await this.saveTranscript(duration)
+        await this.saveTranscript()
       } catch (err) {
         logger.error('Failed to save transcript', { callId: this.callId, error: err.message })
       }
@@ -352,7 +352,7 @@ NEVER:
   /**
    * Save the phone call transcript as a story entry
    */
-  async saveTranscript(duration) {
+  async saveTranscript() {
     const chapterId = this.prompt?.chapter_id || 'phone-calls'
     const questionId = this.prompt?.question_id || `phone-${Date.now()}`
 
@@ -373,7 +373,8 @@ NEVER:
       `INSERT INTO stories (user_id, chapter_id, question_id, answer, voice_session_id, updated_at)
        VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
        ON CONFLICT (user_id, chapter_id, question_id)
-       DO UPDATE SET answer = $4, voice_session_id = $5, updated_at = CURRENT_TIMESTAMP`,
+       DO UPDATE SET answer = $4, voice_session_id = $5, compiled_content = NULL,
+         compiled_at = NULL, updated_at = CURRENT_TIMESTAMP`,
       [this.userId, chapterId, questionId, fullTranscript, sessionId]
     )
 

@@ -1,6 +1,6 @@
 import { Router } from 'express'
 // epub-gen-memory is dynamically imported to ensure polyfills load first
-import { chapters } from '@easy-memoir/shared/chapters'
+import { resolveManuscript, manuscriptChapters } from '../services/manuscript.js'
 import { storyRepository } from '../repositories/storyRepository.js'
 import { paymentRepository } from '../repositories/paymentRepository.js'
 import { asyncHandler } from '../middleware/asyncHandler.js'
@@ -21,6 +21,24 @@ function escapeHtml(text) {
     .replace(/'/g, '&#039;')
 }
 
+// The preview and all publishers resolve the author's final copy identically.
+router.get(
+  '/manuscript',
+  requireDb,
+  asyncHandler(async (req, res) => {
+    if (req.user.scope) return res.status(403).json({ error: 'Full account access required' })
+    const db = req.app.locals.db
+    res.set('Cache-Control', 'private, no-store')
+    res.json(
+      await resolveManuscript(
+        db,
+        req.user.id,
+        await storyRepository.findWithPhotos(db, req.user.id)
+      )
+    )
+  })
+)
+
 // Generate EPUB eBook
 router.get(
   '/epub',
@@ -29,6 +47,7 @@ router.get(
     const db = req.app.locals.db
     const userId = req.user.id
 
+    if (req.user.scope) return res.status(403).json({ error: 'Full account access required' })
     // Verify user has paid for export or is an early adopter
     const [hasPaid, isEarlyAdopter, settings] = await Promise.all([
       paymentRepository.hasProductPayment(db, userId, 'export'),
@@ -44,7 +63,11 @@ router.get(
     const userName = settings?.name || 'My'
 
     // Get all stories with photos
-    const storiesResult = await storyRepository.findWithPhotos(db, userId)
+    const storiesResult = await resolveManuscript(
+      db,
+      userId,
+      await storyRepository.findWithPhotos(db, userId)
+    )
 
     // Organize stories by chapter
     const stories = {}
@@ -74,7 +97,7 @@ router.get(
     })
 
     // Process each chapter
-    for (const chapter of chapters) {
+    for (const chapter of manuscriptChapters(storiesResult)) {
       const chapterStories = stories[chapter.id]
       if (!chapterStories) continue
 
@@ -83,13 +106,15 @@ router.get(
 
       let chapterContent = `
         <div style="text-align: center; padding: 40px 0; border-bottom: 1px solid #ddd; margin-bottom: 30px;">
-          <h2 style="font-size: 1.8em; margin-bottom: 10px;">${chapter.title}</h2>
-          <p style="color: #666; font-style: italic;">${chapter.subtitle}</p>
+          <h2 style="font-size: 1.8em; margin-bottom: 10px;">${escapeHtml(chapter.title)}</h2>
+          <p style="color: #666; font-style: italic;">${escapeHtml(chapter.subtitle)}</p>
         </div>
       `
 
       // Sort stories by question_id to maintain consistent order
-      storiesWithContent.sort((a, b) => a.question_id.localeCompare(b.question_id))
+      storiesWithContent.sort((a, b) =>
+        a.question_id.localeCompare(b.question_id, undefined, { numeric: true })
+      )
 
       for (const story of storiesWithContent) {
         if (!story?.answer?.trim()) continue
@@ -149,6 +174,11 @@ router.get(
 
     const epubBuffer = await Epub(options)
 
+    await db.query('INSERT INTO generated_exports (user_id, format) VALUES ($1, $2)', [
+      userId,
+      'epub'
+    ])
+
     // Set headers for download
     res.setHeader('Content-Type', 'application/epub+zip')
     res.setHeader(
@@ -168,7 +198,10 @@ router.get(
     const userId = req.user.id
 
     const [{ total: storyCount }, hasPaid, isEarlyAdopter] = await Promise.all([
-      storyRepository.countByUser(db, userId),
+      storyRepository
+        .findWithPhotos(db, userId)
+        .then(rows => resolveManuscript(db, userId, rows))
+        .then(rows => ({ total: rows.filter(row => row.answer?.trim()).length })),
       paymentRepository.hasProductPayment(db, userId, 'export'),
       paymentRepository.isEarlyAdopter(db, userId)
     ])

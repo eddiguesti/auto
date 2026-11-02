@@ -3,7 +3,7 @@
  * Free-form text entry - mirrors web QuickStory.jsx
  */
 
-import React, { useState } from 'react';
+import React, { useState } from 'react'
 import {
   View,
   Text,
@@ -13,41 +13,41 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  ActivityIndicator,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors, spacing, borderRadius, fonts, shadows } from '../utils/theme';
-import haptics from '../utils/haptics';
-import api from '../services/api';
-import { IconChevronLeft, IconCheck } from '../components';
+  ActivityIndicator
+} from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { colors, spacing, borderRadius, fonts, shadows } from '../utils/theme'
+import haptics from '../utils/haptics'
+import api from '../services/api'
+import { IconChevronLeft, IconCheck } from '../components'
 
 export default function QuickStoryScreen({ navigation }: any) {
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [title, setTitle] = useState('')
+  const [content, setContent] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const wordCount = content.trim() ? content.trim().split(/\s+/).filter(Boolean).length : 0;
+  const wordCount = content.trim() ? content.trim().split(/\s+/).filter(Boolean).length : 0
 
   const handleSave = async () => {
-    if (!content.trim()) return;
-    setSaving(true);
-    setError(null);
-    haptics.mediumTap();
+    if (!content.trim()) return
+    setSaving(true)
+    setError(null)
+    haptics.mediumTap()
 
     try {
-      await api.createFreeStory(content.trim(), title.trim() || undefined);
-      setSaved(true);
-      haptics.successNotification();
-      setTimeout(() => navigation.goBack(), 1200);
+      await api.createFreeStory(content.trim(), title.trim() || undefined)
+      setSaved(true)
+      haptics.success()
+      setTimeout(() => navigation.goBack(), 1200)
     } catch (err: any) {
-      console.error('Save error:', err);
-      setError(err.message || 'Something went wrong. Please try again.');
+      console.error('Save error:', err)
+      setError(err.message || 'Something went wrong. Please try again.')
     } finally {
-      setSaving(false);
+      setSaving(false)
     }
-  };
+  }
 
   if (saved) {
     return (
@@ -60,7 +60,7 @@ export default function QuickStoryScreen({ navigation }: any) {
           <Text style={styles.successSub}>Your memory has been preserved.</Text>
         </View>
       </SafeAreaView>
-    );
+    )
   }
 
   return (
@@ -119,9 +119,7 @@ export default function QuickStoryScreen({ navigation }: any) {
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.wordCount}>
-            {wordCount > 0 ? `${wordCount} words` : ''}
-          </Text>
+          <Text style={styles.wordCount}>{wordCount > 0 ? `${wordCount} words` : ''}</Text>
           <View style={styles.footerButtons}>
             <TouchableOpacity
               style={styles.cancelButton}
@@ -131,10 +129,7 @@ export default function QuickStoryScreen({ navigation }: any) {
               <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[
-                styles.saveButton,
-                (!content.trim() || saving) && styles.saveButtonDisabled,
-              ]}
+              style={[styles.saveButton, (!content.trim() || saving) && styles.saveButtonDisabled]}
               onPress={handleSave}
               disabled={!content.trim() || saving}
               activeOpacity={0.8}
@@ -149,34 +144,34 @@ export default function QuickStoryScreen({ navigation }: any) {
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.background
   },
   scrollContent: {
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.lg,
+    paddingBottom: spacing.lg
   },
 
   // Header
   header: {
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.sm
   },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.sm
   },
   backText: {
     fontSize: 16,
     fontFamily: fonts.body,
-    color: colors.textMuted,
+    color: colors.textMuted
   },
 
   // Content
@@ -184,13 +179,13 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontFamily: fonts.display,
     color: colors.text,
-    marginBottom: spacing.xs,
+    marginBottom: spacing.xs
   },
   subtitle: {
     fontSize: 15,
     fontFamily: fonts.body,
     color: colors.textMuted,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.lg
   },
 
   // Error
@@ -198,12 +193,12 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     backgroundColor: '#FEF2F2',
     borderRadius: borderRadius.lg,
-    marginBottom: spacing.md,
+    marginBottom: spacing.md
   },
   errorText: {
     fontSize: 14,
     fontFamily: fonts.body,
-    color: '#DC2626',
+    color: '#DC2626'
   },
 
   // Inputs
@@ -217,7 +212,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: fonts.body,
     color: colors.text,
-    marginBottom: spacing.md,
+    marginBottom: spacing.md
   },
   contentInput: {
     backgroundColor: colors.surface,
@@ -230,7 +225,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.body,
     color: colors.text,
     minHeight: 250,
-    lineHeight: 26,
+    lineHeight: 26
   },
 
   // Footer
@@ -242,41 +237,41 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     borderTopWidth: 1,
     borderTopColor: colors.borderLight,
-    backgroundColor: colors.background,
+    backgroundColor: colors.background
   },
   wordCount: {
     fontSize: 13,
     fontFamily: fonts.body,
-    color: colors.textMuted,
+    color: colors.textMuted
   },
   footerButtons: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.md
   },
   cancelButton: {
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.sm
   },
   cancelText: {
     fontSize: 16,
     fontFamily: fonts.body,
-    color: colors.textMuted,
+    color: colors.textMuted
   },
   saveButton: {
     backgroundColor: colors.primary,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.sm + 4,
     borderRadius: borderRadius.xl,
-    ...shadows.button,
+    ...shadows.button
   },
   saveButtonDisabled: {
-    opacity: 0.4,
+    opacity: 0.4
   },
   saveText: {
     fontSize: 16,
     fontFamily: fonts.bodySemiBold,
-    color: colors.textOnPrimary,
+    color: colors.textOnPrimary
   },
 
   // Success
@@ -284,7 +279,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: spacing.xl,
+    padding: spacing.xl
   },
   successIcon: {
     width: 64,
@@ -293,17 +288,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors.success,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: spacing.md,
+    marginBottom: spacing.md
   },
   successTitle: {
     fontSize: 24,
     fontFamily: fonts.display,
     color: colors.text,
-    marginBottom: spacing.xs,
+    marginBottom: spacing.xs
   },
   successSub: {
     fontSize: 16,
     fontFamily: fonts.body,
-    color: colors.textMuted,
-  },
-});
+    color: colors.textMuted
+  }
+})

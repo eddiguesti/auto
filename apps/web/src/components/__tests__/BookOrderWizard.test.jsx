@@ -12,18 +12,16 @@ vi.mock('../../context/AuthContext', () => ({
 let printStatus
 beforeEach(() => {
   printStatus = { available: true, hasEntitlement: true, orders: [] }
-  mocks.authFetch
-    .mockReset()
-    .mockImplementation(async path => ({
-      ok: true,
-      json: async () =>
-        path === '/api/print/status'
-          ? printStatus
-          : path === '/api/stories/all'
-            ? []
-            : { id: 'proof-1', pageCount: 100, colourPages: 0 },
-      blob: async () => new Blob(['PDF'])
-    }))
+  mocks.authFetch.mockReset().mockImplementation(async path => ({
+    ok: true,
+    json: async () =>
+      path === '/api/print/status'
+        ? printStatus
+        : path === '/api/stories/all'
+          ? []
+          : { id: 'proof-1', pageCount: 100, colourPages: 0 },
+    blob: async () => new Blob(['PDF'])
+  }))
   window.history.replaceState({}, '', '/')
 })
 describe('ten-hardback package', () => {

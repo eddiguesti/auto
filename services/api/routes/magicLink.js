@@ -1,4 +1,6 @@
 import { Router } from 'express'
+import { authenticateToken } from '../middleware/auth.js'
+import { reserveAIUsage } from '../middleware/aiQuota.js'
 import crypto from 'crypto'
 import jwt from 'jsonwebtoken'
 import { asyncHandler } from '../middleware/asyncHandler.js'
@@ -23,18 +25,19 @@ router.get(
       return res.status(400).json({ error: 'Invalid link' })
     }
 
+    const secret = process.env.JWT_SECRET
+    if (!secret || secret.length < 32 || /CHANGE_ME/i.test(secret))
+      throw new ConfigurationError('JWT_SECRET')
+
     // Hash the token to compare against stored hash
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex')
 
     // Find valid, unused, non-expired token
     const result = await db.query(
-      `SELECT est.*, u.email, u.name, u.id as user_id
-     FROM email_session_tokens est
-     JOIN users u ON est.user_id = u.id
-     WHERE est.token_hash = $1
-       AND est.used_at IS NULL
-       AND est.expires_at > NOW()
-     LIMIT 1`,
+      `UPDATE email_session_tokens est SET used_at = NOW()
+     FROM users u WHERE est.user_id = u.id AND u.deleted_at IS NULL AND est.token_hash = $1
+       AND est.used_at IS NULL AND est.expires_at > NOW()
+     RETURNING est.*, u.email, u.name, u.id as user_id`,
       [tokenHash]
     )
 
@@ -47,20 +50,17 @@ router.get(
     const session = result.rows[0]
 
     // Generate a scoped JWT (shorter expiry, limited permissions)
-    const secret = process.env.JWT_SECRET
     const scopedToken = jwt.sign(
       {
         id: session.user_id,
         email: session.email,
         scope: 'magic_link',
+        jti: crypto.randomUUID(),
         session_token_id: session.id
       },
       secret,
       { expiresIn: '2h' }
     )
-
-    // Mark as used
-    await db.query(`UPDATE email_session_tokens SET used_at = NOW() WHERE id = $1`, [session.id])
 
     logger.info(`Magic link used by user ${session.user_id}`)
 
@@ -86,31 +86,23 @@ router.get(
  */
 router.post(
   '/:token/session',
+  authenticateToken,
   asyncHandler(async (req, res) => {
-    // Verify the scoped JWT from Authorization header
-    const authHeader = req.headers['authorization']
-    const jwtToken = authHeader && authHeader.split(' ')[1]
-
-    if (!jwtToken) {
-      return res.status(401).json({ error: 'Authentication required' })
-    }
-
-    const secret = process.env.JWT_SECRET
-    let decoded
-    try {
-      decoded = jwt.verify(jwtToken, secret)
-    } catch {
-      return res
-        .status(403)
-        .json({ error: 'Session expired. Please use the link from your email again.' })
-    }
-
-    if (decoded.scope !== 'magic_link') {
+    const decoded = req.user
+    if (decoded.scope !== 'magic_link')
       return res.status(403).json({ error: 'Invalid session type' })
-    }
-
     const { chapterId } = req.body
     const db = req.app.locals.db
+    const link = await db.query(
+      `SELECT id FROM email_session_tokens WHERE id = $1 AND user_id = $2 AND token_hash = $3
+       AND used_at IS NOT NULL AND expires_at > NOW()`,
+      [
+        decoded.session_token_id,
+        decoded.id,
+        crypto.createHash('sha256').update(req.params.token).digest('hex')
+      ]
+    )
+    if (!link.rows[0]) return res.status(403).json({ error: 'Invalid session link' })
 
     // Create xAI Realtime session
     const apiKey = process.env.GROK_API_KEY
@@ -118,8 +110,7 @@ router.post(
       throw new ConfigurationError('GROK_API_KEY')
     }
 
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 15000)
+    await reserveAIUsage(db, decoded.id)
     const response = await fetch('https://api.x.ai/v1/realtime/client_secrets', {
       method: 'POST',
       headers: {
@@ -129,9 +120,8 @@ router.post(
       body: JSON.stringify({
         expires_after: { seconds: 600 } // 10 minute token for seniors (longer than normal)
       }),
-      signal: controller.signal
+      signal: AbortSignal.timeout(15000)
     })
-    clearTimeout(timeoutId)
 
     if (!response.ok) {
       logger.error('xAI session error', { status: response.status, requestId: req.id })

@@ -34,6 +34,8 @@ beforeEach(() => {
   revoked.clear()
   state.query.mockReset()
   state.query.mockImplementation(async (sql, values) => {
+    if (sql === 'SELECT id FROM users WHERE id = $1 AND deleted_at IS NULL')
+      return { rows: [{ id: 7 }] }
     if (sql.includes('INSERT INTO token_blacklist')) revoked.add(values[0])
     if (sql.includes('SELECT 1 FROM token_blacklist'))
       return { rows: revoked.has(values[0]) ? [{ found: 1 }] : [] }
@@ -121,6 +123,8 @@ it.each(['token_blacklist', 'user_token_invalidation'])(
 it('a failed logout write returns503 and the same JWT remains usable after recovery', async () => {
   const token = sign({ scope: 'magic_link' })
   state.query.mockImplementation(async sql => {
+    if (sql === 'SELECT id FROM users WHERE id = $1 AND deleted_at IS NULL')
+      return { rows: [{ id: 7 }] }
     if (sql.includes('INSERT INTO token_blacklist')) throw new Error('database unavailable')
     return { rows: [] }
   })
@@ -128,7 +132,11 @@ it('a failed logout write returns503 and the same JWT remains usable after recov
   expect(response.status).toBe(503)
   expect((await response.json()).code).toBe('REVOCATION_UNAVAILABLE')
   state.query.mockImplementation(async sql => ({
-    rows: sql.includes('SELECT id, email') ? [{ id: 7 }] : []
+    rows:
+      sql.includes('SELECT id, email') ||
+      sql === 'SELECT id FROM users WHERE id = $1 AND deleted_at IS NULL'
+        ? [{ id: 7 }]
+        : []
   }))
   expect((await call('/api/auth/me', token)).status).toBe(200)
 })
@@ -151,4 +159,12 @@ it('an absent revocation database and corrupt invalidation timestamp fail closed
   await expect(isTokenBlacklisted('session', null)).rejects.toMatchObject({ statusCode: 503 })
   state.query.mockResolvedValue({ rows: [{ invalidated_at: 'not-a-date' }] })
   await expect(isUserTokenBlacklisted(7, 100)).rejects.toMatchObject({ statusCode: 503 })
+})
+
+it('rejects all still-signed sessions after the account is deleted', async () => {
+  const token = sign({ jti: 'older-session' })
+  state.query.mockResolvedValue({ rows: [] })
+  const response = await call('/api/auth/me', token)
+  expect(response.status).toBe(401)
+  expect(await response.json()).toEqual({ error: 'Account no longer available' })
 })

@@ -1,5 +1,4 @@
 import { Router } from 'express'
-import Stripe from 'stripe'
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { requireDb } from '../middleware/requireDb.js'
 import validate from '../middleware/validate.js'
@@ -9,16 +8,8 @@ import { createLogger } from '../utils/logger.js'
 const router = Router()
 const logger = createLogger('refunds')
 
-const getStripe = () => {
-  const key = process.env.STRIPE_SECRET_KEY
-  if (!key) {
-    throw new Error('STRIPE_SECRET_KEY not configured')
-  }
-  return new Stripe(key)
-}
-
 // Total chapters available in the app
-const TOTAL_CHAPTERS = 12
+const TOTAL_CHAPTERS = 24
 
 // Usage thresholds that void the 30-day money-back guarantee
 const GUARANTEE_THRESHOLDS = {
@@ -39,21 +30,21 @@ router.get(
     // Count chapters with content
     const chaptersResult = await db.query(
       `SELECT COUNT(DISTINCT chapter_id) as count FROM stories
-       WHERE user_id = $1 AND content IS NOT NULL AND TRIM(content) != ''`,
+       WHERE user_id = $1 AND answer IS NOT NULL AND TRIM(answer) != ''`,
       [userId]
     )
 
     // Count voice sessions
     const voiceResult = await db.query(
-      `SELECT COUNT(*) as count FROM stories
-       WHERE user_id = $1 AND source = 'voice'`,
+      `SELECT COUNT(*) as count FROM voice_sessions
+       WHERE user_id = $1`,
       [userId]
     )
 
     // Count exports generated
     const exportsResult = await db.query(
-      `SELECT COUNT(*) as count FROM payments
-       WHERE user_id = $1 AND product_type IN ('export', 'audiobook') AND status = 'completed'`,
+      `SELECT COUNT(*) as count FROM generated_exports
+       WHERE user_id = $1`,
       [userId]
     )
 

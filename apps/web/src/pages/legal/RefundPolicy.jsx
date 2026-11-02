@@ -207,16 +207,15 @@ export default function RefundPolicy() {
               guarantee is <strong>void</strong> if:
             </p>
 
-            <h3 className="font-display text-xl text-ink mb-2 mt-6">4.1 The 25% Usage Threshold</h3>
+            <h3 className="font-display text-xl text-ink mb-2 mt-6">4.1 Usage Thresholds</h3>
             <p className="text-warmgray leading-relaxed">
-              The guarantee is no longer available if you have used{' '}
-              <strong>more than 25% of the Service's core features</strong>. Usage is measured
-              objectively by the following criteria:
+              The guarantee is no longer available if any of the following usage thresholds is
+              exceeded:
             </p>
             <ul className="list-disc list-inside text-warmgray mt-2 space-y-2">
               <li>
-                <strong>Chapters completed:</strong> You have written content in more than 3 of the
-                12 available chapters (i.e., more than 25%).
+                <strong>Chapters with content:</strong> You have written content in more than three
+                chapters.
               </li>
               <li>
                 <strong>AI voice sessions:</strong> You have conducted more than 3 AI voice
@@ -364,8 +363,8 @@ export default function RefundPolicy() {
               5.4 Bundles (Premium Bundle &amp; Welcome Bundle)
             </h3>
             <p className="text-warmgray leading-relaxed">
-              Bundle purchases (£250.00) include digital access plus 10 hardback books and an audiobook.
-              Refund terms depend on which components have been used:
+              Bundle purchases (£250.00) include digital access plus 10 hardback books and an
+              audiobook. Refund terms depend on which components have been used:
             </p>
             <ul className="list-disc list-inside text-warmgray mt-2 space-y-2">
               <li>

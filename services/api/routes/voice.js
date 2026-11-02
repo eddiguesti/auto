@@ -1,8 +1,8 @@
 import { Router } from 'express'
+import { checkAIQuota } from '../middleware/aiQuota.js'
 import { getCompactMemoryContext } from '../utils/memoryContext.js'
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { createLogger } from '../utils/logger.js'
-import { grokChat } from '../services/grokService.js'
 import { sanitizeForPrompt } from '../utils/security.js'
 import { extractAndStoreEntities } from '../services/entityExtractionService.js'
 import { compileTranscripts } from '../services/transcriptService.js'
@@ -159,7 +159,7 @@ router.get(
             onboardingNote = `\n\nALREADY KNOWN FROM SIGNUP: The user is ${parts.join(', ')}. Do NOT re-ask where they were born or what year. Go straight to deeper questions.`
           }
         }
-      } catch (err) {
+      } catch {
         // Non-critical
       }
     }
@@ -191,21 +191,8 @@ router.get(
             )
             if (storiesResult.rows.length > 0) {
               const content = storiesResult.rows.map(r => r.compiled_content).join('\n\n')
-              if (content.length > 100) {
-                // Create brief summary for AI context
-                try {
-                  const summaryResult = await grokChat({
-                    systemPrompt:
-                      'Summarize these memoir excerpts in 2-3 sentences for context. Be brief.',
-                    userPrompt: content.substring(0, 2000),
-                    maxTokens: 150,
-                    temperature: 0.5
-                  })
-                  compiledSummary = summaryResult.content
-                } catch (err) {
-                  // Non-critical
-                }
-              }
+              // Configuration is a read operation: reuse bounded persisted context without a paid AI call.
+              compiledSummary = content.substring(0, 2000)
             }
           }
         }
@@ -345,7 +332,8 @@ router.post(
       `INSERT INTO stories (user_id, chapter_id, question_id, answer, voice_session_id, updated_at)
        VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
        ON CONFLICT (user_id, chapter_id, question_id)
-       DO UPDATE SET answer = $4, voice_session_id = $5, updated_at = CURRENT_TIMESTAMP
+       DO UPDATE SET answer = $4, voice_session_id = $5, compiled_content = NULL,
+         compiled_at = NULL, updated_at = CURRENT_TIMESTAMP
        RETURNING id`,
       [userId, chapter_id, question_id, safeTranscript, session_id]
     )
@@ -459,6 +447,7 @@ router.post(
 // Manually trigger compilation
 router.post(
   '/compile',
+  checkAIQuota,
   asyncHandler(async (req, res) => {
     const db = req.app.locals.db
     const userId = req.user.id

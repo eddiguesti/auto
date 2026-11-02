@@ -28,7 +28,7 @@ const validators = {
     return { valid: true, value: sanitized }
   },
 
-  email: (value) => {
+  email: value => {
     if (typeof value !== 'string') return { valid: false, error: 'must be a string' }
     const sanitized = value.trim().toLowerCase()
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -67,7 +67,7 @@ const validators = {
     return { valid: true, value: num }
   },
 
-  boolean: (value) => {
+  boolean: value => {
     if (typeof value === 'boolean') return { valid: true, value }
     if (value === 'true') return { valid: true, value: true }
     if (value === 'false') return { valid: true, value: false }
@@ -111,7 +111,7 @@ const validators = {
     }
   },
 
-  uuid: (value) => {
+  uuid: value => {
     if (typeof value !== 'string') return { valid: false, error: 'must be a string' }
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
     if (!uuidRegex.test(value)) {
@@ -291,7 +291,7 @@ export const commonSchemas = {
     required: true,
     minLength: 8,
     maxLength: 128,
-    validate: (v) => {
+    validate: v => {
       if (!/[a-z]/.test(v)) return 'must contain a lowercase letter'
       if (!/[A-Z]/.test(v)) return 'must contain an uppercase letter'
       if (!/[0-9]/.test(v)) return 'must contain a number'

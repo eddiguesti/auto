@@ -19,6 +19,7 @@ export function useVoiceRecording({ maxDuration = 30000, onRecordingComplete } =
   const timeoutRef = useRef(null)
 
   useEffect(() => {
+    mountedRef.current = true
     return () => {
       mountedRef.current = false
       if (timeoutRef.current) {
@@ -46,6 +47,10 @@ export function useVoiceRecording({ maxDuration = 30000, onRecordingComplete } =
     let stream = null
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      if (!mountedRef.current) {
+        stream.getTracks().forEach(track => track.stop())
+        return
+      }
       const recorder = new MediaRecorder(stream)
       mediaRecorderRef.current = recorder
       audioChunksRef.current = []
@@ -55,7 +60,9 @@ export function useVoiceRecording({ maxDuration = 30000, onRecordingComplete } =
       }
 
       recorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' })
+        const audioBlob = new Blob(audioChunksRef.current, {
+          type: recorder.mimeType || audioChunksRef.current[0]?.type || 'audio/webm'
+        })
         stream.getTracks().forEach(track => track.stop())
 
         if (!mountedRef.current) return

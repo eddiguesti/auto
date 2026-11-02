@@ -54,6 +54,20 @@ export async function authenticateToken(req, res, next) {
       return res.status(401).json({ error: 'Token revoked' })
     }
 
+    // Revocation rows can cascade during account deletion. A still-signed token
+    // must never authenticate a deleted account, including older sessions.
+    let account
+    try {
+      account = await database.query('SELECT id FROM users WHERE id = $1 AND deleted_at IS NULL', [
+        decoded.id
+      ])
+    } catch {
+      return res
+        .status(503)
+        .json({ error: 'Account verification unavailable', code: 'AUTH_UNAVAILABLE' })
+    }
+    if (!account.rows.length) return res.status(401).json({ error: 'Account no longer available' })
+
     req.user = decoded // { id, email, jti }
     req.token = token
     next()

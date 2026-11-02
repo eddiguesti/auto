@@ -79,7 +79,7 @@ router.post(
     const { storyId, tones, narrative, authorStyle } = req.validatedBody
 
     // Rate limiting
-    const rateCheck = checkRateLimit(userId)
+    const rateCheck = await checkRateLimit(userId)
     if (!rateCheck.allowed) {
       return res.status(429).json({
         error: 'Too many requests',
@@ -136,7 +136,7 @@ router.post(
     const { tones, narrative, authorStyle } = req.validatedBody
 
     // Rate limiting (stricter for batch operations)
-    const rateCheck = checkRateLimit(userId)
+    const rateCheck = await checkRateLimit(userId)
     if (!rateCheck.allowed) {
       return res.status(429).json({
         error: 'Too many requests',

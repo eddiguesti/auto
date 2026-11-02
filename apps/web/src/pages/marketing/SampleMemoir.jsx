@@ -37,8 +37,8 @@ export default function SampleMemoir() {
             A life, <em>remembered.</em>
           </h1>
           <p>
-            Explore a few pages from <em>A Life Well Lived</em>. This fictional sample shows how your
-            memories could become a memoir.
+            Explore a few pages from <em>A Life Well Lived</em>. This fictional sample shows how
+            your memories could become a memoir.
           </p>
         </header>
         <div className="sample-reader-layout">

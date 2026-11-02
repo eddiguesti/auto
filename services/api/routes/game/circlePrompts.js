@@ -1,12 +1,14 @@
 // /life-story/services/api/routes/game/circlePrompts.js
 
 import { Router } from 'express'
-import pool from '../../db/index.js'
+import defaultPool from '../../db/index.js'
 import { asyncHandler } from '../../middleware/asyncHandler.js'
 import validate from '../../middleware/validate.js'
 import { circlePromptSchemas } from '../../schemas/index.js'
 import { recordActivity } from '../../utils/gameStateManager.js'
 import { awardAchievement } from '../../services/gameService.js'
+import { createLogger } from '../../utils/logger.js'
+const logger = createLogger('family-prompts')
 
 const router = Router()
 
@@ -22,6 +24,7 @@ router.post(
   '/circle/prompt',
   validate(circlePromptSchemas.send),
   asyncHandler(async (req, res) => {
+    const pool = req.app.locals.db || defaultPool
     const userId = req.user.id
     const { forUserId, promptText, promptNote } = req.validatedBody
 
@@ -65,6 +68,7 @@ router.post(
 router.get(
   '/circle/prompts',
   asyncHandler(async (req, res) => {
+    const pool = req.app.locals.db || defaultPool
     const userId = req.user.id
 
     // Prompts received
@@ -107,58 +111,53 @@ router.post(
   '/circle/prompt/:promptId/answer',
   validate(circlePromptSchemas.answer),
   asyncHandler(async (req, res) => {
+    const pool = req.app.locals.db || defaultPool
     const userId = req.user.id
     const { promptId } = req.validatedParams
     const { answer } = req.validatedBody
 
-    // Get the prompt
-    const prompt = await pool.query(
-      'SELECT id, for_user_id, from_member_id, prompt_text, answer, is_completed, created_at, updated_at FROM family_prompts WHERE id = $1 AND for_user_id = $2',
-      [promptId, userId]
-    )
-
-    if (prompt.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Prompt not found'
-      })
-    }
-
-    if (prompt.rows[0].status !== 'pending') {
-      return res.status(400).json({
-        success: false,
-        message: 'Prompt already answered or declined'
-      })
-    }
-
-    // Save as a story
-    const story = await pool.query(
-      `INSERT INTO stories (user_id, chapter_id, question_id, answer)
-     VALUES ($1, 'family-prompts', $2, $3)
-     RETURNING id`,
-      [userId, `family-${promptId}`, answer]
-    )
-
-    // Update prompt status
-    await pool.query(
-      `UPDATE family_prompts
-     SET status = 'answered', answered_story_id = $1, answered_at = NOW()
-     WHERE id = $2`,
-      [story.rows[0].id, promptId]
-    )
-
-    // Record activity
-    await recordActivity(userId)
-
-    // Award achievement
-    await awardAchievement(userId, 'family_prompt')
-
-    res.json({
-      success: true,
-      data: {
-        storyId: story.rows[0].id
+    const client = await pool.connect()
+    let storyId
+    try {
+      await client.query('BEGIN')
+      const prompt = await client.query(
+        'SELECT id, for_user_id, from_user_id, prompt_text, status, answered_story_id, created_at FROM family_prompts WHERE id = $1 AND for_user_id = $2 FOR UPDATE',
+        [promptId, userId]
+      )
+      if (!prompt.rows.length) {
+        await client.query('ROLLBACK')
+        return res.status(404).json({ success: false, message: 'Prompt not found' })
       }
-    })
+      if (prompt.rows[0].status !== 'pending') {
+        await client.query('ROLLBACK')
+        return res
+          .status(400)
+          .json({ success: false, message: 'Prompt already answered or declined' })
+      }
+      const story = await client.query(
+        `INSERT INTO stories (user_id, chapter_id, question_id, answer)
+         VALUES ($1, 'family-prompts', $2, $3) RETURNING id`,
+        [userId, `family-${promptId}`, answer]
+      )
+      storyId = story.rows[0].id
+      await client.query(
+        `UPDATE family_prompts SET status='answered',answered_story_id=$1,answered_at=NOW() WHERE id=$2`,
+        [storyId, promptId]
+      )
+      await client.query('COMMIT')
+    } catch (error) {
+      await client.query('ROLLBACK')
+      throw error
+    } finally {
+      client.release()
+    }
+    try {
+      await recordActivity(userId)
+      await awardAchievement(userId, 'family_prompt')
+    } catch (error) {
+      logger.warn('Family memory saved; engagement updates deferred', { error: error.message })
+    }
+    res.json({ success: true, data: { storyId } })
   })
 )
 
@@ -169,6 +168,7 @@ router.post(
 router.post(
   '/circle/prompt/:promptId/decline',
   asyncHandler(async (req, res) => {
+    const pool = req.app.locals.db || defaultPool
     const userId = req.user.id
     const { promptId } = req.params
 
@@ -195,6 +195,7 @@ router.post(
   '/circle/encourage',
   validate(circlePromptSchemas.encourage),
   asyncHandler(async (req, res) => {
+    const pool = req.app.locals.db || defaultPool
     const userId = req.user.id
     const { forUserId, type = 'heart', message, relatedStoryId } = req.validatedBody
 
@@ -231,6 +232,7 @@ router.post(
 router.get(
   '/circle/encouragements',
   asyncHandler(async (req, res) => {
+    const pool = req.app.locals.db || defaultPool
     const userId = req.user.id
     const { unreadOnly = false } = req.query
 
@@ -273,6 +275,7 @@ router.get(
 router.post(
   '/circle/encouragements/mark-seen',
   asyncHandler(async (req, res) => {
+    const pool = req.app.locals.db || defaultPool
     const userId = req.user.id
 
     await pool.query(

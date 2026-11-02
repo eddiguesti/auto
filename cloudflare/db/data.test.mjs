@@ -3,13 +3,14 @@ import assert from 'node:assert/strict'
 import { mkdtemp, writeFile, readFile, rm } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import { digest, compile } from './compile-schema.mjs'
+import { digest, compile, normalizeSource } from './compile-schema.mjs'
 import {
   convertValue,
   loadContract,
   buildImport,
   verifyLocal,
-  auditSource
+  auditSource,
+  normalizeCheck
 } from '../../tools/scripts/cloudflare-data.mjs'
 import {
   buildBoundArtifact,
@@ -19,13 +20,20 @@ import {
 const contract = await loadContract()
 const column = kind => ({ name: 'sample', kind, nullable: true })
 
-test('all eight SQL/JS migrations are accounted for; post-baseline photo fields present', () => {
-  assert.equal(contract.mapping.sources.length, 8)
-  assert.equal(contract.mapping.tables.length, 48)
-  assert.equal(
-    contract.mapping.tables.reduce((sum, table) => sum + table.columns.length, 0),
-    432
-  )
+test('all migration-created tables and post-baseline photo fields are mapped', async () => {
+  const { readdir } = await import('node:fs/promises')
+  const sources = (
+    await readdir(new URL('../../services/api/db/migrations/', import.meta.url))
+  ).filter(name => /\.(sql|js)$/.test(name))
+  assert.equal(contract.mapping.sources.length, sources.length)
+  for (const name of [
+    'print_orders',
+    'print_entitlements',
+    'media_deletion_jobs',
+    'voice_uploads',
+    'voice_connection_leases'
+  ])
+    assert(contract.mapping.tables.some(table => table.name === name))
   const photos = contract.mapping.tables.find(table => table.name === 'photos')
   for (const name of ['user_id', 'chapter_id', 'ai_description', 'ai_era', 'ai_questions'])
     assert(photos.columns.some(column => column.name === name))
@@ -75,6 +83,11 @@ test('null, boolean, array and source int4 semantics are checked without coercio
 
 function fixtureValue(item) {
   if (item.name === 'deleted_at') return null
+  if (item.name === 'quantity') return 10
+  if (item.name === 'page_count') return 32
+  if (item.name === 'colour_pages') return 0
+  if (item.name === 'status' && item.checks?.length) return 'proof'
+  if (item.kind === 'uuid') return '12345678-1234-1234-1234-123456789abc'
   if (item.kind === 'integer') return 1
   if (item.kind === 'boolean') return 1
   if (item.kind === 'json') return '{"exact": 900719925474099312345, "nested": [true, null]}'
@@ -118,12 +131,12 @@ async function withFixture(callback, modify) {
   }
 }
 
-test('48-table paid-user fixture imports with exact content hashes, FK integrity and ID high-water marks', async () => {
+test('all-table paid-user fixture imports with exact content hashes, FK integrity and ID high-water marks', async () => {
   await withFixture(async (directory, sqlFile) => {
     await buildImport(directory, sqlFile, contract)
     assert.deepEqual(await verifyLocal(directory, sqlFile, contract), {
-      tables: 48,
-      rows: 48,
+      tables: contract.mapping.tables.length,
+      rows: contract.mapping.tables.length,
       foreignKeys: 'ok',
       integrity: 'ok',
       contentHashes: 'ok',
@@ -187,6 +200,7 @@ function sourceCatalog() {
     TIMESTAMPTZ: 'timestamptz',
     DATE: 'date',
     TEXT: 'text',
+    UUID: 'uuid',
     'TEXT[]': '_text',
     JSONB: 'jsonb',
     'DECIMAL(3,2)': 'numeric',
@@ -198,6 +212,8 @@ function sourceCatalog() {
     indexes = []
   for (const table of contract.mapping.tables) {
     for (const column of table.columns) {
+      for (const check of column.checks || [])
+        constraints.push({ table_name: table.name, type: 'c', definition: `CHECK (${check})` })
       let defaultValue = column.serial
         ? `nextval('public.${table.name}_id_seq'::regclass)`
         : (column.sourceDefaultSql ?? null)
@@ -317,11 +333,11 @@ test('large memoir content round-trips with bound values, exact hashes, FK and s
       await assert.rejects(buildImport(directory, sqlFile, contract), /100KB SQL statement limit/)
       const artifactDirectory = path.join(directory, 'bound-artifact')
       const artifact = await buildBoundArtifact(directory, artifactDirectory, contract)
-      assert.equal(artifact.operationCount, 48)
+      assert.equal(artifact.operationCount, contract.mapping.tables.length)
       const result = await verifyBoundArtifact(artifactDirectory, contract)
       assert.deepEqual(result, {
-        tables: 48,
-        rows: 48,
+        tables: contract.mapping.tables.length,
+        rows: contract.mapping.tables.length,
         contentHashes: 'ok',
         foreignKeys: 'ok',
         integrity: 'ok',
@@ -422,4 +438,78 @@ test('bound artifact rejects incomplete metadata and preserves FK failures as fa
         row[table.columns.findIndex(column => column.name === 'user_id')] = 999
     }
   )
+})
+
+// SQL declarations and schema execution are tested together: silently omitting a
+// table or loosening print constraints must fail even when a manifest regenerates.
+test('new print tables retain UUID and CHECK constraints in executable SQLite', async () => {
+  const { DatabaseSync } = await import('node:sqlite')
+  const db = new DatabaseSync(':memory:')
+  try {
+    db.exec(contract.schema)
+    assert.throws(
+      () =>
+        db.exec(
+          "INSERT INTO print_orders (id,user_id,title,text_key,cover_key,page_count,colour_pages,product_sku) VALUES ('invalid',1,'Title','text','cover',31,0,'sku')"
+        ),
+      /CHECK/
+    )
+    assert.throws(
+      () =>
+        db.exec(
+          "INSERT INTO print_entitlements (id,user_id,stripe_session_id,package_version,quantity) VALUES ('12345678-1234-1234-1234-123456789abc',1,'session','v1',9)"
+        ),
+      /CHECK/
+    )
+  } finally {
+    db.close()
+  }
+})
+test('source fingerprints tolerate CRLF but retain semantic changes', async () => {
+  assert.equal(normalizeSource('first\r\nsecond\r\n'), 'first\nsecond\n')
+  assert.notEqual(
+    digest(normalizeSource('first\nsecond')),
+    digest(normalizeSource('first\nchanged'))
+  )
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'memoir-compiler-'))
+  try {
+    await writeFile(
+      path.join(directory, '001.sql'),
+      'CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY);\r\n'
+    )
+    await writeFile(
+      path.join(directory, '002.sql'),
+      'CREATE TABLE IF NOT EXISTS extra (id UUID PRIMARY KEY, size INTEGER CHECK (size BETWEEN 1 AND 3));\r\n'
+    )
+    const windows = await compile({ sourceDirectory: directory })
+    for (const name of ['001.sql', '002.sql']) {
+      const file = path.join(directory, name)
+      await writeFile(file, normalizeSource(await readFile(file, 'utf8')))
+    }
+    assert.deepEqual(await compile({ sourceDirectory: directory }), windows)
+    await writeFile(path.join(directory, '003.sql'), 'DROP TABLE extra;')
+    await assert.rejects(compile({ sourceDirectory: directory }), /Unaudited/)
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+test('source CHECK canonicalization retains constraints across PostgreSQL deparsing', () => {
+  assert.equal(
+    normalizeCheck("CHECK ((status = ANY (ARRAY['proof'::text, 'queued'::text])))"),
+    normalizeCheck("status IN ('proof','queued')")
+  )
+  assert.equal(
+    normalizeCheck('CHECK (((page_count >= 32) AND (page_count <= 200)))'),
+    normalizeCheck('page_count BETWEEN 32 AND 200')
+  )
+  assert.notEqual(normalizeCheck('quantity = 10'), normalizeCheck('quantity = 9'))
+})
+
+test('CHECK normalization preserves boolean grouping and refuses unknown operators', () => {
+  assert.notEqual(
+    normalizeCheck('CHECK (x=1 AND (y=2 OR z=3))'),
+    normalizeCheck('CHECK ((x=1 AND y=2) OR z=3)')
+  )
+  assert.throws(() => normalizeCheck('CHECK (quantity / 1 = 10)'), /Unsupported/)
+  assert.throws(() => normalizeCheck('CHECK (quantity::numeric = 10)'), /Unsupported/)
 })

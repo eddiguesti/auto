@@ -24,5 +24,13 @@ export function detectAudioType(buffer) {
     if (['M4A ', 'M4B ', 'isom', 'mp42'].includes(brand))
       return { extension: 'm4a', contentType: 'audio/mp4' }
   }
+  // EBML alone also identifies Matroska. Require the WebM document type.
+  if (
+    buffer.length >= 8 &&
+    buffer.subarray(0, 4).equals(Buffer.from([0x1a, 0x45, 0xdf, 0xa3])) &&
+    buffer.subarray(4, 4096).includes(Buffer.from('webm'))
+  ) {
+    return { extension: 'webm', contentType: 'audio/webm' }
+  }
   return null
 }

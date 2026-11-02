@@ -3,7 +3,7 @@
  * Phone call request - mirrors web CallMe.jsx
  */
 
-import React, { useState } from 'react';
+import React, { useState } from 'react'
 import {
   View,
   Text,
@@ -11,57 +11,55 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  ScrollView,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors, spacing, borderRadius, fonts, shadows } from '../utils/theme';
-import haptics from '../utils/haptics';
-import api from '../services/api';
-import { useAuth } from '../context/AuthContext';
-import { IconChevronLeft, IconPhone, IconCheck } from '../components';
+  ScrollView
+} from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { colors, spacing, borderRadius, fonts, shadows } from '../utils/theme'
+import haptics from '../utils/haptics'
+import api from '../services/api'
+import { IconChevronLeft, IconPhone, IconCheck } from '../components'
 
 export default function CallMeScreen({ navigation }: any) {
-  const { user } = useAuth();
-  const [phone, setPhone] = useState(user?.phone || '');
-  const [calling, setCalling] = useState(false);
-  const [called, setCalled] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [phone, setPhone] = useState('')
+  const [calling, setCalling] = useState(false)
+  const [called, setCalled] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleCall = async () => {
-    if (!phone.trim()) return;
+    if (!phone.trim()) return
 
     // Basic validation
-    const cleaned = phone.replace(/[\s\-\(\)]/g, '');
+    const cleaned = phone.replace(/[\s\-\(\)]/g, '')
     if (cleaned.length < 10) {
-      setError('Please enter a valid phone number.');
-      return;
+      setError('Please enter a valid phone number.')
+      return
     }
 
     // Ensure E.164 format
-    let formatted = cleaned;
+    let formatted = cleaned
     if (!formatted.startsWith('+')) {
       if (formatted.startsWith('0')) {
-        formatted = '+44' + formatted.slice(1); // UK default
+        formatted = '+44' + formatted.slice(1) // UK default
       } else {
-        formatted = '+' + formatted;
+        formatted = '+' + formatted
       }
     }
 
-    setCalling(true);
-    setError(null);
-    haptics.mediumTap();
+    setCalling(true)
+    setError(null)
+    haptics.mediumTap()
 
     try {
-      await api.requestCall(formatted);
-      setCalled(true);
-      haptics.successNotification();
+      await api.requestCall(formatted)
+      setCalled(true)
+      haptics.success()
     } catch (err: any) {
-      console.error('Call error:', err);
-      setError(err.message || 'Something went wrong. Please try again.');
+      console.error('Call error:', err)
+      setError(err.message || 'Something went wrong. Please try again.')
     } finally {
-      setCalling(false);
+      setCalling(false)
     }
-  };
+  }
 
   if (called) {
     return (
@@ -72,7 +70,8 @@ export default function CallMeScreen({ navigation }: any) {
           </View>
           <Text style={styles.successTitle}>Calling you now!</Text>
           <Text style={styles.successSub}>
-            Pick up the phone when it rings. Our AI interviewer will guide you through sharing your memories.
+            Pick up the phone when it rings. Our AI interviewer will guide you through sharing your
+            memories.
           </Text>
           <TouchableOpacity
             style={styles.doneButton}
@@ -83,7 +82,7 @@ export default function CallMeScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
       </SafeAreaView>
-    );
+    )
   }
 
   return (
@@ -101,7 +100,8 @@ export default function CallMeScreen({ navigation }: any) {
 
         <Text style={styles.title}>Call Me</Text>
         <Text style={styles.subtitle}>
-          Enter your phone number and we'll call you right now. Our AI interviewer will have a friendly conversation to help you capture your memories.
+          Enter your phone number and we'll call you right now. Our AI interviewer will have a
+          friendly conversation to help you capture your memories.
         </Text>
 
         {error && (
@@ -125,15 +125,13 @@ export default function CallMeScreen({ navigation }: any) {
 
         <View style={styles.consentNote}>
           <Text style={styles.consentText}>
-            By tapping "Call Me Now", you consent to receiving a phone call at this number. Standard rates may apply.
+            By tapping "Call Me Now", you consent to receiving a phone call at this number. Standard
+            rates may apply.
           </Text>
         </View>
 
         <TouchableOpacity
-          style={[
-            styles.callButton,
-            (!phone.trim() || calling) && styles.callButtonDisabled,
-          ]}
+          style={[styles.callButton, (!phone.trim() || calling) && styles.callButtonDisabled]}
           onPress={handleCall}
           disabled={!phone.trim() || calling}
           activeOpacity={0.8}
@@ -160,7 +158,9 @@ export default function CallMeScreen({ navigation }: any) {
           </View>
           <View style={styles.infoItem}>
             <View style={styles.infoDot} />
-            <Text style={styles.infoText}>Your stories are transcribed and added to your memoir</Text>
+            <Text style={styles.infoText}>
+              Your stories are transcribed and added to your memoir
+            </Text>
           </View>
           <View style={styles.infoItem}>
             <View style={styles.infoDot} />
@@ -169,17 +169,17 @@ export default function CallMeScreen({ navigation }: any) {
         </View>
       </ScrollView>
     </SafeAreaView>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.background
   },
   scrollContent: {
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xxl,
+    paddingBottom: spacing.xxl
   },
 
   // Header
@@ -187,12 +187,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.md
   },
   backText: {
     fontSize: 16,
     fontFamily: fonts.body,
-    color: colors.textMuted,
+    color: colors.textMuted
   },
 
   // Content
@@ -200,14 +200,14 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontFamily: fonts.display,
     color: colors.text,
-    marginBottom: spacing.xs,
+    marginBottom: spacing.xs
   },
   subtitle: {
     fontSize: 15,
     fontFamily: fonts.body,
     color: colors.textMuted,
     lineHeight: 24,
-    marginBottom: spacing.xl,
+    marginBottom: spacing.xl
   },
 
   // Error
@@ -215,23 +215,23 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     backgroundColor: '#FEF2F2',
     borderRadius: borderRadius.lg,
-    marginBottom: spacing.md,
+    marginBottom: spacing.md
   },
   errorText: {
     fontSize: 14,
     fontFamily: fonts.body,
-    color: '#DC2626',
+    color: '#DC2626'
   },
 
   // Input
   inputSection: {
-    marginBottom: spacing.md,
+    marginBottom: spacing.md
   },
   inputLabel: {
     fontSize: 14,
     fontFamily: fonts.bodySemiBold,
     color: colors.text,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.sm
   },
   phoneInput: {
     backgroundColor: colors.surface,
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     fontSize: 18,
     fontFamily: fonts.body,
-    color: colors.text,
+    color: colors.text
   },
 
   // Consent
@@ -250,13 +250,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundAlt,
     borderRadius: borderRadius.lg,
     padding: spacing.md,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.lg
   },
   consentText: {
     fontSize: 13,
     fontFamily: fonts.body,
     color: colors.textMuted,
-    lineHeight: 20,
+    lineHeight: 20
   },
 
   // Call button
@@ -269,15 +269,15 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     borderRadius: borderRadius.xl,
     marginBottom: spacing.xl,
-    ...shadows.md,
+    ...shadows.md
   },
   callButtonDisabled: {
-    opacity: 0.4,
+    opacity: 0.4
   },
   callText: {
     fontSize: 18,
     fontFamily: fonts.bodySemiBold,
-    color: colors.textOnPrimary,
+    color: colors.textOnPrimary
   },
 
   // Info section
@@ -286,31 +286,31 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.xl,
     padding: spacing.lg,
     borderWidth: 1,
-    borderColor: colors.borderLight,
+    borderColor: colors.borderLight
   },
   infoTitle: {
     fontSize: 16,
     fontFamily: fonts.displayMedium,
     color: colors.text,
-    marginBottom: spacing.md,
+    marginBottom: spacing.md
   },
   infoItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.sm
   },
   infoDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primary
   },
   infoText: {
     fontSize: 14,
     fontFamily: fonts.body,
     color: colors.textSecondary,
-    flex: 1,
+    flex: 1
   },
 
   // Success
@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: spacing.xl,
+    padding: spacing.xl
   },
   successIcon: {
     width: 80,
@@ -327,13 +327,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#16A34A',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.lg
   },
   successTitle: {
     fontSize: 26,
     fontFamily: fonts.display,
     color: colors.text,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.sm
   },
   successSub: {
     fontSize: 16,
@@ -341,18 +341,18 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     textAlign: 'center',
     lineHeight: 26,
-    marginBottom: spacing.xl,
+    marginBottom: spacing.xl
   },
   doneButton: {
     backgroundColor: colors.primary,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
     borderRadius: borderRadius.xl,
-    ...shadows.button,
+    ...shadows.button
   },
   doneText: {
     fontSize: 16,
     fontFamily: fonts.bodySemiBold,
-    color: colors.textOnPrimary,
-  },
-});
+    color: colors.textOnPrimary
+  }
+})

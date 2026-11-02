@@ -58,7 +58,7 @@ export const storyRepository = {
    */
   async findWithContent(db, userId) {
     const result = await db.query(
-      `SELECT id, chapter_id, question_id, answer
+      `SELECT id, chapter_id, question_id, answer, updated_at
        FROM stories
        WHERE user_id = $1 AND answer IS NOT NULL AND answer != ''
        ORDER BY chapter_id, question_id`,
@@ -78,7 +78,7 @@ export const storyRepository = {
       `INSERT INTO stories (user_id, chapter_id, question_id, answer)
        VALUES ($1, $2, $3, $4)
        ON CONFLICT (user_id, chapter_id, question_id)
-       DO UPDATE SET answer = $4, updated_at = CURRENT_TIMESTAMP
+       DO UPDATE SET answer = $4, compiled_content = NULL, compiled_at = NULL, updated_at = CURRENT_TIMESTAMP
        RETURNING *`,
       [userId, chapterId, questionId, answer]
     )

@@ -116,13 +116,27 @@ export class Particle {
 
     // Jitter: none when idle, subtle when speaking
     const jitterAmount = isIdle ? 0 : audioLevel * 1.2
-    const jitterX = Math.sin(time * 30 + this.index) * jitterAmount + Math.sin(time * 47 + this.index * 0.3) * jitterAmount * 0.7
-    const jitterY = Math.cos(time * 33 + this.index) * jitterAmount + Math.cos(time * 51 + this.index * 0.7) * jitterAmount * 0.7
+    const jitterX =
+      Math.sin(time * 30 + this.index) * jitterAmount +
+      Math.sin(time * 47 + this.index * 0.3) * jitterAmount * 0.7
+    const jitterY =
+      Math.cos(time * 33 + this.index) * jitterAmount +
+      Math.cos(time * 51 + this.index * 0.7) * jitterAmount * 0.7
 
     // Offset: use when idle for organization, keep more when active
     const offsetMult = isIdle ? 1 : 0.7
-    const targetX = this.centerX + Math.cos(this.angle) * this.radius + driftX + jitterX + this.offsetX * offsetMult
-    const targetY = this.centerY + Math.sin(this.angle) * this.radius + driftY + jitterY + this.offsetY * offsetMult
+    const targetX =
+      this.centerX +
+      Math.cos(this.angle) * this.radius +
+      driftX +
+      jitterX +
+      this.offsetX * offsetMult
+    const targetY =
+      this.centerY +
+      Math.sin(this.angle) * this.radius +
+      driftY +
+      jitterY +
+      this.offsetY * offsetMult
 
     // Position smoothing - slower when idle, slightly faster when active
     const posSpring = isIdle ? 0.06 : 0.08 + audioLevel * 0.02

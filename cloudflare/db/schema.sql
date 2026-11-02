@@ -592,6 +592,81 @@ CREATE TABLE "schema_migrations" (
   "applied_at" TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%f+00', 'now'))
 ) STRICT;
 
+CREATE TABLE "print_entitlements" (
+  "id" TEXT PRIMARY KEY NOT NULL CHECK ("id" IS NULL OR (length("id") = 36 AND substr("id",9,1) = '-' AND substr("id",14,1) = '-' AND substr("id",19,1) = '-' AND substr("id",24,1) = '-' AND length(replace("id",'-','')) = 32 AND replace("id",'-','') NOT GLOB '*[^0-9a-f]*')),
+  "user_id" INTEGER NOT NULL CHECK ("user_id" IS NULL OR "user_id" BETWEEN -2147483648 AND 2147483647) REFERENCES "users"("id") ON DELETE CASCADE,
+  "stripe_session_id" TEXT NOT NULL UNIQUE REFERENCES "payments"("stripe_session_id") ON DELETE CASCADE,
+  "package_version" TEXT NOT NULL,
+  "quantity" INTEGER NOT NULL CHECK (quantity = 10) CHECK ("quantity" IS NULL OR "quantity" BETWEEN -2147483648 AND 2147483647),
+  "created_at" TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%f+00', 'now'))
+) STRICT;
+
+CREATE TABLE "print_orders" (
+  "id" TEXT PRIMARY KEY NOT NULL CHECK ("id" IS NULL OR (length("id") = 36 AND substr("id",9,1) = '-' AND substr("id",14,1) = '-' AND substr("id",19,1) = '-' AND substr("id",24,1) = '-' AND length(replace("id",'-','')) = 32 AND replace("id",'-','') NOT GLOB '*[^0-9a-f]*')),
+  "user_id" INTEGER NOT NULL CHECK ("user_id" IS NULL OR "user_id" BETWEEN -2147483648 AND 2147483647) REFERENCES "users"("id") ON DELETE CASCADE,
+  "entitlement_id" TEXT UNIQUE CHECK ("entitlement_id" IS NULL OR (length("entitlement_id") = 36 AND substr("entitlement_id",9,1) = '-' AND substr("entitlement_id",14,1) = '-' AND substr("entitlement_id",19,1) = '-' AND substr("entitlement_id",24,1) = '-' AND length(replace("entitlement_id",'-','')) = 32 AND replace("entitlement_id",'-','') NOT GLOB '*[^0-9a-f]*')) REFERENCES "print_entitlements"("id") ON DELETE CASCADE,
+  "status" TEXT NOT NULL CHECK (status IN ('proof','queued','submitting','submitted','dispatched','review')) DEFAULT 'proof',
+  "title" TEXT NOT NULL,
+  "text_key" TEXT NOT NULL,
+  "cover_key" TEXT NOT NULL,
+  "page_count" INTEGER NOT NULL CHECK (page_count BETWEEN 32 AND 200) CHECK ("page_count" IS NULL OR "page_count" BETWEEN -2147483648 AND 2147483647),
+  "colour_pages" INTEGER NOT NULL CHECK (colour_pages BETWEEN 0 AND 8) CHECK ("colour_pages" IS NULL OR "colour_pages" BETWEEN -2147483648 AND 2147483647),
+  "product_sku" TEXT NOT NULL,
+  "shipping_address" TEXT CHECK ("shipping_address" IS NULL OR json_valid("shipping_address")),
+  "approved_at" TEXT,
+  "provider_id" TEXT,
+  "provider_status" TEXT,
+  "tracking_url" TEXT,
+  "tracking_number" TEXT,
+  "last_error" TEXT,
+  "created_at" TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%f+00', 'now')),
+  "updated_at" TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%f+00', 'now'))
+) STRICT;
+
+CREATE TABLE "media_deletion_jobs" (
+  "object_key" TEXT PRIMARY KEY NOT NULL,
+  "attempts" INTEGER NOT NULL DEFAULT 0 CHECK ("attempts" IS NULL OR "attempts" BETWEEN -2147483648 AND 2147483647),
+  "last_error" TEXT,
+  "next_attempt_at" TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%f+00', 'now')),
+  "created_at" TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%f+00', 'now'))
+) STRICT;
+
+CREATE TABLE "generated_exports" (
+  "id" INTEGER PRIMARY KEY AUTOINCREMENT CHECK ("id" IS NULL OR "id" BETWEEN -2147483648 AND 2147483647),
+  "user_id" INTEGER NOT NULL CHECK ("user_id" IS NULL OR "user_id" BETWEEN -2147483648 AND 2147483647) REFERENCES "users"("id") ON DELETE CASCADE,
+  "format" TEXT NOT NULL,
+  "created_at" TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%f+00', 'now'))
+) STRICT;
+
+CREATE TABLE "audiobook_generation_requests" (
+  "id" INTEGER PRIMARY KEY AUTOINCREMENT CHECK ("id" IS NULL OR "id" BETWEEN -2147483648 AND 2147483647),
+  "user_id" INTEGER NOT NULL CHECK ("user_id" IS NULL OR "user_id" BETWEEN -2147483648 AND 2147483647) REFERENCES "users"("id") ON DELETE CASCADE,
+  "job_id" TEXT NOT NULL UNIQUE CHECK ("job_id" IS NULL OR (length("job_id") = 36 AND substr("job_id",9,1) = '-' AND substr("job_id",14,1) = '-' AND substr("job_id",19,1) = '-' AND substr("job_id",24,1) = '-' AND length(replace("job_id",'-','')) = 32 AND replace("job_id",'-','') NOT GLOB '*[^0-9a-f]*')),
+  "created_at" TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%f+00', 'now'))
+) STRICT;
+
+CREATE TABLE "voice_connection_leases" (
+  "user_id" INTEGER PRIMARY KEY NOT NULL CHECK ("user_id" IS NULL OR "user_id" BETWEEN -2147483648 AND 2147483647) REFERENCES "users"("id") ON DELETE CASCADE,
+  "lease_id" TEXT NOT NULL CHECK ("lease_id" IS NULL OR (length("lease_id") = 36 AND substr("lease_id",9,1) = '-' AND substr("lease_id",14,1) = '-' AND substr("lease_id",19,1) = '-' AND substr("lease_id",24,1) = '-' AND length(replace("lease_id",'-','')) = 32 AND replace("lease_id",'-','') NOT GLOB '*[^0-9a-f]*')),
+  "expires_at" TEXT NOT NULL
+) STRICT;
+
+CREATE TABLE "telnyx_webhook_events" (
+  "event_id" TEXT PRIMARY KEY NOT NULL,
+  "expires_at" TEXT NOT NULL
+) STRICT;
+
+CREATE TABLE "voice_uploads" (
+  "id" TEXT PRIMARY KEY NOT NULL CHECK ("id" IS NULL OR (length("id") = 36 AND substr("id",9,1) = '-' AND substr("id",14,1) = '-' AND substr("id",19,1) = '-' AND substr("id",24,1) = '-' AND length(replace("id",'-','')) = 32 AND replace("id",'-','') NOT GLOB '*[^0-9a-f]*')),
+  "user_id" INTEGER NOT NULL CHECK ("user_id" IS NULL OR "user_id" BETWEEN -2147483648 AND 2147483647) REFERENCES "users"("id") ON DELETE CASCADE,
+  "story_id" INTEGER CHECK ("story_id" IS NULL OR "story_id" BETWEEN -2147483648 AND 2147483647) REFERENCES "stories"("id") ON DELETE SET NULL,
+  "object_key" TEXT NOT NULL UNIQUE,
+  "content_type" TEXT NOT NULL,
+  "transcript" TEXT NOT NULL,
+  "duration" INTEGER CHECK ("duration" IS NULL OR "duration" BETWEEN -2147483648 AND 2147483647),
+  "created_at" TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%f+00', 'now'))
+) STRICT;
+
 CREATE INDEX "idx_users_email" ON "users" (email);
 
 CREATE INDEX "idx_users_google_id" ON "users" (google_id);
@@ -749,6 +824,20 @@ CREATE INDEX "idx_users_deleted_at" ON "users" (deleted_at) WHERE deleted_at IS 
 CREATE INDEX "idx_photos_user_id" ON "photos" (user_id);
 
 CREATE INDEX "idx_photos_chapter_id" ON "photos" (chapter_id);
+
+CREATE INDEX "print_orders_user_idx" ON "print_orders" (user_id, created_at DESC);
+
+CREATE INDEX "print_orders_pending_idx" ON "print_orders" (status, updated_at);
+
+CREATE INDEX "media_deletion_pending_idx" ON "media_deletion_jobs" (next_attempt_at);
+
+CREATE INDEX "generated_exports_user_idx" ON "generated_exports" (user_id, created_at);
+
+CREATE INDEX "audiobook_generation_requests_user_idx" ON "audiobook_generation_requests" (user_id, created_at);
+
+CREATE INDEX "telnyx_webhook_events_expiry_idx" ON "telnyx_webhook_events" (expires_at);
+
+CREATE INDEX "voice_uploads_user_idx" ON "voice_uploads" (user_id);
 
 CREATE INDEX "idx_stories_user_chapter_question" ON "stories" (user_id, chapter_id, question_id);
 

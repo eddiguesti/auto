@@ -20,6 +20,7 @@ const integerTypes = {
   TIMESTAMPTZ: 'timestamptz',
   DATE: 'date',
   TEXT: 'text',
+  UUID: 'uuid',
   'TEXT[]': '_text',
   JSONB: 'jsonb',
   'DECIMAL(3,2)': 'numeric',
@@ -52,6 +53,11 @@ export function convertValue(column, value) {
   // Export casts on the server prevent pg from converting timestamps to Date
   // (loses microseconds), numerics to doubles, and JSONB through JSON.parse.
   if (typeof value !== 'string') throw new Error(`Expected PostgreSQL text for ${column.name}`)
+  if (
+    column.kind === 'uuid' &&
+    !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(value)
+  )
+    throw new Error(`Invalid UUID ${column.name}`)
   if (column.kind === 'integer') {
     if (!/^-?\d+$/.test(value)) throw new Error(`Invalid integer ${column.name}`)
     const number = Number(value)
@@ -90,6 +96,102 @@ export function convertValue(column, value) {
   return value
 }
 
+// PostgreSQL deparses IN to ANY(ARRAY[]) and BETWEEN to two comparisons.
+// Normalize those spelling differences without discarding literal values.
+export function normalizeCheck(sql) {
+  const input = sql.replace(/^CHECK\s*/i, '').trim()
+  const lexer =
+    /\s*('(?:[^']|'')*'|"(?:[^"]|"")*"|::|>=|<=|<>|!=|[=<>(),[\]]|-?\d+(?:\.\d+)?|[A-Za-z_][A-Za-z_0-9]*)/gy
+  const tokens = []
+  let offset = 0
+  while (offset < input.length) {
+    lexer.lastIndex = offset
+    const match = lexer.exec(input)
+    if (!match) throw new Error('Unsupported source CHECK expression')
+    tokens.push(match[1].startsWith("'") ? match[1] : match[1].replace(/^"|"$/g, '').toLowerCase())
+    offset = lexer.lastIndex
+  }
+  let i = 0
+  const take = token => {
+    if (tokens[i++] !== token) throw new Error('Unsupported source CHECK expression')
+  }
+  const value = () => {
+    const token = tokens[i++]
+    if (
+      !token ||
+      !/^(?:'(?:[^']|'')*'|-?\d+(?:\.\d+)?|[a-z_][a-z_0-9]*)$/.test(token) ||
+      ['and', 'or', 'any', 'array', 'in', 'between'].includes(token)
+    )
+      throw new Error('Unsupported source CHECK value')
+    // PostgreSQL annotates text literals in ARRAY with ::text. Keep other
+    // casts unsupported so lossy type conversions cannot disappear in audit.
+    if (tokens[i] === '::') {
+      i++
+      take('text')
+    }
+    return token
+  }
+  const list = closing => {
+    const result = [value()]
+    while (tokens[i] === ',') {
+      i++
+      result.push(value())
+    }
+    take(closing)
+    return result
+  }
+  const term = () => {
+    if (tokens[i] === '(') {
+      i++
+      const result = or()
+      take(')')
+      return result
+    }
+    const left = value(),
+      op = tokens[i++]
+    if (op === 'between') {
+      const low = value()
+      take('and')
+      return ['and', ['>=', left, low], ['<=', left, value()]]
+    }
+    if (op === 'in') {
+      take('(')
+      return ['in', left, list(')')]
+    }
+    if (!['=', '<>', '!=', '>', '<', '>=', '<='].includes(op))
+      throw new Error('Unsupported source CHECK operator')
+    if (op === '=' && tokens[i] === 'any') {
+      i++
+      take('(')
+      take('array')
+      take('[')
+      const members = list(']')
+      take(')')
+      return ['in', left, members]
+    }
+    return [op === '!=' ? '<>' : op, left, value()]
+  }
+  const and = () => {
+    let result = term()
+    while (tokens[i] === 'and') {
+      i++
+      result = ['and', result, term()]
+    }
+    return result
+  }
+  const or = () => {
+    let result = and()
+    while (tokens[i] === 'or') {
+      i++
+      result = ['or', result, and()]
+    }
+    return result
+  }
+  const result = or()
+  if (i !== tokens.length) throw new Error('Unsupported source CHECK trailing expression')
+  return JSON.stringify(result)
+}
+
 function expectedConstraints(table, _mapping) {
   const descriptors = []
   const primary = primaryColumns(table)
@@ -109,6 +211,9 @@ function expectedConstraints(table, _mapping) {
       updateAction: 'a',
       deferrable: false
     })
+  for (const column of table.columns)
+    for (const check of column.checks || [])
+      descriptors.push({ type: 'c', definition: normalizeCheck(check) })
   return descriptors
 }
 
@@ -119,9 +224,9 @@ export async function auditSource(client, mapping) {
   )
   const { rows: constraints } =
     await client.query(`SELECT t.relname AS table_name, c.contype AS type,
-    ARRAY(SELECT a.attname FROM unnest(c.conkey) WITH ORDINALITY k(attnum, ord) JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = k.attnum ORDER BY k.ord) AS columns,
+    ARRAY(SELECT a.attname::text FROM unnest(c.conkey) WITH ORDINALITY k(attnum, ord) JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = k.attnum ORDER BY k.ord) AS columns,
     rt.relname AS reference_table,
-    ARRAY(SELECT a.attname FROM unnest(c.confkey) WITH ORDINALITY k(attnum, ord) JOIN pg_attribute a ON a.attrelid = c.confrelid AND a.attnum = k.attnum ORDER BY k.ord) AS reference_columns,
+    ARRAY(SELECT a.attname::text FROM unnest(c.confkey) WITH ORDINALITY k(attnum, ord) JOIN pg_attribute a ON a.attrelid = c.confrelid AND a.attnum = k.attnum ORDER BY k.ord) AS reference_columns,
     c.confdeltype AS delete_action, c.confupdtype AS update_action, c.condeferrable AS deferrable,
     pg_get_constraintdef(c.oid) AS definition
     FROM pg_constraint c JOIN pg_class t ON t.oid = c.conrelid JOIN pg_namespace n ON n.oid = t.relnamespace
@@ -211,7 +316,10 @@ export async function auditSource(client, mapping) {
             deferrable: item.deferrable
           }
         if (['p', 'u'].includes(item.type)) return { type: item.type, columns: item.columns }
-        return { type: item.type, definition: item.definition }
+        return {
+          type: item.type,
+          definition: item.type === 'c' ? normalizeCheck(item.definition) : item.definition
+        }
       })
     const expected = expectedConstraints(table, mapping)
     for (const descriptor of expected)

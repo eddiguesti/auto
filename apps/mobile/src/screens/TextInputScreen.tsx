@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react'
 import {
   View,
   Text,
@@ -11,32 +11,33 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
-  Pressable,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
-import api from '../services/api';
-import { useGame } from '../context/GameContext';
-import { colors, spacing, borderRadius, fonts } from '../utils/theme';
-import { IconMic, IconCheck, IconClose } from '../components';
-import haptics from '../utils/haptics';
+  Pressable
+} from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { LinearGradient } from 'expo-linear-gradient'
+import api from '../services/api'
+import { useGame } from '../context/GameContext'
+import { colors, spacing, borderRadius, fonts } from '../utils/theme'
+import { IconMic, IconCheck, IconClose } from '../components'
+import haptics from '../utils/haptics'
 
 export default function TextInputScreen({ navigation, route }: any) {
-  const { prompt } = route.params;
-  const { refreshGameState } = useGame();
+  const { prompt } = route.params
+  const { refreshGameState } = useGame()
 
-  const [text, setText] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [text, setText] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const characterCount = text.length;
-  const minCharacters = 50;
-  const isValid = characterCount >= minCharacters;
+  const characterCount = text.length
+  const minCharacters = 50
+  const isValid = characterCount >= minCharacters
 
   // Animations
-  const progressAnim = useRef(new Animated.Value(0)).current;
-  const checkmarkScale = useRef(new Animated.Value(0)).current;
-  const headerOpacity = useRef(new Animated.Value(0)).current;
-  const contentOpacity = useRef(new Animated.Value(0)).current;
+  const progressAnim = useRef(new Animated.Value(0)).current
+  const checkmarkScale = useRef(new Animated.Value(0)).current
+  const wasValid = useRef(false)
+  const headerOpacity = useRef(new Animated.Value(0)).current
+  const contentOpacity = useRef(new Animated.Value(0)).current
 
   // Entrance animations
   useEffect(() => {
@@ -44,119 +45,110 @@ export default function TextInputScreen({ navigation, route }: any) {
       Animated.timing(headerOpacity, {
         toValue: 1,
         duration: 300,
-        useNativeDriver: true,
+        useNativeDriver: true
       }),
       Animated.timing(contentOpacity, {
         toValue: 1,
         duration: 300,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, []);
+        useNativeDriver: true
+      })
+    ]).start()
+  }, [])
 
   // Animate progress bar
   useEffect(() => {
-    const progress = Math.min(characterCount / minCharacters, 1);
+    const progress = Math.min(characterCount / minCharacters, 1)
     Animated.spring(progressAnim, {
       toValue: progress,
       tension: 100,
       friction: 10,
-      useNativeDriver: false,
-    }).start();
+      useNativeDriver: false
+    }).start()
 
     // Animate checkmark when valid
-    if (isValid && checkmarkScale._value === 0) {
-      haptics.success();
+    if (isValid && !wasValid.current) {
+      haptics.success()
       Animated.spring(checkmarkScale, {
         toValue: 1,
         tension: 300,
         friction: 8,
-        useNativeDriver: true,
-      }).start();
-    } else if (!isValid && checkmarkScale._value !== 0) {
+        useNativeDriver: true
+      }).start()
+    } else if (!isValid && wasValid.current) {
       Animated.timing(checkmarkScale, {
         toValue: 0,
         duration: 150,
-        useNativeDriver: true,
-      }).start();
+        useNativeDriver: true
+      }).start()
     }
-  }, [characterCount]);
+    wasValid.current = isValid
+  }, [characterCount, isValid, progressAnim, checkmarkScale])
 
   const handleSubmit = async () => {
     if (!isValid) {
-      haptics.error();
+      haptics.error()
       Alert.alert(
         'Too Short',
         `Please write at least ${minCharacters} characters to save your memory.`
-      );
-      return;
+      )
+      return
     }
 
-    haptics.mediumTap();
-    setIsSubmitting(true);
+    haptics.mediumTap()
+    setIsSubmitting(true)
     try {
-      await api.completePrompt(prompt.id, text);
-      await refreshGameState();
+      await api.completePrompt(prompt.id, text)
+      await refreshGameState()
 
       navigation.replace('Celebration', {
         prompt,
-        transcript: text,
-      });
+        transcript: text
+      })
     } catch (error) {
-      console.error('Submit failed:', error);
-      haptics.error();
-      Alert.alert(
-        'Submission Failed',
-        'Failed to save your memory. Please try again.',
-        [{ text: 'OK' }]
-      );
+      console.error('Submit failed:', error)
+      haptics.error()
+      Alert.alert('Submission Failed', 'Failed to save your memory. Please try again.', [
+        { text: 'OK' }
+      ])
     } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false)
     }
-  };
+  }
 
   const handleCancel = () => {
     if (text.length > 0) {
-      Alert.alert(
-        'Discard Memory?',
-        'Your written memory will be lost.',
-        [
-          { text: 'Keep Writing', style: 'cancel' },
-          { text: 'Discard', style: 'destructive', onPress: () => navigation.goBack() },
-        ]
-      );
+      Alert.alert('Discard Memory?', 'Your written memory will be lost.', [
+        { text: 'Keep Writing', style: 'cancel' },
+        { text: 'Discard', style: 'destructive', onPress: () => navigation.goBack() }
+      ])
     } else {
-      navigation.goBack();
+      navigation.goBack()
     }
-  };
+  }
 
   const handleSwitchToVoice = () => {
     if (text.length > 0) {
-      Alert.alert(
-        'Switch to Voice?',
-        'Your written text will be lost.',
-        [
-          { text: 'Keep Writing', style: 'cancel' },
-          {
-            text: 'Use Voice',
-            onPress: () => navigation.replace('VoicePrompt', { prompt }),
-          },
-        ]
-      );
+      Alert.alert('Switch to Voice?', 'Your written text will be lost.', [
+        { text: 'Keep Writing', style: 'cancel' },
+        {
+          text: 'Use Voice',
+          onPress: () => navigation.replace('VoicePrompt', { prompt })
+        }
+      ])
     } else {
-      navigation.replace('VoicePrompt', { prompt });
+      navigation.replace('VoicePrompt', { prompt })
     }
-  };
+  }
 
   const progressWidth = progressAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ['0%', '100%'],
-  });
+    outputRange: ['0%', '100%']
+  })
 
   const progressColor = progressAnim.interpolate({
     inputRange: [0, 0.5, 1],
-    outputRange: [colors.textMuted, colors.secondary, colors.primary],
-  });
+    outputRange: [colors.textMuted, colors.secondary, colors.primary]
+  })
 
   return (
     <SafeAreaView style={styles.container}>
@@ -175,7 +167,7 @@ export default function TextInputScreen({ navigation, route }: any) {
             style={({ pressed }) => [
               styles.submitHeaderButton,
               !isValid && styles.submitDisabled,
-              pressed && { opacity: 0.7 },
+              pressed && { opacity: 0.7 }
             ]}
             disabled={!isValid || isSubmitting}
           >
@@ -226,8 +218,8 @@ export default function TextInputScreen({ navigation, route }: any) {
                   styles.progressBarFill,
                   {
                     width: progressWidth,
-                    backgroundColor: progressColor,
-                  },
+                    backgroundColor: progressColor
+                  }
                 ]}
               />
             </View>
@@ -255,16 +247,16 @@ export default function TextInputScreen({ navigation, route }: any) {
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.background
   },
   keyboardAvoid: {
-    flex: 1,
+    flex: 1
   },
   header: {
     flexDirection: 'row',
@@ -273,7 +265,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: colors.border
   },
   cancelButton: {
     width: 44,
@@ -281,36 +273,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 22,
-    backgroundColor: colors.backgroundAlt,
+    backgroundColor: colors.backgroundAlt
   },
   headerTitle: {
     fontSize: 18,
     fontFamily: fonts.displaySemiBold,
-    color: colors.text,
+    color: colors.text
   },
   submitHeaderButton: {
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     backgroundColor: colors.primaryMuted,
-    borderRadius: borderRadius.full,
+    borderRadius: borderRadius.full
   },
   submitDisabled: {
     backgroundColor: colors.backgroundAlt,
-    opacity: 0.6,
+    opacity: 0.6
   },
   submitHeaderText: {
     color: colors.primary,
     fontSize: 15,
-    fontFamily: fonts.bodySemiBold,
+    fontFamily: fonts.bodySemiBold
   },
   submitTextDisabled: {
-    color: colors.textMuted,
+    color: colors.textMuted
   },
   content: {
-    flex: 1,
+    flex: 1
   },
   contentContainer: {
-    padding: spacing.lg,
+    padding: spacing.lg
   },
   promptCard: {
     backgroundColor: colors.primaryMuted,
@@ -318,7 +310,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.xl,
     marginBottom: spacing.lg,
     borderLeftWidth: 4,
-    borderLeftColor: colors.primary,
+    borderLeftColor: colors.primary
   },
   collectionBadgeWrapper: {
     alignSelf: 'flex-start',
@@ -326,18 +318,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
     borderRadius: borderRadius.full,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.sm
   },
   collectionBadge: {
     color: colors.textOnPrimary,
     fontSize: 12,
-    fontFamily: fonts.bodySemiBold,
+    fontFamily: fonts.bodySemiBold
   },
   promptText: {
     fontSize: 20,
     fontFamily: fonts.displayMedium,
     color: colors.text,
-    lineHeight: 28,
+    lineHeight: 28
   },
   inputContainer: {
     backgroundColor: colors.surface,
@@ -350,7 +342,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.border
   },
   textInput: {
     flex: 1,
@@ -358,35 +350,35 @@ const styles = StyleSheet.create({
     fontFamily: fonts.body,
     color: colors.text,
     lineHeight: 26,
-    minHeight: 220,
+    minHeight: 220
   },
   progressSection: {
     marginTop: spacing.md,
-    gap: spacing.xs,
+    gap: spacing.xs
   },
   progressBarTrack: {
     height: 6,
     backgroundColor: colors.backgroundAlt,
     borderRadius: 3,
-    overflow: 'hidden',
+    overflow: 'hidden'
   },
   progressBarFill: {
     height: '100%',
-    borderRadius: 3,
+    borderRadius: 3
   },
   progressInfo: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
-    gap: spacing.xs,
+    gap: spacing.xs
   },
   countText: {
     fontSize: 13,
     fontFamily: fonts.bodyMedium,
-    color: colors.textMuted,
+    color: colors.textMuted
   },
   countValid: {
-    color: colors.primary,
+    color: colors.primary
   },
   switchToVoice: {
     marginTop: spacing.xl,
@@ -394,7 +386,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.md
   },
   switchIconWrapper: {
     width: 36,
@@ -402,11 +394,11 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     backgroundColor: colors.primaryMuted,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'center'
   },
   switchText: {
     color: colors.primary,
     fontSize: 15,
-    fontFamily: fonts.bodyMedium,
-  },
-});
+    fontFamily: fonts.bodyMedium
+  }
+})

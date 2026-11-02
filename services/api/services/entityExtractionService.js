@@ -76,7 +76,14 @@ function normalizeEntityType(type) {
  * @param {EntityExtractionOptions} options
  * @returns {Promise<EntityExtractionResult>}
  */
-export async function extractAndStoreEntities({ db, userId, text, chapterId, questionId, storyId }) {
+export async function extractAndStoreEntities({
+  db,
+  userId,
+  text,
+  chapterId,
+  questionId,
+  storyId
+}) {
   if (!text || text.length < 20) {
     return { entities: [], relationshipCount: 0, raw: {} }
   }
@@ -109,9 +116,11 @@ export async function extractAndStoreEntities({ db, userId, text, chapterId, que
   // Batch upsert all entities in parallel
   for (let i = 0; i < entityInserts.length; i += BATCH_SIZE) {
     const batch = entityInserts.slice(i, i + BATCH_SIZE)
-    const results = await Promise.all(batch.map(async (item) => {
-      try {
-        const entityResult = await db.query(`
+    const results = await Promise.all(
+      batch.map(async item => {
+        try {
+          const entityResult = await db.query(
+            `
           INSERT INTO memory_entities (user_id, entity_type, name, description, first_mentioned_chapter, first_mentioned_question)
           VALUES ($1, $2, $3, $4, $5, $6)
           ON CONFLICT (user_id, entity_type, name)
@@ -119,13 +128,16 @@ export async function extractAndStoreEntities({ db, userId, text, chapterId, que
             mention_count = memory_entities.mention_count + 1,
             updated_at = CURRENT_TIMESTAMP
           RETURNING id
-        `, [userId, item.type, item.name, item.context, chapterId, questionId])
-        return { ...item, id: entityResult.rows[0].id }
-      } catch (dbErr) {
-        console.error('Failed to store entity:', dbErr.message)
-        return null
-      }
-    }))
+        `,
+            [userId, item.type, item.name, item.context, chapterId, questionId]
+          )
+          return { ...item, id: entityResult.rows[0].id }
+        } catch (dbErr) {
+          console.error('Failed to store entity:', dbErr.message)
+          return null
+        }
+      })
+    )
 
     for (const result of results) {
       if (result) {
@@ -143,15 +155,22 @@ export async function extractAndStoreEntities({ db, userId, text, chapterId, que
         .map((_, i) => `($${i * 4 + 1}, $${i * 4 + 2}, $${i * 4 + 3}, $${i * 4 + 4})`)
         .join(', ')
 
-      const mentionParams = validEntities
-        .flatMap(e => [e.id, storyId, e.context, e.sentiment || 'neutral'])
+      const mentionParams = validEntities.flatMap(e => [
+        e.id,
+        storyId,
+        e.context,
+        e.sentiment || 'neutral'
+      ])
 
       try {
-        await db.query(`
+        await db.query(
+          `
           INSERT INTO memory_mentions (entity_id, story_id, context, sentiment)
           VALUES ${mentionValues}
           ON CONFLICT DO NOTHING
-        `, mentionParams)
+        `,
+          mentionParams
+        )
       } catch (err) {
         console.error('Failed to batch insert mentions:', err.message)
       }
@@ -188,11 +207,14 @@ export async function extractAndStoreEntities({ db, userId, text, chapterId, que
 
       if (id1 && id2) {
         try {
-          await db.query(`
+          await db.query(
+            `
             INSERT INTO memory_relationships (entity1_id, entity2_id, relationship_type, description)
             VALUES ($1, $2, $3, $4)
             ON CONFLICT (entity1_id, entity2_id, relationship_type) DO NOTHING
-          `, [id1, id2, rel.type, rel.description])
+          `,
+            [id1, id2, rel.type, rel.description]
+          )
         } catch (relErr) {
           console.error('Failed to store relationship:', relErr.message)
         }

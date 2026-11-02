@@ -1,6 +1,9 @@
 // /life-story/services/api/routes/game/challenges.js
 
 import { Router } from 'express'
+import { ValidationError, ForbiddenError } from '../../utils/errors.js'
+import { createLogger } from '../../utils/logger.js'
+const logger = createLogger('daily-prompts')
 import pool from '../../db/index.js'
 import { asyncHandler } from '../../middleware/asyncHandler.js'
 import validate from '../../middleware/validate.js'
@@ -53,40 +56,45 @@ router.post(
   asyncHandler(async (req, res) => {
     const userId = req.user.id
     const { promptId } = req.validatedParams
-    const { answer } = req.validatedBody
-
-    // Get the prompt
-    const prompt = await pool.query(
-      `SELECT id, user_id, prompt_date, prompt_text, prompt_type, chapter_id, question_id, is_completed, completed_at, xp_awarded, created_at
-       FROM daily_prompts WHERE id = $1 AND user_id = $2`,
-      [promptId, userId]
-    )
-
-    if (prompt.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Prompt not found'
-      })
-    }
-
-    const promptData = prompt.rows[0]
-
-    if (promptData.status === 'completed') {
-      return res.status(400).json({
-        success: false,
-        message: 'Prompt already completed'
-      })
-    }
-
-    const startTime = promptData.created_at
-    const endTime = new Date()
-    const timeToComplete = Math.round((endTime - new Date(startTime)) / 1000)
-    const wordCount = answer.trim().split(/\s+/).length
-
-    // Start transaction
-    const client = await pool.connect()
+    const { answer, audioUrl } = req.validatedBody
+    const db = req.app.locals.db || pool
+    const client = await db.connect()
     try {
       await client.query('BEGIN')
+      const prompt = await client.query(
+        'SELECT id, user_id, status, linked_chapter_id, linked_question_id, created_at FROM daily_prompts WHERE id=$1 AND user_id=$2 FOR UPDATE',
+        [promptId, userId]
+      )
+      if (!prompt.rows.length) {
+        await client.query('ROLLBACK')
+        return res.status(404).json({ success: false, message: 'Prompt not found' })
+      }
+      const promptData = prompt.rows[0]
+      if (promptData.status === 'completed') {
+        await client.query('ROLLBACK')
+        return res.status(400).json({ success: false, message: 'Prompt already completed' })
+      }
+      let recordingId
+      if (audioUrl) {
+        recordingId =
+          /^\/api\/voice\/uploads\/([a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12})$/i.exec(
+            audioUrl
+          )?.[1]
+        if (!recordingId) throw new ValidationError('Use an uploaded recording from your account.')
+        const owned = await client.query(
+          'SELECT id, story_id FROM voice_uploads WHERE id=$1 AND user_id=$2 FOR UPDATE',
+          [recordingId, userId]
+        )
+        if (!owned.rows.length)
+          throw new ForbiddenError('Recording does not belong to your account.')
+        if (owned.rows[0].story_id)
+          throw new ValidationError('This recording is already attached to a memory.')
+      }
+      const timeToComplete = Math.max(
+        0,
+        Math.round((Date.now() - new Date(promptData.created_at)) / 1000)
+      )
+      const wordCount = answer.trim().split(/\s+/).length
 
       // Save the answer to stories table if linked to a question
       let storyId = null
@@ -95,7 +103,7 @@ router.post(
           `INSERT INTO stories (user_id, chapter_id, question_id, answer)
          VALUES ($1, $2, $3, $4)
          ON CONFLICT (user_id, chapter_id, question_id)
-         DO UPDATE SET answer = EXCLUDED.answer, updated_at = NOW()
+         DO UPDATE SET answer = EXCLUDED.answer, compiled_content = NULL, compiled_at = NULL, updated_at = NOW()
          RETURNING id`,
           [userId, promptData.linked_chapter_id, promptData.linked_question_id, answer]
         )
@@ -110,6 +118,13 @@ router.post(
         )
         storyId = storyResult.rows[0].id
       }
+
+      if (recordingId)
+        await client.query('UPDATE voice_uploads SET story_id=$1 WHERE id=$2 AND user_id=$3', [
+          storyId,
+          recordingId,
+          userId
+        ])
 
       // Update the prompt status
       await client.query(
@@ -128,26 +143,25 @@ router.post(
       // Invalidate cache since game state changed
       invalidateUserCache(userId)
 
-      // Record activity and update streak (outside transaction)
-      const streakResult = await recordActivity(userId)
-
-      // Sync memory counts
-      await syncMemoryCounts(userId)
-
-      // Check for new achievements
-      const newAchievements = await checkAndAwardAchievements(userId, {
-        type: 'prompt_completed',
-        streak: streakResult.currentStreak,
-        wordCount
-      })
-
-      // Check collection progress
-      if (promptData.linked_question_id) {
-        await updateCollectionProgress(
-          userId,
-          promptData.linked_chapter_id,
-          promptData.linked_question_id
-        )
+      // A gamification outage cannot turn a committed memory save into a failure.
+      let streakResult = { currentStreak: 0, isNewRecord: false },
+        newAchievements = []
+      try {
+        streakResult = await recordActivity(userId)
+        await syncMemoryCounts(userId)
+        newAchievements = await checkAndAwardAchievements(userId, {
+          type: 'prompt_completed',
+          streak: streakResult.currentStreak,
+          wordCount
+        })
+        if (promptData.linked_question_id)
+          await updateCollectionProgress(
+            userId,
+            promptData.linked_chapter_id,
+            promptData.linked_question_id
+          )
+      } catch (error) {
+        logger.warn('Memory saved; engagement updates deferred', { error: error.message })
       }
 
       res.json({

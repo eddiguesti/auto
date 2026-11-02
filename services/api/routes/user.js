@@ -1,11 +1,11 @@
 import { Router } from 'express'
 import { authenticateToken } from '../middleware/auth.js'
-import { blacklistToken } from '../utils/tokenBlacklist.js'
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { requireDb } from '../middleware/requireDb.js'
 import validate from '../middleware/validate.js'
 import { userSchemas } from '../schemas/index.js'
 import { authLogger } from '../utils/logger.js'
+import { scheduleAccountMediaDeletion } from '../services/mediaDeletion.js'
 
 const router = Router()
 
@@ -79,7 +79,7 @@ router.get(
 
     // Fetch user profile
     const userResult = await db.query(
-      'SELECT id, email, name, birth_year, avatar_url, created_at FROM users WHERE id = $1',
+      'SELECT id, email, name, birth_year, avatar_url, premium_until, email_verified, phone_number, phone_call_consent, contact_preference, created_at, updated_at FROM users WHERE id = $1',
       [userId]
     )
 
@@ -89,124 +89,74 @@ router.get(
 
     const user = userResult.rows[0]
 
-    // Fetch all data in parallel with LIMIT caps
-    const [
-      storiesResult,
-      imagesResult,
-      gameResult,
-      photosResult,
-      onboardingResult,
-      styleResult,
-      coverResult,
-      achievementsResult,
-      entitiesResult
-    ] = await Promise.all([
-      db.query(
-        `SELECT chapter_id, question_id, answer, original_answer, style_applied, created_at, updated_at
-         FROM stories WHERE user_id = $1
-         ORDER BY chapter_id, question_id LIMIT 10000`,
-        [userId]
-      ),
-      db.query(
-        `SELECT chapter_id, image_url, prompt_used, generation_status, created_at
-         FROM chapter_images WHERE user_id = $1 LIMIT 1000`,
-        [userId]
-      ),
-      db.query(
-        `SELECT current_streak, longest_streak, total_memories, daily_prompt_completed_today,
-                game_mode_enabled, created_at, updated_at
-         FROM user_game_state WHERE user_id = $1`,
-        [userId]
-      ),
-      db.query(
-        `SELECT p.filename, p.original_name, p.caption, s.chapter_id, p.created_at
-         FROM photos p
-         JOIN stories s ON p.story_id = s.id
-         WHERE s.user_id = $1 LIMIT 5000`,
-        [userId]
-      ),
-      db.query(
-        `SELECT input_preference, birth_place, birth_country, birth_year,
-                additional_context, onboarding_completed, created_at
-         FROM user_onboarding WHERE user_id = $1`,
-        [userId]
-      ),
-      db.query(
-        `SELECT tones, narrative, author_style, applied_at, created_at
-         FROM user_style_preferences WHERE user_id = $1`,
-        [userId]
-      ),
-      db.query(
-        `SELECT template_id, title, author, front_cover_url, back_cover_url,
-                color_scheme, created_at
-         FROM book_covers WHERE user_id = $1`,
-        [userId]
-      ),
-      db.query(
-        `SELECT achievement_type, achievement_key, achievement_name,
-                achievement_description, earned_at
-         FROM achievements WHERE user_id = $1
-         ORDER BY earned_at DESC LIMIT 1000`,
-        [userId]
-      ),
-      db.query(
-        `SELECT entity_type, name, description, first_mentioned_chapter, mention_count
-         FROM memory_entities WHERE user_id = $1
-         ORDER BY mention_count DESC LIMIT 5000`,
-        [userId]
-      )
-    ])
-
+    // Each owned group is complete. Authentication credentials and unconsumed
+    // login/reset tokens are deliberately excluded from a personal-data export.
+    const groups = {
+      stories: 'SELECT * FROM stories WHERE user_id=$1 ORDER BY chapter_id, question_id',
+      chapterReviews: 'SELECT * FROM chapter_reviews WHERE user_id=$1',
+      freeStories: 'SELECT * FROM free_stories WHERE user_id=$1 ORDER BY created_at, id',
+      memos: 'SELECT * FROM memos WHERE user_id=$1 ORDER BY created_at, id',
+      voiceUploads: 'SELECT * FROM voice_uploads WHERE user_id=$1',
+      voiceSessions: 'SELECT * FROM voice_sessions WHERE user_id=$1 ORDER BY id',
+      phoneCalls: 'SELECT * FROM telnyx_calls WHERE user_id=$1 ORDER BY id',
+      photos:
+        'SELECT p.* FROM photos p LEFT JOIN stories s ON s.id=p.story_id WHERE p.user_id=$1 OR s.user_id=$1 ORDER BY p.id',
+      chapterImages: 'SELECT * FROM chapter_images WHERE user_id=$1',
+      coverDesigns: 'SELECT * FROM book_covers WHERE user_id=$1',
+      settings: 'SELECT * FROM settings WHERE user_id=$1',
+      gameProgress: 'SELECT * FROM user_game_state WHERE user_id=$1',
+      onboarding: 'SELECT * FROM user_onboarding WHERE user_id=$1',
+      stylePreferences: 'SELECT * FROM user_style_preferences WHERE user_id=$1',
+      achievements: 'SELECT * FROM achievements WHERE user_id=$1 ORDER BY earned_at',
+      memoryEntities: 'SELECT * FROM memory_entities WHERE user_id=$1',
+      memoryRelationships:
+        'SELECT r.* FROM memory_relationships r JOIN memory_entities e ON e.id=r.entity1_id WHERE e.user_id=$1',
+      memoryMentions:
+        'SELECT m.* FROM memory_mentions m JOIN memory_entities e ON e.id=m.entity_id WHERE e.user_id=$1',
+      dailyPrompts: 'SELECT * FROM daily_prompts WHERE user_id=$1',
+      familyPrompts: 'SELECT * FROM family_prompts WHERE from_user_id=$1 OR for_user_id=$1',
+      familyEncouragements:
+        'SELECT * FROM family_encouragements WHERE from_user_id=$1 OR for_user_id=$1',
+      circleMemberships: 'SELECT * FROM memory_circle_members WHERE user_id=$1',
+      collectionProgress: 'SELECT * FROM user_collection_progress WHERE user_id=$1',
+      streakHistory: 'SELECT * FROM streak_history WHERE user_id=$1',
+      payments:
+        'SELECT id, product_id, product_type, amount, currency, status, created_at FROM payments WHERE user_id=$1',
+      refundRequests: 'SELECT * FROM refund_requests WHERE user_id=$1',
+      printOrders: 'SELECT * FROM print_orders WHERE user_id=$1',
+      voiceSamples:
+        'SELECT fish_model_id, consent_given, created_at FROM voice_models WHERE user_id=$1',
+      audiobooks: 'SELECT * FROM audiobooks WHERE user_id=$1',
+      generatedExports: 'SELECT * FROM generated_exports WHERE user_id=$1',
+      audiobookRequests: 'SELECT * FROM audiobook_generation_requests WHERE user_id=$1',
+      printEntitlements: 'SELECT * FROM print_entitlements WHERE user_id=$1',
+      aiUsage: 'SELECT * FROM ai_usage WHERE user_id=$1',
+      ownedCircles: 'SELECT * FROM memory_circles WHERE owner_user_id=$1',
+      followUps: 'SELECT f.* FROM followups f JOIN stories s ON s.id=f.story_id WHERE s.user_id=$1',
+      paymentEvents: 'SELECT * FROM payments_audit_log WHERE user_id=$1',
+      notifications: 'SELECT * FROM notification_queue WHERE user_id=$1',
+      telegramMessages:
+        'SELECT m.* FROM telegram_messages m JOIN telegram_users u ON u.id=m.telegram_user_id WHERE u.user_id=$1',
+      telegramSessions:
+        'SELECT s.* FROM telegram_sessions s JOIN telegram_users u ON u.id=s.telegram_user_id WHERE u.user_id=$1'
+    }
     const exportData = {
       exportDate: new Date().toISOString(),
       user: {
-        email: user.email,
-        name: user.name,
+        ...user,
         birthYear: user.birth_year,
         avatarUrl: user.avatar_url,
         accountCreated: user.created_at
       },
-      stories: storiesResult.rows.map(s => ({
-        chapterId: s.chapter_id,
-        questionId: s.question_id,
-        answer: s.answer,
-        originalAnswer: s.original_answer,
-        styleApplied: s.style_applied,
-        createdAt: s.created_at,
-        updatedAt: s.updated_at
-      })),
-      chapterImages: imagesResult.rows.map(i => ({
-        chapterId: i.chapter_id,
-        imageUrl: i.image_url,
-        prompt: i.prompt_used,
-        status: i.generation_status,
-        createdAt: i.created_at
-      })),
-      photos: photosResult.rows.map(p => ({
-        filename: p.filename,
-        originalName: p.original_name,
-        caption: p.caption,
-        chapterId: p.chapter_id,
-        createdAt: p.created_at
-      })),
-      achievements: achievementsResult.rows.map(a => ({
-        type: a.achievement_type,
-        key: a.achievement_key,
-        name: a.achievement_name,
-        description: a.achievement_description,
-        earnedAt: a.earned_at
-      })),
-      memoryEntities: entitiesResult.rows.map(e => ({
-        type: e.entity_type,
-        name: e.name,
-        description: e.description,
-        firstMentionedChapter: e.first_mentioned_chapter,
-        mentionCount: e.mention_count
-      })),
-      gameProgress: gameResult.rows[0] || null,
-      onboarding: onboardingResult.rows[0] || null,
-      stylePreferences: styleResult.rows[0] || null,
-      coverDesign: coverResult.rows[0] || null
+      excluded: ['Password hashes and authentication tokens'],
+      ...Object.fromEntries(
+        await Promise.all(
+          Object.entries(groups).map(async ([name, sql]) => [
+            name,
+            (await db.query(sql, [userId])).rows
+          ])
+        )
+      )
     }
 
     authLogger.info('User data export completed', { userId, requestId: req.id })
@@ -229,6 +179,21 @@ router.delete(
 
     try {
       await client.query('BEGIN')
+      await client.query('SELECT id FROM users WHERE id=$1 FOR UPDATE', [userId])
+      await scheduleAccountMediaDeletion(client, userId)
+      // These non-cascading story references must be removed before stories.
+      await client.query(
+        'DELETE FROM family_encouragements WHERE for_user_id=$1 OR from_user_id=$1 OR related_story_id IN (SELECT id FROM stories WHERE user_id=$1)',
+        [userId]
+      )
+      await client.query(
+        'DELETE FROM family_prompts WHERE for_user_id=$1 OR from_user_id=$1 OR answered_story_id IN (SELECT id FROM stories WHERE user_id=$1)',
+        [userId]
+      )
+      await client.query(
+        'DELETE FROM daily_prompts WHERE user_id=$1 OR answer_story_id IN (SELECT id FROM stories WHERE user_id=$1)',
+        [userId]
+      )
 
       // Delete in order respecting foreign key constraints
 
@@ -241,7 +206,7 @@ router.delete(
       )
       await client.query(
         `
-        DELETE FROM photos WHERE story_id IN (SELECT id FROM stories WHERE user_id = $1)
+        DELETE FROM photos WHERE user_id=$1 OR story_id IN (SELECT id FROM stories WHERE user_id = $1)
       `,
         [userId]
       )
@@ -352,13 +317,14 @@ router.delete(
 
       await client.query('COMMIT')
 
-      // Blacklist the current token so it can't be used after deletion
-      if (req.user.jti) {
-        await blacklistToken(req.user)
-      }
-
+      // Authentication rejects every token whose account no longer exists.
+      // No post-commit revocation write can turn a successful delete into a 500.
       authLogger.info('Account deleted successfully', { userId, requestId: req.id })
-      res.json({ success: true, message: 'Account deleted successfully' })
+      res.json({
+        success: true,
+        mediaCleanup: 'scheduled',
+        message: 'Account deleted. Stored media removal is scheduled.'
+      })
     } catch (err) {
       await client.query('ROLLBACK')
       authLogger.error('Account deletion failed', {

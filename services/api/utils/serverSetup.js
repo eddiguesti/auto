@@ -7,35 +7,44 @@ import { WebSocketServer } from 'ws'
 import { handleTelnyxMediaStream } from '../routes/index.js'
 import { handleVoiceProxy } from './voiceProxy.js'
 import { createShutdown, registerShutdown } from './lifecycle.js'
+import { verifyTelnyxStreamToken } from './telnyxSecurity.js'
 
 /**
  * Attach a WebSocket server to the HTTP server for Telnyx media streams.
- * Connections are authenticated with INTERNAL_CRON_SECRET as a query token.
+ * Connections use short-lived signed, call-specific stream credentials.
  * Returns the WebSocketServer instance for use in shutdown.
  */
 export function setupWebSocket(server, db) {
-  const wss = new WebSocketServer({ noServer: true })
+  const wss = new WebSocketServer({ noServer: true, maxPayload: 256 * 1024 })
 
   server.on('upgrade', (request, socket, head) => {
-    const url = new URL(request.url, `http://${request.headers.host}`)
+    let url
+    try {
+      url = new URL(request.url, 'http://localhost')
+    } catch {
+      socket.destroy()
+      return
+    }
 
     if (url.pathname === '/api/voice/ws') {
       wss.handleUpgrade(request, socket, head, ws => {
-        handleVoiceProxy(ws, request)
+        void handleVoiceProxy(ws, request, db).catch(() =>
+          ws.close(1011, 'Voice service unavailable')
+        )
       })
       return
     }
 
     if (url.pathname === '/api/telnyx/media-stream') {
       const streamToken = url.searchParams.get('token')
-      const expectedToken = process.env.INTERNAL_CRON_SECRET
-      if (!expectedToken || streamToken !== expectedToken) {
+      const streamClaims = verifyTelnyxStreamToken(streamToken)
+      if (!streamClaims) {
         socket.write('HTTP/1.1 403 Forbidden\r\n\r\n')
         socket.destroy()
         return
       }
       wss.handleUpgrade(request, socket, head, ws => {
-        handleTelnyxMediaStream(ws, db)
+        void handleTelnyxMediaStream(ws, db, streamClaims)
       })
       return
     }

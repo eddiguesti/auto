@@ -22,9 +22,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install web dependencies
-        run: cd apps/web && npm ci
-
       - name: Lint server
         run: npm run lint:server
 
@@ -50,9 +47,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install web dependencies
-        run: cd apps/web && npm ci
-
       - name: Run backend tests
         run: npm test
 
@@ -75,9 +69,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install web dependencies
-        run: cd apps/web && npm ci
-
       - name: Build web
         run: npm run build
 
@@ -95,10 +86,10 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci && cd apps/web && npm ci
+        run: npm ci
 
       - name: Install Playwright browsers
-        run: npx playwright install chromium
+        run: npx playwright install --with-deps chromium
 
       - name: Run E2E tests
         run: npm run test:e2e
@@ -125,13 +116,62 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install web dependencies
-        run: cd apps/web && npm ci
-
       - name: Audit dependencies
         run: npm audit --audit-level=high
-        continue-on-error: true
 
       - name: Audit web dependencies
         run: cd apps/web && npm audit --audit-level=high
-        continue-on-error: true
+
+  postgres:
+    name: PostgreSQL integration and restore tests
+    runs-on: ubuntu-24.04
+    needs: lint
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: memoir
+          POSTGRES_PASSWORD: integration-test-only
+          POSTGRES_DB: easy_memoir_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Install matching PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-16
+      - run: npm run test:postgres
+        env:
+          TEST_DATABASE_URL: postgresql://memoir:integration-test-only@127.0.0.1:5432/easy_memoir_test
+
+  mobile:
+    name: Mobile types, transport contracts and Android bundle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+      - run: npm ci
+        working-directory: apps/mobile
+      - run: npm test
+        working-directory: apps/mobile
+      - run: npm run typecheck
+        working-directory: apps/mobile
+      - run: npm audit --audit-level=high
+        working-directory: apps/mobile
+      - run: npx expo export --platform android --output-dir ../../.mobile-export
+        working-directory: apps/mobile

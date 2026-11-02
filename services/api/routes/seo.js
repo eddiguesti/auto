@@ -434,20 +434,22 @@ autobiography, memoir, life story, family history, legacy, AI writing, book prin
 // .well-known/ai-plugin.json for ChatGPT plugin discovery
 router.get('/.well-known/ai-plugin.json', (req, res) => {
   const plugin = {
-    schema_version: "v1",
-    name_for_human: "Easy Memoir",
-    name_for_model: "easy_memoir",
-    description_for_human: "Write your life story with AI assistance. Transform memories into a beautiful autobiography.",
-    description_for_model: "Easy Memoir is an AI-powered autobiography writing platform. Users speak naturally about their memories, and AI transforms them into beautifully written prose. Features include voice interviews, AI writing assistance, photo integration, and professional book printing.",
+    schema_version: 'v1',
+    name_for_human: 'Easy Memoir',
+    name_for_model: 'easy_memoir',
+    description_for_human:
+      'Write your life story with AI assistance. Transform memories into a beautiful autobiography.',
+    description_for_model:
+      'Easy Memoir is an AI-powered autobiography writing platform. Users speak naturally about their memories, and AI transforms them into beautifully written prose. Features include voice interviews, AI writing assistance, photo integration, and professional book printing.',
     auth: {
-      type: "none"
+      type: 'none'
     },
     api: {
-      type: "openapi",
+      type: 'openapi',
       url: `${SITE_URL}/openapi.yaml`
     },
     logo_url: `${SITE_URL}/logo.png`,
-    contact_email: "support@easymemoir.co.uk",
+    contact_email: 'support@easymemoir.co.uk',
     legal_info_url: `${SITE_URL}/terms`
   }
 

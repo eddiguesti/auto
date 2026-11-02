@@ -3,7 +3,7 @@
  * Review and save a quick voice memo
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react'
 import {
   View,
   Text,
@@ -12,159 +12,166 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
-  TextInput,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Audio } from 'expo-av';
-import api from '../services/api';
-import { colors, spacing, borderRadius, fonts } from '../utils/theme';
-import haptics from '../utils/haptics';
+  TextInput
+} from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { Audio } from 'expo-av'
+import api from '../services/api'
+import { colors, spacing, borderRadius, fonts } from '../utils/theme'
+import haptics from '../utils/haptics'
 
 export default function MemoReviewScreen({ navigation, route }: any) {
-  const { audioUri, duration, title: initialTitle } = route.params;
+  const { audioUri, duration, title: initialTitle } = route.params
 
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [playbackPosition, setPlaybackPosition] = useState(0);
-  const [transcript, setTranscript] = useState('');
-  const [isTranscribing, setIsTranscribing] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [title, setTitle] = useState(initialTitle || '');
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [sound, setSound] = useState<Audio.Sound | null>(null)
+  const soundRef = useRef<Audio.Sound | null>(null)
+  const mountedRef = useRef(true)
+  const soundRequestRef = useRef(0)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [playbackPosition, setPlaybackPosition] = useState(0)
+  const [transcript, setTranscript] = useState('')
+  const [isTranscribing, setIsTranscribing] = useState(true)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [title, setTitle] = useState(initialTitle || '')
+  const [audioUrl, setAudioUrl] = useState<string | null>(null)
+  const [uploadError, setUploadError] = useState(false)
 
   useEffect(() => {
-    loadSound();
-    uploadAndTranscribe();
+    mountedRef.current = true
+    loadSound()
+    uploadAndTranscribe()
 
     return () => {
-      if (sound) {
-        sound.unloadAsync();
-      }
-    };
-  }, []);
+      mountedRef.current = false
+      void soundRef.current?.unloadAsync()
+    }
+  }, [])
 
   const loadSound = async () => {
+    const requestId = ++soundRequestRef.current
     try {
       const { sound: audioSound } = await Audio.Sound.createAsync(
         { uri: audioUri },
         { shouldPlay: false },
         onPlaybackStatusUpdate
-      );
-      setSound(audioSound);
+      )
+      if (!mountedRef.current || requestId !== soundRequestRef.current) {
+        await audioSound.unloadAsync()
+        return
+      }
+      soundRef.current = audioSound
+      setSound(audioSound)
     } catch (error) {
-      console.error('Failed to load sound:', error);
+      console.error('Failed to load sound:', error)
     }
-  };
+  }
 
   const onPlaybackStatusUpdate = (status: any) => {
     if (status.isLoaded) {
-      setPlaybackPosition(status.positionMillis / 1000);
-      setIsPlaying(status.isPlaying);
+      setPlaybackPosition(status.positionMillis / 1000)
+      setIsPlaying(status.isPlaying)
       if (status.didJustFinish) {
-        setIsPlaying(false);
-        setPlaybackPosition(0);
+        setIsPlaying(false)
+        setPlaybackPosition(0)
       }
     }
-  };
+  }
 
   const uploadAndTranscribe = async () => {
-    setIsTranscribing(true);
+    setIsTranscribing(true)
+    setUploadError(false)
     try {
-      const response = await api.uploadAudio(audioUri);
-      if (response.data?.audioUrl) {
-        setAudioUrl(response.data.audioUrl);
+      const response = await api.uploadAudio(audioUri)
+      if (response.audioUrl) {
+        setAudioUrl(response.audioUrl)
       }
-      if (response.data?.transcript) {
-        setTranscript(response.data.transcript);
+      if (response.transcript) {
+        setTranscript(response.transcript)
       }
     } catch (error) {
-      console.error('Upload/Transcription failed:', error);
-      setTranscript('(Transcription unavailable - your voice recording will still be saved)');
+      setUploadError(true)
+      console.error('Upload/Transcription failed:', error)
+      Alert.alert(
+        'Recording not uploaded',
+        'Your recording is still on this device. Please try again before saving.'
+      )
     } finally {
-      setIsTranscribing(false);
+      setIsTranscribing(false)
     }
-  };
+  }
 
   const togglePlayback = async () => {
-    if (!sound) return;
+    if (!sound) return
 
     if (isPlaying) {
-      await sound.pauseAsync();
+      await sound.pauseAsync()
     } else {
       if (playbackPosition >= duration) {
-        await sound.setPositionAsync(0);
+        await sound.setPositionAsync(0)
       }
-      await sound.playAsync();
+      await sound.playAsync()
     }
-  };
+  }
 
   const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+    const mins = Math.floor(seconds / 60)
+    const secs = Math.floor(seconds % 60)
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
 
   const handleReRecord = async () => {
     if (sound) {
-      await sound.unloadAsync();
+      await sound.unloadAsync()
     }
-    navigation.goBack();
-  };
+    navigation.goBack()
+  }
 
   const handleDiscard = () => {
-    Alert.alert(
-      'Discard Memo?',
-      'This recording will not be saved.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Discard',
-          style: 'destructive',
-          onPress: async () => {
-            if (sound) {
-              await sound.unloadAsync();
-            }
-            haptics.lightTap();
-            navigation.navigate('Home');
-          },
-        },
-      ]
-    );
-  };
+    Alert.alert('Discard Memo?', 'This recording will not be saved.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Discard',
+        style: 'destructive',
+        onPress: async () => {
+          if (sound) {
+            await sound.unloadAsync()
+          }
+          haptics.lightTap()
+          navigation.navigate('Home')
+        }
+      }
+    ])
+  }
 
   const handleSubmit = async () => {
     if (!audioUrl) {
-      Alert.alert('Please wait', 'Audio is still uploading...');
-      return;
+      Alert.alert('Please wait', 'Audio is still uploading...')
+      return
     }
 
-    setIsSubmitting(true);
+    setIsSubmitting(true)
     try {
       await api.createMemo({
         audio_url: audioUrl,
         transcript: transcript || undefined,
         title: title.trim() || undefined,
-        duration: Math.round(duration),
-      });
+        duration: Math.round(duration)
+      })
 
-      haptics.success();
+      haptics.success()
 
       // Navigate back to home with success message
-      navigation.navigate('Home');
-      Alert.alert('Saved!', 'Your memo has been saved.');
+      navigation.navigate('Home')
+      Alert.alert('Saved!', 'Your memo has been saved.')
     } catch (error) {
-      console.error('Submit failed:', error);
-      Alert.alert(
-        'Save Failed',
-        'Failed to save your memo. Please try again.',
-        [{ text: 'OK' }]
-      );
+      console.error('Submit failed:', error)
+      Alert.alert('Save Failed', 'Failed to save your memo. Please try again.', [{ text: 'OK' }])
     } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false)
     }
-  };
+  }
 
-  const progressPercent = duration > 0 ? (playbackPosition / duration) * 100 : 0;
+  const progressPercent = duration > 0 ? (playbackPosition / duration) * 100 : 0
 
   return (
     <SafeAreaView style={styles.container}>
@@ -195,19 +202,13 @@ export default function MemoReviewScreen({ navigation, route }: any) {
 
         {/* Audio Player */}
         <View style={styles.playerCard}>
-          <TouchableOpacity
-            style={styles.playButton}
-            onPress={togglePlayback}
-            disabled={!sound}
-          >
+          <TouchableOpacity style={styles.playButton} onPress={togglePlayback} disabled={!sound}>
             <Text style={styles.playIcon}>{isPlaying ? '⏸️' : '▶️'}</Text>
           </TouchableOpacity>
 
           <View style={styles.progressContainer}>
             <View style={styles.progressBar}>
-              <View
-                style={[styles.progressFill, { width: `${progressPercent}%` }]}
-              />
+              <View style={[styles.progressFill, { width: `${progressPercent}%` }]} />
             </View>
             <View style={styles.timeContainer}>
               <Text style={styles.timeText}>{formatTime(playbackPosition)}</Text>
@@ -235,26 +236,29 @@ export default function MemoReviewScreen({ navigation, route }: any) {
         <TouchableOpacity
           style={[
             styles.submitButton,
-            (isSubmitting || isTranscribing || !audioUrl) && styles.submitButtonDisabled,
+            (isSubmitting || isTranscribing || (!audioUrl && !uploadError)) &&
+              styles.submitButtonDisabled
           ]}
-          onPress={handleSubmit}
-          disabled={isSubmitting || isTranscribing || !audioUrl}
+          onPress={uploadError ? uploadAndTranscribe : handleSubmit}
+          disabled={isSubmitting || isTranscribing || (!audioUrl && !uploadError)}
         >
           {isSubmitting ? (
             <ActivityIndicator color={colors.background} />
           ) : (
-            <Text style={styles.submitButtonText}>Save Memo</Text>
+            <Text style={styles.submitButtonText}>
+              {uploadError ? 'Retry Upload' : 'Save Memo'}
+            </Text>
           )}
         </TouchableOpacity>
       </View>
     </SafeAreaView>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.background
   },
   header: {
     flexDirection: 'row',
@@ -263,39 +267,39 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: colors.border
   },
   backButton: {
-    padding: spacing.sm,
+    padding: spacing.sm
   },
   backText: {
     color: colors.error,
     fontSize: 16,
-    fontFamily: fonts.bodyMedium,
+    fontFamily: fonts.bodyMedium
   },
   reRecordText: {
     color: colors.primary,
     fontSize: 16,
-    fontFamily: fonts.bodyMedium,
+    fontFamily: fonts.bodyMedium
   },
   headerTitle: {
     fontSize: 18,
     fontFamily: fonts.displayMedium,
-    color: colors.text,
+    color: colors.text
   },
   content: {
-    flex: 1,
+    flex: 1
   },
   contentContainer: {
     padding: spacing.lg,
-    gap: spacing.lg,
+    gap: spacing.lg
   },
   titleCard: {
     backgroundColor: colors.backgroundAlt,
     padding: spacing.lg,
     borderRadius: borderRadius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.border
   },
   cardLabel: {
     fontSize: 12,
@@ -303,13 +307,13 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 1,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.sm
   },
   titleInput: {
     fontSize: 18,
     fontFamily: fonts.body,
     color: colors.text,
-    paddingVertical: spacing.xs,
+    paddingVertical: spacing.xs
   },
   playerCard: {
     backgroundColor: colors.backgroundAlt,
@@ -319,7 +323,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.border
   },
   playButton: {
     width: 56,
@@ -327,35 +331,35 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     backgroundColor: colors.primary,
     justifyContent: 'center',
-    alignItems: 'center',
+    alignItems: 'center'
   },
   playIcon: {
-    fontSize: 24,
+    fontSize: 24
   },
   progressContainer: {
-    flex: 1,
+    flex: 1
   },
   progressBar: {
     height: 6,
     backgroundColor: colors.border,
     borderRadius: 3,
-    overflow: 'hidden',
+    overflow: 'hidden'
   },
   progressFill: {
     height: '100%',
     backgroundColor: colors.primary,
-    borderRadius: 3,
+    borderRadius: 3
   },
   timeContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: spacing.xs,
+    marginTop: spacing.xs
   },
   timeText: {
     fontSize: 12,
     fontFamily: fonts.body,
     color: colors.textSecondary,
-    fontVariant: ['tabular-nums'],
+    fontVariant: ['tabular-nums']
   },
   transcriptCard: {
     backgroundColor: colors.backgroundAlt,
@@ -363,41 +367,41 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     minHeight: 150,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.border
   },
   transcribingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.sm
   },
   transcribingText: {
     color: colors.textSecondary,
     fontSize: 14,
-    fontFamily: fonts.body,
+    fontFamily: fonts.body
   },
   transcriptText: {
     fontSize: 16,
     fontFamily: fonts.body,
     color: colors.text,
-    lineHeight: 24,
+    lineHeight: 24
   },
   footer: {
     padding: spacing.lg,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: colors.border
   },
   submitButton: {
     backgroundColor: colors.primary,
     paddingVertical: spacing.md,
     borderRadius: borderRadius.lg,
-    alignItems: 'center',
+    alignItems: 'center'
   },
   submitButtonDisabled: {
-    opacity: 0.6,
+    opacity: 0.6
   },
   submitButtonText: {
     color: colors.background,
     fontSize: 18,
-    fontFamily: fonts.displayMedium,
-  },
-});
+    fontFamily: fonts.displayMedium
+  }
+})

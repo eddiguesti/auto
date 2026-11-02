@@ -13,9 +13,17 @@ import { paymentRepository } from '../repositories/paymentRepository.js'
 import { storyRepository } from '../repositories/storyRepository.js'
 import { getQueue } from '../jobs/queue.js'
 import { JOB } from '../jobs/jobNames.js'
+import { checkAIQuota } from '../middleware/aiQuota.js'
+import { resolveManuscript } from '../services/manuscript.js'
 
 const router = Router()
 const logger = createLogger('audiobook')
+
+// Email interview links do not grant access to voice samples or paid exports.
+router.use((req, res, next) => {
+  if (req.user?.scope) return res.status(403).json({ error: 'Full account access required' })
+  next()
+})
 
 const FISH_API_URL = 'https://api.fish.audio/v1'
 
@@ -120,22 +128,74 @@ router.post(
     const userId = req.user.id
     const { useOwnVoice } = req.body
 
-    // Validate user has content before queuing (fail fast)
-    const storyRows = await storyRepository.findWithContent(db, userId)
-    if (storyRows.length === 0) {
+    const [paid, earlyAdopter] = await Promise.all([
+      paymentRepository.hasProductPayment(db, userId, 'audiobook'),
+      paymentRepository.isEarlyAdopter(db, userId)
+    ])
+    if (!paid && !earlyAdopter) {
+      return res
+        .status(403)
+        .json({ error: 'Payment required for audiobook', code: 'PAYMENT_REQUIRED' })
+    }
+    if (useOwnVoice && !(await audiobookRepository.findVoiceSampleWithConsent(db, userId))) {
+      return res.status(400).json({ error: 'A consented voice sample is required' })
+    }
+    const storyRows = await resolveManuscript(
+      db,
+      userId,
+      await storyRepository.findWithContent(db, userId)
+    )
+    if (!storyRows.some(row => row.answer?.trim())) {
       return res.status(400).json({ error: 'No stories to convert to audiobook' })
     }
 
     const boss = await getQueue()
-    const jobId = await boss.send(
-      JOB.AUDIOBOOK_GENERATE,
-      { userId, useOwnVoice: Boolean(useOwnVoice) },
-      {
-        retryLimit: 2,
-        retryDelay: 60,
-        expireInSeconds: 900 // 15 min max per job
+    const client = await db.connect()
+    let jobId
+    try {
+      await client.query('BEGIN')
+      const owner = await client.query('SELECT id FROM users WHERE id = $1 FOR UPDATE', [userId])
+      if (!owner.rows.length) {
+        await client.query('ROLLBACK')
+        return res.status(401).json({ error: 'Account unavailable' })
       }
-    )
+      const usage = await client.query(
+        `SELECT COUNT(*) AS daily, COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '15 minutes') AS recent
+         FROM audiobook_generation_requests WHERE user_id = $1 AND created_at > NOW() - INTERVAL '1 day'`,
+        [userId]
+      )
+      if (Number(usage.rows[0].recent) > 0 || Number(usage.rows[0].daily) >= 3) {
+        await client.query('ROLLBACK')
+        return res.status(429).json({
+          error: 'Please wait before generating another audiobook. Maximum three per day.'
+        })
+      }
+      jobId = await boss.send(
+        JOB.AUDIOBOOK_GENERATE,
+        { userId, useOwnVoice: Boolean(useOwnVoice) },
+        {
+          retryLimit: 2,
+          retryDelay: 60,
+          expireInSeconds: 900,
+          singletonKey: `audiobook:${userId}`,
+          singletonSeconds: 900
+        }
+      )
+      if (!jobId) {
+        await client.query('ROLLBACK')
+        return res.status(409).json({ error: 'An audiobook request is already queued' })
+      }
+      await client.query(
+        'INSERT INTO audiobook_generation_requests (user_id, job_id) VALUES ($1, $2)',
+        [userId, jobId]
+      )
+      await client.query('COMMIT')
+    } catch (error) {
+      await client.query('ROLLBACK')
+      throw error
+    } finally {
+      client.release()
+    }
 
     logger.info('Audiobook job enqueued', { jobId, userId, requestId: req.id })
     res.status(202).json({ jobId, message: 'Audiobook generation started' })
@@ -205,6 +265,7 @@ router.get(
 // Simple TTS for landing page (no auth required)
 router.post(
   '/tts',
+  checkAIQuota,
   asyncHandler(async (req, res) => {
     const { text } = req.body
 
@@ -225,7 +286,8 @@ router.post(
       body: JSON.stringify({
         text,
         format: 'mp3'
-      })
+      }),
+      signal: AbortSignal.timeout(30000)
     })
 
     if (!audioResponse.ok) {

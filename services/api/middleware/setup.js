@@ -117,7 +117,7 @@ export function setupMiddleware(app) {
   const parseJson = express.json({ limit: '1mb' })
   app.use((req, res, next) => {
     // Stripe verifies the exact signed bytes; its route owns the raw parser.
-    if (req.path === '/api/webhooks/stripe') return next()
+    if (['/api/webhooks/stripe', '/api/telnyx/webhook'].includes(req.path)) return next()
     return parseJson(req, res, next)
   })
 }
