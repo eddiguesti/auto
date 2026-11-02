@@ -4,6 +4,7 @@
  */
 
 import { hasAnalyticsConsent, subscribeCookieConsent } from './cookieConsent'
+import { scrubAnalyticsEvent, safeTelemetryUrl } from '../lib/errorTelemetry'
 
 const ANALYTICS_ENDPOINT = '/api/analytics/event'
 const sdkConsentBoundaries = new WeakMap()
@@ -95,10 +96,17 @@ export function createAnalyticsController({
             capture_pageleave: false,
             autocapture: false,
             disable_session_recording: true,
+            capture_performance: false,
+            save_campaign_params: false,
+            save_referrer: false,
+            get_current_url: () => window.location.origin + safeTelemetryUrl(window.location.href),
             opt_out_capturing_by_default: true,
             opt_out_persistence_by_default: true,
             persistence: 'localStorage+cookie',
-            before_send: event => (hasAnalyticsConsent() && !disposed ? event : null)
+            before_send: event =>
+              hasAnalyticsConsent() && !disposed
+                ? scrubAnalyticsEvent(event, { projectKey: key })
+                : null
           })
           installSDKConsentBoundary(sdk, () =>
             hasAnalyticsConsent() && !disposed ? consentEpoch : null
@@ -128,7 +136,9 @@ export function createAnalyticsController({
       }
       if (!ready || !sdk) return false
       try {
-        sdk.capture(name, properties)
+        const event = scrubAnalyticsEvent({ event: name, properties })
+        if (!event) return false
+        sdk.capture(event.event, event.properties)
         return true
       } catch {
         return false
@@ -160,7 +170,7 @@ export function trackEvent(name, properties = {}) {
 
   // Fallback: send to own API (fire and forget)
   try {
-    const payload = {
+    const payload = scrubAnalyticsEvent({
       event: name,
       properties: {
         ...properties,
@@ -168,7 +178,8 @@ export function trackEvent(name, properties = {}) {
         referrer: document.referrer || null
       },
       timestamp: Date.now()
-    }
+    })
+    if (!payload) return
 
     // Use sendBeacon for reliability (survives page unloads)
     if (!hasAnalyticsConsent()) return

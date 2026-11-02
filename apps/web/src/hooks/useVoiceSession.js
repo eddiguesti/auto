@@ -9,9 +9,10 @@ import { base64ToArrayBuffer, arrayBufferToBase64 } from '../utils/audio'
 import { buildInstructions } from '../utils/voiceInstructions'
 import { VOICE_CONFIG } from '../data/voiceConfig'
 import { readDraft } from './useDraftAutosave'
+import { voiceSocketUrl } from '../lib/voiceSocket'
 
 export function useVoiceSession({ chapter, initialQuestionIndex = 0, photoContext = null }) {
-  const { authFetch, token: jwtToken, user } = useAuth()
+  const { authFetch, user } = useAuth()
   const draftKey = `memoir-draft:${user?.id}:voice:${chapter?.id}`
   const recovered = useRef(readDraft(draftKey))
   const { getPaceSettings, getVoice } = useSettings()
@@ -312,6 +313,7 @@ export function useVoiceSession({ chapter, initialQuestionIndex = 0, photoContex
         throw new Error(errData.details || errData.error || 'Failed to connect')
       }
       const session = await response.json()
+      if (!mountedRef.current) return
 
       if (session.session_id) {
         setSessionId(session.session_id)
@@ -323,11 +325,7 @@ export function useVoiceSession({ chapter, initialQuestionIndex = 0, photoContex
         if (nextIdx > 0 && nextIdx < chapter.questions.length) setQuestionIndex(nextIdx)
       }
 
-      if (!jwtToken) throw new Error('Not authenticated')
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-      const ws = new WebSocket(
-        `${protocol}//${window.location.host}/api/voice/ws?token=${jwtToken}`
-      )
+      const ws = new WebSocket(voiceSocketUrl(session.ticket))
 
       ws.onopen = () => {
         setPhase('active')
@@ -379,9 +377,11 @@ export function useVoiceSession({ chapter, initialQuestionIndex = 0, photoContex
       }
 
       wsRef.current = ws
+      return true
     } catch (err) {
       setError(err.message)
       setPhase('ready')
+      return false
     }
   }, [
     chapter,
@@ -393,7 +393,6 @@ export function useVoiceSession({ chapter, initialQuestionIndex = 0, photoContex
     authFetch,
     getPaceSettings,
     getVoice,
-    jwtToken,
     phase
   ])
 
@@ -522,8 +521,8 @@ export function useVoiceSession({ chapter, initialQuestionIndex = 0, photoContex
       sampleRate: VOICE_CONFIG.SAMPLE_RATE
     })
     await playbackCtxRef.current.resume()
-    await connect()
-    await startMicrophone()
+    if (await connect()) await startMicrophone()
+    else hasStartedRef.current = false
   }, [connect, startMicrophone])
 
   const endConversation = useCallback(async () => {

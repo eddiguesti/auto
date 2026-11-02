@@ -88,30 +88,72 @@
   "renderedReview": {
     "status": "requested-rendered-design-checks-complete",
     "preview": "http://127.0.0.1:5174/",
-    "reviewed": ["Native desktop viewport and full-page composition", "390px by 844px mobile", "320px by 780px mobile", "Mobile navigation disclosure", "FAQ expansion using Enter and visible keyboard focus", "Linked sample memoir route"],
-    "passed": ["Coherent literary homepage composition and hierarchy", "Primary mobile CTA within first screen", "Manuscript retained on mobile", "No horizontal overflow at 390px or 320px", "Native FAQ disclosure responds to keyboard"],
-    "requestedRefinements": ["Restyle pulsing orange help launcher to calm forest treatment; remove unsupported availability dot", "Unify the prominent sample-memoir destination with the new visual system, label fiction, label pagination, remove unsupported price cards", "Raise essential dashboard mobile navigation and chapter metadata to at least 14px", "Check registration entry continuity"],
+    "reviewed": [
+      "Native desktop viewport and full-page composition",
+      "390px by 844px mobile",
+      "320px by 780px mobile",
+      "Mobile navigation disclosure",
+      "FAQ expansion using Enter and visible keyboard focus",
+      "Linked sample memoir route"
+    ],
+    "passed": [
+      "Coherent literary homepage composition and hierarchy",
+      "Primary mobile CTA within first screen",
+      "Manuscript retained on mobile",
+      "No horizontal overflow at 390px or 320px",
+      "Native FAQ disclosure responds to keyboard"
+    ],
+    "requestedRefinements": [
+      "Restyle pulsing orange help launcher to calm forest treatment; remove unsupported availability dot",
+      "Unify the prominent sample-memoir destination with the new visual system, label fiction, label pagination, remove unsupported price cards",
+      "Raise essential dashboard mobile navigation and chapter metadata to at least 14px",
+      "Check registration entry continuity"
+    ],
     "finalReview": {
       "dashboard": "Normal UI login to local fixture account only. Desktop and 390px renders pass composition and overflow review. Next-chapter panel and progress have clear hierarchy; secondary routes remain accessible.",
       "sample": "Refined mobile sample reviewed. Explicit fictional label, consistent visual system, labelled navigation and readable chapter prose. Chapter selection changes page and focuses heading.",
       "help": "Forest launcher and removal of decorative pulse verified. Development query tool still visually overlaps it in dev; production bundle omits the devtool.",
       "onboarding": "Welcome, method selection and typing form inspected at 390px. Welcome monogram/button/body refinements verified. Method step has clipped bottom helper text with duplicate progress dots; request sent to Sol to compact cards and remove duplicate dots. Typing fields lack associated accessible names in observed AX tree; request sent for htmlFor/id associations.",
-      "screenshots": [".cloudflare/review/dashboard-desktop.jpg", ".cloudflare/review/dashboard-mobile.jpg"],
+      "screenshots": [
+        ".cloudflare/review/dashboard-desktop.jpg",
+        ".cloudflare/review/dashboard-mobile.jpg"
+      ],
       "consent": "Sent implementation owner concise banner styling guidance: cream/forest, compact explanation, equal prominence for accept/reject, 44px controls, accessible preferences."
     },
     "supportingPageReview": {
-      "reviewed": ["How it works desktop and 390px mobile", "Gift desktop", "About 391px mobile", "FAQ 390px mobile and keyboard Enter expansion", "Pricing 391px mobile error state", "Cookies 390px mobile", "Consent notice and preferences 390px mobile"],
+      "reviewed": [
+        "How it works desktop and 390px mobile",
+        "Gift desktop",
+        "About 391px mobile",
+        "FAQ 390px mobile and keyboard Enter expansion",
+        "Pricing 391px mobile error state",
+        "Cookies 390px mobile",
+        "Consent notice and preferences 390px mobile"
+      ],
       "result": "Shared editorial shell is consistent, readable and calm. Large display headings wrap naturally; numbered section rhythm and clear rules give the supporting pages structure. FAQ keyboard interaction and visible focus work. Consent notice uses readable sans-serif copy, equal accept/reject prominence, and a correctly named analytics switch. No new blocking visual defect observed.",
       "limitations": "Current fixture catalog request failed; pricing presented a useful retry state. Fixture login failed with Unexpected end of JSON input, so the final onboarding label/overflow fixes could not be rechecked in this pass. These failures were reported to root as local environment blockers.",
-      "screenshots": [".cloudflare/review/how-it-works-desktop.jpg", ".cloudflare/review/gift-desktop.jpg", ".cloudflare/review/about-mobile.jpg", ".cloudflare/review/consent-mobile.jpg", ".cloudflare/review/consent-banner-mobile.jpg"]
+      "screenshots": [
+        ".cloudflare/review/how-it-works-desktop.jpg",
+        ".cloudflare/review/gift-desktop.jpg",
+        ".cloudflare/review/about-mobile.jpg",
+        ".cloudflare/review/consent-mobile.jpg",
+        ".cloudflare/review/consent-banner-mobile.jpg"
+      ]
     },
     "fixtureRestoredFinalChecks": {
       "pricing": "Loaded catalog verified in actual browser: Premium Monthly GBP9.99/month and Premium Yearly GBP99.99/year both explicitly unavailable to purchase, with no purchase controls. Bundle and export rows display catalog data. Readable restrained desktop cards; screenshot saved.",
       "onboarding": "Normal local fixture login succeeded. Settings has no visible restart control; reused the existing onboarding entry URL already verified in earlier source/UI checks. At390x844 the method step now fits its helper text, duplicate dots are gone, and both choices remain accessible. Typing form fields expose proper associated names in the AX tree, including birth-year select and optional context. Focus moves to each heading. Finish later closes correctly.",
-      "screenshots": [".cloudflare/review/pricing-loaded-desktop.jpg", ".cloudflare/review/onboarding-method-mobile.jpg", ".cloudflare/review/onboarding-form-mobile.jpg"],
+      "screenshots": [
+        ".cloudflare/review/pricing-loaded-desktop.jpg",
+        ".cloudflare/review/onboarding-method-mobile.jpg",
+        ".cloudflare/review/onboarding-form-mobile.jpg"
+      ],
       "result": "Previously requested visual and input-label corrections verified. No further blocking design defect observed in the reviewed scope. Browser viewport restored."
     },
-    "notYetVerified": ["Every authenticated loading/error/completed state rendered", "Live production integrations and commercial product fulfillment are outside design sign-off"],
+    "notYetVerified": [
+      "Every authenticated loading/error/completed state rendered",
+      "Live production integrations and commercial product fulfillment are outside design sign-off"
+    ],
     "note": "Astra reviewed actual screenshots and sent concrete revisions to Sol. All dashboard data was a local fixture. Screenshot artifacts moved to ignored review directory. Responsive viewport override reset after inspection."
   }
 }

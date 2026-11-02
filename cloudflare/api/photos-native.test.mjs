@@ -17,8 +17,34 @@ before(async () => {
       resolveDir: root,
       contents: `
     import worker from './cloudflare/api-staging.js'
+    import {processMediaDeletionJobs} from './cloudflare/api/media-deletion.js'
     export default {async fetch(request,env) {
       // Fault injection exists only in this generated test harness.
+      if(new URL(request.url).pathname==='/__test/cleanup') return Response.json(await processMediaDeletionJobs(env,Date.now()+Number(request.headers.get('X-Test-Advance')||0)))
+      if(request.headers.has('X-Test-Partial-Put')||request.headers.has('X-Test-Delete-Down')||request.headers.has('X-Test-Delete-Owner-On-Put')) {
+        const bucket=env.MEDIA, database=env.DB
+        env={...env,MEDIA:{
+          get:bucket.get.bind(bucket),
+          put:async(...args)=>{
+            const result=await bucket.put(...args)
+            if(request.headers.has('X-Test-Delete-Owner-On-Put')) await database.prepare('DELETE FROM users WHERE id=1').run()
+            if(request.headers.has('X-Test-Partial-Put')) throw new Error('Put response lost after write')
+            return result
+          },
+          delete:request.headers.has('X-Test-Delete-Owner-On-Put')?bucket.delete.bind(bucket):()=>{throw new Error('Deletion unavailable')}
+        }}
+      }
+      if(request.headers.has('X-Test-Ambiguous-Commit')) {
+        const database=env.DB
+        env={...env,DB:{withSession(...args){
+          const session=database.withSession(...args)
+          return {prepare:session.prepare.bind(session),batch:async statements=>{
+            const result=await session.batch(statements)
+            if(result.some(item=>item.results?.some(row=>row.filename))) throw new Error('Commit response lost')
+            return result
+          }}
+        }}}
+      }
       if(request.headers.has('X-Test-Storage-Down')) env={...env,MEDIA:{
         get:()=>{throw new Error('R2 down')}, put:()=>{throw new Error('R2 down')}, delete:()=>{throw new Error('R2 down')}
       }}
@@ -29,6 +55,7 @@ before(async () => {
     },
     outfile: bundle,
     bundle: true,
+    external: ['cloudflare:workers', 'node:buffer'],
     format: 'esm',
     platform: 'browser',
     target: 'es2022'
@@ -39,6 +66,7 @@ before(async () => {
       modules: true,
       scriptPath: bundle,
       compatibilityDate: '2026-10-09',
+      compatibilityFlags: ['nodejs_compat'],
       bindings: {
         JWT_SECRET: secret,
         NATIVE_API_STAGE: 'local-d1-slice',
@@ -55,7 +83,7 @@ before(async () => {
             authorization: request.headers.get('Authorization'),
             payload
           })
-          const data = payload.messages[0].content[1].image_url.url
+          const data = payload.input[0].content[1].image_url
           const marker = Buffer.from(data.split(',')[1], 'base64').at(-1)
           if (marker === 9) return new Response('provider secret failure', { status: 429 })
           const analysis =
@@ -68,7 +96,16 @@ before(async () => {
                   setting: 'garden',
                   questions: ['Who was there?', 'What did the flowers smell like?']
                 }
-          return Response.json({ choices: [{ message: { content: JSON.stringify(analysis) } }] })
+          return Response.json({
+            status: 'completed',
+            output: [
+              {
+                type: 'message',
+                role: 'assistant',
+                content: [{ type: 'output_text', text: JSON.stringify(analysis) }]
+              }
+            ]
+          })
         }
       }
     })
@@ -86,11 +123,38 @@ before(async () => {
       .filter(Boolean)
       .map(sql => db.prepare(sql))
   )
+  const rateSchema = await readFile(
+    new URL('./migrations/0002_auth_rate_limits.sql', import.meta.url),
+    'utf8'
+  )
+  await db.exec(
+    rateSchema
+      .split('\n')
+      .filter(line => !line.trim().startsWith('--'))
+      .join(' ')
+  )
+  const jobsSchema = await readFile(
+    new URL('./migrations/0003_generation_jobs.sql', import.meta.url),
+    'utf8'
+  )
+  await db.batch(
+    jobsSchema
+      .split('\n')
+      .filter(line => !line.trim().startsWith('--'))
+      .join('\n')
+      .split(';')
+      .map(sql => sql.trim())
+      .filter(Boolean)
+      .map(sql => db.prepare(sql))
+  )
 })
 after(async () => {
   await runtime?.dispose()
 })
 beforeEach(async () => {
+  await db.prepare('DELETE FROM media_deletion_jobs').run()
+  await db.prepare('DELETE FROM generation_jobs').run()
+  await db.prepare('DELETE FROM auth_rate_limits').run()
   await db.prepare('DROP TRIGGER IF EXISTS reject_photo').run()
   await db.prepare('DELETE FROM users').run()
   await db.prepare('DELETE FROM token_blacklist').run()
@@ -273,9 +337,10 @@ test('native analysis uses the real provider contract, retains original image an
   assert.equal(photo.description, 'A family garden. [redacted]')
   assert.equal(photo.people_count, 2)
   assert.equal(providerCalls.length, 1)
-  assert.equal(providerCalls[0].url, 'https://api.x.ai/v1/chat/completions')
+  assert.equal(providerCalls[0].url, 'https://api.x.ai/v1/responses')
   assert.equal(providerCalls[0].authorization, 'Bearer provider-fixture-key')
-  assert.equal(providerCalls[0].payload.model, 'grok-4-1-fast-non-reasoning')
+  assert.equal(providerCalls[0].payload.model, 'grok-4.7')
+  assert.equal(providerCalls[0].payload.store, false)
   assert.equal((await request(`/api/photos/file/${photo.filename}`)).status, 200)
   assert.equal((await request(`/api/photos/file/${photo.filename}`, { userId: 2 })).status, 403)
   const gallery = await (await request('/api/photos/my-photos')).json()
@@ -314,4 +379,128 @@ test('filename traversal, double encoding and unsafe stored content types are re
   await db.prepare("INSERT INTO photos(story_id,user_id,filename) VALUES (1,1,'unsafe.jpg')").run()
   await media.put('unsafe.jpg', '<html>', { httpMetadata: { contentType: 'text/html' } })
   assert.equal((await request('/api/photos/file/unsafe.jpg')).status, 503)
+})
+
+test('photo analysis shares the atomic daily AI quota while ordinary photo operations stay unmetered', async () => {
+  const date = new Date().toISOString().slice(0, 10)
+  await db
+    .prepare('INSERT INTO ai_usage(user_id,date,request_count) VALUES(1,?,9)')
+    .bind(date)
+    .run()
+  const results = await Promise.all(
+    [1, 2].map(() =>
+      request('/api/photos/analyze', { method: 'POST', body: form({ storyId: null }) })
+    )
+  )
+  assert.deepEqual(results.map(row => row.status).sort(), [200, 403])
+  assert.equal(providerCalls.length, 1)
+  assert.equal(
+    (await db.prepare('SELECT request_count FROM ai_usage WHERE user_id=1').first()).request_count,
+    10
+  )
+  const ordinary = await request('/api/photos', { method: 'POST', body: form() })
+  assert.equal(ordinary.status, 200)
+  assert.equal((await request('/api/photos/my-photos')).status, 200)
+  assert.equal(
+    (await db.prepare('SELECT request_count FROM ai_usage WHERE user_id=1').first()).request_count,
+    10
+  )
+})
+
+test('an ambiguous partial R2 put retains durable cleanup intent and is swept only after its grace period', async () => {
+  const result = await request('/api/photos', {
+    method: 'POST',
+    body: form(),
+    headers: { 'X-Test-Partial-Put': '1' }
+  })
+  assert.equal(result.status, 503)
+  assert.equal((await media.list()).objects.length, 1)
+  assert.equal((await db.prepare('SELECT COUNT(*) count FROM photos').first()).count, 0)
+  assert.equal(
+    (await db.prepare('SELECT COUNT(*) count FROM media_deletion_jobs').first()).count,
+    1
+  )
+  const immediate = await runtime.dispatchFetch('https://photos.invalid/__test/cleanup')
+  assert.equal((await immediate.json()).claimed, 0)
+  const later = await runtime.dispatchFetch('https://photos.invalid/__test/cleanup', {
+    headers: { 'X-Test-Advance': String(11 * 60 * 1000) }
+  })
+  const laterResult = await later.json()
+  assert.equal(laterResult.deleted, 1, JSON.stringify(laterResult))
+  assert.equal((await media.list()).objects.length, 0)
+  assert.equal(
+    (await db.prepare('SELECT COUNT(*) count FROM media_deletion_jobs').first()).count,
+    0
+  )
+})
+
+test('metadata failure plus failed compensation keeps retryable cleanup; committed metadata keeps its object', async () => {
+  await db
+    .prepare(
+      "CREATE TRIGGER reject_photo BEFORE INSERT ON photos BEGIN SELECT RAISE(ABORT,'blocked'); END"
+    )
+    .run()
+  assert.equal(
+    (
+      await request('/api/photos', {
+        method: 'POST',
+        body: form(),
+        headers: { 'X-Test-Delete-Down': '1' }
+      })
+    ).status,
+    503
+  )
+  assert.equal((await media.list()).objects.length, 1)
+  assert.equal(
+    (await db.prepare('SELECT COUNT(*) count FROM media_deletion_jobs').first()).count,
+    1
+  )
+  await db.prepare('DROP TRIGGER reject_photo').run()
+  assert.equal(
+    (
+      await request('/api/photos', {
+        method: 'POST',
+        body: form(),
+        headers: { 'X-Test-Ambiguous-Commit': '1' }
+      })
+    ).status,
+    503
+  )
+  const attached = await db.prepare('SELECT filename FROM photos WHERE user_id=1').first()
+  assert.ok(attached)
+  assert.ok(await media.get(attached.filename))
+  assert.equal((await request(`/api/photos/file/${attached.filename}`)).status, 200)
+})
+
+test('account deletion during a photo put cannot create ownerless metadata or an untracked object', async () => {
+  const result = await request('/api/photos', {
+    method: 'POST',
+    body: form(),
+    headers: { 'X-Test-Delete-Owner-On-Put': '1' }
+  })
+  assert.equal(result.status, 404)
+  assert.equal((await db.prepare('SELECT COUNT(*) count FROM photos').first()).count, 0)
+  assert.equal((await media.list()).objects.length, 0)
+  assert.equal(
+    (await db.prepare('SELECT COUNT(*) count FROM media_deletion_jobs').first()).count,
+    0
+  )
+})
+
+test('cleanup never deletes an object referenced by any live photo row after a commit', async () => {
+  const saved = await (await request('/api/photos', { method: 'POST', body: form() })).json()
+  await db
+    .prepare(
+      "INSERT INTO media_deletion_jobs(object_key,next_attempt_at) VALUES(?,'2000-01-01 00:00:00+00')"
+    )
+    .bind(saved.filename)
+    .run()
+  const result = await runtime.dispatchFetch('https://photos.invalid/__test/cleanup')
+  const cleanupResult = await result.json()
+  assert.equal(cleanupResult.retained, 1, JSON.stringify(cleanupResult))
+  assert.ok(await media.get(saved.filename))
+  assert.equal(
+    (await db.prepare('SELECT COUNT(*) count FROM media_deletion_jobs').first()).count,
+    0
+  )
 })

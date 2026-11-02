@@ -90,11 +90,11 @@ describe('analytics consent enforcement', () => {
     stops.push(startAnalytics({ key: 'key', loadSDK }))
     saveCookieConsent(accepted)
     await tick()
-    trackEvent('story_saved', { chapterId: 'early-life' })
+    trackEvent('story_saved', { chapterId: 'earliest-memories' })
     expect(loadSDK).toHaveBeenCalledTimes(1)
     expect(sdk.init).toHaveBeenCalledTimes(1)
     expect(sdk.opt_in_capturing).toHaveBeenCalledWith({ captureEventName: false })
-    expect(sdk.capture).toHaveBeenCalledWith('story_saved', { chapterId: 'early-life' })
+    expect(sdk.capture).toHaveBeenCalledWith('story_saved', { chapterId: 'earliest-memories' })
     expect(navigator.sendBeacon).not.toHaveBeenCalled()
     expect(sdk.init.mock.calls[0][1].disable_session_recording).toBe(true)
   })
@@ -208,5 +208,66 @@ describe('analytics consent enforcement', () => {
     resolve({ default: sdk })
     await tick()
     expect(sdk.init).not.toHaveBeenCalled()
+  })
+
+  it('scrubs SDK defaults and caller properties while preserving consent and ingestion identity', async () => {
+    const sdk = fakeSDK(),
+      previous = window.location.href
+    window.history.replaceState({}, '', '/talk/private-link?token=private-query#private-fragment')
+    try {
+      saveCookieConsent(accepted)
+      stops.push(
+        startAnalytics({ key: 'public-key', loadSDK: () => Promise.resolve({ default: sdk }) })
+      )
+      await tick()
+      const options = sdk.init.mock.calls[0][1]
+      expect(options.disable_session_recording).toBe(true)
+      expect(options.capture_performance).toBe(false)
+      expect(options.get_current_url()).not.toContain('private')
+      const event = options.before_send({
+        event: '$pageview',
+        properties: {
+          token: 'private-token',
+          $current_url: window.location.href,
+          $set_once: { $initial_current_url: '/talk/private-link' },
+          memoir: 'private-memoir'
+        }
+      })
+      expect(JSON.stringify(event)).not.toContain('private')
+      expect(event.properties.token).toBe('public-key')
+      trackEvent('story_saved', {
+        chapterId: 'earliest-memories',
+        memoir: 'private-memoir',
+        url: '/api/voice/ws?ticket=private-ticket'
+      })
+      expect(sdk.capture).toHaveBeenLastCalledWith('story_saved', {
+        chapterId: 'earliest-memories',
+        url: '/api/voice/[redacted]'
+      })
+      saveCookieConsent(DEFAULT_CONSENT)
+      expect(options.before_send(event)).toBeNull()
+    } finally {
+      window.history.replaceState({}, '', previous)
+    }
+  })
+
+  it('sanitizes first-party fallback payloads before either beacon or fetch sees them', () => {
+    const previous = window.location.href
+    window.history.replaceState({}, '', '/talk/private-link?token=private-query')
+    try {
+      saveCookieConsent(accepted)
+      navigator.sendBeacon.mockReturnValue(false)
+      trackEvent('story_saved', {
+        memoir: 'private-memoir',
+        authorization: 'private-auth',
+        chapterId: 'earliest-memories'
+      })
+      const payload = JSON.parse(fetch.mock.calls[0][1].body)
+      expect(JSON.stringify(payload)).not.toContain('private')
+      expect(payload.properties.url).toBe('/talk/[redacted]')
+      expect(payload.properties.chapterId).toBe('earliest-memories')
+    } finally {
+      window.history.replaceState({}, '', previous)
+    }
   })
 })

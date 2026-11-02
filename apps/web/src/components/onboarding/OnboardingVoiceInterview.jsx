@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAuth } from '../../context/AuthContext'
+import { voiceSocketUrl } from '../../lib/voiceSocket'
 import { useSettings } from '../../context/SettingsContext'
 import { AudioVisualizer } from '../AudioVisualizer'
 
@@ -17,7 +18,7 @@ import { AudioVisualizer } from '../AudioVisualizer'
  * 2. WebSocket → Base64 → PCM16 → Float32 → AudioContext → Speakers
  */
 export default function OnboardingVoiceInterview({ onComplete, onBack }) {
-  const { authFetch, token: jwtToken } = useAuth()
+  const { authFetch } = useAuth()
   const { getPaceSettings, getVoice } = useSettings()
 
   // ============================================
@@ -398,14 +399,19 @@ export default function OnboardingVoiceInterview({ onComplete, onBack }) {
       playbackContextRef.current = createAudioContext(24000)
       await playbackContextRef.current.resume()
 
-      if (!jwtToken) throw new Error('Not authenticated')
+      const response = await authFetch('/api/voice/session', {
+        method: 'POST',
+        body: JSON.stringify({ chapterId: 'earliest-memories' })
+      })
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}))
+        throw new Error(body.error || 'Could not start your voice interview')
+      }
+      const session = await response.json()
       if (unmountedRef.current) return
 
       // Connect via server-side proxy (handles xAI auth with API key)
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-      const ws = new WebSocket(
-        `${protocol}//${window.location.host}/api/voice/ws?token=${jwtToken}`
-      )
+      const ws = new WebSocket(voiceSocketUrl(session.ticket))
 
       // Connection timeout (10 seconds)
       const connectionTimeout = safeTimeout(() => {

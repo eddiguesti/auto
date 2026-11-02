@@ -1,11 +1,11 @@
 import { useState } from 'react'
 
-export default function OnboardingTypeForm({ onSubmit, onBack }) {
-  const [name, setName] = useState('')
-  const [birthPlace, setBirthPlace] = useState('')
-  const [birthCountry, setBirthCountry] = useState('')
-  const [birthYear, setBirthYear] = useState('')
-  const [additionalContext, setAdditionalContext] = useState('')
+export default function OnboardingTypeForm({ onSubmit, onBack, initialData = {} }) {
+  const [name, setName] = useState(initialData.name || '')
+  const [birthPlace, setBirthPlace] = useState(initialData.birthPlace || '')
+  const [birthCountry, setBirthCountry] = useState(initialData.birthCountry || '')
+  const [birthYear, setBirthYear] = useState(initialData.birthYear || '')
+  const [additionalContext, setAdditionalContext] = useState(initialData.additionalContext || '')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleSubmit = async e => {

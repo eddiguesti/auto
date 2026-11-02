@@ -1,7 +1,7 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "easy-memoir-web",
-  "account_id": "df3d63daad6e36a66171d8ae6b368da7",
+  "account_id": "bbdbba416f07c76f4c2754f8a61807f4",
   "main": "cloudflare/web.js",
   "compatibility_date": "2026-10-09",
   "workers_dev": true,

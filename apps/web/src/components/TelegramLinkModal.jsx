@@ -54,7 +54,7 @@ export default function TelegramLinkModal({ onClose }) {
 
       if (res.ok) {
         setStatus('connected')
-        setTelegramInfo({ connected: true })
+        setTelegramInfo({ ...data, connected: true })
       } else {
         setError(data.error || 'Failed to link account')
         setStatus('not_connected')
@@ -141,6 +141,12 @@ export default function TelegramLinkModal({ onClose }) {
             <p className="text-sepia/70 mb-4">
               Your Telegram is linked. Stories you share via Telegram will automatically sync here.
             </p>
+            {telegramInfo?.pendingAnswers > 0 && (
+              <p role="status" className="mb-4 rounded-xl bg-amber-50 p-3 text-sm text-sepia">
+                Some Telegram drafts need review. Your existing website answers were kept. Download
+                your account data in Settings to see both versions.
+              </p>
+            )}
             {telegramInfo?.username && (
               <p className="text-sm text-sepia/50">@{telegramInfo.username}</p>
             )}

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, memo } from 'react'
 import { useAuth } from '../context/AuthContext'
+import AuthenticatedImage from './AuthenticatedImage'
 
 export default memo(function QuestionCard({
   question,
@@ -211,13 +212,14 @@ export default memo(function QuestionCard({
             <div className="flex flex-wrap gap-2">
               {photos.map(photo => (
                 <div key={photo.id} className="relative group">
-                  <img
+                  <AuthenticatedImage
                     src={`/api/photos/file/${photo.filename}`}
                     alt={photo.caption || 'Memory photo'}
                     loading="lazy"
                     className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-lg"
                   />
                   <button
+                    aria-label={`Delete ${photo.caption || 'memory photo'}`}
                     onClick={() => deletePhoto(photo.id)}
                     className="absolute -top-2 -right-2 w-7 h-7 sm:w-6 sm:h-6 bg-red-500 text-white rounded-full sm:opacity-0 sm:group-hover:opacity-100 transition text-sm sm:text-xs flex items-center justify-center"
                   >

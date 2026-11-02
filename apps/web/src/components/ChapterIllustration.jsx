@@ -1,4 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import AuthenticatedImage from './AuthenticatedImage'
+import { watchChapterArtwork } from '../lib/chapterArtwork'
+import { chapters } from '../data/chapters'
 import { useAuth } from '../context/AuthContext'
 
 // Chapter-specific gradient themes for placeholders
@@ -52,122 +55,160 @@ const chapterThemes = {
   }
 }
 
-export default function ChapterIllustration({ chapterId, stories = [], onGenerate }) {
+export default function ChapterIllustration(props) {
+  const { user } = useAuth()
+  return <ChapterArtwork key={`${user?.id}:${props.chapterId}`} {...props} />
+}
+
+function ChapterArtwork({ chapterId, stories = [], onGenerate }) {
   const { authFetch } = useAuth()
   const [isGenerating, setIsGenerating] = useState(false)
-  const [illustrationPrompt, setIllustrationPrompt] = useState(null)
+  const [checking, setChecking] = useState(true)
+  const [imageUrl, setImageUrl] = useState(null)
   const [error, setError] = useState(null)
+  const [lookupFailed, setLookupFailed] = useState(false)
+  const watcher = useRef(null)
+  const action = useRef(null)
+  const generated = useRef(onGenerate)
+  generated.current = onGenerate
+  const theme = chapterThemes[chapterId] || chapterThemes.childhood
+  const title =
+    chapters.find(chapter => chapter.id === chapterId)?.title || chapterId.replaceAll('-', ' ')
+  const hasStories = stories.some(story => story.answer?.trim())
 
-  const theme = chapterThemes[chapterId] || chapterThemes['childhood']
+  const checkArtwork = useCallback(
+    async (notify = false) => {
+      watcher.current?.abort()
+      const controller = new AbortController()
+      watcher.current = controller
+      setChecking(true)
+      setLookupFailed(false)
+      setError(null)
+      try {
+        const result = await watchChapterArtwork(authFetch, chapterId, {
+          signal: controller.signal,
+          onUpdate: artwork => {
+            setChecking(false)
+            setImageUrl(artwork?.imageUrl || null)
+            setIsGenerating(['pending', 'generating'].includes(artwork?.status))
+            if (artwork?.status === 'failed')
+              setError('The illustration could not be created. You can try again.')
+          }
+        })
+        if (!controller.signal.aborted && notify && result?.status === 'completed')
+          generated.current?.(result)
+      } catch (err) {
+        if (!controller.signal.aborted) {
+          setError(err.message)
+          setLookupFailed(true)
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setChecking(false)
+          setIsGenerating(false)
+        }
+      }
+    },
+    [authFetch, chapterId]
+  )
+
+  useEffect(() => {
+    void checkArtwork()
+    return () => {
+      watcher.current?.abort()
+      action.current?.abort()
+    }
+  }, [checkArtwork])
 
   const handleGenerate = async () => {
+    if (checking || isGenerating) return
     setIsGenerating(true)
     setError(null)
-
+    const controller = new AbortController()
+    action.current = controller
+    let rejected = false
     try {
-      const res = await authFetch('/api/ai/generate-illustration', {
-        method: 'POST',
-        body: JSON.stringify({
-          chapterId,
-          stories: stories.map(s => s.answer).filter(Boolean)
-        })
-      })
-
-      if (!res.ok) {
-        throw new Error('Failed to generate illustration')
+      const response = await authFetch(
+        `/api/chapter-images/generate/${encodeURIComponent(chapterId)}`,
+        { method: 'POST', signal: controller.signal }
+      )
+      if (!response.ok) {
+        rejected = true
+        const body = await response.json().catch(() => ({}))
+        throw new Error(body.error || 'Could not start your illustration.')
       }
-
-      const data = await res.json()
-      setIllustrationPrompt(data.prompt)
-      if (onGenerate) onGenerate(data)
+      if (!controller.signal.aborted) await checkArtwork(true)
     } catch (err) {
-      console.error('Error generating illustration:', err)
-      setError('Failed to generate. Please try again.')
+      if (!controller.signal.aborted) {
+        setError(err.message)
+        // A lost enqueue response may already have started paid generation.
+        // Recover with an owner-scoped read before offering another purchase.
+        setLookupFailed(!rejected)
+      }
     } finally {
-      setIsGenerating(false)
+      if (!controller.signal.aborted) setIsGenerating(false)
     }
   }
 
-  const hasStories = stories.some(s => s.answer?.trim())
-
   return (
-    <div className="relative overflow-hidden rounded-2xl">
-      {/* Gradient placeholder background */}
+    <section
+      className="overflow-hidden rounded-2xl border border-sepia/10"
+      aria-label={`${title} illustration`}
+    >
       <div
         className={`bg-gradient-to-br ${theme.gradient} aspect-[16/9] flex items-center justify-center`}
       >
-        {illustrationPrompt ? (
-          // Show the generated prompt as a preview
-          <div className="p-6 text-center max-w-md">
-            <div className="w-12 h-12 bg-white/60 backdrop-blur-sm rounded-xl flex items-center justify-center mx-auto mb-4">
-              <svg
-                className="w-6 h-6 text-sepia"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                />
-              </svg>
-            </div>
-            <p className="text-sepia/80 text-sm italic leading-relaxed mb-3">
-              "{illustrationPrompt}"
-            </p>
-            <p className="text-sepia/50 text-xs">AI illustration coming soon</p>
-          </div>
+        {imageUrl ? (
+          <AuthenticatedImage
+            src={imageUrl}
+            alt={`Illustration for ${title}`}
+            loading="eager"
+            className="w-full h-full"
+          />
         ) : (
-          // Default placeholder
           <div className="text-center">
-            <span className="text-5xl mb-3 block opacity-40">{theme.icon}</span>
-            <p className="text-sepia/40 text-sm">{theme.label}</p>
+            <span aria-hidden="true" className="text-5xl mb-3 block opacity-40">
+              {theme.icon}
+            </span>
+            <p className="text-sepia/60 text-sm">{title}</p>
           </div>
         )}
       </div>
-
-      {/* Generate button overlay */}
-      {!illustrationPrompt && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/5 transition group">
+      <div className="bg-white p-3 text-center">
+        {isGenerating ? (
+          <p role="status" className="text-sm text-sepia">
+            Creating your illustration. You can keep writing and return later.
+          </p>
+        ) : lookupFailed ? (
           <button
-            onClick={handleGenerate}
-            disabled={isGenerating || !hasStories}
-            className={`opacity-0 group-hover:opacity-100 transition px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 ${
-              hasStories
-                ? 'bg-white/90 text-sepia hover:bg-white shadow-lg'
-                : 'bg-white/60 text-sepia/50 cursor-not-allowed'
-            }`}
+            type="button"
+            onClick={() => checkArtwork()}
+            className="px-4 py-2 rounded-lg text-sm bg-sepia/5 text-sepia"
           >
-            {isGenerating ? (
-              <>
-                <span className="w-4 h-4 border-2 border-sepia/30 border-t-sepia rounded-full animate-spin" />
-                Generating...
-              </>
-            ) : (
-              <>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-                  />
-                </svg>
-                {hasStories ? 'Generate Illustration' : 'Add stories first'}
-              </>
-            )}
+            Check illustration
           </button>
-        </div>
-      )}
-
-      {/* Error message */}
-      {error && (
-        <div className="absolute bottom-2 left-2 right-2 bg-red-100 text-red-700 text-xs p-2 rounded-lg">
-          {error}
-        </div>
-      )}
-    </div>
+        ) : (
+          <button
+            type="button"
+            onClick={handleGenerate}
+            disabled={checking || !hasStories}
+            className="px-4 py-2 rounded-lg text-sm font-medium bg-sepia/5 text-sepia disabled:opacity-50"
+          >
+            {checking
+              ? 'Loading illustration...'
+              : !hasStories
+                ? 'Add a memory first'
+                : imageUrl
+                  ? 'Create a new illustration'
+                  : 'Generate illustration'}
+          </button>
+        )}
+        {error && (
+          <p role="alert" className="mt-2 text-red-700 text-sm">
+            {error}
+          </p>
+        )}
+      </div>
+    </section>
   )
 }

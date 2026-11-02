@@ -1,6 +1,8 @@
 import { ApiError, json } from './errors.js'
 import { createMappedCodec, timestampForStorage } from './value-codecs.js'
 import { analyzePhoto } from './photo-analysis.js'
+import { reserveAIUsage } from './ai-quota.js'
+import { reserveWritingRate } from './writing-provider.js'
 
 const MAX_FILE = 10 * 1024 * 1024
 const MAX_MULTIPART = MAX_FILE + 64 * 1024
@@ -115,21 +117,53 @@ async function upload(request) {
 async function store(env, db, photo, values, sql, now) {
   if (!env.MEDIA) throw new ApiError(503, { error: 'Photo storage not available' })
   const key = `${now}-${crypto.randomUUID().replaceAll('-', '')}${MIME[photo.type]}`
-  await env.MEDIA.put(key, photo.content, {
-    httpMetadata: { contentType: photo.type, cacheControl: 'private, no-store' }
-  })
+  const storedAt = Date.now()
+  // This intent predates the object write, so it survives isolate termination,
+  // an ambiguous/partial put, and deletion of the account during R2 I/O.
+  await db
+    .prepare(
+      'INSERT INTO media_deletion_jobs (object_key, next_attempt_at, created_at) VALUES (?, ?, ?)'
+    )
+    .bind(
+      key,
+      timestampForStorage(storedAt + 600000, 'instant'),
+      timestampForStorage(storedAt, 'instant')
+    )
+    .run()
+  let putCompleted = false
   try {
-    return await db
-      .prepare(sql)
-      .bind(...values(key))
-      .first()
+    await env.MEDIA.put(key, photo.content, {
+      httpMetadata: { contentType: photo.type, cacheControl: 'private, no-store' }
+    })
+    putCompleted = true
+    const [insert] = await db.batch([
+      db.prepare(sql).bind(...values(key)),
+      db
+        .prepare(
+          'DELETE FROM media_deletion_jobs WHERE object_key = ? AND EXISTS (SELECT 1 FROM photos WHERE filename = ?)'
+        )
+        .bind(key, key)
+    ])
+    const row = insert.results[0]
+    if (!row) throw new ApiError(404, { error: 'Account or story unavailable' })
+    return row
   } catch (error) {
-    // An R2 write and D1 transaction cannot be atomic. Roll back the object on
-    // failed metadata writes; report a cleanup failure without private details.
     try {
-      await env.MEDIA.delete(key)
+      // A D1 response may fail after commit. Never compensate a successfully
+      // attached object, including one still referenced by another live row.
+      const attached = await db
+        .prepare('SELECT id FROM photos WHERE filename = ? LIMIT 1')
+        .bind(key)
+        .first()
+      if (!attached) {
+        await env.MEDIA.delete(key)
+        // An ambiguous put may still finish later. Keep its safe-window sweep
+        // even if immediate deletion appeared successful.
+        if (putCompleted)
+          await db.prepare('DELETE FROM media_deletion_jobs WHERE object_key = ?').bind(key).run()
+      }
     } catch {
-      console.error('Photo compensation failed')
+      console.error('Photo cleanup pending')
     }
     throw error
   }
@@ -146,23 +180,25 @@ export async function handlePhotoRequest({ request, env, db, user, path, now }) 
     const photo = await upload(request)
     if (photo.chapterId && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(photo.chapterId))
       throw new ApiError(400, { error: 'Invalid chapter_id' })
+    await reserveWritingRate(db, user.id, now)
+    await reserveAIUsage(db, user.id, now)
     const analysis = await analyzePhoto(env, photo.content, photo.type)
     const saved = await store(
       env,
       db,
       photo,
       key => [
-        user.id,
         photo.chapterId || null,
         key,
         photo.originalName,
         analysis.description,
         analysis.era,
         JSON.stringify(analysis.questions),
-        timestampForStorage(now)
+        timestampForStorage(now),
+        user.id
       ],
       `INSERT INTO photos (user_id, chapter_id, filename, original_name, ai_description, ai_era, ai_questions, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, filename`,
+       SELECT id, ?, ?, ?, ?, ?, ?, ? FROM users WHERE id = ? AND deleted_at IS NULL RETURNING id, filename`,
       now
     )
     return json({ ...saved, ...analysis })
@@ -181,15 +217,16 @@ export async function handlePhotoRequest({ request, env, db, user, path, now }) 
       db,
       photo,
       key => [
-        storyId,
-        user.id,
         key,
         photo.originalName,
         photo.caption || null,
-        timestampForStorage(now)
+        timestampForStorage(now),
+        storyId,
+        user.id
       ],
       `INSERT INTO photos (story_id, user_id, filename, original_name, caption, created_at)
-       VALUES (?, ?, ?, ?, ?, ?) RETURNING id, filename`,
+       SELECT s.id, s.user_id, ?, ?, ?, ? FROM stories s JOIN users u ON u.id = s.user_id
+       WHERE s.id = ? AND s.user_id = ? AND u.deleted_at IS NULL RETURNING id, filename`,
       now
     )
     return json({ success: true, ...saved })

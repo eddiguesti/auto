@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
+import { readDraft } from '../hooks/useDraftAutosave'
 import PreferenceSelector from './onboarding/PreferenceSelector'
 import OnboardingVoiceInterview from './onboarding/OnboardingVoiceInterview'
 import OnboardingTypeForm from './onboarding/OnboardingTypeForm'
@@ -18,7 +19,26 @@ const STEPS = {
   CHANNEL_SELECTION: 'channel_selection',
   OFFER: 'offer',
   TOUR_OFFER: 'tour_offer',
-  PROCESSING: 'processing'
+  PROCESSING: 'processing',
+  SAVE_ERROR: 'save_error'
+}
+
+const SAVE_PATHS = {
+  preference: '/api/onboarding/preference',
+  voice: '/api/onboarding/context',
+  type: '/api/onboarding/context-form',
+  channels: '/api/onboarding/channel-preferences',
+  complete: '/api/onboarding/complete'
+}
+function pendingDraft(key) {
+  const draft = readDraft(key)
+  return draft &&
+    Object.hasOwn(SAVE_PATHS, draft.kind) &&
+    draft.payload &&
+    typeof draft.payload === 'object' &&
+    !Array.isArray(draft.payload)
+    ? draft
+    : null
 }
 
 // Maps each step to its progress dot index (0–4)
@@ -61,15 +81,26 @@ const fadeVariants = {
   }
 }
 
-export default function OnboardingModal({ onClose, initialStep }) {
+export default function OnboardingModal(props) {
+  const { user } = useAuth()
+  return <OnboardingFlow key={user?.id ?? 'anonymous'} {...props} />
+}
+
+function OnboardingFlow({ onClose, initialStep }) {
   const { authFetch, user, refreshUser } = useAuth()
-  const [step, setStep] = useState(initialStep || STEPS.WELCOME)
+  const draftKey = `memoir-draft:${user?.id ?? 'anonymous'}:onboarding`
+  const [pendingSave, setPendingSave] = useState(() => pendingDraft(draftKey))
+  const [step, setStep] = useState(pendingSave ? STEPS.SAVE_ERROR : initialStep || STEPS.WELCOME)
+  const [saveError, setSaveError] = useState(null)
   const [preference, setPreference] = useState(null)
   const [isVisible, setIsVisible] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
   const [extractedContext, setExtractedContext] = useState(null)
   const rafIdRef = useRef(null)
   const dialogRef = useRef(null)
+  const mountedRef = useRef(true)
+  const savingRef = useRef(false)
+  const saveControllerRef = useRef(null)
   const reducedMotion = useReducedMotion()
   useFocusTrap(dialogRef)
 
@@ -89,8 +120,11 @@ export default function OnboardingModal({ onClose, initialStep }) {
 
   // Animate in on mount
   useEffect(() => {
+    mountedRef.current = true
     rafIdRef.current = requestAnimationFrame(() => setIsVisible(true))
     return () => {
+      mountedRef.current = false
+      saveControllerRef.current?.abort()
       if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current)
     }
   }, [])
@@ -101,87 +135,83 @@ export default function OnboardingModal({ onClose, initialStep }) {
     setTimeout(() => onClose(options), reducedMotion ? 0 : 200)
   }
 
-  // Save preference and move to next step
-  const handlePreferenceSelect = async pref => {
-    setPreference(pref)
-
+  async function saveDetails(pending) {
+    if (savingRef.current) return
+    savingRef.current = true
+    const saved = { ...pending, requestId: pending.requestId || crypto.randomUUID() }
+    setPendingSave(saved)
     try {
-      await authFetch('/api/onboarding/preference', {
-        method: 'POST',
-        body: JSON.stringify({ preference: pref })
-      })
-    } catch (err) {
-      console.error('Failed to save preference:', err)
+      sessionStorage.setItem(draftKey, JSON.stringify(saved))
+    } catch {
+      /* server save still works when tab storage is unavailable */
     }
-
-    setStep(pref === 'voice' ? STEPS.VOICE_INTERVIEW : STEPS.TYPE_FORM)
-  }
-
-  // Handle voice interview completion — go straight to channels, extract context in background
-  const handleVoiceComplete = transcripts => {
-    setStep(STEPS.CHANNEL_SELECTION)
-
-    // Extract context in the background — don't block the UI
-    authFetch('/api/onboarding/context', {
-      method: 'POST',
-      body: JSON.stringify({ transcripts })
-    })
-      .then(res => res.json())
-      .then(data => {
-        setExtractedContext(data.extracted)
-        if (data.userName) refreshUser()
-      })
-      .catch(err => console.error('Context extraction failed:', err))
-  }
-
-  // Handle type form submission — save context, then move to channel selection
-  const handleTypeFormSubmit = async formData => {
+    setSaveError(null)
     setStep(STEPS.PROCESSING)
-
     const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 12000)
-
+    saveControllerRef.current = controller
+    const timeout = setTimeout(() => controller.abort(), saved.kind === 'voice' ? 90000 : 15000)
     try {
-      const res = await authFetch('/api/onboarding/context-form', {
+      const response = await authFetch(SAVE_PATHS[saved.kind], {
         method: 'POST',
-        body: JSON.stringify(formData),
+        headers: { 'Idempotency-Key': saved.requestId },
+        body: JSON.stringify(saved.payload),
         signal: controller.signal
       })
-
-      const data = await res.json()
-
-      setExtractedContext({
-        birth_place: formData.birthPlace,
-        birth_country: formData.birthCountry,
-        birth_year: formData.birthYear
-      })
-
-      if (data.userName) await refreshUser()
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok)
+        throw new Error(
+          data.message || data.error || 'Could not save your details. Please try again.'
+        )
+      if (!mountedRef.current) return
+      if (data.userName) {
+        try {
+          await refreshUser()
+        } catch {
+          /* the details already committed; profile refresh can retry independently */
+        }
+      }
+      if (!mountedRef.current) return
+      if (saved.kind === 'voice') setExtractedContext(data.extracted)
+      if (saved.kind === 'type')
+        setExtractedContext({
+          birth_place: saved.payload.birthPlace,
+          birth_country: saved.payload.birthCountry,
+          birth_year: saved.payload.birthYear
+        })
+      try {
+        sessionStorage.removeItem(draftKey)
+      } catch {
+        /* do not turn a committed save into an error */
+      }
+      setPendingSave(null)
+      if (saved.kind === 'preference') {
+        setPreference(saved.payload.preference)
+        setStep(saved.payload.preference === 'voice' ? STEPS.VOICE_INTERVIEW : STEPS.TYPE_FORM)
+      } else if (saved.kind === 'voice' || saved.kind === 'type') setStep(STEPS.CHANNEL_SELECTION)
+      else if (saved.kind === 'channels') setStep(STEPS.OFFER)
+      else setStep(STEPS.TOUR_OFFER)
     } catch (err) {
-      console.error('Form context save failed (continuing):', err)
+      if (mountedRef.current) {
+        setSaveError(
+          err.name === 'AbortError'
+            ? 'Saving took too long. Your details are still kept in this tab.'
+            : err.message
+        )
+        setStep(STEPS.SAVE_ERROR)
+      }
     } finally {
       clearTimeout(timeout)
+      savingRef.current = false
     }
-
-    setStep(STEPS.CHANNEL_SELECTION)
   }
-
-  // Handle channel selection completion — save preferences in background, show offer
-  const handleChannelSelectionComplete = async selectedChannels => {
-    // Save channel preferences in background — don't block the UI
-    authFetch('/api/onboarding/channel-preferences', {
-      method: 'POST',
-      body: JSON.stringify({ channels: selectedChannels })
-    }).catch(err => console.error('Channel save failed:', err))
-
-    setStep(STEPS.OFFER)
-  }
-
-  // Handle "try free" from offer — mark onboarding complete, show tour
-  const handleTryFree = () => {
-    authFetch('/api/onboarding/complete', { method: 'POST' }).catch(() => {})
-    setStep(STEPS.TOUR_OFFER)
-  }
+  const handlePreferenceSelect = pref =>
+    saveDetails({ kind: 'preference', payload: { preference: pref } })
+  const handleVoiceComplete = transcripts =>
+    saveDetails({ kind: 'voice', payload: { transcripts } })
+  const handleTypeFormSubmit = formData => saveDetails({ kind: 'type', payload: formData })
+  const handleChannelSelectionComplete = channels =>
+    saveDetails({ kind: 'channels', payload: { channels } })
+  const handleTryFree = () => saveDetails({ kind: 'complete', payload: {} })
 
   // Get first name for personalization
   const firstName = user?.name?.split(' ')[0] || 'there'
@@ -293,6 +323,7 @@ export default function OnboardingModal({ onClose, initialStep }) {
                 exit="exit"
               >
                 <OnboardingTypeForm
+                  initialData={pendingSave?.kind === 'type' ? pendingSave.payload : undefined}
                   onSubmit={handleTypeFormSubmit}
                   onBack={() => setStep(STEPS.PREFERENCE)}
                 />
@@ -380,6 +411,38 @@ export default function OnboardingModal({ onClose, initialStep }) {
             )}
 
             {/* Processing Step */}
+            {step === STEPS.SAVE_ERROR && (
+              <motion.div
+                key="save-error"
+                variants={stepVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                className="text-center py-6"
+              >
+                <h3 className="text-xl font-display text-ink mb-3">
+                  Your details are kept in this tab
+                </h3>
+                <p role="alert" className="text-warmgray mb-6">
+                  {saveError ||
+                    'You have details waiting to be saved. Retry to continue setting up your memoir.'}
+                </p>
+                <button
+                  onClick={() => pendingSave && saveDetails(pendingSave)}
+                  className="w-full bg-sepia text-white px-6 py-3 rounded-xl"
+                >
+                  Retry saving details
+                </button>
+                {pendingSave?.kind === 'type' && (
+                  <button
+                    onClick={() => setStep(STEPS.TYPE_FORM)}
+                    className="mt-3 px-6 py-3 text-sepia underline"
+                  >
+                    Edit your details
+                  </button>
+                )}
+              </motion.div>
+            )}
             {step === STEPS.PROCESSING && (
               <motion.div
                 key="processing"

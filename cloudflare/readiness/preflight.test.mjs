@@ -17,7 +17,7 @@ import {
 import { buildInventory } from './inventory.mjs'
 
 const config = {
-  account_id: 'df3d63daad6e36a66171d8ae6b368da7',
+  account_id: 'bbdbba416f07c76f4c2754f8a61807f4',
   name: 'easy-memoir-api-staging',
   main: 'cloudflare/api-staging.js',
   workers_dev: false,
@@ -227,6 +227,15 @@ test('source inventory records actual aliases, scheduled timezones, websocket pa
     'Europe/London'
   )
   assert.ok(inventory.websocketPaths.some(item => item.path === '/api/voice/ws'))
+  const parallelReads = inventory.frontendReferences.filter(
+    item => item.source.endsWith('BookOrderWizard.jsx') && !item.dynamic
+  )
+  assert.ok(parallelReads.length > 0)
+  assert.equal(
+    parallelReads.some(item => item.method === 'ALL'),
+    false
+  )
+  assert.ok(parallelReads.every(item => item.matchingRoutes.length > 0))
   // This is a real frontend/source defect until the client contract is repaired.
   const mutation = inventory.frontendReferences.find(
     item => item.source.endsWith('storyMutations.js') && item.path === '/api/stories/save'

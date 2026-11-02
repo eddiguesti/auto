@@ -2,6 +2,13 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
 import { API_URL } from '../../config'
 import { AudioVisualizer } from '../../components/AudioVisualizer'
+import { voiceSocketUrl } from '../../lib/voiceSocket'
+import {
+  exchangeMagicConversation,
+  readMagicConversation,
+  writeMagicConversation,
+  saveMagicConversation
+} from '../../lib/magicConversation'
 
 /**
  * Talk - Senior-friendly voice recording page accessed via magic link (no login)
@@ -31,6 +38,7 @@ export default function Talk() {
   const [isSpeechDetected, setIsSpeechDetected] = useState(false)
   const [isSpeaking, setIsSpeaking] = useState(false)
   const [conversationHistory, setConversationHistory] = useState([])
+  const [hasDraft, setHasDraft] = useState(false)
 
   // Refs
   const wsRef = useRef(null)
@@ -44,6 +52,34 @@ export default function Talk() {
   const mountedRef = useRef(true)
   const currentSourceRef = useRef(null)
   const greetingTimeoutRef = useRef(null)
+  const historyRef = useRef([])
+  const sessionIdRef = useRef(null)
+  const storageKeyRef = useRef(null)
+  const phaseRef = useRef('ready')
+  phaseRef.current = phase
+  const saveDraft = useCallback((history = historyRef.current) => {
+    if (!storageKeyRef.current) return
+    const saved = readMagicConversation(storageKeyRef.current)
+    const retained = writeMagicConversation(storageKeyRef.current, {
+      ...saved,
+      history,
+      sessionId: sessionIdRef.current
+    })
+    if (!retained)
+      setError(
+        'Keep this page open: the browser could not keep a recovery copy. Save or download your conversation before leaving.'
+      )
+  }, [])
+  const appendConversation = useCallback(
+    item => {
+      const history = [...historyRef.current, item]
+      historyRef.current = history
+      setConversationHistory(history)
+      setHasDraft(history.some(turn => turn.role === 'user'))
+      saveDraft(history)
+    },
+    [saveDraft]
+  )
 
   // Validate magic link on mount
   useEffect(() => {
@@ -53,27 +89,34 @@ export default function Talk() {
       return
     }
 
-    fetch(`${API_URL}/api/magic/${token}`)
-      .then(res => {
-        if (res.status === 404) {
-          setExpired(true)
-          throw new Error('expired')
-        }
-        if (!res.ok) throw new Error('Invalid link')
-        return res.json()
-      })
+    let cancelled = false
+    exchangeMagicConversation(token, API_URL)
       .then(data => {
-        setJwtToken(data.token)
-        setUserName(data.user.name)
-        setPrompt(data.prompt)
+        if (cancelled) return
+        storageKeyRef.current = data.storageKey
+        sessionIdRef.current = data.sessionId || null
+        historyRef.current = data.history || []
+        setConversationHistory(historyRef.current)
+        setHasDraft(historyRef.current.some(turn => turn.role === 'user'))
+        setJwtToken(data.auth.token)
+        setUserName(data.auth.user.name)
+        setPrompt(data.auth.prompt)
         setLoading(false)
       })
       .catch(err => {
-        if (err.message !== 'expired') {
-          setError('This link is no longer valid. Please check your email for a new one.')
+        if (cancelled) return
+        if (err.expired) setExpired(true)
+        if (err.draft?.history?.length) {
+          historyRef.current = err.draft.history
+          setConversationHistory(err.draft.history)
+          setHasDraft(true)
         }
+        setError(err.message)
         setLoading(false)
       })
+    return () => {
+      cancelled = true
+    }
   }, [token])
 
   // Audio helpers
@@ -199,11 +242,10 @@ SAFETY — NON-NEGOTIABLE:
         throw new Error(errData.error || 'Failed to connect')
       }
 
-      await response.json() // consume session metadata
-
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-      const wsHost = new URL(API_URL).host
-      const ws = new WebSocket(`${protocol}//${wsHost}/api/voice/ws?token=${jwtToken}`)
+      const session = await response.json()
+      sessionIdRef.current = session.session_id
+      saveDraft()
+      const ws = new WebSocket(voiceSocketUrl(session.ticket, API_URL || window.location.origin))
 
       ws.onopen = () => {
         setPhase('active')
@@ -237,7 +279,12 @@ SAFETY — NON-NEGOTIABLE:
 
       ws.onmessage = event => {
         if (!mountedRef.current) return
-        const data = JSON.parse(event.data)
+        let data
+        try {
+          data = JSON.parse(event.data)
+        } catch {
+          return
+        }
 
         switch (data.type) {
           case 'input_audio_buffer.speech_started':
@@ -248,7 +295,7 @@ SAFETY — NON-NEGOTIABLE:
             break
           case 'conversation.item.input_audio_transcription.completed':
             if (data.transcript) {
-              setConversationHistory(prev => [...prev, { role: 'user', content: data.transcript }])
+              appendConversation({ role: 'user', content: data.transcript })
             }
             break
           case 'response.audio_transcript.delta':
@@ -261,10 +308,7 @@ SAFETY — NON-NEGOTIABLE:
           case 'response.audio_transcript.done':
           case 'response.output_audio_transcript.done':
             if (currentAiTranscriptRef.current) {
-              setConversationHistory(prev => [
-                ...prev,
-                { role: 'assistant', content: currentAiTranscriptRef.current }
-              ])
+              appendConversation({ role: 'assistant', content: currentAiTranscriptRef.current })
             }
             currentAiTranscriptRef.current = ''
             break
@@ -304,16 +348,19 @@ SAFETY — NON-NEGOTIABLE:
         } else if (event.code === 1006) {
           setError('Connection lost')
         }
-        if (phase === 'active') {
-          setPhase('ended')
+        if (phaseRef.current === 'active') {
+          setPhase('ready')
+          setError('The interview stopped. Your draft is kept in this tab; save it before leaving.')
         }
       }
 
       wsRef.current = ws
+      return true
     } catch (err) {
       console.error('Connection error:', err)
       setError(err.message)
       setPhase('ready')
+      return false
     }
   }
 
@@ -410,15 +457,60 @@ SAFETY — NON-NEGOTIABLE:
       sampleRate: 24000
     })
     await playbackContextRef.current.resume()
-    await connect()
-    await startMicrophone()
+    if (await connect()) await startMicrophone()
   }
 
   // End conversation
-  const endConversation = () => {
+  const endConversation = async () => {
     disconnect()
-    setPhase('ended')
+    setPhase('saving')
+    setError(null)
+    try {
+      await saveMagicConversation({
+        origin: API_URL,
+        link: token,
+        auth: jwtToken,
+        sessionId: sessionIdRef.current,
+        history: historyRef.current
+      })
+      if (storageKeyRef.current) {
+        const saved = readMagicConversation(storageKeyRef.current)
+        writeMagicConversation(storageKeyRef.current, {
+          ...saved,
+          history: [],
+          sessionId: sessionIdRef.current
+        })
+      }
+      setHasDraft(false)
+      setPhase('ended')
+    } catch (error) {
+      saveDraft()
+      setError(error.message)
+      setPhase('ready')
+    }
   }
+  const downloadDraft = () => {
+    const text = conversationHistory
+      .map(item => `${item.role === 'user' ? 'You' : 'Clio'}: ${item.content}`)
+      .join('\n\n')
+    const url = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' }))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'my-memoir-conversation.txt'
+    link.click()
+    setTimeout(() => URL.revokeObjectURL(url), 0)
+  }
+
+  useEffect(() => {
+    const beforeUnload = event => {
+      if (historyRef.current.some(item => item.role === 'user') && phaseRef.current !== 'ended') {
+        event.preventDefault()
+        event.returnValue = ''
+      }
+    }
+    window.addEventListener('beforeunload', beforeUnload)
+    return () => window.removeEventListener('beforeunload', beforeUnload)
+  }, [])
 
   // Cleanup on unmount
   useEffect(() => {
@@ -473,6 +565,11 @@ SAFETY — NON-NEGOTIABLE:
           <p className="text-warm-brown/70 text-lg leading-relaxed">
             This link has expired or has already been used. Check your email for a new weekly topic.
           </p>
+          {hasDraft && (
+            <button onClick={downloadDraft} className="mt-6 underline text-sepia">
+              Download your unsaved conversation
+            </button>
+          )}
         </div>
       </div>
     )
@@ -521,7 +618,7 @@ SAFETY — NON-NEGOTIABLE:
           )}
 
           {/* Error inline */}
-          {error && phase !== 'ready' && (
+          {error && (
             <div className="mb-8 p-4 bg-red-50 text-red-600 rounded-xl text-base">
               {error}
               <button
@@ -539,6 +636,20 @@ SAFETY — NON-NEGOTIABLE:
           {/* READY: Big start button */}
           {phase === 'ready' && (
             <div>
+              {hasDraft && (
+                <div className="mb-8 rounded-xl bg-amber-50 p-4 text-sepia">
+                  <p>Your conversation is kept in this tab.</p>
+                  <button
+                    onClick={endConversation}
+                    className="mt-3 rounded-full bg-sepia px-6 py-3 text-white"
+                  >
+                    Save my story
+                  </button>
+                  <button onClick={downloadDraft} className="mt-3 ml-4 underline">
+                    Download draft
+                  </button>
+                </div>
+              )}
               <button onClick={startConversation} className="group w-full max-w-xs mx-auto block">
                 <div className="transition-transform duration-300 group-hover:scale-105 mb-8">
                   <AudioVisualizer
@@ -571,6 +682,11 @@ SAFETY — NON-NEGOTIABLE:
               />
               <p className="text-sepia/50 text-lg mt-6">Connecting...</p>
             </div>
+          )}
+          {phase === 'saving' && (
+            <p role="status" className="text-sepia text-xl">
+              Saving your story...
+            </p>
           )}
 
           {/* ACTIVE: Voice conversation */}
@@ -616,7 +732,7 @@ SAFETY — NON-NEGOTIABLE:
               <div>
                 <h2 className="font-display text-3xl text-ink mb-3">Thank you!</h2>
                 <p className="text-warm-brown/70 text-lg leading-relaxed">
-                  Your story has been saved. We'll send you another topic next week.
+                  Your story has been saved.
                 </p>
               </div>
               <p className="text-sepia/40 text-base">You can close this page now.</p>

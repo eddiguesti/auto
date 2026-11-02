@@ -5,8 +5,12 @@ import { fileURLToPath } from 'node:url'
 import { DatabaseSync } from 'node:sqlite'
 import { compile } from '../db/compile-schema.mjs'
 import { buildInventory, root } from './inventory.mjs'
+import {
+  APPLICATION_OBJECTS,
+  INITIALIZATION_LEDGER_SQL
+} from '../../tools/scripts/cloudflare-remote-data.mjs'
 
-const ACCOUNT = 'df3d63daad6e36a66171d8ae6b368da7'
+const ACCOUNT = 'bbdbba416f07c76f4c2754f8a61807f4'
 const SENTINEL = /^0{8}-0{4}-0{4}-0{4}-0{11}[01]$/
 const UUID = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i
 const safeName = /^[A-Za-z_][A-Za-z0-9_-]*$/
@@ -61,6 +65,7 @@ function check(id, ok, detail) {
 }
 
 export function inspectConfig(config, { profile = 'staging', secretNames = null } = {}) {
+  const accountBudget = config.vars?.AUTH_RATE_MODE === 'account-budget'
   const db = config.d1_databases?.find(item => item.binding === 'DB')
   const checks = [
     check(
@@ -128,10 +133,13 @@ export function inspectConfig(config, { profile = 'staging', secretNames = null 
   checks.push(
     check(
       'auth-client-service',
-      config.services?.some(
-        item => item.binding === 'AUTH_CLIENT_ID' && /staging/.test(item.service || '')
-      ),
-      'Public auth requires a private trusted AUTH_CLIENT_ID service for canonical rate-limit subjects.'
+      accountBudget ||
+        config.services?.some(
+          item => item.binding === 'AUTH_CLIENT_ID' && /staging/.test(item.service || '')
+        ),
+      accountBudget
+        ? 'Explicit account-budget mode uses authoritative D1 global/account limits without a network identity assertion.'
+        : 'Public auth requires a private trusted AUTH_CLIENT_ID service for canonical rate-limit subjects.'
     )
   )
   checks.push(
@@ -225,8 +233,21 @@ export function inspectConfig(config, { profile = 'staging', secretNames = null 
   return checks
 }
 
-export function inspectIngress(config) {
+export function inspectIngress(config, { authRateMode } = {}) {
   const vars = config.vars || {}
+  if (authRateMode === 'account-budget')
+    return [
+      check(
+        'ingress-policy-posture',
+        !vars.AUTH_INGRESS_MODE,
+        'Account-budget mode must not claim an unverified signed-IP ingress policy.'
+      ),
+      check(
+        'ingress-auth-enabled',
+        !vars.AUTH_INGRESS_MODE,
+        'Authentication uses D1 global/account budgets; spoofable client network headers are not an authority.'
+      )
+    ]
   const configured = [
     vars.AUTH_INGRESS_MODE,
     vars.AUTH_INGRESS_HOST,
@@ -275,8 +296,7 @@ export function inspectIngress(config) {
 }
 
 // Never select application columns. Schema SQL is held in memory and never printed.
-export const SCHEMA_QUERY =
-  "SELECT type, name, tbl_name, sql FROM sqlite_master WHERE type IN ('table','index','trigger','view') AND name NOT GLOB 'sqlite_*' AND name NOT GLOB '_cf_*' AND name != 'd1_migrations' ORDER BY type,name"
+export const SCHEMA_QUERY = `SELECT type, name, tbl_name, sql FROM sqlite_master WHERE type IN ('table','index','trigger','view') AND ${APPLICATION_OBJECTS} AND name != 'd1_migrations' ORDER BY type,name`
 const normalizeSql = value => value.trim().replace(/;$/, '').replace(/\r\n/g, '\n')
 
 export function compareSchema(expected, actual) {
@@ -307,6 +327,7 @@ export async function expectedSchema() {
   try {
     db.exec('PRAGMA foreign_keys=ON')
     db.exec(schema)
+    db.exec(INITIALIZATION_LEDGER_SQL)
     for (const migration of migrations)
       db.exec(await readFile(path.join(root, 'cloudflare/api/migrations', migration), 'utf8'))
     return db.prepare(SCHEMA_QUERY).all()
@@ -368,7 +389,9 @@ export async function runPreflight({
   const config = parseJsonc(await readFile(path.resolve(root, configPath), 'utf8'))
   const checks = inspectConfig(config, { profile })
   checks.push(
-    ...inspectIngress(parseJsonc(await readFile(path.join(root, 'wrangler.jsonc'), 'utf8')))
+    ...inspectIngress(parseJsonc(await readFile(path.join(root, 'wrangler.jsonc'), 'utf8')), {
+      authRateMode: config.vars?.AUTH_RATE_MODE
+    })
   )
   const { manifest, schema } = await compile()
   const checkedMapping = JSON.parse(

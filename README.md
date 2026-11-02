@@ -23,60 +23,27 @@ npm run dev
 - Web app runs on `http://localhost:5173` (proxied to API)
 - Mobile app: `cd apps/mobile && npx expo start`
 
-## Cloudflare migration
+## Cloudflare deployment
 
-The destination is the **Easy Memoir** account (`df3d63daad6e36a66171d8ae6b368da7`).
-The migration is in progress; these files do not mean the live API or data have moved.
-Use Node.js 22.12 or later.
+The selected destination is the new **easy Memoir** account (`bbdbba416f07c76f4c2754f8a61807f4`), using the named Wrangler profile `easy-memoir`. This release starts with a fresh database by request; existing Railway accounts are not imported, and old source resources are retained.
+
+Use Node.js 22.12 or later. The backend is native Cloudflare Workers with D1, private R2, Queues, scheduled events and Durable Objects. The web Worker serves built assets and forwards both HTTP API requests and voice WebSockets to its private API service binding.
 
 ```bash
 npm ci
+npm run test:cloudflare:api
 npm run test:cloudflare
 npm run test:data-migration
-npm run check:cloudflare:api
 npm run test:cloudflare:readiness
+npm run lint:cloudflare
 npm run build:cloudflare
-npx wrangler deploy --dry-run
+npx wrangler deploy --config wrangler.api-staging.jsonc --dry-run
+npx wrangler deploy --config cloudflare/wrangler.web-staging.jsonc --dry-run
 ```
 
-`wrangler.jsonc` configures the frontend's static assets and an `API` service binding
-to `easy-memoir-api`. That backend must be deployed and verified before the frontend
-is promoted. Both HTTP API requests and voice WebSockets use the same origin.
-`build:cloudflare` strips the old Pages API proxy from its generated assets to avoid
-loops after the domain moves. The existing Railway configuration remains available
-during data transfer and validation.
+The staging configs explicitly target `easy-memoir-api-staging`, `easy-memoir-web-staging`, the real `easy-memoir-staging` database and private media bucket. Workers Paid is required for the existing bcrypt security and book-generation CPU workload. R2 activation includes free usage but accepts usage billing. Provider secrets, sender/origin/callback settings and hosted acceptance must be verified before enabling the corresponding feature flags or switching domain traffic. The default production frontend config names a separate API service and is not the staging deployment command.
 
-The full migration also requires porting PostgreSQL queries and transactions to D1,
-moving persistent media to R2, replacing process-based jobs, checking production
-secrets and OAuth/webhook settings, and validating the copied data. Domain traffic
-should switch only after these checks pass. R2 must first be activated in the
-Cloudflare dashboard.
-
-The new EU staging D1 database is `easymemoir-migration-staging`; its 48-table schema
-has been applied and checked remotely. It has no customer data. Its identifiers are
-recorded in `cloudflare/wrangler.staging.jsonc`. Read `cloudflare/db/README.md` for the
-audited source-to-D1 mapping and snapshot verification commands. The staging schema
-is a data-transfer contract; the current PostgreSQL API cannot use it until its
-queries, transactions and background jobs have been ported.
-
-The independent native staging Worker now implements owner-scoped stories,
-password registration/login and email verification, account phone settings/data
-export, onboarding, and private R2 photographs. These contracts are exercised in
-actual workerd with D1/R2; they have not been deployed. Staging health remains
-`productionReady: false`. Unsupported workflows return an explicit error rather
-than pretending that providers or queued work completed. Read
-[`cloudflare/api/README.md`](cloudflare/api/README.md),
-[`cloudflare/api/PHOTOS.md`](cloudflare/api/PHOTOS.md), and
-[`cloudflare/INGRESS.md`](cloudflare/INGRESS.md) for dependencies and deliberate
-limits. Public authentication also requires independently verified trusted ingress
-and a private identity service; existing bcrypt passwords require a Paid Workers
-plan and hosted CPU profiling before enabling login.
-
-[`cloudflare/readiness/README.md`](cloudflare/readiness/README.md) records the
-source route/provider/job inventory and read-only preflight commands. The checked-in
-configuration intentionally uses a local D1 sentinel and incomplete bindings, so
-deployment preflight currently fails. Inventory or successful tests do not attest
-to imported customer data, live provider correctness, DNS changes or cutover.
+Read [native API operations](cloudflare/api/README.md), [authentication budgets](cloudflare/AUTH_BUDGET.md), [voice/auth contracts](cloudflare/NATIVE_AUTH_VOICE.md), [phone contracts](cloudflare/phone/README.md), [database initialization/import](cloudflare/db/README.md), and [readiness checks](cloudflare/readiness/README.md). Local tests and provisioned resources do not establish live provider correctness or domain cutover. The old full-data migration checklist remains available for a future historical import; it is separate from this fresh launch.
 
 ---
 

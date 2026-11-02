@@ -8,6 +8,7 @@ import * as Sentry from '@sentry/react'
 import App from './App.jsx'
 import { queryClient } from './lib/queryClient.js'
 import { startAnalytics } from './utils/analytics.js'
+import { scrubErrorEvent, scrubErrorBreadcrumb } from './lib/errorTelemetry.js'
 import './index.css'
 
 // Initialize Sentry error tracking (no-op if DSN not set)
@@ -15,6 +16,8 @@ if (import.meta.env.VITE_SENTRY_DSN) {
   Sentry.init({
     dsn: import.meta.env.VITE_SENTRY_DSN,
     environment: import.meta.env.MODE,
+    beforeSend: scrubErrorEvent,
+    beforeBreadcrumb: scrubErrorBreadcrumb,
     // Basic error reporting remains enabled; optional telemetry is disabled.
     tracesSampleRate: 0,
     replaysSessionSampleRate: 0,

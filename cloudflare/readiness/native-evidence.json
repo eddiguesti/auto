@@ -2,16 +2,787 @@
   "routes": [
     {
       "method": "GET",
-      "path": "/api/payments/products",
+      "path": "/api/admin/metrics",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/ops.js", "cloudflare/api/ops-native.test.mjs"],
+      "limitations": [
+        "Provider refunds require verified merchant ownership and confirmed outcomes; ambiguous effects are reconciled without a second POST. Support escalations report saved status, not message delivery."
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/payments",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/ops.js", "cloudflare/api/ops-native.test.mjs"],
+      "limitations": [
+        "Provider refunds require verified merchant ownership and confirmed outcomes; ambiguous effects are reconciled without a second POST. Support escalations report saved status, not message delivery."
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/refunds/:paymentId/process",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/ops.js", "cloudflare/api/ops-native.test.mjs"],
+      "limitations": [
+        "Provider refunds require verified merchant ownership and confirmed outcomes; ambiguous effects are reconciled without a second POST. Support escalations report saved status, not message delivery."
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/users",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/ops.js", "cloudflare/api/ops-native.test.mjs"],
+      "limitations": [
+        "Provider refunds require verified merchant ownership and confirmed outcomes; ambiguous effects are reconciled without a second POST. Support escalations report saved status, not message delivery."
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/users/:id",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/ops.js", "cloudflare/api/ops-native.test.mjs"],
+      "limitations": [
+        "Provider refunds require verified merchant ownership and confirmed outcomes; ambiguous effects are reconciled without a second POST. Support escalations report saved status, not message delivery."
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/users/:id/premium",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/ops.js", "cloudflare/api/ops-native.test.mjs"],
+      "limitations": [
+        "Provider refunds require verified merchant ownership and confirmed outcomes; ambiguous effects are reconciled without a second POST. Support escalations report saved status, not message delivery."
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/ai/chat",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/writing.js", "cloudflare/api/writing-native.test.mjs"],
+      "limitations": [
+        "Paid xAI effects use shared quota and require configured provider acceptance."
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/ai/generate-illustration",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/writing.js", "cloudflare/api/writing-native.test.mjs"],
+      "limitations": [
+        "Paid xAI effects use shared quota and require configured provider acceptance."
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/ai/interview",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/writing.js", "cloudflare/api/writing-native.test.mjs"],
+      "limitations": [
+        "Paid xAI effects use shared quota and require configured provider acceptance."
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/ai/write-story",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/writing.js", "cloudflare/api/writing-native.test.mjs"],
+      "limitations": [
+        "Paid xAI effects use shared quota and require configured provider acceptance."
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/analytics/event",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/ops.js", "cloudflare/api/ops-native.test.mjs"],
+      "limitations": [
+        "Provider refunds require verified merchant ownership and confirmed outcomes; ambiguous effects are reconciled without a second POST. Support escalations report saved status, not message delivery."
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/audiobook/download/:filename",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/publishing.js", "cloudflare/api/publishing.test.mjs"],
+      "limitations": [
+        "Provider gates remain disabled until hosted acceptance; EPUB is an asynchronous job."
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/audiobook/generate",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/publishing.js", "cloudflare/api/publishing.test.mjs"],
+      "limitations": [
+        "Provider gates remain disabled until hosted acceptance; EPUB is an asynchronous job."
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/audiobook/jobs/:jobId",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/publishing.js", "cloudflare/api/publishing.test.mjs"],
+      "limitations": [
+        "Provider gates remain disabled until hosted acceptance; EPUB is an asynchronous job."
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/audiobook/status",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/publishing.js", "cloudflare/api/publishing.test.mjs"],
+      "limitations": [
+        "Provider gates remain disabled until hosted acceptance; EPUB is an asynchronous job."
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/audiobook/tts",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/publishing.js", "cloudflare/api/publishing.test.mjs"],
+      "limitations": [
+        "Provider gates remain disabled until hosted acceptance; EPUB is an asynchronous job."
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/audiobook/voice-sample",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/publishing.js", "cloudflare/api/publishing.test.mjs"],
+      "limitations": [
+        "Provider gates remain disabled until hosted acceptance; EPUB is an asynchronous job."
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/audiobook/voice-sample",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/publishing.js", "cloudflare/api/publishing.test.mjs"],
+      "limitations": [
+        "Provider gates remain disabled until hosted acceptance; EPUB is an asynchronous job."
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/audiobook/voice-status",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/publishing.js", "cloudflare/api/publishing.test.mjs"],
+      "limitations": [
+        "Provider gates remain disabled until hosted acceptance; EPUB is an asynchronous job."
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/forgot-password",
       "status": "implemented-staging",
       "evidence": [
-        "cloudflare/api-staging.js",
-        "packages/shared/payment-catalog.js",
-        "cloudflare/api/native.test.mjs"
+        "cloudflare/api/auth-routes.js",
+        "cloudflare/api/auth-native.test.mjs",
+        "cloudflare/api/google-auth-native.test.mjs"
       ],
       "limitations": [
-        "Public immutable catalog only; checkout, webhooks, subscriptions and refunds remain unmigrated"
+        "Provider credentials, sender and Google authorized origins require hosted acceptance."
       ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/google",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/auth-routes.js",
+        "cloudflare/api/auth-native.test.mjs",
+        "cloudflare/api/google-auth-native.test.mjs"
+      ],
+      "limitations": [
+        "Provider credentials, sender and Google authorized origins require hosted acceptance."
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/auth-routes.js",
+        "cloudflare/api/auth-native.test.mjs",
+        "cloudflare/api/google-auth-native.test.mjs"
+      ],
+      "limitations": [
+        "Provider credentials, sender and Google authorized origins require hosted acceptance."
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/logout",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/auth-routes.js",
+        "cloudflare/api/auth-native.test.mjs",
+        "cloudflare/api/google-auth-native.test.mjs"
+      ],
+      "limitations": [
+        "Provider credentials, sender and Google authorized origins require hosted acceptance."
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/auth-routes.js",
+        "cloudflare/api/auth-native.test.mjs",
+        "cloudflare/api/google-auth-native.test.mjs"
+      ],
+      "limitations": [
+        "Provider credentials, sender and Google authorized origins require hosted acceptance."
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/register",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/auth-routes.js",
+        "cloudflare/api/auth-native.test.mjs",
+        "cloudflare/api/google-auth-native.test.mjs"
+      ],
+      "limitations": [
+        "Provider credentials, sender and Google authorized origins require hosted acceptance."
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/resend-verification",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/auth-routes.js",
+        "cloudflare/api/auth-native.test.mjs",
+        "cloudflare/api/google-auth-native.test.mjs"
+      ],
+      "limitations": [
+        "Provider credentials, sender and Google authorized origins require hosted acceptance."
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/reset-password",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/auth-routes.js",
+        "cloudflare/api/auth-native.test.mjs",
+        "cloudflare/api/google-auth-native.test.mjs"
+      ],
+      "limitations": [
+        "Provider credentials, sender and Google authorized origins require hosted acceptance."
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/verify-email",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/auth-routes.js",
+        "cloudflare/api/auth-native.test.mjs",
+        "cloudflare/api/google-auth-native.test.mjs"
+      ],
+      "limitations": [
+        "Provider credentials, sender and Google authorized origins require hosted acceptance."
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/verify-reset-token",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/auth-routes.js",
+        "cloudflare/api/auth-native.test.mjs",
+        "cloudflare/api/google-auth-native.test.mjs"
+      ],
+      "limitations": [
+        "Provider credentials, sender and Google authorized origins require hosted acceptance."
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/chapter-images",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/artwork.js", "cloudflare/api/artwork-native.test.mjs"],
+      "limitations": [
+        "Generation and private assets require the artwork queue, R2 and configured xAI provider."
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/chapter-images/generate/:chapterId",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/artwork.js", "cloudflare/api/artwork-native.test.mjs"],
+      "limitations": [
+        "Generation and private assets require the artwork queue, R2 and configured xAI provider."
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/chapter-images/reset",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/artwork.js", "cloudflare/api/artwork-native.test.mjs"],
+      "limitations": [
+        "Generation and private assets require the artwork queue, R2 and configured xAI provider."
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/chapter-images/status",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/artwork.js", "cloudflare/api/artwork-native.test.mjs"],
+      "limitations": [
+        "Generation and private assets require the artwork queue, R2 and configured xAI provider."
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/chapter-review/:chapterId",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/writing.js", "cloudflare/api/writing-native.test.mjs"],
+      "limitations": ["Style apply-all is asynchronous; clients must poll the owner job status."]
+    },
+    {
+      "method": "POST",
+      "path": "/api/chapter-review/:chapterId/clio-edit",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/writing.js", "cloudflare/api/writing-native.test.mjs"],
+      "limitations": ["Style apply-all is asynchronous; clients must poll the owner job status."]
+    },
+    {
+      "method": "POST",
+      "path": "/api/chapter-review/:chapterId/rewrite",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/writing.js", "cloudflare/api/writing-native.test.mjs"],
+      "limitations": ["Style apply-all is asynchronous; clients must poll the owner job status."]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/chapter-review/:chapterId/save",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/writing.js", "cloudflare/api/writing-native.test.mjs"],
+      "limitations": ["Style apply-all is asynchronous; clients must poll the owner job status."]
+    },
+    {
+      "method": "GET",
+      "path": "/api/covers/options",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/artwork.js", "cloudflare/api/artwork-native.test.mjs"],
+      "limitations": [
+        "Generation and private assets require the artwork queue, R2 and configured xAI provider."
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/covers/save",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/artwork.js", "cloudflare/api/artwork-native.test.mjs"],
+      "limitations": [
+        "Generation and private assets require the artwork queue, R2 and configured xAI provider."
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/covers/saved",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/artwork.js", "cloudflare/api/artwork-native.test.mjs"],
+      "limitations": [
+        "Generation and private assets require the artwork queue, R2 and configured xAI provider."
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/csp-report",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/ops.js", "cloudflare/api/ops-native.test.mjs"],
+      "limitations": [
+        "Provider refunds require verified merchant ownership and confirmed outcomes; ambiguous effects are reconciled without a second POST. Support escalations report saved status, not message delivery."
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/export/epub",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/publishing.js", "cloudflare/api/publishing.test.mjs"],
+      "limitations": [
+        "Provider gates remain disabled until hosted acceptance; EPUB is an asynchronous job."
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/export/status",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/publishing.js", "cloudflare/api/publishing.test.mjs"],
+      "limitations": [
+        "Provider gates remain disabled until hosted acceptance; EPUB is an asynchronous job."
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/free-stories",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/writing.js", "cloudflare/api/writing-native.test.mjs"],
+      "limitations": ["Style apply-all is asynchronous; clients must poll the owner job status."]
+    },
+    {
+      "method": "POST",
+      "path": "/api/free-stories",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/writing.js", "cloudflare/api/writing-native.test.mjs"],
+      "limitations": ["Style apply-all is asynchronous; clients must poll the owner job status."]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/free-stories/:id",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/writing.js", "cloudflare/api/writing-native.test.mjs"],
+      "limitations": ["Style apply-all is asynchronous; clients must poll the owner job status."]
+    },
+    {
+      "method": "GET",
+      "path": "/api/free-stories/:id",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/writing.js", "cloudflare/api/writing-native.test.mjs"],
+      "limitations": ["Style apply-all is asynchronous; clients must poll the owner job status."]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/free-stories/:id",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/writing.js", "cloudflare/api/writing-native.test.mjs"],
+      "limitations": ["Style apply-all is asynchronous; clients must poll the owner job status."]
+    },
+    {
+      "method": "GET",
+      "path": "/api/game/achievements",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/game-core.js",
+        "cloudflare/api/game-circles.js",
+        "cloudflare/api/game.test.mjs"
+      ],
+      "limitations": ["Delivery integrations require separately accepted providers."]
+    },
+    {
+      "method": "POST",
+      "path": "/api/game/achievements/mark-seen",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/game-core.js",
+        "cloudflare/api/game-circles.js",
+        "cloudflare/api/game.test.mjs"
+      ],
+      "limitations": ["Delivery integrations require separately accepted providers."]
+    },
+    {
+      "method": "GET",
+      "path": "/api/game/circle",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/game-core.js",
+        "cloudflare/api/game-circles.js",
+        "cloudflare/api/game.test.mjs"
+      ],
+      "limitations": ["Delivery integrations require separately accepted providers."]
+    },
+    {
+      "method": "POST",
+      "path": "/api/game/circle/create",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/game-core.js",
+        "cloudflare/api/game-circles.js",
+        "cloudflare/api/game.test.mjs"
+      ],
+      "limitations": ["Delivery integrations require separately accepted providers."]
+    },
+    {
+      "method": "POST",
+      "path": "/api/game/circle/encourage",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/game-core.js",
+        "cloudflare/api/game-circles.js",
+        "cloudflare/api/game.test.mjs"
+      ],
+      "limitations": ["Delivery integrations require separately accepted providers."]
+    },
+    {
+      "method": "GET",
+      "path": "/api/game/circle/encouragements",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/game-core.js",
+        "cloudflare/api/game-circles.js",
+        "cloudflare/api/game.test.mjs"
+      ],
+      "limitations": ["Delivery integrations require separately accepted providers."]
+    },
+    {
+      "method": "POST",
+      "path": "/api/game/circle/encouragements/mark-seen",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/game-core.js",
+        "cloudflare/api/game-circles.js",
+        "cloudflare/api/game.test.mjs"
+      ],
+      "limitations": ["Delivery integrations require separately accepted providers."]
+    },
+    {
+      "method": "POST",
+      "path": "/api/game/circle/join/:inviteCode",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/game-core.js",
+        "cloudflare/api/game-circles.js",
+        "cloudflare/api/game.test.mjs"
+      ],
+      "limitations": ["Delivery integrations require separately accepted providers."]
+    },
+    {
+      "method": "POST",
+      "path": "/api/game/circle/leave",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/game-core.js",
+        "cloudflare/api/game-circles.js",
+        "cloudflare/api/game.test.mjs"
+      ],
+      "limitations": ["Delivery integrations require separately accepted providers."]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/game/circle/member/:memberId",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/game-core.js",
+        "cloudflare/api/game-circles.js",
+        "cloudflare/api/game.test.mjs"
+      ],
+      "limitations": ["Delivery integrations require separately accepted providers."]
+    },
+    {
+      "method": "POST",
+      "path": "/api/game/circle/prompt",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/game-core.js",
+        "cloudflare/api/game-circles.js",
+        "cloudflare/api/game.test.mjs"
+      ],
+      "limitations": ["Delivery integrations require separately accepted providers."]
+    },
+    {
+      "method": "POST",
+      "path": "/api/game/circle/prompt/:promptId/answer",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/game-core.js",
+        "cloudflare/api/game-circles.js",
+        "cloudflare/api/game.test.mjs"
+      ],
+      "limitations": ["Delivery integrations require separately accepted providers."]
+    },
+    {
+      "method": "POST",
+      "path": "/api/game/circle/prompt/:promptId/decline",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/game-core.js",
+        "cloudflare/api/game-circles.js",
+        "cloudflare/api/game.test.mjs"
+      ],
+      "limitations": ["Delivery integrations require separately accepted providers."]
+    },
+    {
+      "method": "GET",
+      "path": "/api/game/circle/prompts",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/game-core.js",
+        "cloudflare/api/game-circles.js",
+        "cloudflare/api/game.test.mjs"
+      ],
+      "limitations": ["Delivery integrations require separately accepted providers."]
+    },
+    {
+      "method": "POST",
+      "path": "/api/game/circle/regenerate-invite",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/game-core.js",
+        "cloudflare/api/game-circles.js",
+        "cloudflare/api/game.test.mjs"
+      ],
+      "limitations": ["Delivery integrations require separately accepted providers."]
+    },
+    {
+      "method": "GET",
+      "path": "/api/game/collections",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/game-core.js",
+        "cloudflare/api/game-circles.js",
+        "cloudflare/api/game.test.mjs"
+      ],
+      "limitations": ["Delivery integrations require separately accepted providers."]
+    },
+    {
+      "method": "GET",
+      "path": "/api/game/collections/:collectionKey",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/game-core.js",
+        "cloudflare/api/game-circles.js",
+        "cloudflare/api/game.test.mjs"
+      ],
+      "limitations": ["Delivery integrations require separately accepted providers."]
+    },
+    {
+      "method": "POST",
+      "path": "/api/game/collections/:collectionKey/claim-reward",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/game-core.js",
+        "cloudflare/api/game-circles.js",
+        "cloudflare/api/game.test.mjs"
+      ],
+      "limitations": ["Delivery integrations require separately accepted providers."]
+    },
+    {
+      "method": "POST",
+      "path": "/api/game/collections/sync",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/game-core.js",
+        "cloudflare/api/game-circles.js",
+        "cloudflare/api/game.test.mjs"
+      ],
+      "limitations": ["Delivery integrations require separately accepted providers."]
+    },
+    {
+      "method": "POST",
+      "path": "/api/game/disable",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/game-core.js",
+        "cloudflare/api/game-circles.js",
+        "cloudflare/api/game.test.mjs"
+      ],
+      "limitations": ["Delivery integrations require separately accepted providers."]
+    },
+    {
+      "method": "POST",
+      "path": "/api/game/enable",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/game-core.js",
+        "cloudflare/api/game-circles.js",
+        "cloudflare/api/game.test.mjs"
+      ],
+      "limitations": ["Delivery integrations require separately accepted providers."]
+    },
+    {
+      "method": "GET",
+      "path": "/api/game/memoir-progress",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/game-core.js",
+        "cloudflare/api/game-circles.js",
+        "cloudflare/api/game.test.mjs"
+      ],
+      "limitations": ["Delivery integrations require separately accepted providers."]
+    },
+    {
+      "method": "POST",
+      "path": "/api/game/prompt/:promptId/complete",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/game-core.js",
+        "cloudflare/api/game-circles.js",
+        "cloudflare/api/game.test.mjs"
+      ],
+      "limitations": ["Delivery integrations require separately accepted providers."]
+    },
+    {
+      "method": "POST",
+      "path": "/api/game/prompt/:promptId/skip",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/game-core.js",
+        "cloudflare/api/game-circles.js",
+        "cloudflare/api/game.test.mjs"
+      ],
+      "limitations": ["Delivery integrations require separately accepted providers."]
+    },
+    {
+      "method": "GET",
+      "path": "/api/game/prompt/today",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/game-core.js",
+        "cloudflare/api/game-circles.js",
+        "cloudflare/api/game.test.mjs"
+      ],
+      "limitations": ["Delivery integrations require separately accepted providers."]
+    },
+    {
+      "method": "GET",
+      "path": "/api/game/prompts/history",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/game-core.js",
+        "cloudflare/api/game-circles.js",
+        "cloudflare/api/game.test.mjs"
+      ],
+      "limitations": ["Delivery integrations require separately accepted providers."]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/game/settings",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/game-core.js",
+        "cloudflare/api/game-circles.js",
+        "cloudflare/api/game.test.mjs"
+      ],
+      "limitations": ["Delivery integrations require separately accepted providers."]
+    },
+    {
+      "method": "GET",
+      "path": "/api/game/state",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/game-core.js",
+        "cloudflare/api/game-circles.js",
+        "cloudflare/api/game.test.mjs"
+      ],
+      "limitations": ["Delivery integrations require separately accepted providers."]
+    },
+    {
+      "method": "GET",
+      "path": "/api/game/streak/history",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/game-core.js",
+        "cloudflare/api/game-circles.js",
+        "cloudflare/api/game.test.mjs"
+      ],
+      "limitations": ["Delivery integrations require separately accepted providers."]
+    },
+    {
+      "method": "POST",
+      "path": "/api/game/streak/use-shield",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/game-core.js",
+        "cloudflare/api/game-circles.js",
+        "cloudflare/api/game.test.mjs"
+      ],
+      "limitations": ["Delivery integrations require separately accepted providers."]
     },
     {
       "method": "GET",
@@ -20,78 +791,528 @@
       "evidence": ["cloudflare/api-staging.js"]
     },
     {
-      "method": "GET",
-      "path": "/api/auth/me",
+      "method": "POST",
+      "path": "/api/landing-voice/session",
       "status": "implemented-staging",
-      "evidence": ["cloudflare/api-staging.js", "cloudflare/api/native.test.mjs"]
+      "evidence": ["cloudflare/api/voice.js", "cloudflare/api/voice-native.test.mjs"],
+      "limitations": [
+        "Provider audio and deployed WebSocket acceptance remain separate from fake-provider runtime tests."
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/magic/:token",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/magic-routes.js", "cloudflare/api/voice-native.test.mjs"],
+      "limitations": ["Scoped single-use exchange and per-link session; no account-wide access."]
     },
     {
       "method": "POST",
-      "path": "/api/auth/logout",
+      "path": "/api/magic/:token/session",
       "status": "implemented-staging",
-      "evidence": ["cloudflare/api-staging.js", "cloudflare/api/native.test.mjs"]
+      "evidence": ["cloudflare/api/magic-routes.js", "cloudflare/api/voice-native.test.mjs"],
+      "limitations": ["Scoped single-use exchange and per-link session; no account-wide access."]
     },
     {
       "method": "GET",
-      "path": "/api/stories/all",
+      "path": "/api/memos",
       "status": "implemented-staging",
-      "evidence": ["cloudflare/api-staging.js", "cloudflare/api/native.test.mjs"]
-    },
-    {
-      "method": "GET",
-      "path": "/api/stories/progress",
-      "status": "implemented-staging",
-      "evidence": ["cloudflare/api-staging.js", "cloudflare/api/native.test.mjs"]
-    },
-    {
-      "method": "GET",
-      "path": "/api/stories/settings",
-      "status": "implemented-staging",
-      "evidence": ["cloudflare/api-staging.js", "cloudflare/api/native.test.mjs"]
+      "evidence": ["cloudflare/api/writing.js", "cloudflare/api/writing-native.test.mjs"],
+      "limitations": ["Style apply-all is asynchronous; clients must poll the owner job status."]
     },
     {
       "method": "POST",
-      "path": "/api/stories/settings",
+      "path": "/api/memos",
       "status": "implemented-staging",
-      "evidence": ["cloudflare/api-staging.js", "cloudflare/api/native.test.mjs"]
+      "evidence": ["cloudflare/api/writing.js", "cloudflare/api/writing-native.test.mjs"],
+      "limitations": ["Style apply-all is asynchronous; clients must poll the owner job status."]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/memos/:id",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/writing.js", "cloudflare/api/writing-native.test.mjs"],
+      "limitations": ["Style apply-all is asynchronous; clients must poll the owner job status."]
+    },
+    {
+      "method": "GET",
+      "path": "/api/memos/:id",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/writing.js", "cloudflare/api/writing-native.test.mjs"],
+      "limitations": ["Style apply-all is asynchronous; clients must poll the owner job status."]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/memos/:id",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/writing.js", "cloudflare/api/writing-native.test.mjs"],
+      "limitations": ["Style apply-all is asynchronous; clients must poll the owner job status."]
+    },
+    {
+      "method": "POST",
+      "path": "/api/newsletter/subscribe",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/notifications.js",
+        "cloudflare/api/newsletter.js",
+        "cloudflare/api/notifications-native.test.mjs"
+      ],
+      "limitations": [
+        "Delivery remains disabled until verified sender/provider acceptance. Newsletter requires double opt-in."
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications/history",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/notifications.js",
+        "cloudflare/api/newsletter.js",
+        "cloudflare/api/notifications-native.test.mjs"
+      ],
+      "limitations": [
+        "Delivery remains disabled until verified sender/provider acceptance. Newsletter requires double opt-in."
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications/preferences",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/notifications.js",
+        "cloudflare/api/newsletter.js",
+        "cloudflare/api/notifications-native.test.mjs"
+      ],
+      "limitations": [
+        "Delivery remains disabled until verified sender/provider acceptance. Newsletter requires double opt-in."
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/notifications/preferences",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/notifications.js",
+        "cloudflare/api/newsletter.js",
+        "cloudflare/api/notifications-native.test.mjs"
+      ],
+      "limitations": [
+        "Delivery remains disabled until verified sender/provider acceptance. Newsletter requires double opt-in."
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/onboarding/channel-preferences",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/account.js",
+        "cloudflare/api/onboarding-voice.js",
+        "cloudflare/api/account-native.test.mjs",
+        "cloudflare/api/voice-native.test.mjs"
+      ],
+      "limitations": ["Optional artwork and provider delivery require their configured bindings."]
+    },
+    {
+      "method": "POST",
+      "path": "/api/onboarding/complete",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/account.js",
+        "cloudflare/api/onboarding-voice.js",
+        "cloudflare/api/account-native.test.mjs",
+        "cloudflare/api/voice-native.test.mjs"
+      ],
+      "limitations": ["Optional artwork and provider delivery require their configured bindings."]
+    },
+    {
+      "method": "POST",
+      "path": "/api/onboarding/context",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/account.js",
+        "cloudflare/api/onboarding-voice.js",
+        "cloudflare/api/account-native.test.mjs",
+        "cloudflare/api/voice-native.test.mjs"
+      ],
+      "limitations": ["Optional artwork and provider delivery require their configured bindings."]
+    },
+    {
+      "method": "POST",
+      "path": "/api/onboarding/context-form",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/account.js",
+        "cloudflare/api/onboarding-voice.js",
+        "cloudflare/api/account-native.test.mjs",
+        "cloudflare/api/voice-native.test.mjs"
+      ],
+      "limitations": ["Optional artwork and provider delivery require their configured bindings."]
+    },
+    {
+      "method": "POST",
+      "path": "/api/onboarding/preference",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/account.js",
+        "cloudflare/api/onboarding-voice.js",
+        "cloudflare/api/account-native.test.mjs",
+        "cloudflare/api/voice-native.test.mjs"
+      ],
+      "limitations": ["Optional artwork and provider delivery require their configured bindings."]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/onboarding/reset",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/account.js",
+        "cloudflare/api/onboarding-voice.js",
+        "cloudflare/api/account-native.test.mjs",
+        "cloudflare/api/voice-native.test.mjs"
+      ],
+      "limitations": ["Optional artwork and provider delivery require their configured bindings."]
+    },
+    {
+      "method": "GET",
+      "path": "/api/onboarding/status",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/account.js",
+        "cloudflare/api/onboarding-voice.js",
+        "cloudflare/api/account-native.test.mjs",
+        "cloudflare/api/voice-native.test.mjs"
+      ],
+      "limitations": ["Optional artwork and provider delivery require their configured bindings."]
+    },
+    {
+      "method": "POST",
+      "path": "/api/onboarding/voice-session",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/account.js",
+        "cloudflare/api/onboarding-voice.js",
+        "cloudflare/api/account-native.test.mjs",
+        "cloudflare/api/voice-native.test.mjs"
+      ],
+      "limitations": ["Optional artwork and provider delivery require their configured bindings."]
+    },
+    {
+      "method": "POST",
+      "path": "/api/payments/create-checkout",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/payments.js", "cloudflare/api/payments-native.test.mjs"],
+      "limitations": [
+        "One-time checkout only; sales are disabled until fulfilment acceptance. New subscriptions remain unavailable."
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/payments/history",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/payments.js", "cloudflare/api/payments-native.test.mjs"],
+      "limitations": [
+        "One-time checkout only; sales are disabled until fulfilment acceptance. New subscriptions remain unavailable."
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/payments/products",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/payments.js", "cloudflare/api/payments-native.test.mjs"],
+      "limitations": [
+        "One-time checkout only; sales are disabled until fulfilment acceptance. New subscriptions remain unavailable."
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/photos",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/photos.js", "cloudflare/api/photos-native.test.mjs"],
+      "limitations": ["MEDIA bucket has not been enabled or copied"]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/photos/:id",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/photos.js", "cloudflare/api/photos-native.test.mjs"]
+    },
+    {
+      "method": "POST",
+      "path": "/api/photos/analyze",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/photos.js", "cloudflare/api/photos-native.test.mjs"],
+      "limitations": ["Actual xAI provider and object persistence acceptance not established"]
+    },
+    {
+      "method": "GET",
+      "path": "/api/photos/file/:filename",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/photos.js", "cloudflare/api/photos-native.test.mjs"]
+    },
+    {
+      "method": "GET",
+      "path": "/api/photos/my-photos",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/photos.js", "cloudflare/api/photos-native.test.mjs"]
+    },
+    {
+      "method": "GET",
+      "path": "/api/photos/story/:storyId",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/photos.js", "cloudflare/api/photos-native.test.mjs"]
+    },
+    {
+      "method": "GET",
+      "path": "/api/print-files/:id/:type",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/print.js",
+        "cloudflare/api/print-files.js",
+        "cloudflare/api/print-native.test.mjs"
+      ],
+      "limitations": [
+        "Print sales and fulfilment remain disabled until real merchant acceptance. Public file access is limited to a signed immutable order proof capability."
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/print/:id/approve",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/print.js",
+        "cloudflare/api/print-files.js",
+        "cloudflare/api/print-native.test.mjs"
+      ],
+      "limitations": [
+        "Print sales and fulfilment remain disabled until real merchant acceptance. Public file access is limited to a signed immutable order proof capability."
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/print/:id/proof/:type",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/print.js",
+        "cloudflare/api/print-files.js",
+        "cloudflare/api/print-native.test.mjs"
+      ],
+      "limitations": [
+        "Print sales and fulfilment remain disabled until real merchant acceptance. Public file access is limited to a signed immutable order proof capability."
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/print/proof",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/print.js",
+        "cloudflare/api/print-files.js",
+        "cloudflare/api/print-native.test.mjs"
+      ],
+      "limitations": [
+        "Print sales and fulfilment remain disabled until real merchant acceptance. Public file access is limited to a signed immutable order proof capability."
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/print/status",
+      "status": "implemented-staging",
+      "evidence": [
+        "cloudflare/api/print.js",
+        "cloudflare/api/print-files.js",
+        "cloudflare/api/print-native.test.mjs"
+      ],
+      "limitations": [
+        "Print sales and fulfilment remain disabled until real merchant acceptance. Public file access is limited to a signed immutable order proof capability."
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/refunds/history",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/refunds.js", "cloudflare/api/payments-native.test.mjs"],
+      "limitations": ["Requests and usage/history do not claim provider refund completion."]
+    },
+    {
+      "method": "POST",
+      "path": "/api/refunds/request",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/refunds.js", "cloudflare/api/payments-native.test.mjs"],
+      "limitations": ["Requests and usage/history do not claim provider refund completion."]
+    },
+    {
+      "method": "GET",
+      "path": "/api/refunds/usage",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/refunds.js", "cloudflare/api/payments-native.test.mjs"],
+      "limitations": ["Requests and usage/history do not claim provider refund completion."]
     },
     {
       "method": "POST",
       "path": "/api/stories",
       "status": "implemented-staging",
-      "evidence": ["cloudflare/api-staging.js", "cloudflare/api/native.test.mjs"]
+      "evidence": ["cloudflare/api-staging.js", "cloudflare/api/native.test.mjs"],
+      "limitations": [
+        "Saved story effects are durable; provider-generated outputs require separately accepted integrations."
+      ]
     },
     {
       "method": "GET",
       "path": "/api/stories/:chapterId",
       "status": "implemented-staging",
-      "evidence": ["cloudflare/api-staging.js", "cloudflare/api/native.test.mjs"]
+      "evidence": ["cloudflare/api-staging.js", "cloudflare/api/native.test.mjs"],
+      "limitations": [
+        "Saved story effects are durable; provider-generated outputs require separately accepted integrations."
+      ]
     },
     {
-      "method": "POST",
-      "path": "/api/auth/login",
+      "method": "GET",
+      "path": "/api/stories/all",
       "status": "implemented-staging",
-      "evidence": ["cloudflare/api/auth-routes.js", "cloudflare/api/auth-native.test.mjs"],
+      "evidence": ["cloudflare/api-staging.js", "cloudflare/api/native.test.mjs"],
       "limitations": [
-        "Trusted client identity binding and ingress policy not deployed",
-        "Paid Workers bcrypt CPU profile not established"
+        "Saved story effects are durable; provider-generated outputs require separately accepted integrations."
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/stories/progress",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api-staging.js", "cloudflare/api/native.test.mjs"],
+      "limitations": [
+        "Saved story effects are durable; provider-generated outputs require separately accepted integrations."
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/stories/settings",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api-staging.js", "cloudflare/api/native.test.mjs"],
+      "limitations": [
+        "Saved story effects are durable; provider-generated outputs require separately accepted integrations."
       ]
     },
     {
       "method": "POST",
-      "path": "/api/auth/register",
+      "path": "/api/stories/settings",
       "status": "implemented-staging",
-      "evidence": ["cloudflare/api/auth-routes.js", "cloudflare/api/auth-native.test.mjs"],
+      "evidence": ["cloudflare/api-staging.js", "cloudflare/api/native.test.mjs"],
       "limitations": [
-        "Real verification email delivery not accepted",
-        "Trusted client identity binding and ingress policy not deployed"
+        "Saved story effects are durable; provider-generated outputs require separately accepted integrations."
       ]
     },
     {
       "method": "POST",
-      "path": "/api/auth/verify-email",
+      "path": "/api/style/apply-all",
       "status": "implemented-staging",
-      "evidence": ["cloudflare/api/auth-routes.js", "cloudflare/api/auth-native.test.mjs"]
+      "evidence": ["cloudflare/api/writing.js", "cloudflare/api/writing-native.test.mjs"],
+      "limitations": ["Style apply-all is asynchronous; clients must poll the owner job status."]
+    },
+    {
+      "method": "GET",
+      "path": "/api/style/preferences",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/writing.js", "cloudflare/api/writing-native.test.mjs"],
+      "limitations": ["Style apply-all is asynchronous; clients must poll the owner job status."]
+    },
+    {
+      "method": "POST",
+      "path": "/api/style/preferences",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/writing.js", "cloudflare/api/writing-native.test.mjs"],
+      "limitations": ["Style apply-all is asynchronous; clients must poll the owner job status."]
+    },
+    {
+      "method": "POST",
+      "path": "/api/style/preview",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/writing.js", "cloudflare/api/writing-native.test.mjs"],
+      "limitations": ["Style apply-all is asynchronous; clients must poll the owner job status."]
+    },
+    {
+      "method": "POST",
+      "path": "/api/style/revert",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/writing.js", "cloudflare/api/writing-native.test.mjs"],
+      "limitations": ["Style apply-all is asynchronous; clients must poll the owner job status."]
+    },
+    {
+      "method": "POST",
+      "path": "/api/support/chat",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/ops.js", "cloudflare/api/ops-native.test.mjs"],
+      "limitations": [
+        "Provider refunds require verified merchant ownership and confirmed outcomes; ambiguous effects are reconciled without a second POST. Support escalations report saved status, not message delivery."
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/support/escalate",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/ops.js", "cloudflare/api/ops-native.test.mjs"],
+      "limitations": [
+        "Provider refunds require verified merchant ownership and confirmed outcomes; ambiguous effects are reconciled without a second POST. Support escalations report saved status, not message delivery."
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/telegram/status",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/telegram.js", "cloudflare/api/notifications-native.test.mjs"],
+      "limitations": [
+        "Telegram remains disabled until actual bot configuration and delivery acceptance."
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/telegram/verify-link",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/telegram.js", "cloudflare/api/notifications-native.test.mjs"],
+      "limitations": [
+        "Telegram remains disabled until actual bot configuration and delivery acceptance."
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/telnyx/call",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/telnyx.js", "cloudflare/api/telnyx-native.test.mjs"],
+      "limitations": [
+        "Phone calls/callback acceptance remain disabled until actual provider configuration and hosted audio checks."
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/telnyx/request-call",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/telnyx.js", "cloudflare/api/telnyx-native.test.mjs"],
+      "limitations": [
+        "Phone calls/callback acceptance remain disabled until actual provider configuration and hosted audio checks."
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/telnyx/webhook",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/telnyx.js", "cloudflare/api/telnyx-native.test.mjs"],
+      "limitations": [
+        "Phone calls/callback acceptance remain disabled until actual provider configuration and hosted audio checks."
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/user/delete-account",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/privacy.js", "cloudflare/api/privacy-native.test.mjs"],
+      "limitations": [
+        "External work can temporarily block erasure; private media deletion is durable and asynchronous."
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/user/export-data",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/account.js", "cloudflare/api/account-native.test.mjs"]
     },
     {
       "method": "GET",
@@ -106,113 +1327,67 @@
       "evidence": ["cloudflare/api/account.js", "cloudflare/api/account-native.test.mjs"]
     },
     {
-      "method": "GET",
-      "path": "/api/user/export-data",
+      "method": "POST",
+      "path": "/api/voice/compile",
       "status": "implemented-staging",
-      "evidence": ["cloudflare/api/account.js", "cloudflare/api/account-native.test.mjs"]
-    },
-    {
-      "method": "DELETE",
-      "path": "/api/user/delete-account",
-      "status": "not-migrated",
-      "evidence": ["cloudflare/api/account.js", "cloudflare/api/account-native.test.mjs"],
+      "evidence": ["cloudflare/api/voice.js", "cloudflare/api/voice-native.test.mjs"],
       "limitations": [
-        "Fails closed: provider refunds/cancellation and complete media cleanup unavailable"
+        "Provider audio and deployed WebSocket acceptance remain separate from fake-provider runtime tests."
       ]
     },
     {
       "method": "GET",
-      "path": "/api/onboarding/status",
+      "path": "/api/voice/config",
       "status": "implemented-staging",
-      "evidence": ["cloudflare/api/account.js", "cloudflare/api/account-native.test.mjs"]
-    },
-    {
-      "method": "POST",
-      "path": "/api/onboarding/preference",
-      "status": "implemented-staging",
-      "evidence": ["cloudflare/api/account.js", "cloudflare/api/account-native.test.mjs"]
-    },
-    {
-      "method": "POST",
-      "path": "/api/onboarding/context-form",
-      "status": "implemented-staging",
-      "evidence": ["cloudflare/api/account.js", "cloudflare/api/account-native.test.mjs"]
-    },
-    {
-      "method": "POST",
-      "path": "/api/onboarding/channel-preferences",
-      "status": "implemented-staging",
-      "evidence": ["cloudflare/api/account.js", "cloudflare/api/account-native.test.mjs"]
-    },
-    {
-      "method": "POST",
-      "path": "/api/onboarding/complete",
-      "status": "partial-staging",
-      "evidence": ["cloudflare/api/account.js", "cloudflare/api/account-native.test.mjs"],
+      "evidence": ["cloudflare/api/voice.js", "cloudflare/api/voice-native.test.mjs"],
       "limitations": [
-        "Onboarding persistence implemented; artwork generation explicitly unavailable"
-      ]
-    },
-    {
-      "method": "DELETE",
-      "path": "/api/onboarding/reset",
-      "status": "partial-staging",
-      "evidence": ["cloudflare/api/account.js", "cloudflare/api/account-native.test.mjs"],
-      "limitations": [
-        "Fails closed when artwork exists or is generating; provider cleanup not migrated"
+        "Provider audio and deployed WebSocket acceptance remain separate from fake-provider runtime tests."
       ]
     },
     {
       "method": "POST",
-      "path": "/api/onboarding/voice-session",
-      "status": "not-migrated",
-      "evidence": ["cloudflare/api/account.js"],
-      "limitations": ["Explicit 501: voice onboarding unavailable"]
+      "path": "/api/voice/end-session",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/voice.js", "cloudflare/api/voice-native.test.mjs"],
+      "limitations": [
+        "Provider audio and deployed WebSocket acceptance remain separate from fake-provider runtime tests."
+      ]
     },
     {
       "method": "POST",
-      "path": "/api/onboarding/context",
-      "status": "not-migrated",
-      "evidence": ["cloudflare/api/account.js"],
-      "limitations": ["Explicit 501: voice onboarding unavailable"]
+      "path": "/api/voice/session",
+      "status": "implemented-staging",
+      "evidence": ["cloudflare/api/voice.js", "cloudflare/api/voice-native.test.mjs"],
+      "limitations": [
+        "Provider audio and deployed WebSocket acceptance remain separate from fake-provider runtime tests."
+      ]
     },
     {
       "method": "POST",
-      "path": "/api/photos",
+      "path": "/api/voice/transcript",
       "status": "implemented-staging",
-      "evidence": ["cloudflare/api/photos.js", "cloudflare/api/photos-native.test.mjs"],
-      "limitations": ["MEDIA bucket has not been enabled or copied"]
-    },
-    {
-      "method": "GET",
-      "path": "/api/photos/file/:filename",
-      "status": "implemented-staging",
-      "evidence": ["cloudflare/api/photos.js", "cloudflare/api/photos-native.test.mjs"]
-    },
-    {
-      "method": "DELETE",
-      "path": "/api/photos/:id",
-      "status": "implemented-staging",
-      "evidence": ["cloudflare/api/photos.js", "cloudflare/api/photos-native.test.mjs"]
-    },
-    {
-      "method": "GET",
-      "path": "/api/photos/story/:storyId",
-      "status": "implemented-staging",
-      "evidence": ["cloudflare/api/photos.js", "cloudflare/api/photos-native.test.mjs"]
+      "evidence": ["cloudflare/api/voice.js", "cloudflare/api/voice-native.test.mjs"],
+      "limitations": [
+        "Provider audio and deployed WebSocket acceptance remain separate from fake-provider runtime tests."
+      ]
     },
     {
       "method": "POST",
-      "path": "/api/photos/analyze",
+      "path": "/api/webhooks/stripe",
       "status": "implemented-staging",
-      "evidence": ["cloudflare/api/photos.js", "cloudflare/api/photos-native.test.mjs"],
-      "limitations": ["Actual xAI provider and object persistence acceptance not established"]
+      "evidence": ["cloudflare/api/payments.js", "cloudflare/api/payments-native.test.mjs"],
+      "limitations": [
+        "One-time checkout only; sales are disabled until fulfilment acceptance. New subscriptions remain unavailable."
+      ]
     },
     {
-      "method": "GET",
-      "path": "/api/photos/my-photos",
+      "method": "POST",
+      "path": "/api/webhooks/telegram",
       "status": "implemented-staging",
-      "evidence": ["cloudflare/api/photos.js", "cloudflare/api/photos-native.test.mjs"]
+      "evidence": ["cloudflare/api/telegram.js", "cloudflare/api/notifications-native.test.mjs"],
+      "limitations": [
+        "Telegram remains disabled until actual bot configuration and delivery acceptance."
+      ]
     }
   ]
 }

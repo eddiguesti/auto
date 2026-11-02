@@ -193,7 +193,8 @@ export async function buildInventory() {
                 : null
         } else if (
           node.callee.type === 'MemberExpression' &&
-          methods.has(node.callee.property.name)
+          methods.has(node.callee.property.name) &&
+          node.callee.property.name !== 'all'
         ) {
           method = node.callee.property.name.toUpperCase()
         }
