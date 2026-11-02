@@ -1,6 +1,7 @@
 // API service connecting to existing Express backend
 import * as SecureStore from 'expo-secure-store'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { getChapterById } from '../data/chapters'
 
 const TOKEN_KEY = 'authToken'
 let migrationDone = false
@@ -15,6 +16,15 @@ export interface AudioUpload {
   audioUrl: string
   transcript: string
   duration?: number
+}
+
+export interface MemoryHistoryItem {
+  id: number
+  promptText: string
+  answer: string
+  createdAt: string
+  audioUrl?: string
+  collection?: string
 }
 
 class ApiService {
@@ -227,7 +237,45 @@ class ApiService {
 
   // ============ Memories ============
   async getMemories(limit = 50) {
-    return this.request<{ success: boolean; data: any[] }>(`/game/memories?limit=${limit}`)
+    if (!Number.isInteger(limit) || limit < 1 || limit > 100)
+      throw new Error('Memory history limit must be an integer between 1 and 100')
+    if (!(await this.getToken())) throw new Error('Please sign in to view your memories')
+
+    // This endpoint derives ownership from the bearer token. Never select an
+    // owner in the URL or combine account history with public prompt records.
+    const rows = await this.request<unknown>('/stories/all')
+    if (!Array.isArray(rows)) throw new Error('Invalid memory history response')
+    const memories: MemoryHistoryItem[] = []
+    for (const row of rows) {
+      if (
+        !row ||
+        !Number.isSafeInteger(row.id) ||
+        row.id < 1 ||
+        typeof row.chapter_id !== 'string' ||
+        typeof row.question_id !== 'string' ||
+        (row.answer != null && typeof row.answer !== 'string')
+      )
+        throw new Error('Invalid memory history response')
+      if (!row.answer?.trim()) continue
+
+      const timestamp = row.created_at || row.updated_at
+      if (typeof timestamp !== 'string' || !timestamp.trim())
+        throw new Error('Invalid memory history date')
+      const created = new Date(timestamp)
+      if (!Number.isFinite(created.getTime())) throw new Error('Invalid memory history date')
+      const chapter = getChapterById(row.chapter_id)
+      const question = chapter?.questions.find(item => item.id === row.question_id)
+      memories.push({
+        id: row.id,
+        promptText: question?.question || chapter?.title || 'Your memory',
+        answer: row.answer,
+        createdAt: created.toISOString(),
+        ...(chapter && { collection: chapter.title }),
+        ...(typeof row.audio_url === 'string' && row.audio_url && { audioUrl: row.audio_url })
+      })
+    }
+    memories.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt) || b.id - a.id)
+    return { success: true, data: memories.slice(0, limit) }
   }
 
   // ============ Voice (will add S3 upload) ============

@@ -77,6 +77,9 @@ export async function buildInventory() {
     ...(await files('apps/web/src')),
     ...(await files('packages/shared')),
     ...(await files('cloudflare/api')),
+    ...(await files('cloudflare/jobs')),
+    ...(await files('cloudflare/notifications')),
+    ...(await files('cloudflare/phone')),
     ...nativeEntryFiles
   ].sort()
   const sources = new Map()

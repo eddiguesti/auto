@@ -566,7 +566,7 @@
     },
     {
       "name": "apps/web/src/utils/analytics.js",
-      "sha256": "8371deb9e35af0f2007de4d7962aeec622f152f96f1abc01e2f56b6ca35cc099"
+      "sha256": "8963e36a4984d483efa22a9a19fb4dfec3fbfbbce68f0560dd351f000fea44a3"
     },
     {
       "name": "apps/web/src/utils/audio.js",
@@ -875,6 +875,74 @@
     {
       "name": "cloudflare/ingress-identity.js",
       "sha256": "2f5cf002338cae06f1f0d5e67c0ba5e127a960aa89f3ab3b8c359afd426be05c"
+    },
+    {
+      "name": "cloudflare/jobs/consumer.js",
+      "sha256": "d035c0f5089d47360ed711c9023f21da021b78c806730361bb3bea5c200a875d"
+    },
+    {
+      "name": "cloudflare/jobs/fish-audio.js",
+      "sha256": "390ca82d27602ef76566d4008a4ff5e33b64a7461c41c82f0e59969ab30b0472"
+    },
+    {
+      "name": "cloudflare/jobs/render.js",
+      "sha256": "ef19ddedaef7171036cdc8c2feb32536f2ca485c61f19a4ee96b910016f5c06f"
+    },
+    {
+      "name": "cloudflare/jobs/repository.js",
+      "sha256": "7e4f6bef40c2dfcfec9537d1550dc25c26f52de453fd529df3ce3696b81c1758"
+    },
+    {
+      "name": "cloudflare/notifications/outbox.js",
+      "sha256": "284ff334dcf7498f2fcd3be3d2316654cb2eee885af5189d22adcae3fd6653a2"
+    },
+    {
+      "name": "cloudflare/notifications/rate-limit.js",
+      "sha256": "2193a02327e08178c7629eb4482360ec973a8bc8a6e9a79bbd48cac2b2bfd395"
+    },
+    {
+      "name": "cloudflare/notifications/request.js",
+      "sha256": "e02bd5c3b9eeba14845e6b7887084ceb96b0d1f4eeaecb32e8804e93af8086ea"
+    },
+    {
+      "name": "cloudflare/notifications/schedule.js",
+      "sha256": "342b4b3fee4adf1e73f798ae148ac5e776fcaaabe2b0924e02b2228c04e2697a"
+    },
+    {
+      "name": "cloudflare/notifications/security.js",
+      "sha256": "01f7271878004c8ce51aded0ea010fe5ff44659bc475b824421739986024ca13"
+    },
+    {
+      "name": "cloudflare/notifications/telegram-processing.js",
+      "sha256": "3a6ad4d5c471eb70dd9d46148ee9ee89bea125954f6a257505b0d466058157d8"
+    },
+    {
+      "name": "cloudflare/notifications/telegram-questions.js",
+      "sha256": "a2c50715959d1fa156654ccf43f30c8df2b8db08e760f93935836c07e62c6b9d"
+    },
+    {
+      "name": "cloudflare/notifications/unsubscribe.js",
+      "sha256": "17919b026ce801f88f056ab3b0a60502b6e9439ee5923e932e03a75dd148a038"
+    },
+    {
+      "name": "cloudflare/phone/calls.js",
+      "sha256": "c091c92198926d190ec0e54df7d0d0f4bf3118e3164644b74497d078818a0d15"
+    },
+    {
+      "name": "cloudflare/phone/leases.js",
+      "sha256": "ccfd114214d16bd5250cdad0105b134d05f672d1f1ef53001326d4ed00de91aa"
+    },
+    {
+      "name": "cloudflare/phone/repository.js",
+      "sha256": "5d30eb19dea31a8fa9d300c4b942dcbc110d49bdb2311743b4b267faa35ea0f6"
+    },
+    {
+      "name": "cloudflare/phone/security.js",
+      "sha256": "8ca7b4b11466b9b436488ebff7c31eaa1518dddcc59491062add950a2ce39d69"
+    },
+    {
+      "name": "cloudflare/phone/session.js",
+      "sha256": "3d644fa1424f99475f8d17b98ae7d065d27a32a43f5be243a36459c3c622c787"
     },
     {
       "name": "cloudflare/vitest.config.js",

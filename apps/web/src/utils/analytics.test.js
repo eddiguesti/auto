@@ -7,6 +7,7 @@ import {
   hasAnalyticsConsent
 } from './cookieConsent'
 import { createAnalyticsController, startAnalytics, trackEvent } from './analytics'
+import posthogPackage from 'posthog-js/package.json'
 
 const accepted = { ...DEFAULT_CONSENT, analytics: true }
 const tick = async () => {
@@ -43,6 +44,42 @@ afterEach(() => {
 })
 
 describe('analytics consent enforcement', () => {
+  it('pins the reviewed SDK and disables non-capture transports across consent changes', async () => {
+    expect(posthogPackage.version).toBe('1.438.6')
+    const sdk = fakeSDK()
+    saveCookieConsent(accepted)
+    stops.push(startAnalytics({ key: 'key', loadSDK: () => Promise.resolve({ default: sdk }) }))
+    await tick()
+    const options = sdk.init.mock.calls[0][1]
+    const policy = {
+      advanced_disable_flags: true,
+      advanced_disable_feature_flags: true,
+      advanced_disable_feature_flags_on_first_load: true,
+      disable_external_dependency_loading: true,
+      disable_surveys: true,
+      disable_surveys_automatic_display: true,
+      disable_conversations: true,
+      disable_product_tours: true,
+      disable_web_experiments: true,
+      capture_exceptions: false,
+      enable_recording_console_log: false,
+      logs: { captureConsoleLogs: false }
+    }
+    expect(options).toEqual(expect.objectContaining(policy))
+    trackEvent('story_saved', { chapterId: 'earliest-memories' })
+    expect(sdk.capture).toHaveBeenLastCalledWith('story_saved', { chapterId: 'earliest-memories' })
+    saveCookieConsent(DEFAULT_CONSENT)
+    expect(options.before_send({ event: '$pageview' })).toBeNull()
+    saveCookieConsent(accepted)
+    await tick()
+    trackEvent('story_saved', { chapterId: 'childhood' })
+    expect(sdk.capture).toHaveBeenLastCalledWith('story_saved', { chapterId: 'childhood' })
+    expect(sdk.init).toHaveBeenCalledTimes(1)
+    // Reacceptance must not reopen the reviewed remote/extension surfaces.
+    for (const [update] of sdk.set_config.mock.calls)
+      for (const [key, value] of Object.entries(policy))
+        if (Object.hasOwn(update, key)) expect(update[key]).toEqual(value)
+  })
   it('discards batch queues and prevents delayed retries after revocation and reacceptance', async () => {
     const sdk = fakeSDK()
     sdk._requestQueue = { _queue: [{ event: 'queued' }] }

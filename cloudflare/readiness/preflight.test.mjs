@@ -215,6 +215,12 @@ test('remote success verifies schema, deployed binding, timestamp gate and secre
 test('source inventory records actual aliases, scheduled timezones, websocket paths and concrete method mismatches', async () => {
   const inventory = await buildInventory()
   assert.equal(inventory.productionReady, false)
+  for (const name of [
+    'cloudflare/jobs/consumer.js',
+    'cloudflare/notifications/outbox.js',
+    'cloudflare/phone/session.js'
+  ])
+    assert.ok(inventory.sourceFiles.some(file => file.name === name))
   const health = inventory.routes.find(item => item.path === '/api/health')
   assert.deepEqual(health.aliases, ['/api/health'])
   assert.ok(

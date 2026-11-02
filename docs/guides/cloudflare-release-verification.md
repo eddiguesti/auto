@@ -22,7 +22,7 @@ The browser check used built assets and the real web Worker → API service bind
 
 Backend tests, PostgreSQL migration/backup restoration tests, frontend tests, database tooling, edge routing, readiness checks, lint, formatting, production builds and explicit API/web Wrangler bundle checks are recorded separately by suite. Dependency audit has no high or critical findings; moderate transitive findings remain for review.
 
-Release checks passed: 241 native API tests, 142 web tests, 33 database-tool tests, 13 edge-routing tests and eight readiness tests. Legacy backend verification passed 387 unit tests and all 16 dedicated PostgreSQL tests. Frontend/server/security/Cloudflare lint has no errors; existing warnings remain. Formatting, production build, API/web bundle validation and the staged secret scan passed. These suite totals overlap some focused verification and must not be summed as distinct scenarios.
+Release checks passed: 241 native API tests, 143 web tests, 33 database-tool tests, 13 edge-routing tests and eight readiness tests. Legacy backend verification passed 387 unit tests and all 16 dedicated PostgreSQL tests. Mobile history transport tests and TypeScript checks passed, including authenticated account switching and explicit failures instead of false empty history. Frontend/server/security/Cloudflare lint has no errors; existing warnings remain. Formatting, production build, API/web bundle validation and the staged secret scan passed. These suite totals overlap some focused verification and must not be summed as distinct scenarios.
 
 ## Hosted work still required
 
