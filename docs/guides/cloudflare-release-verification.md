@@ -50,8 +50,10 @@ CPU budget. Every synthetic account, story and photo was erased afterward;
 read-only remote D1 counts confirmed zero users, stories and photos.
 
 Seven bootstrap secrets are installed. Paid AI/voice, merchant, phone, Telegram
-and email-delivery credentials are not installed. A read-only check rejected the
-saved Resend key with HTTP 401. The preview must be built with
+and email-delivery credentials are not installed. A read-only Resend domain
+lookup returned HTTP 401 `restricted_api_key`: the saved key is sending-only,
+so this does not establish invalid sending credentials or actual deliverability.
+The preview must be built with
 `VITE_MANUAL_PREVIEW=true npm run build:cloudflare` so its notice and primary
 manual-writing route accurately describe this configuration.
 
@@ -74,8 +76,8 @@ Workers Paid's accepted $5/month base fee is separate from metered usage alerts.
 
 Keep paid publishing, printing, phone calls, Telegram and notification delivery
 disabled until real configuration and provider acceptance pass. AI/voice services
-remain off pending the operator's cost preference. Restore valid transactional
-email credentials, authorize the deployed Google origin, and verify real voice
+remain off pending the operator's cost preference. Verify transactional email
+domain configuration and delivery, authorize the deployed Google origin, and verify real voice
 WebSocket/provider acceptance before advertising those features as available.
 Fake-provider tests do not establish actual delivery or merchant acceptance.
 
