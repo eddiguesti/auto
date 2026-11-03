@@ -1,79 +1,168 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 
-export default function AIAssistant({ context, onClose, onInsertText }) {
-  const { authFetch } = useAuth()
-  const [messages, setMessages] = useState([])
-  const [input, setInput] = useState('')
+const UNAVAILABLE =
+  'The writing assistant is unavailable. Your notes are still here. You can keep writing or review your notes without AI.'
+
+function restoreDraft(storageKey, legacyKey, ownerId) {
+  try {
+    localStorage.removeItem(legacyKey)
+    const saved = JSON.parse(localStorage.getItem(storageKey) || 'null')
+    if (
+      saved?.version === 2 &&
+      saved.ownerId === ownerId &&
+      Array.isArray(saved.messages) &&
+      saved.messages.every(
+        item => ['user', 'assistant'].includes(item.role) && typeof item.content === 'string'
+      ) &&
+      Array.isArray(saved.gatheredContent) &&
+      saved.gatheredContent.every(
+        item => ['existing', 'response'].includes(item.type) && typeof item.content === 'string'
+      )
+    )
+      return saved
+  } catch {
+    /* An unavailable or malformed browser draft is never another owner's draft. */
+  }
+  return {}
+}
+
+export default function AIAssistant(props) {
+  const { user, authFetch, isCurrentSession } = useAuth()
+  if (user?.id == null) return null
+  const ownerId = String(user.id)
+  // A different author or question gets fresh state immediately, without first
+  // rendering or persisting the previous author's conversation.
+  return (
+    <AssistantSession
+      key={JSON.stringify([ownerId, props.context.chapterId, props.context.question.id])}
+      {...props}
+      ownerId={ownerId}
+      authFetch={authFetch}
+      isCurrentSession={isCurrentSession}
+    />
+  )
+}
+
+function AssistantSession({
+  context,
+  onClose,
+  onInsertText,
+  ownerId,
+  authFetch,
+  isCurrentSession
+}) {
+  const storageKey = `ai-chat:v2:${encodeURIComponent(ownerId)}:${encodeURIComponent(context.chapterId)}:${encodeURIComponent(context.question.id)}`
+  const [saved] = useState(() =>
+    restoreDraft(storageKey, `ai-chat-${context.chapterId}-${context.question.id}`, ownerId)
+  )
+  const [messages, setMessages] = useState(saved.messages || [])
+  const [input, setInput] = useState(typeof saved.input === 'string' ? saved.input : '')
   const [loading, setLoading] = useState(false)
-  const [phase, setPhase] = useState('start') // 'start', 'interview', 'ready', 'writing', 'review'
-  const [gatheredContent, setGatheredContent] = useState([])
-  const [closing, setClosing] = useState(false)
-  const [editableStory, setEditableStory] = useState('') // Editable version of generated story
+  const [phase, setPhase] = useState(
+    ['start', 'interview', 'ready', 'review'].includes(saved.phase)
+      ? saved.phase
+      : saved.phase === 'writing'
+        ? 'ready'
+        : 'start'
+  )
+  const [gatheredContent, setGatheredContent] = useState(saved.gatheredContent || [])
+  const [editableStory, setEditableStory] = useState(
+    typeof saved.editableStory === 'string' ? saved.editableStory : ''
+  )
+  const [assistantError, setAssistantError] = useState(null)
+  const [draftStorageError, setDraftStorageError] = useState(false)
   const messagesEndRef = useRef(null)
   const storyTextareaRef = useRef(null)
-
-  // Storage key for this specific question
-  const storageKey = `ai-chat-${context.chapterId}-${context.question.id}`
-
-  // Load saved chat state on mount
+  const activeRef = useRef(false)
+  const requestRef = useRef(null)
   useEffect(() => {
-    const saved = localStorage.getItem(storageKey)
-    if (saved) {
-      try {
-        const {
-          messages: savedMessages,
-          phase: savedPhase,
-          gatheredContent: savedContent
-        } = JSON.parse(saved)
-        if (savedMessages?.length > 0) {
-          setMessages(savedMessages)
-          setPhase(savedPhase || 'interview')
-          setGatheredContent(savedContent || [])
-        }
-      } catch (e) {
-        console.error('Failed to load saved chat:', e)
-      }
+    activeRef.current = true
+    return () => {
+      activeRef.current = false
+      requestRef.current?.abort()
     }
-  }, [storageKey])
+  }, [isCurrentSession])
 
-  // Save chat state whenever it changes
+  // The session guard prevents a queued old effect from restoring a draft that
+  // logout just removed, even before the old component has unmounted.
   useEffect(() => {
-    if (messages.length > 0) {
-      const messagesToSave = messages.slice(-50)
-      localStorage.setItem(
-        storageKey,
-        JSON.stringify({ messages: messagesToSave, phase, gatheredContent })
-      )
+    if (!isCurrentSession()) return
+    try {
+      if (messages.length || gatheredContent.length || input || editableStory)
+        localStorage.setItem(
+          storageKey,
+          JSON.stringify({
+            version: 2,
+            ownerId,
+            messages: messages.slice(-50),
+            phase,
+            gatheredContent,
+            input,
+            editableStory
+          })
+        )
+      else localStorage.removeItem(storageKey)
+      setDraftStorageError(false)
+    } catch {
+      setDraftStorageError(true)
     }
-  }, [messages, phase, gatheredContent, storageKey])
+  }, [
+    messages,
+    phase,
+    gatheredContent,
+    input,
+    editableStory,
+    storageKey,
+    ownerId,
+    isCurrentSession
+  ])
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    messagesEndRef.current?.scrollIntoView?.({ behavior: 'smooth' })
   }, [messages])
 
   const addMessage = (role, content) => {
     setMessages(prev => [...prev, { role, content }])
   }
 
+  const current = () => activeRef.current && isCurrentSession()
+  const abortError = () => new DOMException('Writing session changed', 'AbortError')
   const callAI = async (endpoint, body) => {
-    const res = await authFetch(`/api/ai/${endpoint}`, {
-      method: 'POST',
-      body: JSON.stringify(body)
-    })
-    if (!res.ok) {
-      throw new Error('AI request failed')
+    if (!current()) throw abortError()
+    requestRef.current?.abort()
+    const controller = new AbortController()
+    requestRef.current = controller
+    try {
+      const res = await authFetch(`/api/ai/${endpoint}`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+        signal: controller.signal
+      })
+      if (!current() || controller.signal.aborted || requestRef.current !== controller)
+        throw abortError()
+      if (!res.ok) throw new Error('AI request failed')
+      const data = await res.json()
+      if (!current() || controller.signal.aborted || requestRef.current !== controller)
+        throw abortError()
+      const text = endpoint === 'write-story' ? data?.story : data?.response
+      if (typeof text !== 'string' || !text.trim()) throw new Error('Invalid AI response')
+      return data
+    } finally {
+      if (requestRef.current === controller) requestRef.current = null
     }
-    return res.json()
   }
 
   // Start the interview process
   const startInterview = async () => {
+    if (loading || !current()) return
     setPhase('interview')
     setLoading(true)
+    setAssistantError(null)
 
     // Check if they already have some content
     const hasContent = context.answer && context.answer.trim().length > 50
+    if (hasContent) setGatheredContent([{ type: 'existing', content: context.answer }])
 
     try {
       const data = await callAI('interview', {
@@ -82,32 +171,25 @@ export default function AIAssistant({ context, onClose, onInsertText }) {
         existingAnswer: context.answer || '',
         action: 'start'
       })
-
+      if (!current()) return
       addMessage('assistant', data.response)
-
-      if (hasContent) {
-        // They have some content, add it to gathered
-        setGatheredContent([{ type: 'existing', content: context.answer }])
-      }
     } catch (err) {
-      addMessage(
-        'assistant',
-        "Let's start exploring this memory together. What's the first thing that comes to mind when you think about this?"
-      )
+      if (current() && err.name !== 'AbortError') setAssistantError(UNAVAILABLE)
     } finally {
-      setLoading(false)
+      if (current() && !requestRef.current) setLoading(false)
     }
   }
 
   // Handle user response during interview
   const handleUserResponse = async () => {
-    if (!input.trim() || loading) return
+    if (!input.trim() || loading || !current()) return
 
     const userInput = input.trim()
     setInput('')
     addMessage('user', userInput)
     setGatheredContent(prev => [...prev, { type: 'response', content: userInput }])
     setLoading(true)
+    setAssistantError(null)
 
     try {
       const data = await callAI('interview', {
@@ -119,7 +201,7 @@ export default function AIAssistant({ context, onClose, onInsertText }) {
         history: messages,
         action: 'continue'
       })
-
+      if (!current()) return
       addMessage('assistant', data.response)
 
       // Check if we have enough content (AI will signal this)
@@ -127,23 +209,19 @@ export default function AIAssistant({ context, onClose, onInsertText }) {
         setPhase('ready')
       }
     } catch (err) {
-      addMessage(
-        'assistant',
-        "That's great detail! Tell me more - what else do you remember about this?"
-      )
+      if (current() && err.name !== 'AbortError') setAssistantError(UNAVAILABLE)
     } finally {
-      setLoading(false)
+      if (current() && !requestRef.current) setLoading(false)
     }
   }
 
   // Generate the polished story
   const writeStory = async () => {
+    if (loading || !current()) return
+    const failedPhase = editableStory.trim() ? 'review' : 'ready'
     setPhase('writing')
     setLoading(true)
-    addMessage(
-      'assistant',
-      "Now I'll weave everything you've shared into a beautifully written section of your story..."
-    )
+    setAssistantError(null)
 
     try {
       const data = await callAI('write-story', {
@@ -153,24 +231,30 @@ export default function AIAssistant({ context, onClose, onInsertText }) {
         gatheredContent,
         conversationHistory: messages
       })
-
+      if (!current()) return
       addMessage('assistant', data.story)
       // Move to review phase with editable story
       setEditableStory(data.story)
       setPhase('review')
     } catch (err) {
-      addMessage('assistant', 'I had trouble generating the story. Please try again.')
-      setPhase('ready')
+      if (current() && err.name !== 'AbortError') {
+        setAssistantError(UNAVAILABLE)
+        setPhase(failedPhase)
+      }
     } finally {
-      setLoading(false)
+      if (current() && !requestRef.current) setLoading(false)
     }
   }
 
   // Insert the final story (from editable review)
   const insertStory = () => {
-    if (editableStory.trim()) {
+    if (editableStory.trim() && current()) {
       onInsertText(editableStory.trim(), true) // true = replace instead of append
-      localStorage.removeItem(storageKey)
+      try {
+        localStorage.removeItem(storageKey)
+      } catch {
+        /* The server/editor save remains independent of browser storage. */
+      }
     }
   }
 
@@ -183,32 +267,29 @@ export default function AIAssistant({ context, onClose, onInsertText }) {
     )
   }
 
-  // Handle closing - auto-generate draft if there's content
-  const handleClose = async () => {
-    // If we have gathered content but haven't written a story yet, generate a draft
-    const userResponses = gatheredContent.filter(g => g.type === 'response')
-    if (userResponses.length > 0 && phase !== 'writing') {
-      setClosing(true)
-      try {
-        const data = await callAI('write-story', {
-          question: context.question.question,
-          prompt: context.question.prompt,
-          existingAnswer: context.answer || '',
-          gatheredContent,
-          conversationHistory: messages
-        })
-        // Insert draft and close
-        if (data.story) {
-          onInsertText(data.story, true)
-          localStorage.removeItem(storageKey)
-          return
-        }
-      } catch (err) {
-        console.error('Failed to generate draft:', err)
-      }
-      setClosing(false)
-    }
-    onClose()
+  const ownNotes = [
+    context.answer?.trim(),
+    ...gatheredContent.filter(item => item.type === 'response').map(item => item.content),
+    input.trim()
+  ]
+    .filter(Boolean)
+    .join('\n\n')
+  const reviewOwnNotes = () => {
+    if (!current() || loading || (!editableStory.trim() && !ownNotes)) return
+    setEditableStory(previous => (previous.trim() ? previous : ownNotes))
+    setInput('')
+    setPhase('review')
+  }
+  const resetDraft = () => {
+    if (!current()) return
+    requestRef.current?.abort()
+    setMessages([])
+    setGatheredContent([])
+    setEditableStory('')
+    setInput('')
+    setAssistantError(null)
+    setLoading(false)
+    setPhase('start')
   }
 
   return (
@@ -219,22 +300,44 @@ export default function AIAssistant({ context, onClose, onInsertText }) {
           <div className="min-w-0 flex-1 mr-2">
             <h3 className="font-medium text-base sm:text-lg text-ink">✒️ Writing Assistant</h3>
             <p className="text-sm text-sepia/70 truncate italic">
-              {closing && 'Saving your draft...'}
-              {!closing && phase === 'start' && 'Ready to help craft your story'}
-              {!closing && phase === 'interview' && 'Gathering your memories...'}
-              {!closing && phase === 'ready' && 'Ready to compose your narrative'}
-              {!closing && phase === 'writing' && 'Crafting your story...'}
-              {!closing && phase === 'review' && 'Review and edit before saving'}
+              {phase === 'start' && 'Ready to help craft your story'}
+              {phase === 'interview' && 'Your memory notes'}
+              {phase === 'ready' && 'Ready to compose your narrative'}
+              {phase === 'writing' && 'Requesting a story draft...'}
+              {phase === 'review' && 'Review and edit before saving'}
             </p>
           </div>
           <button
-            onClick={handleClose}
-            disabled={closing}
+            onClick={() => {
+              requestRef.current?.abort()
+              onClose()
+            }}
+            aria-label="Close writing assistant"
             className="w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center rounded-full hover:bg-sepia/10 active:bg-sepia/20 transition flex-shrink-0 text-sepia/60 hover:text-sepia disabled:opacity-50"
           >
-            {closing ? <span className="text-xs">...</span> : <span className="text-xl">×</span>}
+            <span className="text-xl">×</span>
           </button>
         </div>
+
+        {assistantError && (
+          <div role="alert" className="p-3 border-b border-amber-200 bg-amber-50 text-sm text-ink">
+            <p>{assistantError}</p>
+            {phase !== 'review' && (
+              <button
+                onClick={reviewOwnNotes}
+                disabled={loading || (!editableStory.trim() && !ownNotes)}
+                className="mt-2 underline disabled:opacity-40"
+              >
+                {editableStory.trim() ? 'Return to my draft' : 'Review my notes without AI'}
+              </button>
+            )}
+          </div>
+        )}
+        {draftStorageError && (
+          <p role="alert" className="p-3 text-sm text-ink">
+            This browser could not keep your draft. Copy your notes before closing.
+          </p>
+        )}
 
         {/* Context Preview */}
         <div className="p-3 border-b border-sepia/10 flex-shrink-0">
@@ -377,6 +480,7 @@ export default function AIAssistant({ context, onClose, onInsertText }) {
                   </div>
                   <textarea
                     ref={storyTextareaRef}
+                    aria-label="Story draft"
                     value={editableStory}
                     onChange={e => setEditableStory(e.target.value)}
                     className="w-full p-4 text-ink leading-relaxed text-sm sm:text-base resize-none focus:outline-none min-h-[120px] max-h-[200px]"
@@ -398,20 +502,13 @@ export default function AIAssistant({ context, onClose, onInsertText }) {
                   <button
                     onClick={() => {
                       setPhase('ready')
-                      setEditableStory('')
                     }}
                     className="flex-1 py-2 text-sm text-sepia/60 hover:text-sepia transition border border-sepia/15 rounded"
                   >
                     Regenerate
                   </button>
                   <button
-                    onClick={() => {
-                      localStorage.removeItem(storageKey)
-                      setMessages([])
-                      setGatheredContent([])
-                      setEditableStory('')
-                      setPhase('start')
-                    }}
+                    onClick={resetDraft}
                     className="flex-1 py-2 text-sm text-sepia/60 hover:text-sepia transition border border-sepia/15 rounded"
                   >
                     Start over
@@ -426,16 +523,17 @@ export default function AIAssistant({ context, onClose, onInsertText }) {
                 <div className="flex gap-2">
                   <input
                     type="text"
+                    aria-label="Your notes"
                     value={input}
                     onChange={e => setInput(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && handleUserResponse()}
                     placeholder="Share more details..."
                     className="flex-1 px-4 py-3 sm:py-2.5 border border-sepia/20 rounded bg-white/70 focus:outline-none focus:ring-1 focus:ring-sepia/30 focus:border-sepia/40 text-base"
-                    disabled={loading || closing}
+                    disabled={loading}
                   />
                   <button
                     onClick={handleUserResponse}
-                    disabled={loading || closing || !input.trim()}
+                    disabled={loading || !input.trim()}
                     className="px-5 sm:px-4 py-3 sm:py-2.5 bg-ink text-white/90 rounded hover:bg-ink/90 transition disabled:opacity-40"
                   >
                     Send
@@ -443,12 +541,7 @@ export default function AIAssistant({ context, onClose, onInsertText }) {
                 </div>
                 {messages.length > 2 && (
                   <button
-                    onClick={() => {
-                      localStorage.removeItem(storageKey)
-                      setMessages([])
-                      setGatheredContent([])
-                      setPhase('start')
-                    }}
+                    onClick={resetDraft}
                     className="text-xs text-sepia/40 hover:text-sepia/60 transition"
                   >
                     Start over

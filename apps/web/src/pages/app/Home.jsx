@@ -6,6 +6,7 @@ import { usePremium } from '../../hooks/usePremium'
 import { useDashboardProgress } from '../../features/memoir/queries/storyQueries'
 import { getDashboardProgress } from '../../features/memoir/dashboardProgress'
 import EmailVerificationBanner from '../../components/EmailVerificationBanner'
+import { MANUAL_PREVIEW } from '../../config'
 import '../../styles/editorial.css'
 import '../../styles/workspace.css'
 
@@ -47,7 +48,7 @@ export default function Home() {
   } = useDashboardProgress(user?.id)
   const [showExportModal, setShowExportModal] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(
-    new URLSearchParams(window.location.search).get('onboarding') === 'true'
+    !MANUAL_PREVIEW && new URLSearchParams(window.location.search).get('onboarding') === 'true'
   )
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [upgradeVariant, setUpgradeVariant] = useState('default')
@@ -82,13 +83,13 @@ export default function Home() {
         /* An optional introduction must not prevent access to saved stories. */
       }
     }
-    checkOnboarding()
+    if (!MANUAL_PREVIEW) checkOnboarding()
     const params = new URLSearchParams(window.location.search)
-    if (params.get('premium_activated') === 'true') {
+    if (!MANUAL_PREVIEW && params.get('premium_activated') === 'true') {
       refreshUser()
       setShowPremiumCelebration(true)
     }
-    if (params.get('upgrade_dismissed') === 'true') {
+    if (!MANUAL_PREVIEW && params.get('upgrade_dismissed') === 'true') {
       setUpgradeVariant('cancelled')
       setShowUpgradeModal(true)
     }
@@ -126,7 +127,7 @@ export default function Home() {
           </nav>
         </div>
       </header>
-      <EmailVerificationBanner />
+      {!MANUAL_PREVIEW && <EmailVerificationBanner />}
       <main id="story-main" className="story-container story-main">
         <header className="story-greeting">
           <div>
@@ -177,7 +178,9 @@ export default function Home() {
                     className="memoir-button"
                     to={
                       nextChapter
-                        ? `/voice?chapter=${nextChapter.id}`
+                        ? MANUAL_PREVIEW
+                          ? `/chapter/${nextChapter.id}`
+                          : `/voice?chapter=${nextChapter.id}`
                         : '/chapter/' + chapters[0].id
                     }
                   >
@@ -188,7 +191,7 @@ export default function Home() {
                       : 'Review your chapters'}
                     <span aria-hidden="true">→</span>
                   </Link>
-                  {nextChapter && (
+                  {nextChapter && !MANUAL_PREVIEW && (
                     <Link className="memoir-text-link" to={`/chapter/${nextChapter.id}`}>
                       Write instead <span aria-hidden="true">→</span>
                     </Link>
@@ -196,7 +199,9 @@ export default function Home() {
                 </div>
                 <p className="story-small-note">
                   {nextChapter
-                    ? 'Talk or type. A few sentences are enough to begin.'
+                    ? MANUAL_PREVIEW
+                      ? 'Write a few sentences to begin. Your words are saved as you go.'
+                      : 'Talk or type. A few sentences are enough to begin.'
                     : 'You can keep editing or add a new memory at any time.'}
                 </p>
               </section>
@@ -242,12 +247,16 @@ export default function Home() {
             </div>
             <nav className="story-tools" aria-label="More ways to remember">
               <p>Begin another way</p>
-              <Link to="/photo">
+              <Link
+                to={MANUAL_PREVIEW ? `/chapter/${nextChapter?.id || chapters[0].id}` : '/photo'}
+              >
                 Add a photograph <span aria-hidden="true">↗</span>
               </Link>
-              <Link to="/call-me">
-                Phone call <span aria-hidden="true">↗</span>
-              </Link>
+              {!MANUAL_PREVIEW && (
+                <Link to="/call-me">
+                  Phone call <span aria-hidden="true">↗</span>
+                </Link>
+              )}
               <Link to="/quick-story">
                 A quick memory <span aria-hidden="true">↗</span>
               </Link>
@@ -288,7 +297,7 @@ export default function Home() {
                 ))}
               </ol>
             </section>
-            {!isPremium && totalAnswered > 0 && (
+            {!MANUAL_PREVIEW && !isPremium && totalAnswered > 0 && (
               <aside className="story-plan">
                 <div>
                   <h2>Make room for your whole story.</h2>

@@ -25,6 +25,20 @@ function validUser(user) {
   )
 }
 
+function clearAiDrafts(ownerId) {
+  try {
+    const prefix = ownerId == null ? null : `ai-chat:v2:${encodeURIComponent(String(ownerId))}:`
+    const keys = Array.from({ length: localStorage.length }, (_, index) => localStorage.key(index))
+    for (const key of keys) {
+      // Ownerless drafts cannot safely be assigned to whoever signs in next.
+      if (key?.startsWith('ai-chat-') || (prefix && key?.startsWith(prefix)))
+        localStorage.removeItem(key)
+    }
+  } catch {
+    /* Storage availability must never prevent sign-out. */
+  }
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(DEV_BYPASS ? DEV_USER : null)
   const [token, setToken] = useState(initialToken)
@@ -37,8 +51,10 @@ export function AuthProvider({ children }) {
   const clearSession = useCallback(() => {
     void queryClient.cancelQueries()
     queryClient.clear()
+    const previousOwner = userRef.current?.id
     tokenRef.current = null
     userRef.current = null
+    clearAiDrafts(previousOwner)
     verificationRef.current += 1
     sessionStorage.removeItem('token')
     localStorage.removeItem('token')
@@ -116,6 +132,7 @@ export function AuthProvider({ children }) {
     if (userRef.current?.id !== userData.id) {
       void queryClient.cancelQueries()
       queryClient.clear()
+      clearAiDrafts(userRef.current?.id)
     }
     verificationRef.current += 1
     tokenRef.current = authToken
@@ -160,9 +177,30 @@ export function AuthProvider({ children }) {
     [clearSession, token]
   )
 
+  // This guard also invalidates pending UI work synchronously, before React
+  // commits a sign-out/account switch and runs component cleanup effects.
+  const isCurrentSession = useCallback(
+    () =>
+      Boolean(token) &&
+      token === tokenRef.current &&
+      user?.id != null &&
+      String(user.id) === String(userRef.current?.id),
+    [token, user?.id]
+  )
+
   const value = useMemo(
-    () => ({ user, token, loading, authError, login, logout, authFetch, refreshUser }),
-    [user, token, loading, authError, login, logout, authFetch, refreshUser]
+    () => ({
+      user,
+      token,
+      loading,
+      authError,
+      login,
+      logout,
+      authFetch,
+      refreshUser,
+      isCurrentSession
+    }),
+    [user, token, loading, authError, login, logout, authFetch, refreshUser, isCurrentSession]
   )
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

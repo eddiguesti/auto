@@ -1,6 +1,9 @@
 // API base URL - in development uses relative path (proxy), in production uses full URL
 export const API_URL = import.meta.env.VITE_API_URL || ''
 
+// Opt in only for deployments that provide manual writing without paid providers.
+export const MANUAL_PREVIEW = import.meta.env.VITE_MANUAL_PREVIEW === 'true'
+
 // Public GIS client. Keep the browser and API audiences aligned when deploying.
 export const GOOGLE_CLIENT_ID =
   import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim() ||
