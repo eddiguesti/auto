@@ -6,6 +6,7 @@ import { AuthProvider } from './context/AuthContext'
 import { SettingsProvider } from './context/SettingsContext'
 import { GOOGLE_CLIENT_ID } from './config'
 import ErrorBoundary from './components/ErrorBoundary'
+import ManualPreviewBanner from './components/ManualPreviewBanner'
 import { ToastProvider } from './components/Toast'
 import { authRoutes } from './routes/authRoutes'
 import { appRoutes } from './routes/appRoutes'
@@ -33,6 +34,7 @@ function App() {
             <SettingsProvider>
               <ToastProvider>
                 <div className="min-h-screen bg-parchment">
+                  <ManualPreviewBanner />
                   <Suspense fallback={<PageLoader />}>
                     <Routes>
                       {marketingRoutes()}

@@ -352,3 +352,27 @@ it('clears private cached stories on logout and refuses deferred writes from the
   )
   expect(mockFetch).not.toHaveBeenCalled()
 })
+
+it('cleans current-owner and legacy AI drafts on logout and invalidates old UI work synchronously', async () => {
+  let auth
+  renderWithAuth(value => {
+    auth = value
+  })
+  await waitFor(() => expect(auth.loading).toBe(false))
+  act(() => auth.login({ id: 1 }, 'account-a-token'))
+  const oldGuard = auth.isCurrentSession
+  localStorage.setItem('ai-chat:v2:1:childhood:first', 'private owner one')
+  localStorage.setItem('ai-chat:v2:2:childhood:first', 'private owner two')
+  localStorage.setItem('ai-chat-childhood-first', 'unowned legacy private text')
+  localStorage.setItem('theme', 'dark')
+  expect(oldGuard()).toBe(true)
+  await act(async () => {
+    const logout = auth.logout()
+    expect(oldGuard()).toBe(false)
+    await logout
+  })
+  expect(localStorage.getItem('ai-chat:v2:1:childhood:first')).toBeNull()
+  expect(localStorage.getItem('ai-chat-childhood-first')).toBeNull()
+  expect(localStorage.getItem('ai-chat:v2:2:childhood:first')).toBe('private owner two')
+  expect(localStorage.getItem('theme')).toBe('dark')
+})

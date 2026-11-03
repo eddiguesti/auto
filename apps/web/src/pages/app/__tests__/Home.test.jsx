@@ -8,8 +8,14 @@ const mocks = vi.hoisted(() => ({
   refetch: vi.fn(),
   authFetch: vi.fn(async () => ({ ok: true, json: async () => ({ completed: true }) })),
   refreshUser: vi.fn(),
+  manualPreview: false,
   isPremium: true,
   query: {}
+}))
+vi.mock('../../../config', () => ({
+  get MANUAL_PREVIEW() {
+    return mocks.manualPreview
+  }
 }))
 vi.mock('../../../context/AuthContext', () => ({
   useAuth: () => ({
@@ -34,6 +40,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   mocks.query = { data: {}, isLoading: false, error: null, isFetching: false }
   mocks.isPremium = true
+  mocks.manualPreview = false
   window.history.replaceState({}, '', '/home')
 })
 
@@ -45,6 +52,54 @@ const renderHome = () =>
   )
 
 describe('memoir dashboard states', () => {
+  it('starts the manual preview in the available editor without invoking unavailable services', () => {
+    mocks.manualPreview = true
+    mocks.isPremium = false
+    renderHome()
+    expect(screen.getByRole('link', { name: /start with a memory/i })).toHaveAttribute(
+      'href',
+      '/chapter/earliest-memories'
+    )
+    expect(screen.getByRole('link', { name: /add a photograph/i })).toHaveAttribute(
+      'href',
+      '/chapter/earliest-memories'
+    )
+    expect(screen.queryByRole('link', { name: /write instead/i })).toBeNull()
+    expect(screen.queryByRole('link', { name: /phone call/i })).toBeNull()
+    expect(mocks.authFetch).not.toHaveBeenCalled()
+    expect(
+      screen.getByText('Write a few sentences to begin. Your words are saved as you go.')
+    ).toBeVisible()
+  })
+
+  it('continues saved memories through the manual editor and omits purchase prompts in preview', () => {
+    mocks.manualPreview = true
+    mocks.isPremium = false
+    mocks.query.data = { 'earliest-memories': 1 }
+    renderHome()
+    expect(screen.getByRole('link', { name: /continue your story/i })).toHaveAttribute(
+      'href',
+      '/chapter/earliest-memories'
+    )
+    expect(screen.queryByRole('button', { name: /view plans/i })).toBeNull()
+  })
+
+  it('reviews the available chapter after completing the preview instead of opening a locked one', () => {
+    mocks.manualPreview = true
+    mocks.isPremium = false
+    const chapter = chapters.find(item => item.id === 'earliest-memories')
+    mocks.query.data = { [chapter.id]: chapter.questions.length }
+    renderHome()
+    expect(screen.getByRole('link', { name: /review your chapters/i })).toHaveAttribute(
+      'href',
+      '/chapter/earliest-memories'
+    )
+    expect(screen.getByRole('link', { name: /add a photograph/i })).toHaveAttribute(
+      'href',
+      '/chapter/earliest-memories'
+    )
+  })
+
   it('starts a free account in the available chapter instead of sending typing into a paywall', () => {
     mocks.isPremium = false
     renderHome()
