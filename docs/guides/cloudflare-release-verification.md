@@ -24,7 +24,7 @@ Backend tests, PostgreSQL migration/backup restoration tests, frontend tests, da
 
 Release checks passed: 241 native API tests, 143 web tests, 33 database-tool tests, 13 edge-routing tests and eight readiness tests. Legacy backend verification passed 387 unit tests and all 16 dedicated PostgreSQL tests. Mobile history transport tests and TypeScript checks passed, including authenticated account switching and explicit failures instead of false empty history. Frontend/server/security/Cloudflare lint has no errors; existing warnings remain. Formatting, production build, API/web bundle validation and the staged secret scan passed. These suite totals overlap some focused verification and must not be summed as distinct scenarios.
 
-The follow-up launch guards pass the complete **162-test web suite**, including
+The follow-up launch guards pass the complete **163-test web suite**, including
 account switching, logout, delayed AI responses and failed-regeneration recovery.
 Private assistant drafts are owner-scoped and removed on logout; unavailable AI
 never fabricates a response or composes a paid story merely because the dialog

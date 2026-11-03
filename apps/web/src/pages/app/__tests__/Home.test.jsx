@@ -84,6 +84,22 @@ describe('memoir dashboard states', () => {
     expect(screen.queryByRole('button', { name: /view plans/i })).toBeNull()
   })
 
+  it('reviews the available chapter after completing the preview instead of opening a locked one', () => {
+    mocks.manualPreview = true
+    mocks.isPremium = false
+    const chapter = chapters.find(item => item.id === 'earliest-memories')
+    mocks.query.data = { [chapter.id]: chapter.questions.length }
+    renderHome()
+    expect(screen.getByRole('link', { name: /review your chapters/i })).toHaveAttribute(
+      'href',
+      '/chapter/earliest-memories'
+    )
+    expect(screen.getByRole('link', { name: /add a photograph/i })).toHaveAttribute(
+      'href',
+      '/chapter/earliest-memories'
+    )
+  })
+
   it('starts a free account in the available chapter instead of sending typing into a paywall', () => {
     mocks.isPremium = false
     renderHome()

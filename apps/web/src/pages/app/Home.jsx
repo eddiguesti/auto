@@ -67,7 +67,10 @@ export default function Home() {
   } = useMemo(() => getDashboardProgress(chapters, progress), [progress])
   const nextChapter =
     chapterProgress.find(chapter => !chapter.complete && !isChapterLocked(chapter.id)) ||
-    nextUnfinishedChapter
+    (MANUAL_PREVIEW ? null : nextUnfinishedChapter)
+  const reviewChapterId = MANUAL_PREVIEW
+    ? chapterProgress.find(chapter => !isChapterLocked(chapter.id))?.id || 'earliest-memories'
+    : chapters[0].id
   const nextQuestion = nextChapter?.questions[nextChapter.answered]
 
   useEffect(() => {
@@ -181,7 +184,7 @@ export default function Home() {
                         ? MANUAL_PREVIEW
                           ? `/chapter/${nextChapter.id}`
                           : `/voice?chapter=${nextChapter.id}`
-                        : '/chapter/' + chapters[0].id
+                        : '/chapter/' + reviewChapterId
                     }
                   >
                     {nextChapter
@@ -248,7 +251,7 @@ export default function Home() {
             <nav className="story-tools" aria-label="More ways to remember">
               <p>Begin another way</p>
               <Link
-                to={MANUAL_PREVIEW ? `/chapter/${nextChapter?.id || chapters[0].id}` : '/photo'}
+                to={MANUAL_PREVIEW ? `/chapter/${nextChapter?.id || reviewChapterId}` : '/photo'}
               >
                 Add a photograph <span aria-hidden="true">↗</span>
               </Link>
